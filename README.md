@@ -17,7 +17,7 @@ Briefly describe what the project does, who it serves, and the main value (1–2
 - Salman Nairoukh — SalmanNa — 326084506
 - Shahd Karawi - Shahdka02 - 213324270
 - abed abuserrieh -abedab - 213695380 
-Include student IDs if required.
+
 
 ## Quick start (local)
 1. git clone https://github.com/<org>/<repo>.git
