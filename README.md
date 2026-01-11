@@ -16,6 +16,7 @@ Briefly describe what the project does, who it serves, and the main value (1–2
 - Team lead — Name — email — GitHub  
 - Members — Name — role — GitHub
 - Shahd Karawi - Shahdka02 - 213324270
+- abed abuserrieh -abedab - 213695380 
 Include student IDs if required.
 
 ## Quick start (local)
