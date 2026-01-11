@@ -14,7 +14,8 @@ Briefly describe what the project does, who it serves, and the main value (1–2
 
 ## Team
 - Team lead — Name — email — GitHub  
-- Members — Name — role — GitHub  
+- Members — Name — role — GitHub
+- Shahd Karawi - Shahdka02 - 213324270
 Include student IDs if required.
 
 ## Quick start (local)
