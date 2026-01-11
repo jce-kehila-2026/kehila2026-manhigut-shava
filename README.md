@@ -13,7 +13,7 @@ Briefly describe what the project does, who it serves, and the main value (1–2
 - Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
 ## Team
-- Joelle Zanbil - joelleza - 215037862 
+- Joelle Zanbil - joelleza - joellezanbil2911@gmail.com (personal email) - 215037862 
 - Salman Nairoukh — SalmanNa — 326084506
 - Shahd Karawi - Shahdka02 - 213324270
 - abed abuserrieh -abedab - 213695380 
