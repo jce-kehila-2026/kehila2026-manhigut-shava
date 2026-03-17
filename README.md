@@ -1,19 +1,27 @@
 # Project Title
-One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
+Graduate Management System & Website - The Movement for Equal Leadership
 
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 
 ## Overview
-Briefly describe what the project does, who it serves, and the main value (1–2 sentences).
+This project provides a comprehensive technological solution for "The Movement for Equal Leadership," an NGO with a decade of experience promoting young women's public and political leadership. The project has two main focuses:
+1. **Graduate Management System (Critical Priority):** A centralized internal platform to manage graduate data across different programs (like "Young Women Politicians"). It will replace manual Excel tracking, enable long-term tracking for the NGO, and serve as a secure graduate-to-graduate networking "search engine."
+2. **Informational Website (Secondary Priority):** A digital presence and landing page to tell the NGO's story and feature the new "Equal Leadership" program.
+
+**Main Features:(w emojis)**
+- 🔍 **Graduate Search Engine:** Secure, internal directory for alumni networking.
+- 🏷️ **Peer-Matching:** Filter graduates by specialties and interest tags.
+- 💬 **Safe Communication:** WhatsApp integration with strict approval-based contact sharing.
+- 📊 **Admin Tracking:** Cohort and engagement tracking for NGO fundraising.
 
 ## Non‑Profit
-- Organization: [Non‑Profit Name]  
-- Primary stakeholder(s): Name — role — email  
-- Key deliverable for them: e.g., "Simple roster export and sign-up form."
+- **Organization:** The Movement for Equal Leadership (התנועה למנהיגות שווה)
+- **Primary stakeholder(s):** Nitzan Senior Schneior — Program Manager — ANITZAN86@GMAIL.COM | 058-6277762
+- **Key deliverable for them:** A secure web application with strict permission levels, featuring graduate profiles, peer-matching based on tags, and WhatsApp integration. Additionally, an informational website. The NGO is in a developmental stage regarding budget, so the solution must be sustainable and easy to maintain.
 
 ## Team
-- Joelle Zanbil - joelleza - joellezanbil2911@gmail.com (personal email) - 215037862 
+- Joelle Zanbil (Team Lead) - joelleza - joellezanbil2911@gmail.com - 215037862 
 - Salman Nairoukh — SalmanNa — 326084506
 - Shahd Karawi - Shahdka02 - 213324270
 - abed abuserrieh -abedab - 213695380 
@@ -45,15 +53,20 @@ The frontend is organized into:
 - [ ] Add non‑profit staff as repo collaborators or transfer repo
 
 ## Privacy & Security
-List data collected (names, emails), storage location, and retention policy. Never commit secrets; use environment variables and GitHub secrets.
+Due to the NGO's emphasis on a safe space, strict privacy constraints are critical:
+- The system is an internal tool for graduates and admins only.
+- Only minimal public fields are visible (first name, workplace, WhatsApp link).
+- Full contact information (email/phone) is only revealed if the receiving graduate explicitly approves the request.
+- Never commit secrets; use environment variables and GitHub secrets.
 
 ## Known limitations
-Briefly list major limitations or missing features and any workarounds.
+- The core focus is graduate management; there is no complex built-in events module (external links to the existing NGO website will be used).
+- Communication between graduates is handled via WhatsApp integration rather than an in-system chat.
 
 ## Contacts
-- Project lead: Name — email  
-- Non‑profit contact: Name — email  
-- Instructor / TA: Name — email
+- Project lead: Joelle Zanbil — joellezanbil2911@gmail.com  
+- Non‑profit contact: Nitzan Senior Schneior — ANITZAN86@GMAIL.COM / 058-6277762
+- Instructor / TA: (pls fill it idk the name of the instructor)
 
 ## License
-Specify license (e.g., MIT) and any IP/ownership notes relevant to the non‑profit.
+MIT License
