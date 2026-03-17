@@ -53,6 +53,7 @@ Due to the NGO's emphasis on a safe space, strict privacy constraints are critic
 ## Contacts
 - Project lead: Joelle Zanbil — joellezanbil2911@gmail.com  
 - Non‑profit contact: Nitzan Senior Schneior — ANITZAN86@GMAIL.COM / 058-6277762
-- Instructor / TA: [Instructor Name] — [Instructor Email]
+- Instructor / TA: (pls fill it idk the name of the instructor)
 
 ## License
+MIT License
