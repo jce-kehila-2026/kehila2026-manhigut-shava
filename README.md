@@ -33,6 +33,7 @@ The frontend is organized into:
 - components: reusable UI elements
 - pages: main views/screens
 - services: API and data logic
+- assets: static files such images, fonts, and icons
   
 ## Demo / Deployment
 - Deployed app: https://your-app.example.com  
