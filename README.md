@@ -18,7 +18,6 @@ Briefly describe what the project does, who it serves, and the main value (1–2
 - Shahd Karawi - Shahdka02 - 213324270
 - abed abuserrieh -abedab - 213695380 
 
-
 ## Quick start (local)
 1. git clone https://github.com/<org>/<repo>.git
 2. cd <repo>
@@ -29,6 +28,13 @@ Open http://localhost:3000
 
 (Or: docker-compose up --build)
 
+## Frontend Structure
+The frontend is organized into:
+- components: reusable UI elements
+- pages: main views/screens
+- services: API and data logic
+- assets: static files such images, fonts, and icons
+  
 ## Demo / Deployment
 - Deployed app: https://your-app.example.com  
 - CI: GitHub Actions (push → deploy)
