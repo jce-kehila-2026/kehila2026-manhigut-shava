@@ -34,9 +34,9 @@ This project provides a comprehensive technological solution for "The Movement f
 
 ## Non‑Profit
 
-- *Organization:* The Movement for Equal Leadership (התנועה למנהיגות שווה)
+- **Organization:** The Movement for Equal Leadership (התנועה למנהיגות שווה)
 
-- *Primary stakeholder(s):* Nitzan Senior Schneior — Program Manager — ANITZAN86@GMAIL.COM | 058-6277762
+- **Primary stakeholder(s):** Nitzan Senior Schneior — Program Manager — ANITZAN86@GMAIL.COM | 058-6277762
 
 - *Key deliverable for them:* A secure web application with strict permission levels, featuring graduate profiles, peer-matching based on tags, and WhatsApp integration. Additionally, an informational website. The NGO is in a developmental stage regarding budget, so the solution must be sustainable and easy to maintain.
 
