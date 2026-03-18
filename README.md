@@ -106,6 +106,24 @@ The frontend is organized into:
 
 
 
+### 📋 Student Profile Form Requirements (Issue #16)
+To support the **Peer-Matching** and **Graduate Search Engine** features, the student registration form will collect the following data:
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| **Full Name** | Text | Required for the internal directory. |
+| **Academic Institution**| Dropdown | Jerusalem College of Engineering, etc. |
+| **Major / Field** | Text | e.g., Software Engineering, Political Science. |
+| **Expected Graduation** | Date | To track cohorts and eligibility. |
+| **Political Interests** | Multi-select | Local Gov, Policy, Campaigning, Grassroots. |
+| **Professional Bio** | Text Area | A short 2-3 sentence introduction. |
+| **LinkedIn URL** | URL | Optional, for professional networking. |
+| **Privacy Consent** | Toggle | Agreement to share minimal profile info with other graduates. |
+
+> **Privacy Note:** In line with our [Privacy & Security](#privacy--security) section, full contact details (Phone/Email) will remain hidden until a graduate explicitly approves a connection request.
+
+
+
 ## Privacy & Security
 
 Due to the NGO's emphasis on a safe space, strict privacy constraints are critical:
