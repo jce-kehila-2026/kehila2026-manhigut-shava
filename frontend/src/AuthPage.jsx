@@ -321,7 +321,7 @@ export default function AuthPage() {
     <div style={styles.page}>
       <div style={styles.card}>
         <div style={styles.logo}>
-          <span style={styles.logoText}>YourApp</span>
+          <span style={styles.logoText}>Manhigut Shava</span>
         </div>
 
         <div style={styles.tabs}>
