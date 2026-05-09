@@ -9,6 +9,7 @@ const styles = {
     justifyContent: "center",
     fontFamily: "'Georgia', serif",
     padding: "2rem 1rem",
+    boxSizing: "border-box",
   },
   card: {
     background: "#ffffff",
