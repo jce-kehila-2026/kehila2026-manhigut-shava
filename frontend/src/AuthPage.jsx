@@ -255,7 +255,7 @@ function SignUpForm() {
           style={styles.input}
           type="tel"
           name="phone"
-          placeholder="+1 (555) 000-0000"
+          placeholder="+972 50-000-0000"
           value={form.phone}
           onChange={handleChange}
           required
@@ -268,7 +268,7 @@ function SignUpForm() {
           style={styles.input}
           type="email"
           name="email"
-          placeholder="you@example.com"
+          placeholder="you@gmail.com"
           value={form.email}
           onChange={handleChange}
           required
