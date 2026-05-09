@@ -205,6 +205,8 @@ function SignUpForm() {
     phone: "",
     email: "",
     birthdate: "",
+    password: "",       
+    confirmPassword: "",
   });
   const [agreed, setAgreed] = useState(false);
 
@@ -216,6 +218,10 @@ function SignUpForm() {
     if (!agreed) {
       alert("You must agree to the disclaimer to sign up.");
       return;
+    }
+    if (form.password !== form.confirmPassword) {
+        alert("Passwords don't match.");
+        return;
     }
     alert(`Account created for ${form.email}`);
   };
@@ -286,6 +292,32 @@ function SignUpForm() {
           required
         />
       </div>
+    
+    <div style={styles.group}>
+  <label style={styles.label}>Password</label>
+  <input
+    style={styles.input}
+    type="password"
+    name="password"
+    placeholder="••••••••"
+    value={form.password}
+    onChange={handleChange}
+    required
+  />
+</div>
+
+<div style={{ ...styles.group, marginBottom: "1.25rem" }}>
+  <label style={styles.label}>Confirm password</label>
+  <input
+    style={styles.input}
+    type="password"
+    name="confirmPassword"
+    placeholder="••••••••"
+    value={form.confirmPassword}
+    onChange={handleChange}
+    required
+  />
+</div>
 
       <div style={styles.disclaimer}>
         <input
