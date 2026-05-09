@@ -9,6 +9,7 @@ const styles = {
     justifyContent: "center",
     fontFamily: "'Georgia', serif",
     padding: "2rem 1rem",
+    boxSizing: "border-box",
   },
   card: {
     background: "#ffffff",
@@ -254,7 +255,7 @@ function SignUpForm() {
           style={styles.input}
           type="tel"
           name="phone"
-          placeholder="+1 (555) 000-0000"
+          placeholder="+972 50-000-0000"
           value={form.phone}
           onChange={handleChange}
           required
@@ -267,7 +268,7 @@ function SignUpForm() {
           style={styles.input}
           type="email"
           name="email"
-          placeholder="you@example.com"
+          placeholder="you@gmail.com"
           value={form.email}
           onChange={handleChange}
           required
@@ -320,7 +321,7 @@ export default function AuthPage() {
     <div style={styles.page}>
       <div style={styles.card}>
         <div style={styles.logo}>
-          <span style={styles.logoText}>YourApp</span>
+          <span style={styles.logoText}>Manhigut Shava</span>
         </div>
 
         <div style={styles.tabs}>
