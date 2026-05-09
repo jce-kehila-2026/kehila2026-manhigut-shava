@@ -271,7 +271,6 @@ function SignUpForm() {
     email: "",
     birthdate: "",
     password: "",
-    password: "",
     confirmPassword: "",
   });
   const [agreed, setAgreed] = useState(false);
@@ -379,20 +378,6 @@ function SignUpForm() {
           value={form.birthdate}
           onChange={handleChange}
           required
-        />
-      </div>
-
-      <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
-        <label style={styles.label}>Password</label>
-        <input
-          style={styles.input}
-          type="password"
-          name="password"
-          placeholder="At least 6 characters"
-          value={form.password}
-          onChange={handleChange}
-          required
-          minLength={6}
         />
       </div>
       <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
