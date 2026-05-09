@@ -1,4 +1,11 @@
 import { useState } from "react";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "./firebase";
 
 const styles = {
   page: {
@@ -116,6 +123,19 @@ const styles = {
     transition: "background 0.2s, transform 0.1s",
     marginTop: "0.25rem",
   },
+  buttonDisabled: {
+    opacity: 0.65,
+    cursor: "not-allowed",
+  },
+  error: {
+    background: "#fff0f0",
+    border: "1px solid #fca5a5",
+    borderRadius: "8px",
+    padding: "10px 13px",
+    marginBottom: "1rem",
+    fontSize: "13px",
+    color: "#b91c1c",
+  },
   footer: {
     textAlign: "center",
     marginTop: "1.25rem",
@@ -146,19 +166,63 @@ const styles = {
   },
 };
 
+function getFirebaseErrorMessage(code) {
+  const messages = {
+    "auth/invalid-credential": "Email or password is incorrect.",
+    "auth/user-not-found": "No account found with this email.",
+    "auth/wrong-password": "Incorrect password.",
+    "auth/email-already-in-use": "An account with this email already exists.",
+    "auth/weak-password": "Password must be at least 6 characters.",
+    "auth/invalid-email": "Please enter a valid email address.",
+    "auth/too-many-requests": "Too many attempts. Please try again later.",
+  };
+  return messages[code] || "Something went wrong. Please try again.";
+}
+
 function LoginForm() {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert(`Logging in as ${form.email}`);
+    setError("");
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, form.email, form.password);
+    } catch (err) {
+      setError(getFirebaseErrorMessage(err.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!form.email) {
+      setError("Enter your email above, then click Forgot password.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, form.email);
+      setResetSent(true);
+      setError("");
+    } catch (err) {
+      setError(getFirebaseErrorMessage(err.code));
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      {error && <div style={styles.error}>{error}</div>}
+      {resetSent && (
+        <div style={{ ...styles.error, background: "#f0fff4", border: "1px solid #86efac", color: "#166534" }}>
+          Password reset email sent. Check your inbox.
+        </div>
+      )}
       <div style={styles.group}>
         <label style={styles.label}>Email address</label>
         <input
@@ -182,17 +246,18 @@ function LoginForm() {
           onChange={handleChange}
           required
         />
-        <button type="button" style={styles.forgotLink}>
+        <button type="button" style={styles.forgotLink} onClick={handleForgotPassword}>
           Forgot password?
         </button>
       </div>
       <button
         type="submit"
-        style={styles.button}
-        onMouseOver={(e) => (e.target.style.background = "#122d47")}
+        style={{ ...styles.button, ...(loading ? styles.buttonDisabled : {}) }}
+        disabled={loading}
+        onMouseOver={(e) => !loading && (e.target.style.background = "#122d47")}
         onMouseOut={(e) => (e.target.style.background = "#1a3c5e")}
       >
-        Log In
+        {loading ? "Logging in…" : "Log In"}
       </button>
     </form>
   );
@@ -205,29 +270,53 @@ function SignUpForm() {
     phone: "",
     email: "",
     birthdate: "",
-    password: "",       
+    password: "",
+    password: "",
     confirmPassword: "",
   });
   const [agreed, setAgreed] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!agreed) {
-      alert("You must agree to the disclaimer to sign up.");
+      setError("You must agree to the disclaimer to sign up.");
       return;
     }
     if (form.password !== form.confirmPassword) {
-        alert("Passwords don't match.");
+        setError("Passwords don't match.");
         return;
     }
-    alert(`Account created for ${form.email}`);
+    setError("");
+    setLoading(true);
+    try {
+      const { user } = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
+      await setDoc(doc(db, "users", user.uid), {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone,
+        email: form.email,
+        birthdate: form.birthdate,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      setError(getFirebaseErrorMessage(err.code));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      {error && <div style={styles.error}>{error}</div>}
       <div style={styles.row}>
         <div>
           <label style={styles.label}>First name</label>
@@ -281,7 +370,7 @@ function SignUpForm() {
         />
       </div>
 
-      <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
+      <div style={styles.group}>
         <label style={styles.label}>Date of birth</label>
         <input
           style={styles.input}
@@ -292,32 +381,33 @@ function SignUpForm() {
           required
         />
       </div>
-    
-    <div style={styles.group}>
-  <label style={styles.label}>Password</label>
-  <input
-    style={styles.input}
-    type="password"
-    name="password"
-    placeholder="••••••••"
-    value={form.password}
-    onChange={handleChange}
-    required
-  />
-</div>
 
-<div style={{ ...styles.group, marginBottom: "1.25rem" }}>
-  <label style={styles.label}>Confirm password</label>
-  <input
-    style={styles.input}
-    type="password"
-    name="confirmPassword"
-    placeholder="••••••••"
-    value={form.confirmPassword}
-    onChange={handleChange}
-    required
-  />
-</div>
+      <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
+        <label style={styles.label}>Password</label>
+        <input
+          style={styles.input}
+          type="password"
+          name="password"
+          placeholder="At least 6 characters"
+          value={form.password}
+          onChange={handleChange}
+          required
+          minLength={6}
+        />
+      </div>
+      <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
+        <label style={styles.label}>Confirm password</label>
+        <input
+            style={styles.input}
+            type="password"
+            name="confirmPassword"
+            placeholder="Repeat your password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            required
+            minLength={6}
+        />
+        </div>
 
       <div style={styles.disclaimer}>
         <input
@@ -336,11 +426,12 @@ function SignUpForm() {
 
       <button
         type="submit"
-        style={styles.button}
-        onMouseOver={(e) => (e.target.style.background = "#122d47")}
+        style={{ ...styles.button, ...(loading ? styles.buttonDisabled : {}) }}
+        disabled={loading}
+        onMouseOver={(e) => !loading && (e.target.style.background = "#122d47")}
         onMouseOut={(e) => (e.target.style.background = "#1a3c5e")}
       >
-        Create Account
+        {loading ? "Creating account…" : "Create Account"}
       </button>
     </form>
   );
