@@ -270,7 +270,7 @@ function SignUpForm() {
     phone: "",
     email: "",
     birthdate: "",
-    password: "",       
+    password: "",
     confirmPassword: "",
   });
   const [agreed, setAgreed] = useState(false);
@@ -287,10 +287,30 @@ function SignUpForm() {
       return;
     }
     if (form.password !== form.confirmPassword) {
-        alert("Passwords don't match.");
+        setError("Passwords don't match.");
         return;
     }
-    alert(`Account created for ${form.email}`);
+    setError("");
+    setLoading(true);
+    try {
+      const { user } = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
+      await setDoc(doc(db, "users", user.uid), {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone,
+        email: form.email,
+        birthdate: form.birthdate,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      setError(getFirebaseErrorMessage(err.code));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -360,34 +380,7 @@ function SignUpForm() {
           required
         />
       </div>
-    
-    <div style={styles.group}>
-  <label style={styles.label}>Password</label>
-  <input
-    style={styles.input}
-    type="password"
-    name="password"
-    placeholder="••••••••"
-    value={form.password}
-    onChange={handleChange}
-    required
-  />
-</div>
-
-<div style={{ ...styles.group, marginBottom: "1.25rem" }}>
-  <label style={styles.label}>Confirm password</label>
-  <input
-    style={styles.input}
-    type="password"
-    name="confirmPassword"
-    placeholder="••••••••"
-    value={form.confirmPassword}
-    onChange={handleChange}
-    required
-  />
-</div>
-
-      <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
+            <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
         <label style={styles.label}>Password</label>
         <input
           style={styles.input}
@@ -400,6 +393,21 @@ function SignUpForm() {
           minLength={6}
         />
       </div>
+      <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
+        <label style={styles.label}>Confirm password</label>
+        <input
+            style={styles.input}
+            type="password"
+            name="confirmPassword"
+            placeholder="Repeat your password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            required
+            minLength={6}
+        />
+        </div>
+
+
 
       <div style={styles.disclaimer}>
         <input
