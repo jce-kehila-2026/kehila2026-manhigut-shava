@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
 import { db } from "./firebase";
+import SupportPage from "./SupportPage";
 
 const styles = {
   page: {
@@ -270,7 +271,7 @@ const CARDS = [
   },
 ];
 
-const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Updates"];
+const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Updates","Support"];
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -357,7 +358,8 @@ export default function DashboardPage() {
         </div>
 
         <p style={styles.sectionTitle}>Features</p>
-  
+        {activeNav === "Support" && <SupportPage />}
+
       </main>
     </div>
   );

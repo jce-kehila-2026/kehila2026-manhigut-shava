@@ -271,6 +271,8 @@ function SignUpForm() {
     phone: "",
     email: "",
     birthdate: "",
+    profession: "",
+    city: "",
     password: "",
     confirmPassword: "",
   });
@@ -305,6 +307,8 @@ function SignUpForm() {
         phone: form.phone,
         email: form.email,
         birthdate: form.birthdate,
+        profession: form.profession,  
+        city: form.city,            
         createdAt: new Date().toISOString(),
       });
     } catch (err) {
@@ -381,6 +385,31 @@ function SignUpForm() {
           required
         />
       </div>
+      <div style={styles.group}>
+      <label style={styles.label}>Profession / Job</label>
+      <input
+        style={styles.input}
+        type="text"
+        name="profession"
+        placeholder="e.g. Doctor, Engineer, Lawyer..."
+        value={form.profession}
+        onChange={handleChange}
+        required
+      />
+    </div>
+
+    <div style={styles.group}>
+      <label style={styles.label}>City</label>
+      <input
+        style={styles.input}
+        type="text"
+        name="city"
+        placeholder="e.g. Tel Aviv, Jerusalem..."
+        value={form.city}
+        onChange={handleChange}
+        required
+      />
+    </div>
             <div style={{ ...styles.group, marginBottom: "1.25rem" }}>
         <label style={styles.label}>Password</label>
         <input
