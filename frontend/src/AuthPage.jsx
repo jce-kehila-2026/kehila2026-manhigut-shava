@@ -17,6 +17,7 @@ const styles = {
     fontFamily: "'Georgia', serif",
     padding: "2rem 1rem",
     boxSizing: "border-box",
+    width: "100%",
   },
   card: {
     background: "#ffffff",
