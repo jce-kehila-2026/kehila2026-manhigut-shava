@@ -3,6 +3,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
 import { db } from "./firebase";
 import SupportPage from "./SupportPage";
+import CommunityPage from "./CommunityPage";
 
 const styles = {
   page: {
@@ -359,6 +360,7 @@ export default function DashboardPage() {
 
         <p style={styles.sectionTitle}>Features</p>
         {activeNav === "Support" && <SupportPage />}
+        {activeNav === "Community" && <CommunityPage />}
 
       </main>
     </div>

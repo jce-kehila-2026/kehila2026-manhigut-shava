@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { collection, getDocs, addDoc, query, where, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { useAuth } from "./AuthContext";
 
 const styles = {
   page: {
@@ -128,7 +129,6 @@ const styles = {
     fontSize: "13px",
     fontWeight: "600",
     cursor: "pointer",
-    transition: "all 0.15s",
   },
   requestBtn: {
     flex: 1,
@@ -140,7 +140,6 @@ const styles = {
     fontSize: "13px",
     fontWeight: "600",
     cursor: "pointer",
-    transition: "all 0.15s",
   },
   requestedBtn: {
     flex: 1,
@@ -262,7 +261,6 @@ const styles = {
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-    marginBottom: "1px",
     margin: 0,
   },
   modalRequestBtn: {
@@ -275,7 +273,6 @@ const styles = {
     fontSize: "14px",
     fontWeight: "600",
     cursor: "pointer",
-    transition: "background 0.2s",
     boxSizing: "border-box",
   },
   modalRequestedBtn: {
@@ -293,6 +290,7 @@ const styles = {
 };
 
 export default function SupportPage() {
+  const { user } = useAuth();
   const [profession, setProfession] = useState("");
   const [city, setCity] = useState("");
   const [results, setResults] = useState([]);
@@ -300,6 +298,30 @@ export default function SupportPage() {
   const [loading, setLoading] = useState(false);
   const [requested, setRequested] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
+  const [senderProfile, setSenderProfile] = useState(null);
+  const [sentRequests, setSentRequests] = useState([]);
+
+useEffect(() => {
+  if (!user) return;
+  const fetchSent = async () => {
+    const q = query(
+      collection(db, "helpRequests"),
+      where("fromUserId", "==", user.uid)
+    );
+    const snap = await getDocs(q);
+    setSentRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  };
+  fetchSent();
+}, [user]);
+
+  // Load sender profile once
+  useState(() => {
+    if (!user) return;
+    getDocs(collection(db, "users")).then((snap) => {
+      const me = snap.docs.find((d) => d.id === user.uid);
+      if (me) setSenderProfile(me.data());
+    });
+  }, [user]);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -308,6 +330,7 @@ export default function SupportPage() {
       const snap = await getDocs(collection(db, "users"));
       const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const filtered = all.filter((u) => {
+        if (u.id === user.uid) return false; // exclude self
         const matchProfession = profession
           ? u.profession?.toLowerCase().includes(profession.toLowerCase())
           : true;
@@ -321,6 +344,28 @@ export default function SupportPage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequest = async (targetUser) => {
+    if (requested[targetUser.id]) return;
+    try {
+      await addDoc(collection(db, "helpRequests"), {
+        toUserId: targetUser.id,
+        toUserName: `${targetUser.firstName} ${targetUser.lastName}`,
+        fromUserId: user.uid,
+        fromUserName: senderProfile
+          ? `${senderProfile.firstName} ${senderProfile.lastName}`
+          : user.email,
+        fromUserEmail: user.email,
+        fromUserPhone: senderProfile?.phone ?? "",
+        fromUserProfession: senderProfile?.profession ?? "",
+        status: null,
+        createdAt: new Date().toISOString(),
+      });
+      setRequested((prev) => ({ ...prev, [targetUser.id]: true }));
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -416,16 +461,7 @@ export default function SupportPage() {
                 </button>
                 <button
                   style={requested[u.id] ? styles.requestedBtn : styles.requestBtn}
-                  onClick={() =>
-                    !requested[u.id] &&
-                    setRequested((prev) => ({ ...prev, [u.id]: true }))
-                  }
-                  onMouseOver={(e) => {
-                    if (!requested[u.id]) e.target.style.background = "#dbeafe";
-                  }}
-                  onMouseOut={(e) => {
-                    if (!requested[u.id]) e.target.style.background = "#eff6ff";
-                  }}
+                  onClick={() => handleRequest(u)}
                 >
                   {requested[u.id] ? "✓ Sent" : "Request Help"}
                 </button>
@@ -442,14 +478,11 @@ export default function SupportPage() {
               <p style={styles.modalTitle}>Member Profile</p>
               <button style={styles.closeBtn} onClick={() => setSelectedUser(null)}>✕</button>
             </div>
-
             <div style={styles.modalAvatar}>{getInitials(selectedUser)}</div>
-
             <div>
               <p style={styles.modalName}>{getFullName(selectedUser)}</p>
               <p style={styles.modalProfession}>{selectedUser.profession ?? "—"}</p>
             </div>
-
             <div style={styles.infoRow}>
               {selectedUser.email && (
                 <div style={styles.infoItem}>
@@ -479,14 +512,9 @@ export default function SupportPage() {
                 </div>
               )}
             </div>
-
             <button
               style={requested[selectedUser.id] ? styles.modalRequestedBtn : styles.modalRequestBtn}
-              onClick={() => {
-                if (!requested[selectedUser.id]) {
-                  setRequested((prev) => ({ ...prev, [selectedUser.id]: true }));
-                }
-              }}
+              onClick={() => handleRequest(selectedUser)}
               onMouseOver={(e) => {
                 if (!requested[selectedUser.id]) e.target.style.background = "#122d47";
               }}
@@ -499,6 +527,33 @@ export default function SupportPage() {
           </div>
         </div>
       )}
+      {sentRequests.length > 0 && (
+  <div style={{ marginTop: "3rem" }}>
+    <p style={{ ...styles.pageTitle, fontSize: "16px", marginBottom: "1rem" }}>
+      My Requests
+    </p>
+    <div style={styles.results}>
+      {sentRequests.map((r) => (
+        <div key={r.id} style={styles.card}>
+          <p style={styles.name}>{r.toUserName || "Community Member"}</p>
+          <p style={styles.profession}>{r.fromUserProfession}</p>
+          <span style={{
+            fontSize: "12px",
+            fontWeight: "700",
+            padding: "4px 10px",
+            borderRadius: "20px",
+            background: r.status === "accepted" ? "#f0fdf4" : r.status === "declined" ? "#fff0f0" : "#f1f5f9",
+            color: r.status === "accepted" ? "#166534" : r.status === "declined" ? "#b91c1c" : "#64748b",
+            border: r.status === "accepted" ? "1px solid #bbf7d0" : r.status === "declined" ? "1px solid #fca5a5" : "1px solid #e2e8f0",
+            display: "inline-block",
+          }}>
+            {r.status === "accepted" ? "✓ Accepted" : r.status === "declined" ? "✕ Declined" : "⏳ Pending"}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
     </div>
   );
 }
