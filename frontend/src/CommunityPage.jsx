@@ -8,6 +8,7 @@ import {
   doc,
   updateDoc,
   where,
+    deleteDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "./firebase";

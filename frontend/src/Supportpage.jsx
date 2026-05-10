@@ -315,13 +315,13 @@ useEffect(() => {
 }, [user]);
 
   // Load sender profile once
-  useState(() => {
-    if (!user) return;
-    getDocs(collection(db, "users")).then((snap) => {
-      const me = snap.docs.find((d) => d.id === user.uid);
-      if (me) setSenderProfile(me.data());
-    });
-  }, [user]);
+  useEffect(() => {
+  if (!user) return;
+  getDocs(collection(db, "users")).then((snap) => {
+    const me = snap.docs.find((d) => d.id === user.uid);
+    if (me) setSenderProfile(me.data());
+  });
+}, [user]);
 
   const handleSearch = async () => {
     setLoading(true);
