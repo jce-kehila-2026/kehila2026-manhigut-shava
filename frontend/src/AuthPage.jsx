@@ -710,7 +710,7 @@ export default function AuthPage() {
               onMouseOver={(e) => (e.currentTarget.style.background = "#eef2f7")}
               onMouseOut={(e) => (e.currentTarget.style.background = "#f8fafc")}
             >
-              📱 Continue with Phone
+              Continue with Phone
             </button>
 
             {/* Divider */}

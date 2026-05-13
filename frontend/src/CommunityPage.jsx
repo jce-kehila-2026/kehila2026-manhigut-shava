@@ -438,7 +438,7 @@ export default function CommunityPage() {
         {/* Left — Requests Received */}
         <div style={styles.sidebar}>
           <div style={styles.sideCard}>
-            <p style={styles.sideTitle}>📬 Requests Received</p>
+            <p style={styles.sideTitle}>Requests Received</p>
             {requests.length === 0 && (
               <p style={styles.emptyText}>No requests yet.</p>
             )}
@@ -446,9 +446,9 @@ export default function CommunityPage() {
               <div key={r.id} style={styles.requestItem}>
                 <p style={styles.requestName}>{r.fromUserName}</p>
                 <p style={styles.requestProfession}>{r.fromUserProfession}</p>
-                <p style={styles.requestContact}>✉️ {r.fromUserEmail}</p>
+                <p style={styles.requestContact}><strong>Email:</strong> {r.fromUserEmail}</p>
                 {r.fromUserPhone && (
-                  <p style={styles.requestContact}>📞 {r.fromUserPhone}</p>
+                  <p style={styles.requestContact}><strong>Phone:</strong> {r.fromUserPhone}</p>
                 )}
                 {!r.status && (
                   <div style={styles.requestActions}>
@@ -456,17 +456,17 @@ export default function CommunityPage() {
                       style={styles.acceptBtn}
                       onClick={() => handleRequest(r.id, "accepted")}
                     >
-                      ✓ Accept
+                      Accept
                     </button>
                     <button
                       style={styles.declineBtn}
                       onClick={() => handleRequest(r.id, "declined")}
                     >
-                      ✕ Decline
+                      Decline
                     </button>
                   </div>
                 )}
-                {r.status === "accepted" ? `✓ Accepted by ${r.responderName}` : r.status === "declined" ? `✕ Declined by ${r.responderName}` : "⏳ Pending"}
+                {r.status === "accepted" ? `Accepted by ${r.responderName}` : r.status === "declined" ? `Declined by ${r.responderName}` : "Pending"}
                 <button
                 onClick={async () => {
                     await deleteDoc(doc(db, "helpRequests", r.id));
@@ -474,7 +474,7 @@ export default function CommunityPage() {
                 }}
                 style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "11px", marginTop: "4px" }}
                 >
-                🗑 Delete
+                Delete
                 </button>
               </div>
             ))}
@@ -502,7 +502,7 @@ export default function CommunityPage() {
                     />
                   ) : (
                     <span key={i} style={styles.previewName}>
-                      🎬 {f.name}
+                      {f.name}
                     </span>
                   )
                 )}
@@ -513,7 +513,7 @@ export default function CommunityPage() {
                 style={styles.attachBtn}
                 onClick={() => fileRef.current.click()}
               >
-                📎 Attach
+                Attach file
               </button>
               <input
                 ref={fileRef}
@@ -563,7 +563,7 @@ export default function CommunityPage() {
         {/* Right — Birthdays */}
         <div style={styles.sidebar}>
           <div style={styles.sideCard}>
-            <p style={styles.sideTitle}>🎂 Upcoming Birthdays</p>
+            <p style={styles.sideTitle}>Upcoming Birthdays</p>
             {birthdays.length === 0 && (
               <p style={styles.emptyText}>No upcoming birthdays.</p>
             )}
@@ -578,12 +578,12 @@ export default function CommunityPage() {
                   </p>
                   <p style={styles.birthdayDate}>
                     {u.daysUntil === 0
-                      ? "🎉 Today!"
+                      ? "Today"
                       : `In ${u.daysUntil} day${u.daysUntil > 1 ? "s" : ""}`}
                   </p>
                 </div>
                 {u.daysUntil === 0 && (
-                  <span style={styles.todayTag}>🎈 Today</span>
+                  <span style={styles.todayTag}>Today</span>
                 )}
               </div>
             ))}

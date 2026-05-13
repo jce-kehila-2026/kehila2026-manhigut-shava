@@ -162,8 +162,7 @@ export default function TermsPage() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <div style={styles.icon}>📜</div>
-        <p style={styles.title}>Community Code of Values</p>
+          <div style={styles.icon}>Terms</div>
         <p style={styles.subtitle}>
           Please read and accept our community guidelines before continuing.
         </p>
@@ -171,28 +170,28 @@ export default function TermsPage() {
         {error && <div style={styles.error}>{error}</div>}
 
         <div style={styles.termsBox}>
-          <p style={styles.sectionTitle}>🤝 Respect & Community</p>
+          <p style={styles.sectionTitle}>Respect & Community</p>
           <p style={styles.sectionText}>
             Our community is built on mutual respect, trust, and collaboration.
             Every member is expected to treat others with dignity and
             professionalism at all times.
           </p>
 
-          <p style={styles.sectionTitle}>🔒 Privacy & Data Protection</p>
+          <p style={styles.sectionTitle}>Privacy & Data Protection</p>
           <ul style={styles.list}>
             <li>Your personal information (email, phone) is only shared when you explicitly approve a connection request.</li>
             <li>You may not share another member's contact information with third parties without their permission.</li>
             <li>Profile data is stored securely and used solely for community networking purposes.</li>
           </ul>
 
-          <p style={styles.sectionTitle}>💬 Communication Guidelines</p>
+          <p style={styles.sectionTitle}>Communication Guidelines</p>
           <ul style={styles.list}>
             <li>Be professional and considerate in all messages and posts.</li>
             <li>Do not use the platform for spam, advertising, or any commercial solicitation.</li>
             <li>Help requests should be genuine and relevant to the community.</li>
           </ul>
 
-          <p style={styles.sectionTitle}>🚫 Prohibited Behavior</p>
+          <p style={styles.sectionTitle}>Prohibited Behavior</p>
           <ul style={styles.list}>
             <li>Misuse of other members' contact information or platform access.</li>
             <li>Posting inappropriate, offensive, or misleading content.</li>
@@ -200,7 +199,7 @@ export default function TermsPage() {
             <li>Any form of harassment, discrimination, or bullying.</li>
           </ul>
 
-          <p style={styles.sectionTitle}>👩‍💼 Administration</p>
+          <p style={styles.sectionTitle}>Administration</p>
           <p style={styles.sectionText}>
             Platform administrators reserve the right to remove posts, restrict
             access, or revoke membership for violations of these guidelines.

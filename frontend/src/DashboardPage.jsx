@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
 import { db } from "./firebase";
 import SupportPage from "./SupportPage";
@@ -215,9 +215,30 @@ const styles = {
   },
 };
 
+function isBirthdaySoon(birthdate) {
+  if (!birthdate) return null;
+  const today = new Date();
+  const birthday = new Date(birthdate);
+  const nextBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate());
+  const diff = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+  if (diff >= 0 && diff <= 30) return diff;
+  return null;
+}
+
+function getInitials(name) {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 const CARDS = [
   {
-    icon: "🗳️",
+    icon: "Elections",
     iconBg: "#eff6ff",
     title: "Elections 2026",
     body: "Stay updated on the upcoming Kehila leadership elections. Candidate lists and voting information will appear here.",
@@ -226,7 +247,7 @@ const CARDS = [
     link: "View details",
   },
   {
-    icon: "📋",
+    icon: "Updates",
     iconBg: "#f0fdf4",
     title: "Community Updates",
     body: "News, announcements, and initiatives from Manhigut Shava will be posted here for registered members.",
@@ -235,7 +256,7 @@ const CARDS = [
     link: "Read updates",
   },
   {
-    icon: "👥",
+    icon: "Directory",
     iconBg: "#eff6ff",
     title: "Member Directory",
     body: "Connect with other registered community members. Directory access is available to all signed-up participants.",
@@ -244,7 +265,7 @@ const CARDS = [
     link: "Browse members",
   },
   {
-    icon: "📅",
+    icon: "Events",
     iconBg: "#fefce8",
     title: "Events",
     body: "View upcoming community events, RSVP, and get notified about activities happening near you.",
@@ -253,7 +274,7 @@ const CARDS = [
     link: "See events",
   },
   {
-    icon: "🔔",
+    icon: "Notifications",
     iconBg: "#fff7ed",
     title: "Notifications",
     body: "Stay informed with real-time alerts for event reminders, connection requests, and community announcements.",
@@ -262,7 +283,7 @@ const CARDS = [
     link: "View all",
   },
   {
-    icon: "👤",
+    icon: "Profile",
     iconBg: "#fdf4ff",
     title: "My Profile",
     body: "Manage your personal information, privacy settings, and how your profile appears to other members.",
@@ -277,6 +298,7 @@ const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Updates","Support"
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [birthdays, setBirthdays] = useState([]);
   const [activeNav, setActiveNav] = useState("Home");
 
   useEffect(() => {
@@ -284,6 +306,19 @@ export default function DashboardPage() {
     getDoc(doc(db, "users", user.uid)).then((snap) => {
       if (snap.exists()) setProfile(snap.data());
     });
+    const fetchBirthdays = async () => {
+      const snap = await getDocs(collection(db, "users"));
+      const upcoming = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .map((userData) => ({
+          ...userData,
+          daysUntil: isBirthdaySoon(userData.birthdate),
+        }))
+        .filter((u) => u.daysUntil !== null)
+        .sort((a, b) => a.daysUntil - b.daysUntil);
+      setBirthdays(upcoming);
+    };
+    fetchBirthdays();
   }, [user]);
 
   const displayName = profile
@@ -344,18 +379,40 @@ export default function DashboardPage() {
           <span style={styles.welcomeBadge}>Member</span>
         </div>
 
-        <div style={styles.statsRow}>
-          {[
-            { num: "—", label: "Members" },
-            { num: "—", label: "Events" },
-            { num: "—", label: "Updates" },
-            { num: "—", label: "Connections" },
-          ].map((s) => (
-            <div key={s.label} style={styles.statCard}>
-              <span style={styles.statNum}>{s.num}</span>
-              <span style={styles.statLabel}>{s.label}</span>
-            </div>
-          ))}
+        <div style={{ marginBottom: "2rem" }}>
+          <p style={{ ...styles.cardTitle, marginBottom: "1rem" }}>Upcoming Birthdays</p>
+          <div style={{ ...styles.card, padding: "1rem 1.25rem" }}>
+            {birthdays.length === 0 ? (
+              <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>
+                No upcoming birthdays.
+              </p>
+            ) : (
+              birthdays.map((person) => (
+                <div
+                  key={person.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "0.75rem 0",
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#1a3c5e" }}>
+                      {person.firstName} {person.lastName}
+                    </p>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8" }}>
+                      {person.city || "Location not provided"}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: "12px", color: "#64748b" }}>
+                    {person.daysUntil === 0 ? "Today" : `In ${person.daysUntil} day${person.daysUntil > 1 ? "s" : ""}`}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         <p style={styles.sectionTitle}>Features</p>
