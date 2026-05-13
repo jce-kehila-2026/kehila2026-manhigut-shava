@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
 import { db } from "./firebase";
 import SupportPage from "./SupportPage";
 import CommunityPage from "./CommunityPage";
+import ProfilePage from "./ProfilePage.jsx";
+
 
 const styles = {
   page: {
@@ -215,27 +217,6 @@ const styles = {
   },
 };
 
-function isBirthdaySoon(birthdate) {
-  if (!birthdate) return null;
-  const today = new Date();
-  const birthday = new Date(birthdate);
-  const nextBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate());
-  const diff = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
-  if (diff >= 0 && diff <= 30) return diff;
-  return null;
-}
-
-function getInitials(name) {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
 const CARDS = [
   {
     icon: "Elections",
@@ -293,12 +274,11 @@ const CARDS = [
   },
 ];
 
-const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Updates","Support"];
+const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Support"];
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
-  const [birthdays, setBirthdays] = useState([]);
   const [activeNav, setActiveNav] = useState("Home");
 
   useEffect(() => {
@@ -306,19 +286,6 @@ export default function DashboardPage() {
     getDoc(doc(db, "users", user.uid)).then((snap) => {
       if (snap.exists()) setProfile(snap.data());
     });
-    const fetchBirthdays = async () => {
-      const snap = await getDocs(collection(db, "users"));
-      const upcoming = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .map((userData) => ({
-          ...userData,
-          daysUntil: isBirthdaySoon(userData.birthdate),
-        }))
-        .filter((u) => u.daysUntil !== null)
-        .sort((a, b) => a.daysUntil - b.daysUntil);
-      setBirthdays(upcoming);
-    };
-    fetchBirthdays();
   }, [user]);
 
   const displayName = profile
@@ -379,45 +346,10 @@ export default function DashboardPage() {
           <span style={styles.welcomeBadge}>Member</span>
         </div>
 
-        <div style={{ marginBottom: "2rem" }}>
-          <p style={{ ...styles.cardTitle, marginBottom: "1rem" }}>Upcoming Birthdays</p>
-          <div style={{ ...styles.card, padding: "1rem 1.25rem" }}>
-            {birthdays.length === 0 ? (
-              <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>
-                No upcoming birthdays.
-              </p>
-            ) : (
-              birthdays.map((person) => (
-                <div
-                  key={person.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "0.75rem 0",
-                    borderBottom: "1px solid #f1f5f9",
-                  }}
-                >
-                  <div>
-                    <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#1a3c5e" }}>
-                      {person.firstName} {person.lastName}
-                    </p>
-                    <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8" }}>
-                      {person.city || "Location not provided"}
-                    </p>
-                  </div>
-                  <span style={{ fontSize: "12px", color: "#64748b" }}>
-                    {person.daysUntil === 0 ? "Today" : `In ${person.daysUntil} day${person.daysUntil > 1 ? "s" : ""}`}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <p style={styles.sectionTitle}>Features</p>
         {activeNav === "Support" && <SupportPage />}
         {activeNav === "Community" && <CommunityPage />}
+        {activeNav === "Profile" && <ProfilePage />}
+
 
       </main>
     </div>
