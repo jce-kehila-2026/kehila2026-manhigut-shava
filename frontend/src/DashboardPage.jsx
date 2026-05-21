@@ -276,7 +276,7 @@ const CARDS = [
 
 const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Support"];
 
-export default function DashboardPage() {
+export default function DashboardPage({ isAdmin = false, onBackToAdmin }) {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [activeNav, setActiveNav] = useState("Home");
@@ -298,6 +298,58 @@ export default function DashboardPage() {
 
   return (
     <div style={styles.page}>
+      {/* Admin viewing-as-member banner */}
+      {isAdmin && onBackToAdmin && (
+        <div style={{
+          background: "linear-gradient(90deg, #1e293b 0%, #0f172a 100%)",
+          borderBottom: "1px solid #334155",
+          padding: "10px 2.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+        }}>
+          <span style={{ fontSize: "13px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{
+              background: "rgba(239,68,68,0.15)",
+              color: "#ef4444",
+              fontSize: "11px",
+              fontWeight: "700",
+              padding: "2px 8px",
+              borderRadius: "20px",
+              letterSpacing: "0.05em",
+            }}>ADMIN</span>
+            You are viewing the site as a regular member
+          </span>
+          <button
+            onClick={onBackToAdmin}
+            style={{
+              background: "rgba(99,102,241,0.15)",
+              color: "#a5b4fc",
+              border: "1px solid rgba(99,102,241,0.35)",
+              borderRadius: "8px",
+              padding: "6px 16px",
+              fontSize: "12px",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              transition: "all 0.18s",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "rgba(99,102,241,0.28)";
+              e.currentTarget.style.borderColor = "rgba(99,102,241,0.6)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "rgba(99,102,241,0.15)";
+              e.currentTarget.style.borderColor = "rgba(99,102,241,0.35)";
+            }}
+          >
+            ← Back to Admin Panel
+          </button>
+        </div>
+      )}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
           <span style={styles.logo}>Manhigut Shava</span>
@@ -335,15 +387,21 @@ export default function DashboardPage() {
         onClick={() => setActiveNav("Profile")}
         onMouseOver={(e) => (e.currentTarget.style.opacity = "0.92")}
         onMouseOut={(e) => (e.currentTarget.style.opacity = "1")}
-      >         
-      <div style={styles.welcomeLeft}>
+      >               <div style={styles.welcomeLeft}>
             <div style={styles.avatar}>{initials}</div>
             <div>
               <p style={styles.welcomeTitle}>Welcome back, {displayName}</p>
               <p style={styles.welcomeSub}>Kehila 2026 — Manhigut Shava</p>
             </div>
           </div>
-          <span style={styles.welcomeBadge}>Member</span>
+          <span style={isAdmin ? {
+            ...styles.welcomeBadge,
+            background: "rgba(245,158,11,0.2)",
+            border: "1px solid rgba(245,158,11,0.45)",
+            color: "#fcd34d",
+          } : styles.welcomeBadge}>
+            {isAdmin ? "🛡️ Admin" : "Member"}
+          </span>
         </div>
 
         {activeNav === "Support" && <SupportPage />}

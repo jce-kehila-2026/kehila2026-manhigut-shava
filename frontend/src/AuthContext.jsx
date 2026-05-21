@@ -1,9 +1,15 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 const AuthContext = createContext(null);
+
+// Admin emails from env (comma-separated)
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
@@ -15,7 +21,20 @@ export function AuthProvider({ children }) {
       setUser(firebaseUser ?? null);
       if (firebaseUser) {
         const snap = await getDoc(doc(db, "users", firebaseUser.uid));
-        setProfile(snap.exists() ? snap.data() : null);
+        let profileData = snap.exists() ? snap.data() : null;
+
+        // Auto-assign admin role if email matches env list
+        if (profileData && !profileData.role) {
+          const isAdmin = ADMIN_EMAILS.includes(
+            (firebaseUser.email || "").toLowerCase()
+          );
+          if (isAdmin) {
+            profileData = { ...profileData, role: "admin" };
+            await setDoc(doc(db, "users", firebaseUser.uid), { role: "admin" }, { merge: true });
+          }
+        }
+
+        setProfile(profileData);
       } else {
         setProfile(null);
       }
@@ -25,7 +44,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    // Use auth.currentUser to always get the fresh user, avoiding stale closure
     const currentUser = auth.currentUser;
     if (currentUser) {
       const snap = await getDoc(doc(db, "users", currentUser.uid));
@@ -38,8 +56,11 @@ export function AuthProvider({ children }) {
     setProfile(null);
   };
 
+  const isAdmin = profile?.role === "admin";
+  const isManager = profile?.role === "manager" || isAdmin;
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile, isAdmin, isManager }}>
       {children}
     </AuthContext.Provider>
   );

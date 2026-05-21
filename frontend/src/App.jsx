@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import AuthPage from "./AuthPage";
 import CompleteProfilePage from "./CompleteProfilePage";
 import TermsPage from "./TermsPage";
 import DashboardPage from "./DashboardPage";
+import AdminPage from "./AdminPage";
 
 /* Simple loading screen */
 function LoadingScreen() {
@@ -35,7 +37,8 @@ function LoadingScreen() {
 }
 
 function AppContent() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isAdmin } = useAuth();
+  const [viewAsMember, setViewAsMember] = useState(false);
 
   /* Still checking auth / profile */
   if (loading) return <LoadingScreen />;
@@ -49,7 +52,15 @@ function AppContent() {
   /* Profile exists but terms not accepted yet */
   if (!profile.acceptedTerms) return <TermsPage />;
 
-  /* All good → dashboard */
+  /* Admin user → admin panel (or member view if toggled) */
+  if (isAdmin) {
+    if (viewAsMember) {
+      return <DashboardPage isAdmin onBackToAdmin={() => setViewAsMember(false)} />;
+    }
+    return <AdminPage onViewAsMember={() => setViewAsMember(true)} />;
+  }
+
+  /* Regular user → dashboard */
   return <DashboardPage />;
 }
 
