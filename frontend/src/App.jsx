@@ -4,7 +4,6 @@ import AuthPage from "./AuthPage";
 import LandingPage from "./LandingPage";
 import CompleteProfilePage from "./CompleteProfilePage";
 import OtpVerificationPage from "./OtpVerificationPage";
-import TermsPage from "./TermsPage";
 import DashboardPage from "./DashboardPage";
 
 /* Simple loading screen */
@@ -51,9 +50,6 @@ function AppContent() {
 
   /* Email not verified yet */
   if (!profile.emailVerified) return <OtpVerificationPage />;
-
-  /* Profile exists but terms not accepted yet */
-  if (!profile.acceptedTerms) return <TermsPage />;
 
   /* All good → dashboard */
   return <DashboardPage />;
