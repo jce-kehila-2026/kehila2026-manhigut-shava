@@ -8,8 +8,7 @@ import {
   signInWithPhoneNumber,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { auth, db, googleProvider, functions } from "./firebase";
-import { httpsCallable } from "firebase/functions";
+import { auth, db, googleProvider } from "./firebase";
 
 /* ─── colours ─── */
 const C = {
@@ -296,7 +295,6 @@ function SignUpForm({ onSwitchTab }) {
         institution: form.institution, profession: form.profession, city: form.city,
         emailVerified: false, acceptedTerms: false, createdAt: new Date().toISOString(),
       });
-      await httpsCallable(functions, "sendOtpEmail")({ email: form.email, uid: user.uid });
     } catch (e) { setError(firebaseMsg(e.code)); }
     finally { setLoading(false); }
   };
