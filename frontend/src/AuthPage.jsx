@@ -446,7 +446,7 @@ export default function AuthPage() {
       {/* Background photo */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 0,
-        backgroundImage: "url(/hero.jpg)",
+        backgroundImage: "url(/background.jpg)",
         backgroundSize: "cover", backgroundPosition: "center",
         filter: "brightness(0.5)",
       }} />
