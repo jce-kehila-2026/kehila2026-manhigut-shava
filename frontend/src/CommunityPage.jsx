@@ -1,14 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  collection,
-  addDoc,
-  getDocs,
-  query,
-  orderBy,
-  doc,
-  updateDoc,
-  where,
-    deleteDoc,
+  collection, addDoc, getDocs, query, orderBy,
+  doc, updateDoc, where, deleteDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "./firebase";
@@ -16,314 +9,42 @@ import { useAuth } from "./AuthContext";
 
 const storage = getStorage();
 
-const styles = {
-  page: {
-    flex: 1,
-    padding: "2rem 2.5rem",
-    boxSizing: "border-box",
-  },
-  pageTitle: {
-    fontSize: "22px",
-    fontWeight: "700",
-    color: "#1a3c5e",
-    margin: "0 0 4px",
-  },
-  pageSub: {
-    fontSize: "13px",
-    color: "#94a3b8",
-    margin: "0 0 2rem",
-  },
-  layout: {
-    display: "grid",
-    gridTemplateColumns: "260px 1fr 260px",
-    gap: "1.5rem",
-    alignItems: "start",
-  },
-  // Sidebar shared
-  sidebar: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "1rem",
-  },
-  sideCard: {
-    background: "#ffffff",
-    borderRadius: "14px",
-    padding: "1.25rem",
-    border: "1px solid #e8ecf0",
-  },
-  sideTitle: {
-    fontSize: "13px",
-    fontWeight: "700",
-    color: "#1a3c5e",
-    margin: "0 0 1rem",
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-  },
-  // Requests
-  requestItem: {
-    padding: "0.9rem 0",
-    borderBottom: "1px solid #f1f5f9",
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-  },
-  requestName: {
-    fontSize: "13px",
-    fontWeight: "700",
-    color: "#1a3c5e",
-    margin: 0,
-  },
-  requestProfession: {
-    fontSize: "12px",
-    color: "#64748b",
-    margin: 0,
-  },
-  requestContact: {
-    fontSize: "11px",
-    color: "#94a3b8",
-    margin: 0,
-  },
-  requestActions: {
-    display: "flex",
-    gap: "6px",
-    marginTop: "4px",
-  },
-  acceptBtn: {
-    flex: 1,
-    padding: "6px 0",
-    background: "#f0fdf4",
-    color: "#166534",
-    border: "1px solid #bbf7d0",
-    borderRadius: "7px",
-    fontSize: "11px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  declineBtn: {
-    flex: 1,
-    padding: "6px 0",
-    background: "#fff0f0",
-    color: "#b91c1c",
-    border: "1px solid #fca5a5",
-    borderRadius: "7px",
-    fontSize: "11px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  acceptedTag: {
-    fontSize: "11px",
-    fontWeight: "700",
-    color: "#166534",
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
-    borderRadius: "6px",
-    padding: "3px 8px",
-    display: "inline-block",
-  },
-  declinedTag: {
-    fontSize: "11px",
-    fontWeight: "700",
-    color: "#b91c1c",
-    background: "#fff0f0",
-    border: "1px solid #fca5a5",
-    borderRadius: "6px",
-    padding: "3px 8px",
-    display: "inline-block",
-  },
-  emptyText: {
-    fontSize: "12px",
-    color: "#94a3b8",
-    textAlign: "center",
-    padding: "1rem 0",
-  },
-  // Birthdays
-  birthdayItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "0.6rem 0",
-    borderBottom: "1px solid #f1f5f9",
-  },
-  birthdayAvatar: {
-    width: "34px",
-    height: "34px",
-    borderRadius: "50%",
-    background: "#fef9c3",
-    color: "#854d0e",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "13px",
-    fontWeight: "700",
-    flexShrink: 0,
-    border: "1px solid #fde047",
-  },
-  birthdayName: {
-    fontSize: "13px",
-    fontWeight: "600",
-    color: "#1a3c5e",
-    margin: 0,
-  },
-  birthdayDate: {
-    fontSize: "11px",
-    color: "#94a3b8",
-    margin: 0,
-  },
-  todayTag: {
-    fontSize: "10px",
-    fontWeight: "700",
-    background: "#fef9c3",
-    color: "#854d0e",
-    borderRadius: "6px",
-    padding: "2px 6px",
-    border: "1px solid #fde047",
-  },
-  // Feed
-  feed: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "1.25rem",
-  },
-  composeCard: {
-    background: "#ffffff",
-    borderRadius: "14px",
-    padding: "1.25rem",
-    border: "1px solid #e8ecf0",
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.75rem",
-  },
-  textarea: {
-    width: "100%",
-    padding: "10px 14px",
-    fontSize: "14px",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: "10px",
-    outline: "none",
-    resize: "none",
-    fontFamily: "inherit",
-    color: "#1a2e42",
-    background: "#f8fafc",
-    boxSizing: "border-box",
-    minHeight: "80px",
-  },
-  composeActions: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  attachBtn: {
-    background: "none",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: "8px",
-    padding: "7px 14px",
-    fontSize: "13px",
-    color: "#64748b",
-    cursor: "pointer",
-    fontWeight: "600",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-  },
-  postBtn: {
-    padding: "9px 22px",
-    background: "#1a3c5e",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "9px",
-    fontSize: "13px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  previewRow: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-  previewThumb: {
-    width: "60px",
-    height: "60px",
-    borderRadius: "8px",
-    objectFit: "cover",
-    border: "1px solid #e2e8f0",
-  },
-  previewName: {
-    fontSize: "11px",
-    color: "#64748b",
-    background: "#f1f5f9",
-    borderRadius: "6px",
-    padding: "4px 8px",
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-  },
-  postCard: {
-    background: "#ffffff",
-    borderRadius: "14px",
-    padding: "1.25rem",
-    border: "1px solid #e8ecf0",
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.75rem",
-  },
-  postHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  postAvatar: {
-    width: "38px",
-    height: "38px",
-    borderRadius: "50%",
-    background: "#1a3c5e",
-    color: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "14px",
-    fontWeight: "700",
-    flexShrink: 0,
-  },
-  postAuthor: {
-    fontSize: "14px",
-    fontWeight: "700",
-    color: "#1a3c5e",
-    margin: 0,
-  },
-  postTime: {
-    fontSize: "11px",
-    color: "#94a3b8",
-    margin: 0,
-  },
-  postText: {
-    fontSize: "14px",
-    color: "#374151",
-    lineHeight: "1.65",
-    margin: 0,
-  },
-  postMedia: {
-    borderRadius: "10px",
-    overflow: "hidden",
-    maxHeight: "320px",
-  },
-  postImage: {
-    width: "100%",
-    maxHeight: "320px",
-    objectFit: "cover",
-    borderRadius: "10px",
-  },
-  postVideo: {
-    width: "100%",
-    borderRadius: "10px",
-    maxHeight: "320px",
-  },
-};
+/* ─── Inject styles ─── */
+const styleTag = document.createElement("style");
+styleTag.textContent = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+  * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
 
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .post-card {
+    animation: fadeSlideUp 0.35s ease both;
+  }
+  .community-textarea:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3.5px rgba(56,189,248,0.15) !important;
+    background: #fff !important;
+    outline: none;
+  }
+  .accept-btn:hover  { background: #dcfce7 !important; }
+  .decline-btn:hover { background: #fee2e2 !important; }
+  .attach-btn:hover  { border-color: #38bdf8 !important; color: #0ea5e9 !important; }
+  .post-btn:hover    { background: #122d47 !important; }
+  .delete-link:hover { color: #dc2626 !important; }
+`;
+if (!document.head.querySelector("#community-styles")) {
+  styleTag.id = "community-styles";
+  document.head.appendChild(styleTag);
+}
+
+/* ─── Helpers ─── */
 function timeAgo(ts) {
   if (!ts) return "";
   const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 60)    return "just now";
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
 }
@@ -331,22 +52,41 @@ function timeAgo(ts) {
 function isBirthdaySoon(birthdate) {
   if (!birthdate) return null;
   const today = new Date();
-  const bday = new Date(birthdate);
+  const bday  = new Date(birthdate);
   const thisYear = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
   const diff = Math.ceil((thisYear - today) / (1000 * 60 * 60 * 24));
-  if (diff >= 0 && diff <= 7) return diff;
-  return null;
+  return diff >= 0 && diff <= 7 ? diff : null;
 }
+
+const getInitials = (name) =>
+  name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
+
+/* ─── Shared card style ─── */
+const sideCard = {
+  background: "#fff",
+  borderRadius: "18px",
+  padding: "1.5rem",
+  border: "1.5px solid #f1f5f9",
+  borderLeft: "4px solid #38bdf8",
+  boxShadow: "0 4px 16px rgba(15,23,42,0.05)",
+  marginBottom: "1.25rem",
+};
+
+const sectionLabel = {
+  fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+  textTransform: "uppercase", letterSpacing: "0.1em",
+  margin: "0 0 1.1rem",
+};
 
 export default function CommunityPage() {
   const { user } = useAuth();
-  const [posts, setPosts] = useState([]);
-  const [text, setText] = useState("");
-  const [files, setFiles] = useState([]);
-  const [posting, setPosting] = useState(false);
+  const [posts,    setPosts]    = useState([]);
+  const [text,     setText]     = useState("");
+  const [files,    setFiles]    = useState([]);
+  const [posting,  setPosting]  = useState(false);
   const [requests, setRequests] = useState([]);
-  const [birthdays, setBirthdays] = useState([]);
-  const [profile, setProfile] = useState(null);
+  const [birthdays,setBirthdays]= useState([]);
+  const [profile,  setProfile]  = useState(null);
   const fileRef = useRef();
 
   useEffect(() => {
@@ -398,193 +138,292 @@ export default function CommunityPage() {
         mediaUrls.push({ url, type: file.type.startsWith("video") ? "video" : "image" });
       }
       await addDoc(collection(db, "posts"), {
-        text,
-        media: mediaUrls,
+        text, media: mediaUrls,
         authorId: user.uid,
         authorName: profile ? `${profile.firstName} ${profile.lastName}` : user.email,
         createdAt: new Date().toISOString(),
       });
-      setText("");
-      setFiles([]);
+      setText(""); setFiles([]);
       fetchPosts();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setPosting(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setPosting(false); }
   };
 
   const handleRequest = async (reqId, status) => {
-  const responderName = profile
-    ? `${profile.firstName} ${profile.lastName}`
-    : user.email;
-  await updateDoc(doc(db, "helpRequests", reqId), { status, responderName });
-  setRequests((prev) =>
-    prev.map((r) => (r.id === reqId ? { ...r, status, responderName } : r))
-  );
-};
+    const responderName = profile ? `${profile.firstName} ${profile.lastName}` : user.email;
+    await updateDoc(doc(db, "helpRequests", reqId), { status, responderName });
+    setRequests((prev) =>
+      prev.map((r) => (r.id === reqId ? { ...r, status, responderName } : r))
+    );
+  };
 
-  const getInitials = (name) =>
-    name
-      ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-      : "?";
+  const S = {
+    page: { padding: "2rem 2.5rem", boxSizing:"border-box", width:"100%" },
+    pageTitle: { fontSize:"22px", fontWeight:"700", color:"#1a3c5e", margin:"0 0 3px" },
+    pageSub:   { fontSize:"13px", color:"#94a3b8", margin:"0 0 1.75rem" },
+    layout: {
+      display:"grid",
+      gridTemplateColumns:"260px 1fr 260px",
+      gap:"1.5rem",
+      alignItems:"start",
+    },
+    sidebar: { display:"flex", flexDirection:"column" },
+
+    /* requests */
+    reqItem: {
+      padding:"0.85rem 0",
+      borderBottom:"1px solid #f1f5f9",
+      display:"flex", flexDirection:"column", gap:"4px",
+    },
+    reqName:   { fontSize:"13px", fontWeight:"700", color:"#1a3c5e", margin:0 },
+    reqSub:    { fontSize:"12px", color:"#64748b", margin:0 },
+    reqDetail: { fontSize:"11px", color:"#94a3b8", margin:0 },
+    reqActions:{ display:"flex", gap:"6px", marginTop:"6px" },
+    acceptBtn: {
+      flex:1, padding:"6px 0",
+      background:"#f0fdf4", color:"#166534",
+      border:"1px solid #bbf7d0", borderRadius:"8px",
+      fontSize:"11px", fontWeight:"700", cursor:"pointer",
+      transition:"background 0.15s",
+    },
+    declineBtn: {
+      flex:1, padding:"6px 0",
+      background:"#fff0f0", color:"#b91c1c",
+      border:"1px solid #fca5a5", borderRadius:"8px",
+      fontSize:"11px", fontWeight:"700", cursor:"pointer",
+      transition:"background 0.15s",
+    },
+    statusTag: (ok) => ({
+      fontSize:"11px", fontWeight:"700",
+      color: ok ? "#166534" : "#b91c1c",
+      background: ok ? "#f0fdf4" : "#fff0f0",
+      border: `1px solid ${ok ? "#bbf7d0" : "#fca5a5"}`,
+      borderRadius:"6px", padding:"2px 8px",
+      display:"inline-block", marginTop:"4px",
+    }),
+    deleteLink: {
+      background:"none", border:"none",
+      color:"#94a3b8", cursor:"pointer",
+      fontSize:"11px", padding:0, marginTop:"4px",
+      transition:"color 0.15s",
+    },
+    emptyText: {
+      fontSize:"12px", color:"#cbd5e1",
+      textAlign:"center", padding:"1rem 0",
+    },
+
+    /* birthdays */
+    bdayItem: {
+      display:"flex", alignItems:"center", gap:"10px",
+      padding:"0.65rem 0", borderBottom:"1px solid #f1f5f9",
+    },
+    bdayAvatar: {
+      width:"34px", height:"34px", borderRadius:"50%",
+      background:"#fef9c3", color:"#854d0e",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      fontSize:"12px", fontWeight:"700", flexShrink:0,
+      border:"1.5px solid #fde047",
+    },
+    bdayName: { fontSize:"13px", fontWeight:"600", color:"#1a3c5e", margin:0 },
+    bdayDate: { fontSize:"11px", color:"#94a3b8", margin:0 },
+    todayPill: {
+      fontSize:"10px", fontWeight:"700",
+      background:"#fef9c3", color:"#854d0e",
+      border:"1px solid #fde047",
+      borderRadius:"99px", padding:"2px 8px",
+    },
+
+    /* feed */
+    feed: { display:"flex", flexDirection:"column", gap:"1.25rem" },
+    composeCard: {
+      background:"#fff",
+      borderRadius:"18px",
+      padding:"1.5rem",
+      border:"1.5px solid #f1f5f9",
+      borderLeft:"4px solid #38bdf8",
+      boxShadow:"0 4px 16px rgba(15,23,42,0.05)",
+      display:"flex", flexDirection:"column", gap:"0.85rem",
+    },
+    textarea: {
+      width:"100%", padding:"11px 14px",
+      fontSize:"14px", border:"1.5px solid #e2e8f0",
+      borderRadius:"13px", resize:"none",
+      fontFamily:"inherit", color:"#1a2e42",
+      background:"#f8fafc", minHeight:"82px",
+      transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
+    },
+    composeActions: {
+      display:"flex", alignItems:"center", justifyContent:"space-between",
+    },
+    attachBtn: {
+      background:"none", border:"1.5px solid #e2e8f0",
+      borderRadius:"9px", padding:"8px 14px",
+      fontSize:"13px", color:"#64748b",
+      cursor:"pointer", fontWeight:"600",
+      transition:"border-color 0.2s, color 0.2s",
+    },
+    postBtn: {
+      padding:"9px 22px", background:"#1a3c5e",
+      color:"#fff", border:"none",
+      borderRadius:"10px", fontSize:"13px", fontWeight:"700",
+      cursor:"pointer", transition:"background 0.2s",
+    },
+    previewRow: { display:"flex", gap:"8px", flexWrap:"wrap" },
+    previewThumb: {
+      width:"58px", height:"58px", borderRadius:"10px",
+      objectFit:"cover", border:"1.5px solid #e2e8f0",
+    },
+    previewName: {
+      fontSize:"11px", color:"#64748b",
+      background:"#f1f5f9", borderRadius:"7px",
+      padding:"4px 10px", display:"flex", alignItems:"center",
+    },
+    postCard: {
+      background:"#fff",
+      borderRadius:"18px",
+      padding:"1.5rem",
+      border:"1.5px solid #f1f5f9",
+      borderLeft:"4px solid #e2e8f0",
+      boxShadow:"0 4px 16px rgba(15,23,42,0.04)",
+      display:"flex", flexDirection:"column", gap:"0.75rem",
+    },
+    postHeader: { display:"flex", alignItems:"center", gap:"10px" },
+    postAvatar: {
+      width:"38px", height:"38px", borderRadius:"50%",
+      background:"linear-gradient(135deg,#1a3c5e,#0ea5e9)",
+      color:"#fff", display:"flex",
+      alignItems:"center", justifyContent:"center",
+      fontSize:"13px", fontWeight:"700", flexShrink:0,
+    },
+    postAuthor: { fontSize:"14px", fontWeight:"700", color:"#1a3c5e", margin:0 },
+    postTime:   { fontSize:"11px", color:"#94a3b8", margin:0 },
+    postText:   { fontSize:"14px", color:"#374151", lineHeight:"1.65", margin:0 },
+    postImage:  { width:"100%", maxHeight:"320px", objectFit:"cover", borderRadius:"12px" },
+    postVideo:  { width:"100%", maxHeight:"320px", borderRadius:"12px" },
+  };
 
   return (
-    <div style={styles.page}>
-      <p style={styles.pageTitle}>Community</p>
-      <p style={styles.pageSub}>Posts, requests, and celebrations from your community.</p>
+    <div style={S.page}>
+      <p style={S.pageTitle}>Community</p>
+      <p style={S.pageSub}>Posts, requests, and celebrations from your community.</p>
 
-      <div style={styles.layout}>
-        {/* Left — Requests Received */}
-        <div style={styles.sidebar}>
-          <div style={styles.sideCard}>
-            <p style={styles.sideTitle}>Requests Received</p>
-            {requests.length === 0 && (
-              <p style={styles.emptyText}>No requests yet.</p>
-            )}
+      <div style={S.layout}>
+        {/* ── Left: Requests ── */}
+        <div style={S.sidebar}>
+          <div style={{ ...sideCard, borderLeftColor:"#a78bfa" }}>
+            <p style={sectionLabel}>Requests Received</p>
+            {requests.length === 0 && <p style={S.emptyText}>No requests yet.</p>}
             {requests.map((r) => (
-              <div key={r.id} style={styles.requestItem}>
-                <p style={styles.requestName}>{r.fromUserName}</p>
-                <p style={styles.requestProfession}>{r.fromUserProfession}</p>
-                <p style={styles.requestContact}><strong>Email:</strong> {r.fromUserEmail}</p>
-                {r.fromUserPhone && (
-                  <p style={styles.requestContact}><strong>Phone:</strong> {r.fromUserPhone}</p>
-                )}
+              <div key={r.id} style={S.reqItem}>
+                <p style={S.reqName}>{r.fromUserName}</p>
+                <p style={S.reqSub}>{r.fromUserProfession}</p>
+                <p style={S.reqDetail}>{r.fromUserEmail}</p>
+                {r.fromUserPhone && <p style={S.reqDetail}>{r.fromUserPhone}</p>}
                 {!r.status && (
-                  <div style={styles.requestActions}>
-                    <button
-                      style={styles.acceptBtn}
-                      onClick={() => handleRequest(r.id, "accepted")}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      style={styles.declineBtn}
-                      onClick={() => handleRequest(r.id, "declined")}
-                    >
-                      Decline
-                    </button>
+                  <div style={S.reqActions}>
+                    <button className="accept-btn"  style={S.acceptBtn}  onClick={() => handleRequest(r.id, "accepted")}>Accept</button>
+                    <button className="decline-btn" style={S.declineBtn} onClick={() => handleRequest(r.id, "declined")}>Decline</button>
                   </div>
                 )}
-                {r.status === "accepted" ? `Accepted by ${r.responderName}` : r.status === "declined" ? `Declined by ${r.responderName}` : "Pending"}
+                {r.status && (
+                  <span style={S.statusTag(r.status === "accepted")}>
+                    {r.status === "accepted" ? "Accepted" : "Declined"} by {r.responderName}
+                  </span>
+                )}
                 <button
-                onClick={async () => {
+                  className="delete-link"
+                  style={S.deleteLink}
+                  onClick={async () => {
                     await deleteDoc(doc(db, "helpRequests", r.id));
-                    setSentRequests((prev) => prev.filter((req) => req.id !== r.id));
-                }}
-                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "11px", marginTop: "4px" }}
+                    setRequests((prev) => prev.filter((req) => req.id !== r.id));
+                  }}
                 >
-                Delete
+                  Delete
                 </button>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Center — Posts Feed */}
-        <div style={styles.feed}>
-          <div style={styles.composeCard}>
+        {/* ── Center: Feed ── */}
+        <div style={S.feed}>
+          {/* Compose */}
+          <div style={S.composeCard}>
             <textarea
-              style={styles.textarea}
-              placeholder="Share something with the community..."
+              className="community-textarea"
+              style={S.textarea}
+              placeholder="Share something with the community…"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
             {files.length > 0 && (
-              <div style={styles.previewRow}>
+              <div style={S.previewRow}>
                 {files.map((f, i) =>
                   f.type.startsWith("image") ? (
-                    <img
-                      key={i}
-                      src={URL.createObjectURL(f)}
-                      style={styles.previewThumb}
-                      alt=""
-                    />
+                    <img key={i} src={URL.createObjectURL(f)} style={S.previewThumb} alt="" />
                   ) : (
-                    <span key={i} style={styles.previewName}>
-                      {f.name}
-                    </span>
+                    <span key={i} style={S.previewName}>{f.name}</span>
                   )
                 )}
               </div>
             )}
-            <div style={styles.composeActions}>
-              <button
-                style={styles.attachBtn}
-                onClick={() => fileRef.current.click()}
-              >
+            <div style={S.composeActions}>
+              <button className="attach-btn" style={S.attachBtn} onClick={() => fileRef.current.click()}>
                 Attach file
               </button>
               <input
-                ref={fileRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                style={{ display: "none" }}
+                ref={fileRef} type="file" accept="image/*,video/*" multiple
+                style={{ display:"none" }}
                 onChange={(e) => setFiles(Array.from(e.target.files))}
               />
-              <button
-                style={styles.postBtn}
-                onClick={handlePost}
-                disabled={posting}
-              >
+              <button className="post-btn" style={S.postBtn} onClick={handlePost} disabled={posting}>
                 {posting ? "Posting…" : "Post"}
               </button>
             </div>
           </div>
 
           {posts.length === 0 && (
-            <p style={{ ...styles.emptyText, textAlign: "center" }}>
-              No posts yet. Be the first to share something!
+            <p style={{ ...S.emptyText, textAlign:"center" }}>
+              No posts yet. Be the first to share something.
             </p>
           )}
 
           {posts.map((p) => (
-            <div key={p.id} style={styles.postCard}>
-              <div style={styles.postHeader}>
-                <div style={styles.postAvatar}>{getInitials(p.authorName)}</div>
+            <div key={p.id} className="post-card" style={S.postCard}>
+              <div style={S.postHeader}>
+                <div style={S.postAvatar}>{getInitials(p.authorName)}</div>
                 <div>
-                  <p style={styles.postAuthor}>{p.authorName}</p>
-                  <p style={styles.postTime}>{timeAgo(p.createdAt)}</p>
+                  <p style={S.postAuthor}>{p.authorName}</p>
+                  <p style={S.postTime}>{timeAgo(p.createdAt)}</p>
                 </div>
               </div>
-              {p.text && <p style={styles.postText}>{p.text}</p>}
+              {p.text && <p style={S.postText}>{p.text}</p>}
               {p.media?.map((m, i) =>
-                m.type === "image" ? (
-                  <img key={i} src={m.url} style={styles.postImage} alt="" />
-                ) : (
-                  <video key={i} src={m.url} style={styles.postVideo} controls />
-                )
+                m.type === "image"
+                  ? <img  key={i} src={m.url} style={S.postImage} alt="" />
+                  : <video key={i} src={m.url} style={S.postVideo} controls />
               )}
             </div>
           ))}
         </div>
 
-        {/* Right — Birthdays */}
-        <div style={styles.sidebar}>
-          <div style={styles.sideCard}>
-            <p style={styles.sideTitle}>Upcoming Birthdays</p>
-            {birthdays.length === 0 && (
-              <p style={styles.emptyText}>No upcoming birthdays.</p>
-            )}
+        {/* ── Right: Birthdays ── */}
+        <div style={S.sidebar}>
+          <div style={{ ...sideCard, borderLeftColor:"#fde047" }}>
+            <p style={sectionLabel}>Upcoming Birthdays</p>
+            {birthdays.length === 0 && <p style={S.emptyText}>No upcoming birthdays.</p>}
             {birthdays.map((u) => (
-              <div key={u.id} style={styles.birthdayItem}>
-                <div style={styles.birthdayAvatar}>
+              <div key={u.id} style={S.bdayItem}>
+                <div style={S.bdayAvatar}>
                   {getInitials(`${u.firstName} ${u.lastName}`)}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <p style={styles.birthdayName}>
-                    {u.firstName} {u.lastName}
-                  </p>
-                  <p style={styles.birthdayDate}>
-                    {u.daysUntil === 0
-                      ? "Today"
-                      : `In ${u.daysUntil} day${u.daysUntil > 1 ? "s" : ""}`}
+                <div style={{ flex:1 }}>
+                  <p style={S.bdayName}>{u.firstName} {u.lastName}</p>
+                  <p style={S.bdayDate}>
+                    {u.daysUntil === 0 ? "Today" : `In ${u.daysUntil} day${u.daysUntil > 1 ? "s" : ""}`}
                   </p>
                 </div>
-                {u.daysUntil === 0 && (
-                  <span style={styles.todayTag}>Today</span>
-                )}
+                {u.daysUntil === 0 && <span style={S.todayPill}>Today</span>}
               </div>
             ))}
           </div>
