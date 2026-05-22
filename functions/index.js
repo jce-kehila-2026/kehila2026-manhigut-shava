@@ -17,12 +17,12 @@ exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
 
   await db.collection("otps").doc(uid).set({ otp, expiresAt, email, attempts: 0 });
 
-  sgMail.setApiKey(functions.config().sendgrid.key);
+  sgMail.setApiKey(process.env.SENDGRID_KEY);
 
   await sgMail.send({
     to: email,
     from: {
-      email: functions.config().sendgrid.from || "noreply@manhigut-shava.com",
+      email: process.env.SENDGRID_FROM || "noreply@manhigut-shava.com",
       name: "מנהיגות שווה",
     },
     subject: "קוד האימות שלך — מנהיגות שווה",
