@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import AuthPage from "./AuthPage";
+import LandingPage from "./LandingPage";
 import CompleteProfilePage from "./CompleteProfilePage";
 import TermsPage from "./TermsPage";
 import DashboardPage from "./DashboardPage";
@@ -60,3 +62,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+
