@@ -4,6 +4,8 @@ import { useAuth } from "./AuthContext";
 import { db } from "./firebase";
 import SupportPage from "./SupportPage";
 import CommunityPage from "./CommunityPage";
+import ProfilePage from "./ProfilePage.jsx";
+
 
 const styles = {
   page: {
@@ -217,7 +219,7 @@ const styles = {
 
 const CARDS = [
   {
-    icon: "🗳️",
+    icon: "Elections",
     iconBg: "#eff6ff",
     title: "Elections 2026",
     body: "Stay updated on the upcoming Kehila leadership elections. Candidate lists and voting information will appear here.",
@@ -226,7 +228,7 @@ const CARDS = [
     link: "View details",
   },
   {
-    icon: "📋",
+    icon: "Updates",
     iconBg: "#f0fdf4",
     title: "Community Updates",
     body: "News, announcements, and initiatives from Manhigut Shava will be posted here for registered members.",
@@ -235,7 +237,7 @@ const CARDS = [
     link: "Read updates",
   },
   {
-    icon: "👥",
+    icon: "Directory",
     iconBg: "#eff6ff",
     title: "Member Directory",
     body: "Connect with other registered community members. Directory access is available to all signed-up participants.",
@@ -244,7 +246,7 @@ const CARDS = [
     link: "Browse members",
   },
   {
-    icon: "📅",
+    icon: "Events",
     iconBg: "#fefce8",
     title: "Events",
     body: "View upcoming community events, RSVP, and get notified about activities happening near you.",
@@ -253,7 +255,7 @@ const CARDS = [
     link: "See events",
   },
   {
-    icon: "🔔",
+    icon: "Notifications",
     iconBg: "#fff7ed",
     title: "Notifications",
     body: "Stay informed with real-time alerts for event reminders, connection requests, and community announcements.",
@@ -262,7 +264,7 @@ const CARDS = [
     link: "View all",
   },
   {
-    icon: "👤",
+    icon: "Profile",
     iconBg: "#fdf4ff",
     title: "My Profile",
     body: "Manage your personal information, privacy settings, and how your profile appears to other members.",
@@ -272,7 +274,7 @@ const CARDS = [
   },
 ];
 
-const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Updates","Support"];
+const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Support"];
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -344,23 +346,10 @@ export default function DashboardPage() {
           <span style={styles.welcomeBadge}>Member</span>
         </div>
 
-        <div style={styles.statsRow}>
-          {[
-            { num: "—", label: "Members" },
-            { num: "—", label: "Events" },
-            { num: "—", label: "Updates" },
-            { num: "—", label: "Connections" },
-          ].map((s) => (
-            <div key={s.label} style={styles.statCard}>
-              <span style={styles.statNum}>{s.num}</span>
-              <span style={styles.statLabel}>{s.label}</span>
-            </div>
-          ))}
-        </div>
-
-        <p style={styles.sectionTitle}>Features</p>
         {activeNav === "Support" && <SupportPage />}
         {activeNav === "Community" && <CommunityPage />}
+        {activeNav === "Profile" && <ProfilePage />}
+
 
       </main>
     </div>

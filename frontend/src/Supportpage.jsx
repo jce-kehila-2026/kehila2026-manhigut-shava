@@ -384,7 +384,7 @@ useEffect(() => {
     <div style={styles.page}>
       <p style={styles.pageTitle}>Support</p>
       <p style={styles.pageSub}>
-        Find community members by profession and request their help.
+        Search community members by profession and location to request assistance.
       </p>
 
       <div style={styles.searchBar}>
@@ -393,7 +393,7 @@ useEffect(() => {
           <input
             style={styles.input}
             type="text"
-            placeholder="e.g. Doctor, Engineer, Lawyer..."
+            placeholder="e.g. Doctor, Engineer, Lawyer"
             value={profession}
             onChange={(e) => setProfession(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -406,7 +406,7 @@ useEffect(() => {
           <input
             style={styles.input}
             type="text"
-            placeholder="e.g. Tel Aviv, Jerusalem..."
+            placeholder="e.g. Tel Aviv, Jerusalem"
             value={city}
             onChange={(e) => setCity(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -420,21 +420,19 @@ useEffect(() => {
           onMouseOver={(e) => (e.target.style.background = "#122d47")}
           onMouseOut={(e) => (e.target.style.background = "#1a3c5e")}
         >
-          {loading ? "Searching…" : "Search"}
+          {loading ? "Searching..." : "Search"}
         </button>
       </div>
 
       {!searched && (
         <div style={styles.empty}>
-          <span style={styles.emptyIcon}>🔍</span>
-          Search for a profession above to find members who can help.
+          Search for a profession above to locate members who can assist.
         </div>
       )}
 
       {searched && !loading && results.length === 0 && (
         <div style={styles.empty}>
-          <span style={styles.emptyIcon}>😕</span>
-          No members found. Try a different search.
+          No matching members were found. Please refine your search criteria.
         </div>
       )}
 
@@ -449,7 +447,7 @@ useEffect(() => {
                   <p style={styles.profession}>{u.profession ?? "—"}</p>
                 </div>
               </div>
-              {u.city && <span style={styles.city}>📍 {u.city}</span>}
+              {u.city && <span style={styles.city}>{u.city}</span>}
               <div style={styles.cardActions}>
                 <button
                   style={styles.profileBtn}
@@ -457,13 +455,13 @@ useEffect(() => {
                   onMouseOver={(e) => (e.target.style.background = "#f1f5f9")}
                   onMouseOut={(e) => (e.target.style.background = "#f8fafc")}
                 >
-                  Check Profile
+                  View Profile
                 </button>
                 <button
                   style={requested[u.id] ? styles.requestedBtn : styles.requestBtn}
                   onClick={() => handleRequest(u)}
                 >
-                  {requested[u.id] ? "✓ Sent" : "Request Help"}
+                  {requested[u.id] ? "Request Sent" : "Send Request"}
                 </button>
               </div>
             </div>
@@ -476,7 +474,7 @@ useEffect(() => {
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <p style={styles.modalTitle}>Member Profile</p>
-              <button style={styles.closeBtn} onClick={() => setSelectedUser(null)}>✕</button>
+              <button style={styles.closeBtn} onClick={() => setSelectedUser(null)}>Close</button>
             </div>
             <div style={styles.modalAvatar}>{getInitials(selectedUser)}</div>
             <div>
@@ -486,7 +484,6 @@ useEffect(() => {
             <div style={styles.infoRow}>
               {selectedUser.email && (
                 <div style={styles.infoItem}>
-                  <span style={styles.infoIcon}>✉️</span>
                   <div>
                     <p style={styles.infoLabel}>Email</p>
                     <span>{selectedUser.email}</span>
@@ -495,7 +492,6 @@ useEffect(() => {
               )}
               {selectedUser.phone && (
                 <div style={styles.infoItem}>
-                  <span style={styles.infoIcon}>📞</span>
                   <div>
                     <p style={styles.infoLabel}>Phone</p>
                     <span>{selectedUser.phone}</span>
@@ -504,7 +500,6 @@ useEffect(() => {
               )}
               {selectedUser.city && (
                 <div style={styles.infoItem}>
-                  <span style={styles.infoIcon}>📍</span>
                   <div>
                     <p style={styles.infoLabel}>City</p>
                     <span>{selectedUser.city}</span>
@@ -522,7 +517,7 @@ useEffect(() => {
                 if (!requested[selectedUser.id]) e.target.style.background = "#1a3c5e";
               }}
             >
-              {requested[selectedUser.id] ? "✓ Request Sent" : "Request Help"}
+              {requested[selectedUser.id] ? "Request Sent" : "Send Request"}
             </button>
           </div>
         </div>
@@ -547,7 +542,7 @@ useEffect(() => {
             border: r.status === "accepted" ? "1px solid #bbf7d0" : r.status === "declined" ? "1px solid #fca5a5" : "1px solid #e2e8f0",
             display: "inline-block",
           }}>
-            {r.status === "accepted" ? "✓ Accepted" : r.status === "declined" ? "✕ Declined" : "⏳ Pending"}
+            {r.status === "accepted" ? "Accepted" : r.status === "declined" ? "Declined" : "Pending"}
           </span>
         </div>
       ))}
