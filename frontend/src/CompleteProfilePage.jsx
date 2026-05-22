@@ -181,6 +181,7 @@ export default function CompleteProfilePage() {
         birthdate: form.birthdate || null,
         profession: form.profession,
         city: form.city,
+        emailVerified: true,
         acceptedTerms: false,
         createdAt: new Date().toISOString(),
       });

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./AuthContext";
 import AuthPage from "./AuthPage";
 import LandingPage from "./LandingPage";
 import CompleteProfilePage from "./CompleteProfilePage";
+import OtpVerificationPage from "./OtpVerificationPage";
 import TermsPage from "./TermsPage";
 import DashboardPage from "./DashboardPage";
 
@@ -47,6 +48,9 @@ function AppContent() {
 
   /* Logged in but no Firestore profile (Google / Phone first-time user) */
   if (profile === null) return <CompleteProfilePage />;
+
+  /* Email not verified yet */
+  if (!profile.emailVerified) return <OtpVerificationPage />;
 
   /* Profile exists but terms not accepted yet */
   if (!profile.acceptedTerms) return <TermsPage />;
