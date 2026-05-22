@@ -3,146 +3,53 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily: "'Segoe UI', system-ui, sans-serif",
-    padding: "2rem 1rem",
-    boxSizing: "border-box",
-  },
-  card: {
-    background: "#ffffff",
-    borderRadius: "20px",
-    boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
-    padding: "2.5rem 2rem",
-    width: "100%",
-    maxWidth: "480px",
-  },
-  avatar: {
-    width: "64px",
-    height: "64px",
-    borderRadius: "50%",
-    background: "#1a3c5e",
-    color: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "24px",
-    fontWeight: "700",
-    margin: "0 auto 1rem",
-  },
-  title: {
-    fontSize: "20px",
-    fontWeight: "700",
-    color: "#1a3c5e",
-    textAlign: "center",
-    margin: "0 0 4px",
-  },
-  subtitle: {
-    fontSize: "13px",
-    color: "#94a3b8",
-    textAlign: "center",
-    margin: "0 0 2rem",
-    lineHeight: "1.5",
-  },
-  group: { marginBottom: "1.1rem" },
-  row: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
-    marginBottom: "1.1rem",
-  },
-  label: {
-    display: "block",
-    fontSize: "13px",
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: "6px",
-  },
-  input: {
-    width: "100%",
-    padding: "10px 13px",
-    fontSize: "14px",
-    border: "1.5px solid #d1d9e0",
-    borderRadius: "8px",
-    outline: "none",
-    color: "#1a2e42",
-    background: "#fafbfc",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s",
-  },
-  disclaimer: {
-    background: "#f0f7ff",
-    border: "1px solid #c3daf5",
-    borderRadius: "8px",
-    padding: "12px 14px",
-    marginBottom: "1.25rem",
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "10px",
-  },
-  disclaimerText: {
-    fontSize: "12px",
-    color: "#3b5e80",
-    lineHeight: "1.6",
-    margin: 0,
-  },
-  checkbox: {
-    marginTop: "2px",
-    accentColor: "#2563eb",
-    width: "15px",
-    height: "15px",
-    flexShrink: 0,
-    cursor: "pointer",
-  },
-  button: {
-    width: "100%",
-    padding: "12px",
-    background: "#1a3c5e",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "9px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "background 0.2s",
-  },
-  error: {
-    background: "#fff0f0",
-    border: "1px solid #fca5a5",
-    borderRadius: "8px",
-    padding: "10px 13px",
-    marginBottom: "1rem",
-    fontSize: "13px",
-    color: "#b91c1c",
-  },
-  logoutLink: {
-    display: "block",
-    textAlign: "center",
-    marginTop: "1.25rem",
-    fontSize: "13px",
-    color: "#94a3b8",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    textDecoration: "underline",
-  },
+const C = {
+  blue: "#1a3a8f", bright: "#2f5fd4", light: "#4a7ae8",
+  sky: "#7aaef5", pale: "#c8ddfb", deep: "#0b1f52", deeper: "#071440",
 };
 
-function normalizePhoneNumber(raw) {
-  let cleaned = raw.replace(/[\s\-().]/g, "");
-  if (cleaned.startsWith("0")) {
-    cleaned = "+972" + cleaned.slice(1);
-  } else if (cleaned.startsWith("972") && !cleaned.startsWith("+")) {
-    cleaned = "+" + cleaned;
-  } else if (!cleaned.startsWith("+")) {
-    cleaned = "+" + cleaned;
-  }
-  return cleaned;
+const inp = {
+  width: "100%", padding: "0.78rem 1rem", boxSizing: "border-box",
+  background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.13)",
+  borderRadius: 9, color: "#fff", fontSize: "0.9rem",
+  fontFamily: "'Segoe UI', system-ui, sans-serif",
+  outline: "none", transition: "border-color 0.2s, background 0.2s",
+};
+const lbl = {
+  display: "block", color: "rgba(200,221,251,0.7)",
+  fontSize: "0.76rem", fontWeight: 700, marginBottom: "0.38rem", letterSpacing: "0.04em",
+};
+const primaryBtn = {
+  width: "100%", padding: "0.85rem",
+  background: `linear-gradient(135deg,${C.bright},${C.light})`,
+  color: "#fff", border: "none", borderRadius: 9,
+  fontSize: "0.95rem", fontWeight: 800, cursor: "pointer",
+  fontFamily: "'Segoe UI', system-ui, sans-serif",
+  boxShadow: "0 4px 18px rgba(47,95,212,0.38)",
+  transition: "transform 0.2s, box-shadow 0.2s",
+  marginBottom: "0.9rem",
+};
+const errBox = {
+  background: "rgba(220,60,60,0.15)", border: "1px solid rgba(220,60,60,0.3)",
+  borderRadius: 8, padding: "0.65rem 0.9rem", marginBottom: "1rem",
+  fontSize: "0.82rem", color: "#fca5a5",
+};
+
+function normalizePhone(raw) {
+  let s = raw.replace(/[\s\-().]/g, "");
+  if (s.startsWith("0")) s = "+972" + s.slice(1);
+  else if (s.startsWith("972") && !s.startsWith("+")) s = "+" + s;
+  else if (!s.startsWith("+")) s = "+" + s;
+  return s;
+}
+
+function Fld({ label, children }) {
+  return (
+    <div style={{ marginBottom: "0.95rem" }}>
+      <label style={lbl}>{label}</label>
+      {children}
+    </div>
+  );
 }
 
 export default function CompleteProfilePage() {
@@ -161,115 +68,139 @@ export default function CompleteProfilePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const set = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!agreed) {
-      setError("You must agree to the disclaimer to continue.");
-      return;
-    }
-    setError("");
-    setLoading(true);
+    if (!agreed) { setError("יש לאשר את הסכמת שיתוף הפרטים."); return; }
+    setError(""); setLoading(true);
     try {
       await setDoc(doc(db, "users", user.uid), {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        phone: normalizePhoneNumber(form.phone),
-        email: form.email,
+        firstName: form.firstName, lastName: form.lastName,
+        phone: normalizePhone(form.phone), email: form.email,
         birthdate: form.birthdate || null,
-        profession: form.profession,
-        city: form.city,
-        emailVerified: true,
-        acceptedTerms: false,
+        profession: form.profession, city: form.city,
+        emailVerified: true, acceptedTerms: false,
         createdAt: new Date().toISOString(),
       });
       await refreshProfile();
     } catch (err) {
-      setError("Failed to save profile. Please try again.");
-      console.error(err);
+      setError("שגיאה בשמירת הפרופיל. נסי שוב.");
     } finally {
       setLoading(false);
     }
   };
 
-  const initials = form.firstName && form.lastName
-    ? `${form.firstName[0]}${form.lastName[0]}`.toUpperCase()
-    : user?.email?.[0]?.toUpperCase() || "?";
+  const initials = (form.firstName?.[0] || "") + (form.lastName?.[0] || "") || user?.email?.[0]?.toUpperCase() || "?";
+
+  const focusIn  = (e) => { e.target.style.borderColor = C.sky; e.target.style.background = "rgba(255,255,255,0.11)"; };
+  const focusOut = (e) => { e.target.style.borderColor = "rgba(255,255,255,0.13)"; e.target.style.background = "rgba(255,255,255,0.08)"; };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.avatar}>{initials}</div>
-        <p style={styles.title}>Complete Your Profile</p>
-        <p style={styles.subtitle}>
-          Welcome! Please fill in your details to join the community.
-        </p>
+    <div style={{ minHeight: "100vh", position: "relative", fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}>
+      {/* Background */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, backgroundImage: "url(/hero.jpg)", backgroundSize: "cover", backgroundPosition: "center", filter: "brightness(0.5)" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 1, background: "linear-gradient(135deg,rgba(7,20,64,0.82) 0%,rgba(26,58,143,0.65) 100%)" }} />
 
-        <form onSubmit={handleSubmit}>
-          {error && <div style={styles.error}>{error}</div>}
-
-          <div style={styles.row}>
-            <div>
-              <label style={styles.label}>First name</label>
-              <input style={styles.input} type="text" name="firstName" placeholder="Jane" value={form.firstName} onChange={handleChange} required />
-            </div>
-            <div>
-              <label style={styles.label}>Last name</label>
-              <input style={styles.input} type="text" name="lastName" placeholder="Doe" value={form.lastName} onChange={handleChange} required />
-            </div>
+      {/* Top bar */}
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 10, padding: "1.2rem 2.5rem", display: "flex", alignItems: "center", direction: "rtl" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+          <div style={{ width: 40, height: 40, background: "rgba(255,255,255,0.12)", border: "1.5px solid rgba(255,255,255,0.25)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>♀</div>
+          <div>
+            <div style={{ fontSize: "1rem", fontWeight: 800, color: "#fff", lineHeight: 1.15 }}>מנהיגות שווה</div>
+            <div style={{ fontSize: "0.6rem", color: "rgba(200,221,251,0.55)", letterSpacing: "0.07em" }}>רשת בוגרות</div>
           </div>
-
-          <div style={styles.group}>
-            <label style={styles.label}>Phone number</label>
-            <input style={styles.input} type="tel" name="phone" placeholder="052-1234567 or +972521234567" value={form.phone} onChange={handleChange} required />
-          </div>
-
-          <div style={styles.group}>
-            <label style={styles.label}>Email address</label>
-            <input style={styles.input} type="email" name="email" placeholder="you@gmail.com" value={form.email} onChange={handleChange} required />
-          </div>
-
-          <div style={styles.group}>
-            <label style={styles.label}>Date of birth <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
-            <input style={styles.input} type="date" name="birthdate" value={form.birthdate} onChange={handleChange} />
-          </div>
-
-          <div style={styles.group}>
-            <label style={styles.label}>Profession / Job</label>
-            <input style={styles.input} type="text" name="profession" placeholder="e.g. Doctor, Engineer, Lawyer..." value={form.profession} onChange={handleChange} required />
-          </div>
-
-          <div style={styles.group}>
-            <label style={styles.label}>City</label>
-            <input style={styles.input} type="text" name="city" placeholder="e.g. Tel Aviv, Jerusalem..." value={form.city} onChange={handleChange} required />
-          </div>
-
-          <div style={styles.disclaimer}>
-            <input type="checkbox" id="disclaimer" style={styles.checkbox} checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-            <label htmlFor="disclaimer" style={styles.disclaimerText}>
-              By continuing, I agree that my contact information — including my name,
-              email address, and phone number — may be visible to and shared with
-              other registered users of this platform.
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            style={{ ...styles.button, ...(loading ? { opacity: 0.65, cursor: "not-allowed" } : {}) }}
-            disabled={loading}
-            onMouseOver={(e) => !loading && (e.target.style.background = "#122d47")}
-            onMouseOut={(e) => (e.target.style.background = "#1a3c5e")}
-          >
-            {loading ? "Saving…" : "Continue"}
-          </button>
-        </form>
-
-        <button style={styles.logoutLink} onClick={logout}>
-          Sign out and use a different account
-        </button>
+        </div>
       </div>
+
+      {/* Card */}
+      <div style={{ position: "relative", zIndex: 5, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "6rem 1rem 5rem" }}>
+        <div style={{
+          width: "100%", maxWidth: 440,
+          background: "rgba(7,20,64,0.78)", backdropFilter: "blur(22px)",
+          border: "1px solid rgba(255,255,255,0.12)", borderRadius: 22,
+          padding: "2.4rem", boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
+          direction: "rtl",
+          animation: "cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
+        }}>
+          {/* Avatar */}
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg,${C.bright},${C.light})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem", fontWeight: 800, color: "#fff", margin: "0 auto 1rem", boxShadow: "0 4px 16px rgba(47,95,212,0.4)" }}>
+            {initials.toUpperCase()}
+          </div>
+
+          <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", marginBottom: "0.3rem", textAlign: "center" }}>השלמת פרופיל</div>
+          <p style={{ color: "rgba(200,221,251,0.55)", fontSize: "0.83rem", marginBottom: "1.6rem", textAlign: "center" }}>ברוכה הבאה! מלאי את הפרטים כדי להצטרף לרשת</p>
+
+          <form onSubmit={handleSubmit}>
+            {error && <div style={errBox}>{error}</div>}
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem" }}>
+              <Fld label="שם פרטי *">
+                <input style={inp} type="text" name="firstName" value={form.firstName} onChange={set} placeholder="שם" required onFocus={focusIn} onBlur={focusOut} />
+              </Fld>
+              <Fld label="שם משפחה *">
+                <input style={inp} type="text" name="lastName" value={form.lastName} onChange={set} placeholder="משפחה" required onFocus={focusIn} onBlur={focusOut} />
+              </Fld>
+            </div>
+
+            <Fld label="מספר טלפון *">
+              <input style={{ ...inp, direction: "ltr", textAlign: "left" }} type="tel" name="phone" value={form.phone} onChange={set} placeholder="05X-XXXXXXX" required onFocus={focusIn} onBlur={focusOut} />
+            </Fld>
+
+            <Fld label="אימייל *">
+              <input style={{ ...inp, direction: "ltr", textAlign: "left" }} type="email" name="email" value={form.email} onChange={set} placeholder="your@email.com" required onFocus={focusIn} onBlur={focusOut} />
+            </Fld>
+
+            <Fld label="תאריך לידה (אופציונלי)">
+              <input style={{ ...inp, colorScheme: "dark" }} type="date" name="birthdate" value={form.birthdate} onChange={set} onFocus={focusIn} onBlur={focusOut} />
+            </Fld>
+
+            <Fld label="מקצוע / תפקיד *">
+              <input style={inp} type="text" name="profession" value={form.profession} onChange={set} placeholder="רופאה, עורכת דין, מהנדסת..." required onFocus={focusIn} onBlur={focusOut} />
+            </Fld>
+
+            <Fld label="עיר מגורים *">
+              <input style={inp} type="text" name="city" value={form.city} onChange={set} placeholder="תל אביב, ירושלים..." required onFocus={focusIn} onBlur={focusOut} />
+            </Fld>
+
+            {/* Privacy toggle */}
+            <div style={{ display: "flex", gap: "0.7rem", alignItems: "flex-start", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 9, padding: "0.85rem", marginBottom: "1.1rem" }}>
+              <div onClick={() => setAgreed(!agreed)} style={{ width: 36, height: 19, flexShrink: 0, background: agreed ? C.light : "rgba(255,255,255,0.18)", borderRadius: 10, position: "relative", cursor: "pointer", transition: "background 0.2s", marginTop: 2 }}>
+                <div style={{ position: "absolute", width: 13, height: 13, background: "#fff", borderRadius: "50%", top: 3, right: agreed ? 3 : "auto", left: agreed ? "auto" : 3, transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+              </div>
+              <div style={{ color: "rgba(200,221,251,0.6)", fontSize: "0.75rem", lineHeight: 1.55 }}>
+                <strong style={{ color: "rgba(200,221,251,0.88)" }}>מסכימה לשיתוף פרטים בתוך הרשת</strong><br />
+                שם, מייל ומומחיות יהיו גלויים לבוגרות אחרות.
+              </div>
+            </div>
+
+            <button type="submit" disabled={loading} style={{ ...primaryBtn, ...(loading ? { opacity: 0.65, cursor: "not-allowed" } : {}) }}
+              onMouseOver={e => !loading && (e.target.style.transform = "translateY(-1px)")}
+              onMouseOut={e => (e.target.style.transform = "")}>
+              {loading ? "שומרת..." : "המשך לרשת →"}
+            </button>
+          </form>
+
+          <button onClick={logout} style={{ background: "none", border: "none", color: "rgba(200,221,251,0.4)", fontSize: "0.78rem", cursor: "pointer", display: "block", margin: "0 auto", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+            התנתקי והשתמשי בחשבון אחר
+          </button>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 10, display: "flex", justifyContent: "center", gap: "3.5rem", padding: "0.9rem", background: "rgba(7,20,64,0.65)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        {[["500+", "בוגרות"], ["10+", "שנות פעילות"], ["🔒", "פרטיות מלאה"], ["חינם", "להצטרפות"]].map(([n, l]) => (
+          <div key={l} style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{n}</div>
+            <div style={{ color: "rgba(200,221,251,0.45)", fontSize: "0.67rem", marginTop: "0.1rem" }}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes cardUp { from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);} }
+        input::placeholder { color: rgba(200,221,251,0.3) !important; }
+      `}</style>
     </div>
   );
 }
