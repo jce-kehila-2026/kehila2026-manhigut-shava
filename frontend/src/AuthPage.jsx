@@ -448,12 +448,12 @@ export default function AuthPage() {
         position: "fixed", inset: 0, zIndex: 0,
         backgroundImage: "url(/background.jpg)",
         backgroundSize: "cover", backgroundPosition: "center",
-        filter: "brightness(0.5)",
+        filter: "brightness(0.75)",
       }} />
       {/* Dark overlay */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 1,
-        background: "linear-gradient(135deg,rgba(7,20,64,0.82) 0%,rgba(26,58,143,0.65) 100%)",
+        background: "linear-gradient(135deg,rgba(7,20,64,0.55) 0%,rgba(26,58,143,0.40) 100%)",
       }} />
 
       {/* Top bar */}
@@ -548,22 +548,8 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Stats bar */}
-      <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 10,
-        display: "flex", justifyContent: "center", gap: "3.5rem", padding: "0.9rem",
-        background: "rgba(7,20,64,0.65)", backdropFilter: "blur(12px)",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-      }}>
-        {[["500+", "בוגרות"], ["10+", "שנות פעילות"], ["🔒", "פרטיות מלאה"], ["חינם", "להצטרפות"]].map(([n, l]) => (
-          <div key={l} style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{n}</div>
-            <div style={{ color: "rgba(200,221,251,0.45)", fontSize: "0.67rem", marginTop: "0.1rem" }}>{l}</div>
-          </div>
-        ))}
-      </div>
 
-      <style>{`
+<style>{`
         @keyframes cardUp { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
         input::placeholder { color: rgba(200,221,251,0.3) !important; }
         select option { background: #071440; }
