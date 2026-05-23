@@ -13,8 +13,7 @@ const storage = getStorage();
 /* ─── Inject styles ─── */
 const styleTag = document.createElement("style");
 styleTag.textContent = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
-  * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+  * { font-family: 'Heebo', system-ui, sans-serif; box-sizing: border-box; }
 
   @keyframes fadeSlideUp {
     from { opacity: 0; transform: translateY(14px); }
@@ -37,6 +36,8 @@ styleTag.textContent = `
   .post-btn:hover    { background: #122d47 !important; }
   .delete-link:hover { color: #dc2626 !important; }
   .post-author-click:hover { text-decoration: underline; cursor: pointer; }
+  .post-delete-btn:hover { color: #dc2626 !important; background: #fee2e2 !important; border-color: #fca5a5 !important; }
+  .post-edit-btn:hover   { color: #0ea5e9 !important; background: #e0f2fe !important; border-color: #7dd3fc !important; }
 `;
 if (!document.head.querySelector("#community-styles")) {
   styleTag.id = "community-styles";
@@ -112,8 +113,8 @@ function AuthorModal({ authorId, authorName, onClose, t }) {
       display: "flex", flexDirection: "column", gap: "1.1rem",
       animation: "modalPop 0.26s cubic-bezier(.34,1.56,.64,1) both",
     },
-    header: { display: "flex", alignItems: "center", justifyContent: "space-between" },
-    title:  { fontSize: "16px", fontWeight: "700", color: "#1a3c5e", margin: 0 },
+    header:   { display: "flex", alignItems: "center", justifyContent: "space-between" },
+    title:    { fontSize: "16px", fontWeight: "700", color: "#1a3c5e", margin: 0 },
     closeBtn: {
       background: "#f1f5f9", border: "none", borderRadius: "9px",
       padding: "6px 12px", cursor: "pointer",
@@ -142,20 +143,11 @@ function AuthorModal({ authorId, authorName, onClose, t }) {
           <p style={S.title}>{t.community.authorProfile}</p>
           <button style={S.closeBtn} onClick={onClose}>{t.community.close}</button>
         </div>
-
-        <Avatar
-          photoURL={userData?.photoURL}
-          name={name}
-          size={72}
-          fontSize={22}
-          style={{ margin: "0 auto" }}
-        />
-
+        <Avatar photoURL={userData?.photoURL} name={name} size={72} fontSize={22} style={{ margin: "0 auto" }} />
         <div>
           <p style={S.name}>{name}</p>
           {userData?.profession && <p style={S.profession}>{userData.profession}</p>}
         </div>
-
         {userData && (
           <div style={S.infoBlock}>
             {userData.city && (
@@ -185,18 +177,13 @@ function AuthorModal({ authorId, authorName, onClose, t }) {
 
 /* ─── Shared card style ─── */
 const sideCard = {
-  background: "#fff",
-  borderRadius: "18px",
-  padding: "1.5rem",
-  border: "1.5px solid #f1f5f9",
-  borderLeft: "4px solid #38bdf8",
-  boxShadow: "0 4px 16px rgba(15,23,42,0.05)",
-  marginBottom: "1.25rem",
+  background: "#fff", borderRadius: "18px", padding: "1.5rem",
+  border: "1.5px solid #f1f5f9", borderLeft: "4px solid #38bdf8",
+  boxShadow: "0 4px 16px rgba(15,23,42,0.05)", marginBottom: "1.25rem",
 };
 const sectionLabel = {
   fontSize: "11px", fontWeight: "700", color: "#94a3b8",
-  textTransform: "uppercase", letterSpacing: "0.1em",
-  margin: "0 0 1.1rem",
+  textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 1.1rem",
 };
 
 export default function CommunityPage() {
@@ -210,6 +197,8 @@ export default function CommunityPage() {
   const [requests,   setRequests]   = useState([]);
   const [birthdays,  setBirthdays]  = useState([]);
   const [viewAuthor, setViewAuthor] = useState(null); // { authorId, authorName }
+  const [editingId,  setEditingId]  = useState(null); // post being edited
+  const [editText,   setEditText]   = useState("");
   const fileRef = useRef();
 
   useEffect(() => {
@@ -241,7 +230,7 @@ export default function CommunityPage() {
     setBirthdays(upcoming);
   };
 
-  /* ── Resolve author display name using authProfile ── */
+  /* ── Author display name from AuthContext ── */
   const myName = authProfile?.firstName && authProfile?.lastName
     ? `${authProfile.firstName} ${authProfile.lastName}`
     : user?.email ?? "";
@@ -259,16 +248,31 @@ export default function CommunityPage() {
       }
       await addDoc(collection(db, "posts"), {
         text,
-        media: mediaUrls,
+        media:          mediaUrls,
         authorId:       user.uid,
         authorName:     myName,
-        authorPhotoURL: authProfile?.photoURL ?? null,  /* ← store photo for others to see */
+        authorPhotoURL: authProfile?.photoURL ?? null,
         createdAt:      new Date().toISOString(),
       });
       setText(""); setFiles([]);
       fetchPosts();
     } catch (err) { console.error(err); }
     finally { setPosting(false); }
+  };
+
+  /* ── Edit post (own posts only) ── */
+  const handleSaveEdit = async (postId) => {
+    if (!editText.trim()) return;
+    await updateDoc(doc(db, "posts", postId), { text: editText });
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, text: editText } : p));
+    setEditingId(null);
+  };
+
+  /* ── Delete post (own posts or admin) ── */
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    await deleteDoc(doc(db, "posts", postId));
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
   const handleRequest = async (reqId, status) => {
@@ -283,10 +287,8 @@ export default function CommunityPage() {
     pageTitle: { fontSize:"22px", fontWeight:"700", color:"#1a3c5e", margin:"0 0 3px" },
     pageSub:   { fontSize:"13px", color:"#94a3b8", margin:"0 0 1.75rem" },
     layout: {
-      display:"grid",
-      gridTemplateColumns:"260px 1fr 260px",
-      gap:"1.5rem",
-      alignItems:"start",
+      display:"grid", gridTemplateColumns:"260px 1fr 260px",
+      gap:"1.5rem", alignItems:"start",
     },
     sidebar: { display:"flex", flexDirection:"column" },
 
@@ -297,14 +299,12 @@ export default function CommunityPage() {
     reqDetail:  { fontSize:"11px", color:"#94a3b8", margin:0 },
     reqActions: { display:"flex", gap:"6px", marginTop:"6px" },
     acceptBtn: {
-      flex:1, padding:"6px 0",
-      background:"#f0fdf4", color:"#166534",
+      flex:1, padding:"6px 0", background:"#f0fdf4", color:"#166534",
       border:"1px solid #bbf7d0", borderRadius:"8px",
       fontSize:"11px", fontWeight:"700", cursor:"pointer", transition:"background 0.15s",
     },
     declineBtn: {
-      flex:1, padding:"6px 0",
-      background:"#fff0f0", color:"#b91c1c",
+      flex:1, padding:"6px 0", background:"#fff0f0", color:"#b91c1c",
       border:"1px solid #fca5a5", borderRadius:"8px",
       fontSize:"11px", fontWeight:"700", cursor:"pointer", transition:"background 0.15s",
     },
@@ -317,10 +317,8 @@ export default function CommunityPage() {
       display:"inline-block", marginTop:"4px",
     }),
     deleteLink: {
-      background:"none", border:"none",
-      color:"#94a3b8", cursor:"pointer",
-      fontSize:"11px", padding:0, marginTop:"4px",
-      transition:"color 0.15s",
+      background:"none", border:"none", color:"#94a3b8",
+      cursor:"pointer", fontSize:"11px", padding:0, marginTop:"4px", transition:"color 0.15s",
     },
     emptyText: { fontSize:"12px", color:"#cbd5e1", textAlign:"center", padding:"1rem 0" },
 
@@ -336,75 +334,76 @@ export default function CommunityPage() {
       fontSize:"12px", fontWeight:"700", flexShrink:0,
       border:"1.5px solid #fde047", overflow:"hidden",
     },
-    bdayName: { fontSize:"13px", fontWeight:"600", color:"#1a3c5e", margin:0 },
-    bdayDate: { fontSize:"11px", color:"#94a3b8", margin:0 },
+    bdayName:  { fontSize:"13px", fontWeight:"600", color:"#1a3c5e", margin:0 },
+    bdayDate:  { fontSize:"11px", color:"#94a3b8", margin:0 },
     todayPill: {
       fontSize:"10px", fontWeight:"700",
       background:"#fef9c3", color:"#854d0e",
-      border:"1px solid #fde047",
-      borderRadius:"99px", padding:"2px 8px",
+      border:"1px solid #fde047", borderRadius:"99px", padding:"2px 8px",
     },
 
     /* feed */
     feed: { display:"flex", flexDirection:"column", gap:"1.25rem" },
     composeCard: {
-      background:"#fff",
-      borderRadius:"18px",
-      padding:"1.5rem",
-      border:"1.5px solid #f1f5f9",
-      borderLeft:"4px solid #38bdf8",
+      background:"#fff", borderRadius:"18px", padding:"1.5rem",
+      border:"1.5px solid #f1f5f9", borderLeft:"4px solid #38bdf8",
       boxShadow:"0 4px 16px rgba(15,23,42,0.05)",
       display:"flex", flexDirection:"column", gap:"0.85rem",
     },
     textarea: {
-      width:"100%", padding:"11px 14px",
-      fontSize:"14px", border:"1.5px solid #e2e8f0",
-      borderRadius:"13px", resize:"none",
-      fontFamily:"inherit", color:"#1a2e42",
-      background:"#f8fafc", minHeight:"82px",
+      width:"100%", padding:"11px 14px", fontSize:"14px",
+      border:"1.5px solid #e2e8f0", borderRadius:"13px", resize:"none",
+      fontFamily:"inherit", color:"#1a2e42", background:"#f8fafc", minHeight:"82px",
       transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
     },
-    composeActions: {
-      display:"flex", alignItems:"center", justifyContent:"space-between",
-    },
+    composeActions: { display:"flex", alignItems:"center", justifyContent:"space-between" },
     attachBtn: {
-      background:"none", border:"1.5px solid #e2e8f0",
-      borderRadius:"9px", padding:"8px 14px",
-      fontSize:"13px", color:"#64748b",
-      cursor:"pointer", fontWeight:"600",
-      transition:"border-color 0.2s, color 0.2s",
+      background:"none", border:"1.5px solid #e2e8f0", borderRadius:"9px",
+      padding:"8px 14px", fontSize:"13px", color:"#64748b",
+      cursor:"pointer", fontWeight:"600", transition:"border-color 0.2s, color 0.2s",
     },
     postBtn: {
-      padding:"9px 22px", background:"#1a3c5e",
-      color:"#fff", border:"none",
+      padding:"9px 22px", background:"#1a3c5e", color:"#fff", border:"none",
       borderRadius:"10px", fontSize:"13px", fontWeight:"700",
       cursor:"pointer", transition:"background 0.2s",
     },
-    previewRow: { display:"flex", gap:"8px", flexWrap:"wrap" },
-    previewThumb: {
-      width:"58px", height:"58px", borderRadius:"10px",
-      objectFit:"cover", border:"1.5px solid #e2e8f0",
-    },
-    previewName: {
-      fontSize:"11px", color:"#64748b",
-      background:"#f1f5f9", borderRadius:"7px",
-      padding:"4px 10px", display:"flex", alignItems:"center",
-    },
+    previewRow:   { display:"flex", gap:"8px", flexWrap:"wrap" },
+    previewThumb: { width:"58px", height:"58px", borderRadius:"10px", objectFit:"cover", border:"1.5px solid #e2e8f0" },
+    previewName:  { fontSize:"11px", color:"#64748b", background:"#f1f5f9", borderRadius:"7px", padding:"4px 10px", display:"flex", alignItems:"center" },
     postCard: {
-      background:"#fff",
-      borderRadius:"18px",
-      padding:"1.5rem",
-      border:"1.5px solid #f1f5f9",
-      borderLeft:"4px solid #e2e8f0",
+      background:"#fff", borderRadius:"18px", padding:"1.5rem",
+      border:"1.5px solid #f1f5f9", borderLeft:"4px solid #e2e8f0",
       boxShadow:"0 4px 16px rgba(15,23,42,0.04)",
       display:"flex", flexDirection:"column", gap:"0.75rem",
     },
-    postHeader:   { display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" },
-    postAuthor:   { fontSize:"14px", fontWeight:"700", color:"#1a3c5e", margin:0 },
-    postTime:     { fontSize:"11px", color:"#94a3b8", margin:0 },
-    postText:     { fontSize:"14px", color:"#374151", lineHeight:"1.65", margin:0 },
-    postImage:    { width:"100%", maxHeight:"320px", objectFit:"cover", borderRadius:"12px" },
-    postVideo:    { width:"100%", maxHeight:"320px", borderRadius:"12px" },
+    postHeader:    { display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" },
+    postAuthor:    { fontSize:"14px", fontWeight:"700", color:"#1a3c5e", margin:0 },
+    postTime:      { fontSize:"11px", color:"#94a3b8", margin:0 },
+    postText:      { fontSize:"14px", color:"#374151", lineHeight:"1.65", margin:0 },
+    postActions:   { marginLeft:"auto", display:"flex", gap:"6px" },
+    postEditBtn: {
+      background:"none", border:"1px solid #e2e8f0", color:"#64748b",
+      cursor:"pointer", fontSize:"11px", fontWeight:"600",
+      padding:"4px 10px", borderRadius:"6px",
+      transition:"color 0.15s, background 0.15s, border-color 0.15s",
+    },
+    postDeleteBtn: {
+      background:"none", border:"1px solid #e2e8f0", color:"#94a3b8",
+      cursor:"pointer", fontSize:"11px", fontWeight:"600",
+      padding:"4px 10px", borderRadius:"6px",
+      transition:"color 0.15s, background 0.15s, border-color 0.15s",
+    },
+    editTextarea: {
+      width:"100%", padding:"10px 13px", fontSize:"14px",
+      border:"1.5px solid #38bdf8", borderRadius:"10px",
+      resize:"none", fontFamily:"inherit", color:"#1a2e42",
+      background:"#f0f9ff", minHeight:"72px", outline:"none",
+    },
+    editActions: { display:"flex", gap:"8px", justifyContent:"flex-end" },
+    saveBtn:   { padding:"7px 18px", background:"#1a3c5e", color:"#fff", border:"none", borderRadius:"8px", fontSize:"12px", fontWeight:"700", cursor:"pointer" },
+    cancelBtn: { padding:"7px 18px", background:"none", color:"#64748b", border:"1px solid #e2e8f0", borderRadius:"8px", fontSize:"12px", fontWeight:"600", cursor:"pointer" },
+    postImage: { width:"100%", maxHeight:"600px", objectFit:"contain", borderRadius:"12px", background:"#f8fafc" },
+    postVideo: { width:"100%", maxHeight:"320px", borderRadius:"12px" },
   };
 
   return (
@@ -493,24 +492,58 @@ export default function CommunityPage() {
 
           {posts.map((p) => (
             <div key={p.id} className="post-card" style={S.postCard}>
-              {/* Clickable header → author profile */}
+              {/* Clickable header → view author profile */}
               <div
                 style={S.postHeader}
                 onClick={() => p.authorId && setViewAuthor({ authorId: p.authorId, authorName: p.authorName })}
                 title={t.community.authorProfile}
               >
-                <Avatar
-                  photoURL={p.authorPhotoURL}
-                  name={p.authorName}
-                  size={38}
-                  fontSize={13}
-                />
+                <Avatar photoURL={p.authorPhotoURL} name={p.authorName} size={38} fontSize={13} />
                 <div>
                   <p className="post-author-click" style={S.postAuthor}>{p.authorName}</p>
                   <p style={S.postTime}>{timeAgo(p.createdAt, t)}</p>
                 </div>
+                {/* Edit/Delete — own posts or admin */}
+                {user && (user.uid === p.authorId || authProfile?.isAdmin) && (
+                  <div style={S.postActions} onClick={(e) => e.stopPropagation()}>
+                    {user.uid === p.authorId && (
+                      <button
+                        className="post-edit-btn"
+                        style={S.postEditBtn}
+                        onClick={() => { setEditingId(p.id); setEditText(p.text || ""); }}
+                      >
+                        Edit
+                      </button>
+                    )}
+                    <button
+                      className="post-delete-btn"
+                      style={S.postDeleteBtn}
+                      onClick={() => handleDeletePost(p.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
-              {p.text && <p style={S.postText}>{p.text}</p>}
+
+              {/* Inline edit or text */}
+              {editingId === p.id ? (
+                <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                  <textarea
+                    style={S.editTextarea}
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    autoFocus
+                  />
+                  <div style={S.editActions}>
+                    <button style={S.cancelBtn} onClick={() => setEditingId(null)}>Cancel</button>
+                    <button style={S.saveBtn}   onClick={() => handleSaveEdit(p.id)}>Save</button>
+                  </div>
+                </div>
+              ) : (
+                p.text && <p style={S.postText}>{p.text}</p>
+              )}
+
               {p.media?.map((m, i) =>
                 m.type === "image"
                   ? <img  key={i} src={m.url} style={S.postImage} alt="" />
@@ -537,9 +570,7 @@ export default function CommunityPage() {
                   <div style={{ flex:1 }}>
                     <p style={S.bdayName}>{fullName}</p>
                     <p style={S.bdayDate}>
-                      {u.daysUntil === 0
-                        ? t.community.today
-                        : t.community.inDays(u.daysUntil)}
+                      {u.daysUntil === 0 ? t.community.today : t.community.inDays(u.daysUntil)}
                     </p>
                   </div>
                   {u.daysUntil === 0 && <span style={S.todayPill}>{t.community.today}</span>}

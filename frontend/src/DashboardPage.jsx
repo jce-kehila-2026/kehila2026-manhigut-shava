@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import SupportPage from "./Supportpage";
 import CommunityPage from "./CommunityPage";
 import ProfilePage from "./ProfilePage.jsx";
-import { useState } from "react";
+import AdminPage from "./AdminPage.jsx";
 
 /* ─── Inject shared styles ─── */
 const styleTag = document.createElement("style");
@@ -109,18 +110,33 @@ function LangSwitcher() {
   );
 }
 
+/* ─── Base nav keys (non-admin) ─── */
+const BASE_NAV_KEYS = ["Profile", "Home", "Community", "Support"];
+
 export default function DashboardPage() {
-  /* ── Use profile directly from AuthContext — no double fetch ── */
+  /* ── Profile from AuthContext — no extra fetch needed ── */
   const { user, logout, profile } = useAuth();
   const { t, isRTL } = useLang();
-  const [activeNav, setActiveNav] = useState("Home");
 
-  const NAV_KEYS = ["Profile", "Home", "Community", "Support"];
+  /* ── Persist active tab across refreshes (from main) ── */
+  const [activeNav, setActiveNav] = useState(
+    () => localStorage.getItem("activeNav") || "Home"
+  );
+
+  const navigate = (tab) => {
+    localStorage.setItem("activeNav", tab);
+    setActiveNav(tab);
+  };
+
+  /* ── Admin users get an extra "Admin" tab (from main) ── */
+  const NAV_KEYS = profile?.isAdmin ? [...BASE_NAV_KEYS, "Admin"] : BASE_NAV_KEYS;
+
   const NAV_LABELS = {
     Profile:   t.nav.profile,
     Home:      t.nav.home,
     Community: t.nav.community,
     Support:   t.nav.support,
+    Admin:     "Admin",
   };
 
   /* ── Display helpers ── */
@@ -176,114 +192,72 @@ export default function DashboardPage() {
       zIndex:20,
       boxShadow:"0 2px 16px rgba(15,23,42,0.14)",
     },
-    headerLeft: {
-      display:"flex", alignItems:"center", gap:"1.5rem",
-    },
-    logo: {
-      fontSize:"16px", fontWeight:"700", letterSpacing:"-0.3px",
-      color:"#fff", whiteSpace:"nowrap",
-    },
-    headerNav: {
-      display:"flex", gap:"2px",
-    },
-    headerRight: {
-      display:"flex", alignItems:"center", gap:"10px",
-    },
+    headerLeft:  { display:"flex", alignItems:"center", gap:"1.5rem" },
+    logo:        { fontSize:"16px", fontWeight:"700", letterSpacing:"-0.3px", color:"#fff", whiteSpace:"nowrap" },
+    headerNav:   { display:"flex", gap:"2px" },
+    headerRight: { display:"flex", alignItems:"center", gap:"10px" },
     navBtn: (active) => ({
       background: active ? "rgba(255,255,255,0.18)" : "transparent",
       color: active ? "#fff" : "rgba(255,255,255,0.62)",
-      border:"none",
-      borderRadius:"9px",
-      padding:"7px 13px",
-      fontSize:"13px",
-      fontWeight: active ? "700" : "400",
-      cursor:"pointer",
-      transition:"all 0.15s",
+      border:"none", borderRadius:"9px", padding:"7px 13px",
+      fontSize:"13px", fontWeight: active ? "700" : "400",
+      cursor:"pointer", transition:"all 0.15s",
     }),
     logoutBtn: {
-      background:"rgba(255,255,255,0.12)",
-      color:"#fff",
-      border:"1px solid rgba(255,255,255,0.28)",
-      borderRadius:"9px",
-      padding:"7px 16px",
-      fontSize:"13px",
-      fontWeight:"600",
-      cursor:"pointer",
-      transition:"background 0.2s",
+      background:"rgba(255,255,255,0.12)", color:"#fff",
+      border:"1px solid rgba(255,255,255,0.28)", borderRadius:"9px",
+      padding:"7px 16px", fontSize:"13px", fontWeight:"600",
+      cursor:"pointer", transition:"background 0.2s",
     },
-    main: { flex:1, width:"100%" },
+    main:      { flex:1, width:"100%" },
     homeInner: { padding:"2rem 2.5rem", width:"100%", boxSizing:"border-box" },
     welcomeCard: {
-      background:"#1a3c5e",
-      borderRadius:"20px",
-      padding:"1.75rem 2rem",
-      marginBottom:"2rem",
-      display:"flex",
-      alignItems:"center",
-      justifyContent:"space-between",
-      color:"#fff",
-      cursor:"pointer",
-      transition:"opacity 0.2s",
+      background:"#1a3c5e", borderRadius:"20px",
+      padding:"1.75rem 2rem", marginBottom:"2rem",
+      display:"flex", alignItems:"center", justifyContent:"space-between",
+      color:"#fff", cursor:"pointer", transition:"opacity 0.2s",
       boxShadow:"0 2px 8px rgba(15,23,42,0.08)",
     },
     welcomeLeft: { display:"flex", alignItems:"center", gap:"1.25rem" },
     avatarRing: {
       width:"52px", height:"52px", borderRadius:"50%",
       background:"linear-gradient(135deg, #38bdf8, #1a3c5e)",
-      padding:"2.5px",
-      boxShadow:"0 2px 8px rgba(15,23,42,0.1)",
-      flexShrink: 0,
+      padding:"2.5px", boxShadow:"0 2px 8px rgba(15,23,42,0.1)", flexShrink:0,
     },
     avatarInner: {
       width:"100%", height:"100%", borderRadius:"50%",
       background:"rgba(255,255,255,0.18)",
       display:"flex", alignItems:"center", justifyContent:"center",
-      fontSize:"18px", fontWeight:"700", color:"#fff",
-      overflow:"hidden",
+      fontSize:"18px", fontWeight:"700", color:"#fff", overflow:"hidden",
     },
-    welcomeName: { fontSize:"18px", fontWeight:"700", margin:"0 0 3px" },
-    welcomeSub:  { fontSize:"12px", color:"rgba(255,255,255,0.62)", margin:0 },
+    welcomeName:  { fontSize:"18px", fontWeight:"700", margin:"0 0 3px" },
+    welcomeSub:   { fontSize:"12px", color:"rgba(255,255,255,0.62)", margin:0 },
     welcomeBadge: {
-      background:"rgba(255,255,255,0.14)",
-      border:"1px solid rgba(255,255,255,0.25)",
-      borderRadius:"99px",
-      padding:"5px 16px",
-      fontSize:"11px",
-      fontWeight:"700",
-      color:"rgba(255,255,255,0.9)",
-      letterSpacing:"0.06em",
-      textTransform:"uppercase",
+      background:"rgba(255,255,255,0.14)", border:"1px solid rgba(255,255,255,0.25)",
+      borderRadius:"99px", padding:"5px 16px", fontSize:"11px",
+      fontWeight:"700", color:"rgba(255,255,255,0.9)",
+      letterSpacing:"0.06em", textTransform:"uppercase",
     },
     sectionLabel: {
-      fontSize:"11px", fontWeight:"700",
-      color:"#94a3b8", letterSpacing:"0.1em",
-      textTransform:"uppercase", marginBottom:"1rem",
+      fontSize:"11px", fontWeight:"700", color:"#94a3b8",
+      letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"1rem",
     },
     grid: {
       display:"grid",
       gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))",
-      gap:"1.25rem",
-      marginBottom:"2rem",
+      gap:"1.25rem", marginBottom:"2rem",
     },
     card: {
-      background:"#fff",
-      borderRadius:"18px",
-      padding:"1.5rem",
-      border:"1.5px solid #f1f5f9",
-      borderLeft:"4px solid #e2e8f0",
-      boxShadow:"0 2px 8px rgba(15,23,42,0.05)",
-      cursor:"pointer",
+      background:"#fff", borderRadius:"18px", padding:"1.5rem",
+      border:"1.5px solid #f1f5f9", borderLeft:"4px solid #e2e8f0",
+      boxShadow:"0 2px 8px rgba(15,23,42,0.05)", cursor:"pointer",
       transition:"transform 0.18s, box-shadow 0.18s",
-      display:"flex",
-      flexDirection:"column",
-      gap:"0.6rem",
+      display:"flex", flexDirection:"column", gap:"0.6rem",
     },
-    cardHeader: {
-      display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"2px",
-    },
-    cardTitle: { fontSize:"15px", fontWeight:"700", color:"#1a3c5e", margin:0 },
-    cardBody:  { fontSize:"13px", color:"#64748b", lineHeight:"1.65", margin:0, flex:1 },
-    cardLink:  { fontSize:"12px", fontWeight:"700", color:"#0ea5e9", marginTop:"auto" },
+    cardHeader: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"2px" },
+    cardTitle:  { fontSize:"15px", fontWeight:"700", color:"#1a3c5e", margin:0 },
+    cardBody:   { fontSize:"13px", color:"#64748b", lineHeight:"1.65", margin:0, flex:1 },
+    cardLink:   { fontSize:"12px", fontWeight:"700", color:"#0ea5e9", marginTop:"auto" },
   };
 
   return (
@@ -298,7 +272,7 @@ export default function DashboardPage() {
                 key={key}
                 className="nav-btn"
                 style={S.navBtn(activeNav === key)}
-                onClick={() => setActiveNav(key)}
+                onClick={() => navigate(key)}
               >
                 {NAV_LABELS[key]}
               </button>
@@ -317,6 +291,7 @@ export default function DashboardPage() {
         {activeNav === "Support"   && <SupportPage />}
         {activeNav === "Community" && <CommunityPage />}
         {activeNav === "Profile"   && <ProfilePage />}
+        {activeNav === "Admin"     && <AdminPage />}
 
         {activeNav === "Home" && (
           <div style={S.homeInner}>
@@ -324,7 +299,7 @@ export default function DashboardPage() {
             <div
               className="welcome-card"
               style={S.welcomeCard}
-              onClick={() => setActiveNav("Profile")}
+              onClick={() => navigate("Profile")}
             >
               <div style={S.welcomeLeft}>
                 <div style={S.avatarRing}>
