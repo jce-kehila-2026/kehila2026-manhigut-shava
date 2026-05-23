@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signInWithPopup,
+  signInWithRedirect,
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from "firebase/auth";
@@ -113,15 +113,22 @@ function Fld({ label, children }) {
 function GoogleButton({ label }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const handle = async () => {
     setLoading(true); setError("");
-    try { await signInWithPopup(auth, googleProvider); }
-    catch (e) {
-      if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request")
-        setError(firebaseMsg(e.code, e.message));
+    try {
+      /* signInWithRedirect is more reliable than signInWithPopup across
+         browsers and Vite dev environments. The page redirects to Google,
+         then back to the app. AuthContext handles the result via
+         getRedirectResult + onAuthStateChanged. */
+      await signInWithRedirect(auth, googleProvider);
+    } catch (e) {
+      setError(firebaseMsg(e.code, e.message));
+      setLoading(false);
     }
-    finally { setLoading(false); }
+    /* Don't setLoading(false) on success — the page navigates away */
   };
+
   return (
     <>
       {error && <div style={errBox}>{error}</div>}
@@ -132,7 +139,7 @@ function GoogleButton({ label }) {
         onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
         onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}
       >
-        <GoogleIcon /> {loading ? "מתחבר..." : label}
+        <GoogleIcon /> {loading ? "מעביר לגוגל..." : label}
       </button>
     </>
   );
