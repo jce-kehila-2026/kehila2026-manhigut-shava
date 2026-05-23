@@ -264,7 +264,7 @@ export default function ProfilePage() {
       width:"92px", height:"92px", borderRadius:"50%",
       background:"linear-gradient(135deg, #38bdf8, #1a3c5e)",
       padding:"3px",
-      boxShadow:"0 8px 24px rgba(14,165,233,0.3)",
+      boxShadow:"0 2px 8px rgba(15,23,42,0.12)",
     },
     avatarInner: {
       width:"100%", height:"100%", borderRadius:"50%",
@@ -343,9 +343,7 @@ export default function ProfilePage() {
       borderRadius:"13px", fontSize:"14px", fontWeight:"700",
       cursor: saving ? "not-allowed" : "pointer",
       transition:"background 0.3s, transform 0.15s, box-shadow 0.2s",
-      boxShadow: saved
-        ? "0 8px 20px rgba(22,163,74,0.28)"
-        : "0 8px 20px rgba(26,60,94,0.16)",
+      boxShadow: "0 2px 8px rgba(15,23,42,0.1)",
       display:"flex", alignItems:"center", gap:"7px",
       opacity: saving ? 0.7 : 1,
     },

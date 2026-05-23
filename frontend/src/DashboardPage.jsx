@@ -217,7 +217,7 @@ export default function DashboardPage() {
       color:"#fff",
       cursor:"pointer",
       transition:"opacity 0.2s",
-      boxShadow:"0 8px 28px rgba(26,60,94,0.18)",
+      boxShadow:"0 2px 8px rgba(15,23,42,0.08)",
     },
     welcomeLeft: {
       display:"flex", alignItems:"center", gap:"1.25rem",
@@ -226,7 +226,7 @@ export default function DashboardPage() {
       width:"52px", height:"52px", borderRadius:"50%",
       background:"linear-gradient(135deg, #38bdf8, #1a3c5e)",
       padding:"2.5px",
-      boxShadow:"0 4px 12px rgba(14,165,233,0.3)",
+      boxShadow:"0 2px 8px rgba(15,23,42,0.1)",
     },
     avatarInner: {
       width:"100%", height:"100%", borderRadius:"50%",
@@ -270,7 +270,7 @@ export default function DashboardPage() {
       padding:"1.5rem",
       border:"1.5px solid #f1f5f9",
       borderLeft:"4px solid #e2e8f0",
-      boxShadow:"0 4px 16px rgba(15,23,42,0.05)",
+      boxShadow:"0 2px 8px rgba(15,23,42,0.05)",
       cursor:"pointer",
       transition:"transform 0.18s, box-shadow 0.18s",
       display:"flex",
