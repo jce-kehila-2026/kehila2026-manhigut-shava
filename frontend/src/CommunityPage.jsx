@@ -80,7 +80,7 @@ const sectionLabel = {
 };
 
 export default function CommunityPage() {
-  const { user } = useAuth();
+  const { user, profile: authProfile } = useAuth();
   const [posts,    setPosts]    = useState([]);
   const [text,     setText]     = useState("");
   const [files,    setFiles]    = useState([]);
@@ -442,15 +442,17 @@ export default function CommunityPage() {
                   <p style={S.postAuthor}>{p.authorName}</p>
                   <p style={S.postTime}>{timeAgo(p.createdAt)}</p>
                 </div>
-                {user && user.uid === p.authorId && (
+                {user && (user.uid === p.authorId || authProfile?.isAdmin) && (
                   <div style={S.postActions}>
-                    <button
-                      className="post-edit-btn"
-                      style={S.postEditBtn}
-                      onClick={() => { setEditingId(p.id); setEditText(p.text || ""); }}
-                    >
-                      Edit
-                    </button>
+                    {user.uid === p.authorId && (
+                      <button
+                        className="post-edit-btn"
+                        style={S.postEditBtn}
+                        onClick={() => { setEditingId(p.id); setEditText(p.text || ""); }}
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       className="post-delete-btn"
                       style={S.postDeleteBtn}
