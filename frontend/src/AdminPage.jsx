@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  collection, getDocs, deleteDoc, doc, query, orderBy,
+  collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
@@ -60,6 +60,16 @@ const S = {
     cursor: "pointer", fontFamily: "'Heebo', system-ui, sans-serif",
     transition: "background 0.15s",
   },
+  adminBtn: {
+    background: "none", border: "1px solid #a78bfa", color: "#7c3aed",
+    borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
+    cursor: "pointer", fontFamily: "'Heebo', system-ui, sans-serif",
+    transition: "background 0.15s", marginLeft: "6px",
+  },
+  adminBadge: {
+    fontSize: "10px", fontWeight: 700, padding: "2px 9px", borderRadius: "99px",
+    background: "#ede9fe", color: "#6d28d9", border: "1px solid #c4b5fd",
+  },
 
   empty: { textAlign: "center", padding: "3rem", color: "#cbd5e1", fontSize: "14px" },
   tableWrap: {
@@ -108,6 +118,11 @@ export default function AdminPage() {
   const deleteUser = async (id) => {
     await deleteDoc(doc(db, "users", id));
     setUsers(prev => prev.filter(u => u.id !== id));
+  };
+
+  const toggleAdmin = async (id, current) => {
+    await updateDoc(doc(db, "users", id), { isAdmin: !current });
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, isAdmin: !current } : u));
   };
 
   const deletePost = async (id) => {
@@ -184,6 +199,15 @@ export default function AdminPage() {
                     </td>
                     <td style={S.td}>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
                     <td style={S.td}>
+                      {u.isAdmin && <span style={S.adminBadge}>Admin</span>}
+                      <button
+                        style={S.adminBtn}
+                        onMouseEnter={e => e.currentTarget.style.background = "#ede9fe"}
+                        onMouseLeave={e => e.currentTarget.style.background = "none"}
+                        onClick={() => toggleAdmin(u.id, u.isAdmin)}
+                      >
+                        {u.isAdmin ? "Revoke Admin" : "Make Admin"}
+                      </button>
                       <button
                         style={S.delBtn}
                         onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
