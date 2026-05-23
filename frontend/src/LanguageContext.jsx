@@ -136,6 +136,12 @@ const translations = {
       confirm: "אשר",
       errorGeneral: "משהו השתבש. נסה/י שוב.",
     },
+    network: {
+      joinNetwork: "הצטרף לרשת",
+      inNetwork:   "ברשת שלי",
+      connections: (n) => `${n} חיבורים`,
+      networkCount: "חיבורים",
+    },
     lang: { switcher: "שפה", he: "עברית", en: "English", ar: "العربية" },
     common: {
       justNow:    "עכשיו",
@@ -277,6 +283,12 @@ const translations = {
       confirm: "Confirm",
       errorGeneral: "Something went wrong. Please try again.",
     },
+    network: {
+      joinNetwork: "Join Network",
+      inNetwork:   "In Network",
+      connections: (n) => `${n} connection${n !== 1 ? "s" : ""}`,
+      networkCount: "Connections",
+    },
     lang: { switcher: "Language", he: "עברית", en: "English", ar: "العربية" },
     common: {
       justNow:    "just now",
@@ -417,6 +429,12 @@ const translations = {
       cancel: "إلغاء",
       confirm: "تأكيد",
       errorGeneral: "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    },
+    network: {
+      joinNetwork: "انضم للشبكة",
+      inNetwork:   "في شبكتي",
+      connections: (n) => `${n} اتصالات`,
+      networkCount: "الاتصالات",
     },
     lang: { switcher: "اللغة", he: "עברית", en: "English", ar: "العربية" },
     common: {

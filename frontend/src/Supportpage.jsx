@@ -5,6 +5,7 @@ import {
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
+import ConnectButton from "./ConnectButton";
 
 /* ─── Inject styles ─── */
 const styleTag = document.createElement("style");
@@ -321,6 +322,9 @@ const infoValueStyle = { fontSize: "13px", color: "#1a2e42", margin: 0 };
 
 /* ─── Profile Modal ─── */
 function ProfileModal({ selectedUser, onClose, onOpenRequest, requested, t }) {
+  const [countDelta, setCountDelta] = useState(0);
+  const displayCount = (selectedUser.networksCount ?? 0) + countDelta;
+
   return (
     <div style={overlayStyle} onClick={onClose}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
@@ -335,9 +339,18 @@ function ProfileModal({ selectedUser, onClose, onOpenRequest, requested, t }) {
           <p style={{ fontSize: "18px", fontWeight: "700", color: "#1a3c5e", margin: "0 0 4px" }}>
             {getFullName(selectedUser)}
           </p>
-          <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>
+          <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 6px" }}>
             {selectedUser.profession ?? "—"}
           </p>
+          {displayCount > 0 && (
+            <span style={{
+              fontSize: "12px", fontWeight: "700", color: "#1d4ed8",
+              background: "#eff6ff", border: "1px solid #bfdbfe",
+              borderRadius: "99px", padding: "3px 12px", display: "inline-block",
+            }}>
+              {t.network?.connections ? t.network.connections(displayCount) : `${displayCount} connections`}
+            </span>
+          )}
         </div>
 
         <div style={infoBlockStyle}>
@@ -367,30 +380,38 @@ function ProfileModal({ selectedUser, onClose, onOpenRequest, requested, t }) {
           )}
         </div>
 
-        {requested[selectedUser.id] ? (
-          <button style={{
-            width: "100%", padding: "12px",
-            background: "#f0fdf4", color: "#166534",
-            border: "1.5px solid #bbf7d0", borderRadius: "12px",
-            fontSize: "14px", fontWeight: "700", cursor: "default",
-          }}>
-            {t.support.requestSent}
-          </button>
-        ) : (
-          <button
-            className="modal-primary-btn"
-            style={{
-              width: "100%", padding: "12px",
-              background: "#1a3c5e", color: "#fff",
-              border: "none", borderRadius: "12px",
-              fontSize: "14px", fontWeight: "700",
-              cursor: "pointer", transition: "background 0.2s",
-            }}
-            onClick={() => { onClose(); onOpenRequest(selectedUser); }}
-          >
-            {t.support.sendRequest}
-          </button>
-        )}
+        {/* Connect + Request buttons side by side */}
+        <div style={{ display: "flex", gap: "10px" }}>
+          <ConnectButton
+            targetUserId={selectedUser.id}
+            size="full"
+            onToggle={(d) => setCountDelta((prev) => prev + d)}
+          />
+          {requested[selectedUser.id] ? (
+            <button style={{
+              flex: 1, padding: "10px",
+              background: "#f0fdf4", color: "#166534",
+              border: "1.5px solid #bbf7d0", borderRadius: "10px",
+              fontSize: "13px", fontWeight: "700", cursor: "default",
+            }}>
+              {t.support.requestSent}
+            </button>
+          ) : (
+            <button
+              className="modal-primary-btn"
+              style={{
+                flex: 1, padding: "10px",
+                background: "#1a3c5e", color: "#fff",
+                border: "none", borderRadius: "10px",
+                fontSize: "13px", fontWeight: "700",
+                cursor: "pointer", transition: "background 0.2s",
+              }}
+              onClick={() => { onClose(); onOpenRequest(selectedUser); }}
+            >
+              {t.support.sendRequest}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -887,19 +908,15 @@ export default function SupportPage() {
                 {u.city && (
                   <span style={{ ...S.cityTag, marginTop: "-2px" }}>{u.city}</span>
                 )}
-                {requested[u.id] ? (
-                  <span style={{ fontSize: "12px", color: "#166534", fontWeight: "700" }}>
-                    {t.support.sent}
+                {(u.networksCount ?? 0) > 0 && (
+                  <span style={{ fontSize: "11px", color: "#64748b" }}>
+                    {u.networksCount} {t.network?.networkCount ?? "connections"}
                   </span>
-                ) : (
-                  <button
-                    className="req-btn"
-                    style={S.suggestedReqBtn}
-                    onClick={() => setRequestTarget(u)}
-                  >
-                    {t.support.sendRequest}
-                  </button>
                 )}
+                <ConnectButton
+                  targetUserId={u.id}
+                  size="sm"
+                />
               </div>
             ))}
           </div>
@@ -1000,18 +1017,24 @@ export default function SupportPage() {
                   </div>
                 </div>
                 {u.city && <span style={S.cityTag}>{u.city}</span>}
+                {(u.networksCount ?? 0) > 0 && (
+                  <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                    {u.networksCount} {t.network?.networkCount ?? "connections"}
+                  </span>
+                )}
                 <div style={S.cardActions}>
                   <button className="view-btn" style={S.viewBtn} onClick={() => setSelectedUser(u)}>
                     {t.support.viewProfile}
                   </button>
-                  <button
-                    className={requested[u.id] ? "" : "req-btn"}
-                    style={requested[u.id] ? S.reqDoneBtn : S.reqBtn}
-                    onClick={() => !requested[u.id] && setRequestTarget(u)}
-                  >
-                    {requested[u.id] ? t.support.sent : t.support.sendRequest}
-                  </button>
+                  <ConnectButton targetUserId={u.id} size="sm" />
                 </div>
+                <button
+                  className={requested[u.id] ? "" : "req-btn"}
+                  style={{ ...(requested[u.id] ? S.reqDoneBtn : S.reqBtn), width: "100%" }}
+                  onClick={() => !requested[u.id] && setRequestTarget(u)}
+                >
+                  {requested[u.id] ? t.support.sent : t.support.sendRequest}
+                </button>
               </div>
             ))}
           </div>

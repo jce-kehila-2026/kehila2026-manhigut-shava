@@ -8,6 +8,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
+import ConnectButton from "./ConnectButton";
 
 const storage = getStorage();
 
@@ -151,12 +152,22 @@ function AuthorModal({ authorId, authorName, onClose, t }) {
           </button>
         </div>
         <Avatar photoURL={userData?.photoURL} name={name} size={72} fontSize={22} style={{ margin: "0 auto" }} />
-        <div>
-          <p style={{ textAlign: "center", fontSize: "18px", fontWeight: "700", color: "#1a3c5e", margin: "0 0 4px" }}>{name}</p>
+        <div style={{ textAlign: "center" }}>
+          <p style={{ fontSize: "18px", fontWeight: "700", color: "#1a3c5e", margin: "0 0 4px" }}>{name}</p>
           {userData?.profession && (
-            <p style={{ textAlign: "center", fontSize: "13px", color: "#64748b", margin: 0 }}>{userData.profession}</p>
+            <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 6px" }}>{userData.profession}</p>
+          )}
+          {(userData?.networksCount ?? 0) > 0 && (
+            <span style={{
+              fontSize: "12px", fontWeight: "700", color: "#1d4ed8",
+              background: "#eff6ff", border: "1px solid #bfdbfe",
+              borderRadius: "99px", padding: "3px 12px", display: "inline-block",
+            }}>
+              {userData.networksCount} {t.network?.networkCount ?? "connections"}
+            </span>
           )}
         </div>
+        <ConnectButton targetUserId={authorId} size="full" />
         {userData && (
           <div style={{
             background: "#f8fafc", borderRadius: "13px",

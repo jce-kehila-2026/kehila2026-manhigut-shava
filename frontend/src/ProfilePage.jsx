@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, query, where, collection, getDocs } from "firebase/firestore";
 import {
   updateEmail,
   reauthenticateWithCredential,
@@ -144,13 +144,15 @@ export default function ProfilePage() {
   const [saved,    setSaved]    = useState(false);
   const [error,    setError]    = useState("");
 
+  const [networksCount, setNetworksCount] = useState(0);
+
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail,       setNewEmail]       = useState("");
   const [password,       setPassword]       = useState("");
   const [emailError,     setEmailError]     = useState("");
   const [emailSuccess,   setEmailSuccess]   = useState("");
 
-  /* ── Load profile ── */
+  /* ── Load profile + network count ── */
   useEffect(() => {
     if (!user) return;
     getDoc(doc(db, "users", user.uid)).then((snap) => {
@@ -165,6 +167,7 @@ export default function ProfilePage() {
           bio:        d.bio        ?? "",
         });
         setPhotoURL(d.photoURL ?? null);
+        setNetworksCount(d.networksCount ?? 0);
       }
     });
   }, [user]);
@@ -331,6 +334,17 @@ export default function ProfilePage() {
             {form.firstName ? t.profile.greeting(form.firstName) : t.profile.myProfile}
           </p>
           <p style={S.greetingSub}>{t.profile.subtitle}</p>
+          {networksCount > 0 && (
+            <div style={{ marginBottom:"1rem" }}>
+              <span style={{
+                fontSize:"13px", fontWeight:"700", color:"#1d4ed8",
+                background:"#eff6ff", border:"1px solid #bfdbfe",
+                borderRadius:"99px", padding:"5px 16px", display:"inline-block",
+              }}>
+                {networksCount} {t.network?.networkCount ?? "Connections"}
+              </span>
+            </div>
+          )}
           <CompletenessBadge pct={pct} />
         </div>
 
