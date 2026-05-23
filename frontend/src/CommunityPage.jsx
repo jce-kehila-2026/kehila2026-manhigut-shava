@@ -8,6 +8,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
+import { useTheme } from "./ThemeContext";
 import ConnectButton from "./ConnectButton";
 
 const storage = getStorage();
@@ -28,15 +29,9 @@ styleTag.textContent = `
   }
 
   .post-card { animation: fadeSlideUp 0.35s ease both; }
-  .community-textarea:focus {
+  .community-textarea:focus, .comment-input:focus {
     border-color: #38bdf8 !important;
-    box-shadow: 0 0 0 3.5px rgba(56,189,248,0.15) !important;
-    background: #fff !important;
-    outline: none;
-  }
-  .comment-input:focus {
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 0 2px rgba(56,189,248,0.12) !important;
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.15) !important;
     outline: none;
   }
   .accept-btn:hover  { background: #dcfce7 !important; }
@@ -47,11 +42,12 @@ styleTag.textContent = `
   .post-author-click:hover { text-decoration: underline; }
   .post-delete-btn:hover { color: #dc2626 !important; background: #fee2e2 !important; border-color: #fca5a5 !important; }
   .post-edit-btn:hover   { color: #0ea5e9 !important; background: #e0f2fe !important; border-color: #7dd3fc !important; }
-
-  .social-btn { transition: all 0.15s; }
-  .social-btn:hover { background: #f1f5f9 !important; }
+  .social-btn { transition: background 0.15s; }
+  .social-btn:hover { background: rgba(99,115,129,0.08) !important; }
+  .social-btn-liked { color: #1d4ed8 !important; background: #eff6ff !important; }
   .social-btn-liked:hover { background: #dbeafe !important; }
   .send-comment-btn:hover { background: #0284c7 !important; }
+  .repost-author-link:hover { text-decoration: underline; cursor: pointer; }
 `;
 if (!document.head.querySelector("#community-styles")) {
   styleTag.id = "community-styles";
@@ -63,8 +59,8 @@ function timeAgo(ts, t) {
   if (!ts) return "";
   const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
   if (diff < 60)    return t.common?.justNow    ?? "just now";
-  if (diff < 3600)  return t.common?.minutesAgo ? t.common.minutesAgo(Math.floor(diff / 60)) : `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return t.common?.hoursAgo   ? t.common.hoursAgo(Math.floor(diff / 3600)) : `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 3600)  return t.common?.minutesAgo ? t.common.minutesAgo(Math.floor(diff / 60))   : `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return t.common?.hoursAgo   ? t.common.hoursAgo(Math.floor(diff / 3600))   : `${Math.floor(diff / 3600)}h ago`;
   return t.common?.daysAgo ? t.common.daysAgo(Math.floor(diff / 86400)) : `${Math.floor(diff / 86400)}d ago`;
 }
 
@@ -85,25 +81,17 @@ function Avatar({ photoURL, name, size = 38, fontSize = 13, style = {} }) {
   const base = {
     width: size, height: size, borderRadius: "50%",
     background: "linear-gradient(135deg,#1a3c5e,#0ea5e9)",
-    color: "#fff", display: "flex",
-    alignItems: "center", justifyContent: "center",
-    fontSize, fontWeight: "700", flexShrink: 0, overflow: "hidden",
-    ...style,
+    color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize, fontWeight: "700", flexShrink: 0, overflow: "hidden", ...style,
   };
-  if (photoURL) {
-    return (
-      <div style={base}>
-        <img src={photoURL} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      </div>
-    );
-  }
+  if (photoURL)
+    return <div style={base}><img src={photoURL} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>;
   return <div style={base}>{getInitials(name)}</div>;
 }
 
 /* ─── Author profile modal ─── */
-function AuthorModal({ authorId, authorName, onClose, t }) {
+function AuthorModal({ authorId, authorName, onClose, t, T }) {
   const [userData, setUserData] = useState(null);
-
   useEffect(() => {
     if (!authorId) return;
     getDoc(doc(db, "users", authorId)).then((snap) => {
@@ -115,105 +103,96 @@ function AuthorModal({ authorId, authorName, onClose, t }) {
     ? (userData.firstName && userData.lastName ? `${userData.firstName} ${userData.lastName}` : authorName)
     : authorName;
 
+  const infoRow = (label, val) => val ? (
+    <div>
+      <p style={{ fontSize: "10px", fontWeight: "700", color: T.muted, textTransform: "uppercase", margin: "0 0 2px" }}>{label}</p>
+      <p style={{ fontSize: "13px", color: T.sub, margin: 0 }}>{val}</p>
+    </div>
+  ) : null;
+
   return (
-    <div
-      style={{
-        position: "fixed", inset: 0,
-        background: "rgba(15,23,42,0.45)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        zIndex: 200, padding: "1rem",
-        backdropFilter: "blur(4px)",
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: "#fff", borderRadius: "22px",
-          padding: "2rem", width: "100%", maxWidth: "400px",
-          boxShadow: "0 16px 48px rgba(15,23,42,0.16)",
-          display: "flex", flexDirection: "column", gap: "1.1rem",
-          animation: "modalPop 0.26s cubic-bezier(.34,1.56,.64,1) both",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <p style={{ fontSize: "16px", fontWeight: "700", color: "#1a3c5e", margin: 0 }}>
-            {t.community.authorProfile}
-          </p>
-          <button
-            style={{
-              background: "#f1f5f9", border: "none", borderRadius: "9px",
-              padding: "6px 12px", cursor: "pointer",
-              fontSize: "13px", fontWeight: "600", color: "#64748b",
-            }}
-            onClick={onClose}
-          >
-            {t.community.close}
-          </button>
+    <div style={{ position:"fixed",inset:0,background:"rgba(15,23,42,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"1rem",backdropFilter:"blur(4px)" }} onClick={onClose}>
+      <div style={{ background:T.card,borderRadius:"22px",padding:"2rem",width:"100%",maxWidth:"400px",boxShadow:"0 16px 48px rgba(15,23,42,0.18)",display:"flex",flexDirection:"column",gap:"1.1rem",animation:"modalPop 0.26s cubic-bezier(.34,1.56,.64,1) both" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <p style={{ fontSize:"16px",fontWeight:"700",color:T.text,margin:0 }}>{t.community.authorProfile}</p>
+          <button style={{ background:T.tagBg,border:"none",borderRadius:"9px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:"600",color:T.sub }} onClick={onClose}>{t.community.close}</button>
         </div>
-        <Avatar photoURL={userData?.photoURL} name={name} size={72} fontSize={22} style={{ margin: "0 auto" }} />
-        <div style={{ textAlign: "center" }}>
-          <p style={{ fontSize: "18px", fontWeight: "700", color: "#1a3c5e", margin: "0 0 4px" }}>{name}</p>
-          {userData?.profession && (
-            <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 6px" }}>{userData.profession}</p>
-          )}
+        <Avatar photoURL={userData?.photoURL} name={name} size={72} fontSize={22} style={{ margin:"0 auto" }} />
+        <div style={{ textAlign:"center" }}>
+          <p style={{ fontSize:"18px",fontWeight:"700",color:T.text,margin:"0 0 4px" }}>{name}</p>
+          {userData?.profession && <p style={{ fontSize:"13px",color:T.sub,margin:"0 0 6px" }}>{userData.profession}</p>}
           {(userData?.networksCount ?? 0) > 0 && (
-            <span style={{
-              fontSize: "12px", fontWeight: "700", color: "#1d4ed8",
-              background: "#eff6ff", border: "1px solid #bfdbfe",
-              borderRadius: "99px", padding: "3px 12px", display: "inline-block",
-            }}>
+            <span style={{ fontSize:"12px",fontWeight:"700",color:"#1d4ed8",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:"99px",padding:"3px 12px",display:"inline-block" }}>
               {userData.networksCount} {t.network?.networkCount ?? "connections"}
             </span>
           )}
         </div>
-        <ConnectButton targetUserId={authorId} size="full" />
         {userData && (
-          <div style={{
-            background: "#f8fafc", borderRadius: "13px",
-            padding: "1rem 1.25rem", border: "1.5px solid #f1f5f9",
-            display: "flex", flexDirection: "column", gap: "10px",
-          }}>
-            {userData.city && (
-              <div>
-                <p style={{ fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", margin: "0 0 2px" }}>
-                  {t.support.city}
-                </p>
-                <p style={{ fontSize: "13px", color: "#1a2e42", margin: 0 }}>{userData.city}</p>
-              </div>
-            )}
-            {userData.bio && (
-              <div>
-                <p style={{ fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", margin: "0 0 2px" }}>
-                  {t.support.bio}
-                </p>
-                <p style={{ fontSize: "13px", color: "#1a2e42", margin: 0 }}>{userData.bio}</p>
-              </div>
-            )}
-            {userData.phone && (
-              <div>
-                <p style={{ fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", margin: "0 0 2px" }}>
-                  {t.support.phone}
-                </p>
-                <p style={{ fontSize: "13px", color: "#1a2e42", margin: 0 }}>{userData.phone}</p>
-              </div>
-            )}
+          <div style={{ background:T.inputBg,borderRadius:"13px",padding:"1rem 1.25rem",border:`1.5px solid ${T.cardBorder}`,display:"flex",flexDirection:"column",gap:"10px" }}>
+            {infoRow(t.support?.city,  userData.city)}
+            {infoRow(t.support?.bio,   userData.bio)}
+            {infoRow(t.support?.phone, userData.phone)}
           </div>
         )}
+        <ConnectButton targetUserId={authorId} size="full" />
       </div>
     </div>
   );
 }
 
-/* ─── Shared layout tokens ─── */
-const sideCard = {
-  background: "#fff", borderRadius: "18px", padding: "1.5rem",
-  border: "1.5px solid #f1f5f9", borderLeft: "4px solid #38bdf8",
-  boxShadow: "0 4px 16px rgba(15,23,42,0.05)", marginBottom: "1.25rem",
-};
+/* ─── Repost modal ─── */
+function RepostModal({ originalPost, onClose, onRepost, t, T }) {
+  const [addedText, setAddedText] = useState("");
+  const [posting,   setPosting]   = useState(false);
+
+  return (
+    <div style={{ position:"fixed",inset:0,background:"rgba(15,23,42,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"1rem",backdropFilter:"blur(4px)" }} onClick={onClose}>
+      <div style={{ background:T.card,borderRadius:"22px",padding:"2rem",width:"100%",maxWidth:"500px",boxShadow:"0 16px 48px rgba(15,23,42,0.18)",display:"flex",flexDirection:"column",gap:"1rem",animation:"modalPop 0.26s cubic-bezier(.34,1.56,.64,1) both",maxHeight:"90vh",overflowY:"auto" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <p style={{ fontSize:"16px",fontWeight:"700",color:T.text,margin:0 }}>↺ {t.community.repost}</p>
+          <button style={{ background:T.tagBg,border:"none",borderRadius:"9px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:"600",color:T.sub }} onClick={onClose}>{t.community.close}</button>
+        </div>
+        <textarea
+          style={{ width:"100%",padding:"11px 14px",fontSize:"14px",border:`1.5px solid ${T.inputBorder}`,borderRadius:"13px",resize:"none",fontFamily:"inherit",color:T.text,background:T.inputBg,minHeight:"80px" }}
+          placeholder={t.community.addThoughtsPlaceholder ?? "Add your thoughts…"}
+          value={addedText}
+          onChange={e => setAddedText(e.target.value)}
+          className="community-textarea"
+        />
+        {/* Embedded original */}
+        <div style={{ background:T.inputBg,borderRadius:"13px",padding:"1rem 1.25rem",border:`1.5px solid ${T.cardBorder}`,borderLeft:`3px solid #38bdf8` }}>
+          <p style={{ fontSize:"10px",fontWeight:"700",color:T.muted,textTransform:"uppercase",margin:"0 0 8px",letterSpacing:"0.08em" }}>{t.community.originalPost}</p>
+          <div style={{ display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px" }}>
+            <Avatar photoURL={originalPost.authorPhotoURL} name={originalPost.authorName} size={28} fontSize={10} />
+            <p style={{ fontSize:"13px",fontWeight:"700",color:T.text,margin:0 }}>{originalPost.authorName}</p>
+          </div>
+          {originalPost.text && <p style={{ fontSize:"13px",color:T.sub,lineHeight:"1.6",margin:0 }}>{originalPost.text}</p>}
+          {originalPost.media?.[0] && (
+            <img src={originalPost.media[0].url} style={{ width:"100%",maxHeight:"160px",objectFit:"cover",borderRadius:"8px",marginTop:"8px" }} alt="" />
+          )}
+        </div>
+        <button
+          style={{ padding:"12px",background:posting?"#64748b":"#1a3c5e",color:"#fff",border:"none",borderRadius:"12px",fontSize:"14px",fontWeight:"700",cursor:posting?"default":"pointer",transition:"background 0.2s" }}
+          disabled={posting}
+          onClick={async () => {
+            setPosting(true);
+            await onRepost(originalPost, addedText);
+            setPosting(false);
+            onClose();
+          }}
+        >
+          {posting ? "…" : `↺ ${t.community.repost}`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Shared sidebar card style (theme-aware) ─── */
 const sectionLabel = {
-  fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+  fontSize: "11px", fontWeight: "700",
   textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 1.1rem",
+  color: "#94a3b8",
 };
 
 /* ══════════════════════════════════════════════════════
@@ -222,36 +201,38 @@ const sectionLabel = {
 export default function CommunityPage() {
   const { user, profile: authProfile } = useAuth();
   const { t, isRTL } = useLang();
+  const { T, dark } = useTheme();
 
   /* ── Core state ── */
   const [posts,     setPosts]     = useState([]);
   const [text,      setText]      = useState("");
-  const [files,     setFiles]     = useState([]);
+  const [files,     setFiles]     = useState([]); // File[]
   const [posting,   setPosting]   = useState(false);
   const [requests,  setRequests]  = useState([]);
   const [birthdays, setBirthdays] = useState([]);
   const fileRef = useRef();
 
-  /* ── Author modal ── */
-  const [viewAuthor, setViewAuthor] = useState(null); // { authorId, authorName }
+  /* ── Modal state ── */
+  const [viewAuthor,    setViewAuthor]    = useState(null); // { authorId, authorName }
+  const [repostTarget,  setRepostTarget]  = useState(null); // post to repost
 
   /* ── Edit state ── */
   const [editingId, setEditingId] = useState(null);
   const [editText,  setEditText]  = useState("");
 
   /* ── Comments state ── */
-  const [expandedComments, setExpandedComments] = useState({}); // { postId: bool }
-  const [postComments,     setPostComments]     = useState({}); // { postId: Comment[] }
-  const [commentText,      setCommentText]      = useState({}); // { postId: string }
-  const [sendingComment,   setSendingComment]   = useState({}); // { postId: bool }
+  const [expandedComments, setExpandedComments] = useState({});
+  const [postComments,     setPostComments]     = useState({});
+  const [commentText,      setCommentText]      = useState({});
+  const [sendingComment,   setSendingComment]   = useState({});
 
-  /* ── Author display name ── */
+  /* ── My name ── */
   const myName =
     authProfile?.firstName && authProfile?.lastName
       ? `${authProfile.firstName} ${authProfile.lastName}`
       : user?.email ?? "";
 
-  /* ── Initial data fetch ── */
+  /* ── Initial fetch ── */
   useEffect(() => {
     fetchPosts();
     fetchRequests();
@@ -281,7 +262,15 @@ export default function CommunityPage() {
     setBirthdays(upcoming);
   };
 
-  /* ── Post new content ── */
+  /* ── File input: add up to 5, per-file delete ── */
+  const handleFileAdd = (e) => {
+    const incoming = Array.from(e.target.files);
+    setFiles((prev) => [...prev, ...incoming].slice(0, 5));
+    e.target.value = ""; // allow re-selecting same file
+  };
+  const handleFileRemove = (idx) => setFiles((prev) => prev.filter((_, i) => i !== idx));
+
+  /* ── Post ── */
   const handlePost = async () => {
     if (!text.trim() && files.length === 0) return;
     setPosting(true);
@@ -294,23 +283,19 @@ export default function CommunityPage() {
         mediaUrls.push({ url, type: file.type.startsWith("video") ? "video" : "image" });
       }
       await addDoc(collection(db, "posts"), {
-        text,
-        media:          mediaUrls,
-        authorId:       user.uid,
-        authorName:     myName,
+        text, media: mediaUrls,
+        authorId: user.uid, authorName: myName,
         authorPhotoURL: authProfile?.photoURL ?? null,
-        createdAt:      new Date().toISOString(),
-        likesCount:     0,
-        likedBy:        [],
-        commentsCount:  0,
+        createdAt: new Date().toISOString(),
+        likesCount: 0, likedBy: [], commentsCount: 0,
       });
       setText(""); setFiles([]);
       fetchPosts();
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Post error:", err); }
     finally { setPosting(false); }
   };
 
-  /* ── Edit post (own posts) ── */
+  /* ── Edit post ── */
   const handleSaveEdit = async (postId) => {
     if (!editText.trim()) return;
     await updateDoc(doc(db, "posts", postId), { text: editText });
@@ -318,19 +303,17 @@ export default function CommunityPage() {
     setEditingId(null);
   };
 
-  /* ── Delete post (own or admin) ── */
+  /* ── Delete post ── */
   const handleDeletePost = async (postId) => {
-    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    if (!window.confirm("Delete this post?")) return;
     await deleteDoc(doc(db, "posts", postId));
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
-  /* ── Help request accept/decline ── */
+  /* ── Help request response ── */
   const handleRequest = async (reqId, status) => {
     await updateDoc(doc(db, "helpRequests", reqId), { status, responderName: myName });
-    setRequests((prev) =>
-      prev.map((r) => (r.id === reqId ? { ...r, status, responderName: myName } : r))
-    );
+    setRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status, responderName: myName } : r));
   };
 
   /* ── Like toggle ── */
@@ -338,84 +321,73 @@ export default function CommunityPage() {
     if (!user) return;
     const isLiked = post.likedBy?.includes(user.uid);
     const newCount = Math.max(0, (post.likesCount ?? 0) + (isLiked ? -1 : 1));
-    await updateDoc(doc(db, "posts", post.id), {
-      likedBy:    isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
-      likesCount: newCount,
-    });
-    setPosts((prev) => prev.map((p) => p.id === post.id ? {
-      ...p,
-      likedBy:    isLiked ? (p.likedBy ?? []).filter((id) => id !== user.uid) : [...(p.likedBy ?? []), user.uid],
-      likesCount: newCount,
-    } : p));
+    try {
+      await updateDoc(doc(db, "posts", post.id), {
+        likedBy:    isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
+        likesCount: newCount,
+      });
+      setPosts((prev) => prev.map((p) => p.id === post.id ? {
+        ...p,
+        likedBy:    isLiked ? (p.likedBy ?? []).filter((id) => id !== user.uid) : [...(p.likedBy ?? []), user.uid],
+        likesCount: newCount,
+      } : p));
+    } catch (err) { console.error("Like error — check Firestore rules:", err); }
   };
 
-  /* ── Toggle comments panel ── */
+  /* ── Comments ── */
   const toggleComments = async (postId) => {
     const isOpen = expandedComments[postId];
     setExpandedComments((prev) => ({ ...prev, [postId]: !isOpen }));
     if (!isOpen && !postComments[postId]) {
-      const q = query(
-        collection(db, "posts", postId, "comments"),
-        orderBy("createdAt", "asc")
-      );
-      const snap = await getDocs(q);
-      setPostComments((prev) => ({
-        ...prev,
-        [postId]: snap.docs.map((d) => ({ id: d.id, ...d.data() })),
-      }));
+      try {
+        const q = query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "asc"));
+        const snap = await getDocs(q);
+        setPostComments((prev) => ({
+          ...prev,
+          [postId]: snap.docs.map((d) => ({ id: d.id, ...d.data() })),
+        }));
+      } catch (err) { console.error("Load comments error — check Firestore rules:", err); }
     }
   };
 
-  /* ── Add comment ── */
   const handleAddComment = async (postId) => {
     const ct = commentText[postId]?.trim();
     if (!ct || !user) return;
     setSendingComment((prev) => ({ ...prev, [postId]: true }));
     try {
       const comment = {
-        text:           ct,
-        authorId:       user.uid,
-        authorName:     myName,
+        text: ct, authorId: user.uid, authorName: myName,
         authorPhotoURL: authProfile?.photoURL ?? null,
-        createdAt:      new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       };
       const docRef = await addDoc(collection(db, "posts", postId, "comments"), comment);
       const newCount = (posts.find((p) => p.id === postId)?.commentsCount ?? 0) + 1;
       await updateDoc(doc(db, "posts", postId), { commentsCount: newCount });
-      setPostComments((prev) => ({
-        ...prev,
-        [postId]: [...(prev[postId] ?? []), { id: docRef.id, ...comment }],
-      }));
-      setPosts((prev) => prev.map((p) =>
-        p.id === postId ? { ...p, commentsCount: newCount } : p
-      ));
+      setPostComments((prev) => ({ ...prev, [postId]: [...(prev[postId] ?? []), { id: docRef.id, ...comment }] }));
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, commentsCount: newCount } : p));
       setCommentText((prev) => ({ ...prev, [postId]: "" }));
-    } catch (err) { console.error("Comment error:", err); }
+    } catch (err) { console.error("Comment error — check Firestore rules:", err); }
     finally { setSendingComment((prev) => ({ ...prev, [postId]: false })); }
   };
 
   /* ── Repost ── */
-  const handleRepost = async (post) => {
+  const handleRepost = async (originalPost, addedText) => {
     if (!user) return;
     try {
       await addDoc(collection(db, "posts"), {
-        text:           "",
-        media:          [],
-        authorId:       user.uid,
-        authorName:     myName,
+        text: addedText ?? "",
+        media: [], authorId: user.uid, authorName: myName,
         authorPhotoURL: authProfile?.photoURL ?? null,
-        createdAt:      new Date().toISOString(),
-        likesCount:     0,
-        likedBy:        [],
-        commentsCount:  0,
+        createdAt: new Date().toISOString(),
+        likesCount: 0, likedBy: [], commentsCount: 0,
         repostOf: {
-          postId:                 post.id,
-          originalAuthorId:       post.authorId,
-          originalAuthorName:     post.authorName,
-          originalAuthorPhotoURL: post.authorPhotoURL ?? null,
-          originalText:           post.text ?? "",
-          originalMedia:          post.media ?? [],
-          originalCreatedAt:      post.createdAt,
+          postId: originalPost.id,
+          originalAuthorId: originalPost.authorId,
+          originalAuthorName: originalPost.authorName,
+          originalAuthorPhotoURL: originalPost.authorPhotoURL ?? null,
+          originalText: originalPost.text ?? "",
+          originalMedia: originalPost.media ?? [],
+          originalCreatedAt: originalPost.createdAt,
         },
       });
       fetchPosts();
@@ -423,190 +395,86 @@ export default function CommunityPage() {
   };
 
   /* ══ Styles ══ */
+  const sideCard = {
+    background: T.card, borderRadius: "18px", padding: "1.5rem",
+    border: `1.5px solid ${T.cardBorder}`, borderLeft: "4px solid #38bdf8",
+    boxShadow: "0 4px 16px rgba(15,23,42,0.05)", marginBottom: "1.25rem",
+  };
+
   const S = {
-    page:      { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", direction: isRTL ? "rtl" : "ltr" },
-    pageTitle: { fontSize: "22px", fontWeight: "700", color: "#1a3c5e", margin: "0 0 3px" },
-    pageSub:   { fontSize: "13px", color: "#94a3b8", margin: "0 0 1.75rem" },
-    layout: {
-      display: "grid",
-      gridTemplateColumns: "260px 1fr 260px",
-      gap: "1.5rem", alignItems: "start",
-    },
+    page:      { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", direction: isRTL ? "rtl" : "ltr", background: T.bg, minHeight: "100vh" },
+    pageTitle: { fontSize: "22px", fontWeight: "700", color: T.text, margin: "0 0 3px" },
+    pageSub:   { fontSize: "13px", color: T.muted, margin: "0 0 1.75rem" },
+    layout: { display: "grid", gridTemplateColumns: "260px 1fr 260px", gap: "1.5rem", alignItems: "start" },
     sidebar: { display: "flex", flexDirection: "column" },
 
-    /* requests sidebar */
-    reqItem:    { padding: "0.85rem 0", borderBottom: "1px solid #f1f5f9", display: "flex", flexDirection: "column", gap: "4px" },
-    reqName:    { fontSize: "13px", fontWeight: "700", color: "#1a3c5e", margin: 0 },
-    reqSub:     { fontSize: "12px", color: "#64748b", margin: 0 },
-    reqDetail:  { fontSize: "11px", color: "#94a3b8", margin: 0 },
-    reqNote:    { fontSize: "12px", color: "#475569", margin: 0, fontStyle: "italic" },
+    reqItem:    { padding: "0.85rem 0", borderBottom: `1px solid ${T.divider}`, display: "flex", flexDirection: "column", gap: "4px" },
+    reqName:    { fontSize: "13px", fontWeight: "700", color: T.text, margin: 0 },
+    reqSub:     { fontSize: "12px", color: T.sub,  margin: 0 },
+    reqDetail:  { fontSize: "11px", color: T.muted, margin: 0 },
+    reqNote:    { fontSize: "12px", color: T.sub, margin: 0, fontStyle: "italic" },
     reqActions: { display: "flex", gap: "6px", marginTop: "6px" },
-    acceptBtn: {
-      flex: 1, padding: "6px 0", background: "#f0fdf4", color: "#166534",
-      border: "1px solid #bbf7d0", borderRadius: "8px",
-      fontSize: "11px", fontWeight: "700", cursor: "pointer", transition: "background 0.15s",
-    },
-    declineBtn: {
-      flex: 1, padding: "6px 0", background: "#fff0f0", color: "#b91c1c",
-      border: "1px solid #fca5a5", borderRadius: "8px",
-      fontSize: "11px", fontWeight: "700", cursor: "pointer", transition: "background 0.15s",
-    },
-    statusTag: (ok) => ({
-      fontSize: "11px", fontWeight: "700",
-      color: ok ? "#166534" : "#b91c1c",
-      background: ok ? "#f0fdf4" : "#fff0f0",
-      border: `1px solid ${ok ? "#bbf7d0" : "#fca5a5"}`,
-      borderRadius: "6px", padding: "2px 8px",
-      display: "inline-block", marginTop: "4px",
-    }),
-    deleteLink: {
-      background: "none", border: "none", color: "#94a3b8",
-      cursor: "pointer", fontSize: "11px", padding: 0, marginTop: "4px",
-      transition: "color 0.15s",
-    },
-    emptyText: { fontSize: "12px", color: "#cbd5e1", textAlign: "center", padding: "1rem 0" },
+    acceptBtn:  { flex:1, padding:"6px 0", background:"#f0fdf4", color:"#166534", border:"1px solid #bbf7d0", borderRadius:"8px", fontSize:"11px", fontWeight:"700", cursor:"pointer", transition:"background 0.15s" },
+    declineBtn: { flex:1, padding:"6px 0", background:"#fff0f0", color:"#b91c1c", border:"1px solid #fca5a5", borderRadius:"8px", fontSize:"11px", fontWeight:"700", cursor:"pointer", transition:"background 0.15s" },
+    statusTag: (ok) => ({ fontSize:"11px", fontWeight:"700", color: ok?"#166534":"#b91c1c", background: ok?"#f0fdf4":"#fff0f0", border:`1px solid ${ok?"#bbf7d0":"#fca5a5"}`, borderRadius:"6px", padding:"2px 8px", display:"inline-block", marginTop:"4px" }),
+    deleteLink: { background:"none", border:"none", color:"#94a3b8", cursor:"pointer", fontSize:"11px", padding:0, marginTop:"4px", transition:"color 0.15s" },
+    emptyText:  { fontSize:"12px", color:T.muted, textAlign:"center", padding:"1rem 0" },
 
-    /* birthdays sidebar */
-    bdayItem: {
-      display: "flex", alignItems: "center", gap: "10px",
-      padding: "0.65rem 0", borderBottom: "1px solid #f1f5f9",
-    },
-    bdayAvatar: {
-      width: "34px", height: "34px", borderRadius: "50%",
-      background: "#fef9c3", color: "#854d0e",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: "12px", fontWeight: "700", flexShrink: 0,
-      border: "1.5px solid #fde047", overflow: "hidden",
-    },
-    bdayName: { fontSize: "13px", fontWeight: "600", color: "#1a3c5e", margin: 0 },
-    bdayDate: { fontSize: "11px", color: "#94a3b8", margin: 0 },
-    todayPill: {
-      fontSize: "10px", fontWeight: "700",
-      background: "#fef9c3", color: "#854d0e",
-      border: "1px solid #fde047", borderRadius: "99px", padding: "2px 8px",
-    },
+    bdayItem: { display:"flex", alignItems:"center", gap:"10px", padding:"0.65rem 0", borderBottom:`1px solid ${T.divider}` },
+    bdayAvatar: { width:"34px", height:"34px", borderRadius:"50%", background:"#fef9c3", color:"#854d0e", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:"700", flexShrink:0, border:"1.5px solid #fde047", overflow:"hidden" },
+    bdayName: { fontSize:"13px", fontWeight:"600", color:T.text, margin:0 },
+    bdayDate: { fontSize:"11px", color:T.muted, margin:0 },
+    todayPill: { fontSize:"10px", fontWeight:"700", background:"#fef9c3", color:"#854d0e", border:"1px solid #fde047", borderRadius:"99px", padding:"2px 8px" },
 
-    /* feed */
     feed:        { display: "flex", flexDirection: "column", gap: "1.25rem" },
-    composeCard: {
-      background: "#fff", borderRadius: "18px", padding: "1.5rem",
-      border: "1.5px solid #f1f5f9", borderLeft: "4px solid #38bdf8",
-      boxShadow: "0 4px 16px rgba(15,23,42,0.05)",
-      display: "flex", flexDirection: "column", gap: "0.85rem",
-    },
-    textarea: {
-      width: "100%", padding: "11px 14px", fontSize: "14px",
-      border: "1.5px solid #e2e8f0", borderRadius: "13px", resize: "none",
-      fontFamily: "inherit", color: "#1a2e42", background: "#f8fafc", minHeight: "82px",
-      transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
-    },
-    composeActions: { display: "flex", alignItems: "center", justifyContent: "space-between" },
-    attachBtn: {
-      background: "none", border: "1.5px solid #e2e8f0", borderRadius: "9px",
-      padding: "8px 14px", fontSize: "13px", color: "#64748b",
-      cursor: "pointer", fontWeight: "600", transition: "border-color 0.2s, color 0.2s",
-    },
-    postBtn: {
-      padding: "9px 22px", background: "#1a3c5e", color: "#fff", border: "none",
-      borderRadius: "10px", fontSize: "13px", fontWeight: "700",
-      cursor: "pointer", transition: "background 0.2s",
-    },
-    previewRow:   { display: "flex", gap: "8px", flexWrap: "wrap" },
-    previewThumb: { width: "58px", height: "58px", borderRadius: "10px", objectFit: "cover", border: "1.5px solid #e2e8f0" },
-    previewName:  { fontSize: "11px", color: "#64748b", background: "#f1f5f9", borderRadius: "7px", padding: "4px 10px", display: "flex", alignItems: "center" },
+    composeCard: { background: T.card, borderRadius: "18px", padding: "1.5rem", border: `1.5px solid ${T.cardBorder}`, borderLeft: "4px solid #38bdf8", boxShadow: "0 4px 16px rgba(15,23,42,0.05)", display: "flex", flexDirection: "column", gap: "0.85rem" },
+    textarea: { width:"100%", padding:"11px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", resize:"none", fontFamily:"inherit", color:T.text, background:T.inputBg, minHeight:"82px", transition:"border-color 0.2s, box-shadow 0.2s" },
+    composeActions: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" },
+    attachBtn: { background:"none", border:`1.5px solid ${T.inputBorder}`, borderRadius:"9px", padding:"8px 14px", fontSize:"13px", color:T.sub, cursor:"pointer", fontWeight:"600", transition:"border-color 0.2s, color 0.2s" },
+    postBtn:   { padding:"9px 22px", background:"#1a3c5e", color:"#fff", border:"none", borderRadius:"10px", fontSize:"13px", fontWeight:"700", cursor:"pointer", transition:"background 0.2s" },
 
-    /* post card */
-    postCard: {
-      background: "#fff", borderRadius: "18px", padding: "1.5rem",
-      border: "1.5px solid #f1f5f9", borderLeft: "4px solid #e2e8f0",
-      boxShadow: "0 4px 16px rgba(15,23,42,0.04)",
-      display: "flex", flexDirection: "column", gap: "0.75rem",
-    },
-    postHeader:    { display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" },
-    postAuthor:    { fontSize: "14px", fontWeight: "700", color: "#1a3c5e", margin: 0 },
-    postTime:      { fontSize: "11px", color: "#94a3b8", margin: 0 },
-    postText:      { fontSize: "14px", color: "#374151", lineHeight: "1.65", margin: 0 },
-    postActions:   { marginLeft: "auto", display: "flex", gap: "6px" },
-    postEditBtn: {
-      background: "none", border: "1px solid #e2e8f0", color: "#64748b",
-      cursor: "pointer", fontSize: "11px", fontWeight: "600",
-      padding: "4px 10px", borderRadius: "6px",
-      transition: "color 0.15s, background 0.15s, border-color 0.15s",
-    },
-    postDeleteBtn: {
-      background: "none", border: "1px solid #e2e8f0", color: "#94a3b8",
-      cursor: "pointer", fontSize: "11px", fontWeight: "600",
-      padding: "4px 10px", borderRadius: "6px",
-      transition: "color 0.15s, background 0.15s, border-color 0.15s",
-    },
-    editTextarea: {
-      width: "100%", padding: "10px 13px", fontSize: "14px",
-      border: "1.5px solid #38bdf8", borderRadius: "10px",
-      resize: "none", fontFamily: "inherit", color: "#1a2e42",
-      background: "#f0f9ff", minHeight: "72px", outline: "none",
-    },
-    editActions: { display: "flex", gap: "8px", justifyContent: "flex-end" },
-    saveBtn:   { padding: "7px 18px", background: "#1a3c5e", color: "#fff", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: "700", cursor: "pointer" },
-    cancelBtn: { padding: "7px 18px", background: "none", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
-    postImage: { width: "100%", maxHeight: "500px", objectFit: "contain", borderRadius: "12px", background: "#f8fafc" },
-    postVideo: { width: "100%", maxHeight: "320px", borderRadius: "12px" },
+    previewRow: { display:"flex", gap:"8px", flexWrap:"wrap" },
+    previewThumb: { width:"64px", height:"64px", borderRadius:"10px", objectFit:"cover", border:`1.5px solid ${T.cardBorderL}` },
+    previewName:  { fontSize:"11px", color:T.sub, background:T.tagBg, borderRadius:"7px", padding:"4px 10px", display:"flex", alignItems:"center" },
 
-    /* repost embedded card */
-    repostCard: {
-      background: "#f8fafc", borderRadius: "13px", padding: "1rem 1.25rem",
-      border: "1.5px solid #e2e8f0", borderLeft: "3px solid #38bdf8",
-      display: "flex", flexDirection: "column", gap: "0.5rem",
-    },
-    repostHeader: { display: "flex", alignItems: "center", gap: "8px" },
-    repostLabel:  { fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 6px" },
-    repostAuthor: { fontSize: "13px", fontWeight: "700", color: "#1a3c5e", margin: 0 },
-    repostText:   { fontSize: "13px", color: "#475569", lineHeight: "1.6", margin: 0 },
+    postCard: { background:T.card, borderRadius:"18px", padding:"1.5rem", border:`1.5px solid ${T.cardBorder}`, borderLeft:"4px solid #e2e8f0", boxShadow:"0 4px 16px rgba(15,23,42,0.04)", display:"flex", flexDirection:"column", gap:"0.75rem" },
+    postHeader: { display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" },
+    postAuthor: { fontSize:"14px", fontWeight:"700", color:T.text, margin:0 },
+    postTime:   { fontSize:"11px", color:T.muted, margin:0 },
+    postText:   { fontSize:"14px", color:dark?"#cbd5e1":"#374151", lineHeight:"1.65", margin:0 },
+    postActions: { marginLeft:"auto", display:"flex", gap:"6px" },
+    postEditBtn:   { background:"none", border:`1px solid ${T.cardBorderL}`, color:T.sub, cursor:"pointer", fontSize:"11px", fontWeight:"600", padding:"4px 10px", borderRadius:"6px", transition:"color 0.15s, background 0.15s" },
+    postDeleteBtn: { background:"none", border:`1px solid ${T.cardBorderL}`, color:T.muted, cursor:"pointer", fontSize:"11px", fontWeight:"600", padding:"4px 10px", borderRadius:"6px", transition:"color 0.15s, background 0.15s" },
+    editTextarea:  { width:"100%", padding:"10px 13px", fontSize:"14px", border:"1.5px solid #38bdf8", borderRadius:"10px", resize:"none", fontFamily:"inherit", color:T.text, background:T.inputBg, minHeight:"72px", outline:"none" },
+    editActions:   { display:"flex", gap:"8px", justifyContent:"flex-end" },
+    saveBtn:   { padding:"7px 18px", background:"#1a3c5e", color:"#fff", border:"none", borderRadius:"8px", fontSize:"12px", fontWeight:"700", cursor:"pointer" },
+    cancelBtn: { padding:"7px 18px", background:"none", color:T.sub, border:`1px solid ${T.cardBorderL}`, borderRadius:"8px", fontSize:"12px", fontWeight:"600", cursor:"pointer" },
+    postImage: { width:"100%", maxHeight:"500px", objectFit:"contain", borderRadius:"12px", background:T.inputBg },
+    postVideo: { width:"100%", maxHeight:"320px", borderRadius:"12px" },
 
-    /* social action bar */
-    actionBar: {
-      display: "flex", gap: "4px",
-      borderTop: "1px solid #f1f5f9", paddingTop: "0.75rem", marginTop: "0.25rem",
-    },
+    repostCard: { background:T.inputBg, borderRadius:"13px", padding:"1rem 1.25rem", border:`1.5px solid ${T.cardBorder}`, borderLeft:"3px solid #38bdf8", display:"flex", flexDirection:"column", gap:"0.5rem" },
+    repostLabel:  { fontSize:"10px", fontWeight:"700", color:T.muted, textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 6px" },
+    repostAuthor: { fontSize:"13px", fontWeight:"700", color:T.text, margin:0 },
+    repostText:   { fontSize:"13px", color:T.sub, lineHeight:"1.6", margin:0 },
+
+    actionBar: { display:"flex", gap:"4px", borderTop:`1px solid ${T.divider}`, paddingTop:"0.75rem", marginTop:"0.25rem" },
     socialBtn: (active) => ({
-      display: "flex", alignItems: "center", gap: "5px",
-      padding: "6px 12px", borderRadius: "8px",
+      display:"flex", alignItems:"center", gap:"5px",
+      padding:"6px 12px", borderRadius:"8px",
       background: active ? "#eff6ff" : "transparent",
-      color: active ? "#1d4ed8" : "#64748b",
-      border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "600",
-      transition: "background 0.15s",
+      color: active ? "#1d4ed8" : T.sub,
+      border:"none", cursor:"pointer", fontSize:"12px", fontWeight:"600",
     }),
 
-    /* comments section */
-    commentsSection: {
-      borderTop: "1px solid #f1f5f9", paddingTop: "1rem",
-      display: "flex", flexDirection: "column", gap: "0.75rem",
-    },
-    commentItem: {
-      display: "flex", gap: "10px", alignItems: "flex-start",
-    },
-    commentBubble: {
-      background: "#f8fafc", borderRadius: "12px", padding: "8px 12px",
-      flex: 1, border: "1px solid #f1f5f9",
-    },
-    commentAuthor: { fontSize: "12px", fontWeight: "700", color: "#1a3c5e", margin: "0 0 3px" },
-    commentText:   { fontSize: "13px", color: "#374151", margin: 0, lineHeight: "1.5" },
-    commentTime:   { fontSize: "10px", color: "#94a3b8", margin: "4px 0 0" },
-    commentCompose: {
-      display: "flex", gap: "8px", alignItems: "flex-start",
-    },
-    commentInput: {
-      flex: 1, padding: "9px 13px", fontSize: "13px",
-      border: "1.5px solid #e2e8f0", borderRadius: "10px",
-      fontFamily: "inherit", color: "#1a2e42", background: "#f8fafc",
-      transition: "border-color 0.2s, box-shadow 0.2s",
-      resize: "none",
-    },
-    sendCommentBtn: {
-      padding: "9px 16px", background: "#0ea5e9", color: "#fff",
-      border: "none", borderRadius: "10px",
-      fontSize: "12px", fontWeight: "700", cursor: "pointer",
-      transition: "background 0.15s", flexShrink: 0,
-    },
+    commentsSection: { borderTop:`1px solid ${T.divider}`, paddingTop:"1rem", display:"flex", flexDirection:"column", gap:"0.75rem" },
+    commentItem:     { display:"flex", gap:"10px", alignItems:"flex-start" },
+    commentBubble:   { background:T.inputBg, borderRadius:"12px", padding:"8px 12px", flex:1, border:`1px solid ${T.cardBorder}` },
+    commentAuthor:   { fontSize:"12px", fontWeight:"700", color:T.text, margin:"0 0 3px" },
+    commentText:     { fontSize:"13px", color:dark?"#cbd5e1":"#374151", margin:0, lineHeight:"1.5" },
+    commentTime:     { fontSize:"10px", color:T.muted, margin:"4px 0 0" },
+    commentCompose:  { display:"flex", gap:"8px", alignItems:"center" },
+    commentInput:    { flex:1, padding:"9px 13px", fontSize:"13px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"10px", fontFamily:"inherit", color:T.text, background:T.inputBg, transition:"border-color 0.2s, box-shadow 0.2s" },
+    sendCommentBtn:  { padding:"9px 16px", background:"#0ea5e9", color:"#fff", border:"none", borderRadius:"10px", fontSize:"12px", fontWeight:"700", cursor:"pointer", transition:"background 0.15s", flexShrink:0 },
   };
 
   /* ─────────────────────────────────────── RENDER ─── */
@@ -616,10 +484,10 @@ export default function CommunityPage() {
       <p style={S.pageSub}>{t.community.subtitle}</p>
 
       <div style={S.layout}>
-        {/* ── Left sidebar: Help Requests ── */}
+        {/* ── Left: Requests ── */}
         <div style={S.sidebar}>
           <div style={{ ...sideCard, borderLeftColor: "#a78bfa" }}>
-            <p style={sectionLabel}>{t.community.requestsReceived}</p>
+            <p style={{ ...sectionLabel, color: T.muted }}>{t.community.requestsReceived}</p>
             {requests.length === 0 && <p style={S.emptyText}>{t.community.noRequests}</p>}
             {requests.map((r) => (
               <div key={r.id} style={S.reqItem}>
@@ -627,9 +495,7 @@ export default function CommunityPage() {
                 <p style={S.reqSub}>{r.fromUserProfession}</p>
                 <p style={S.reqDetail}>{r.fromUserEmail}</p>
                 {r.fromUserPhone && <p style={S.reqDetail}>{r.fromUserPhone}</p>}
-                {r.helpNote && (
-                  <p style={S.reqNote}>"{r.helpNote}"</p>
-                )}
+                {r.helpNote && <p style={S.reqNote}>"{r.helpNote}"</p>}
                 {!r.status && (
                   <div style={S.reqActions}>
                     <button className="accept-btn"  style={S.acceptBtn}  onClick={() => handleRequest(r.id, "accepted")}>{t.community.accept}</button>
@@ -641,14 +507,10 @@ export default function CommunityPage() {
                     {r.status === "accepted" ? t.community.accepted : t.community.declined} {t.community.by} {r.responderName}
                   </span>
                 )}
-                <button
-                  className="delete-link"
-                  style={S.deleteLink}
-                  onClick={async () => {
-                    await deleteDoc(doc(db, "helpRequests", r.id));
-                    setRequests((prev) => prev.filter((req) => req.id !== r.id));
-                  }}
-                >
+                <button className="delete-link" style={S.deleteLink} onClick={async () => {
+                  await deleteDoc(doc(db, "helpRequests", r.id));
+                  setRequests((prev) => prev.filter((req) => req.id !== r.id));
+                }}>
                   {t.community.delete}
                 </button>
               </div>
@@ -667,25 +529,45 @@ export default function CommunityPage() {
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
+            {/* File previews with per-file X button */}
             {files.length > 0 && (
               <div style={S.previewRow}>
-                {files.map((f, i) =>
-                  f.type.startsWith("image") ? (
-                    <img key={i} src={URL.createObjectURL(f)} style={S.previewThumb} alt="" />
-                  ) : (
-                    <span key={i} style={S.previewName}>{f.name}</span>
-                  )
-                )}
+                {files.map((f, i) => (
+                  <div key={i} style={{ position: "relative" }}>
+                    {f.type.startsWith("image") ? (
+                      <img src={URL.createObjectURL(f)} style={S.previewThumb} alt="" />
+                    ) : (
+                      <span style={S.previewName}>{f.name}</span>
+                    )}
+                    <button
+                      onClick={() => handleFileRemove(i)}
+                      style={{
+                        position: "absolute", top: "-6px", right: "-6px",
+                        width: "18px", height: "18px", borderRadius: "50%",
+                        background: "#ef4444", color: "#fff", border: "none",
+                        cursor: "pointer", fontSize: "11px", fontWeight: "700",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        lineHeight: 1,
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
             <div style={S.composeActions}>
-              <button className="attach-btn" style={S.attachBtn} onClick={() => fileRef.current.click()}>
-                {t.community.attachFile}
+              <button
+                className="attach-btn"
+                style={{ ...S.attachBtn, opacity: files.length >= 5 ? 0.4 : 1 }}
+                onClick={() => files.length < 5 && fileRef.current.click()}
+              >
+                {t.community.attachFile} {files.length > 0 ? `(${files.length}/5)` : ""}
               </button>
               <input
                 ref={fileRef} type="file" accept="image/*,video/*" multiple
                 style={{ display: "none" }}
-                onChange={(e) => setFiles(Array.from(e.target.files))}
+                onChange={handleFileAdd}
               />
               <button className="post-btn" style={S.postBtn} onClick={handlePost} disabled={posting}>
                 {posting ? t.community.posting : t.community.post}
@@ -699,16 +581,15 @@ export default function CommunityPage() {
 
           {/* Posts */}
           {posts.map((p) => {
-            const isLiked     = p.likedBy?.includes(user?.uid);
-            const likesCount  = p.likesCount ?? 0;
-            const commCount   = p.commentsCount ?? 0;
-            const commOpen    = expandedComments[p.id];
-            const comments    = postComments[p.id] ?? [];
+            const isLiked   = p.likedBy?.includes(user?.uid);
+            const likesCount = p.likesCount ?? 0;
+            const commCount  = p.commentsCount ?? 0;
+            const commOpen   = expandedComments[p.id];
+            const comments   = postComments[p.id] ?? [];
 
             return (
               <div key={p.id} className="post-card" style={S.postCard}>
-
-                {/* Post header: avatar + author + time + edit/delete */}
+                {/* Header */}
                 <div
                   style={S.postHeader}
                   onClick={() => p.authorId && setViewAuthor({ authorId: p.authorId, authorName: p.authorName })}
@@ -722,70 +603,53 @@ export default function CommunityPage() {
                   {user && (user.uid === p.authorId || authProfile?.isAdmin) && (
                     <div style={S.postActions} onClick={(e) => e.stopPropagation()}>
                       {user.uid === p.authorId && (
-                        <button
-                          className="post-edit-btn"
-                          style={S.postEditBtn}
-                          onClick={() => { setEditingId(p.id); setEditText(p.text || ""); }}
-                        >
-                          Edit
-                        </button>
+                        <button className="post-edit-btn" style={S.postEditBtn} onClick={() => { setEditingId(p.id); setEditText(p.text || ""); }}>Edit</button>
                       )}
-                      <button
-                        className="post-delete-btn"
-                        style={S.postDeleteBtn}
-                        onClick={() => handleDeletePost(p.id)}
-                      >
-                        Remove
-                      </button>
+                      <button className="post-delete-btn" style={S.postDeleteBtn} onClick={() => handleDeletePost(p.id)}>Remove</button>
                     </div>
                   )}
                 </div>
 
                 {/* Repost banner */}
                 {p.repostOf && (
-                  <p style={{ fontSize: "11px", color: "#94a3b8", margin: 0 }}>
-                    {t.community.repostedBy} {p.authorName}
+                  <p style={{ fontSize: "11px", color: T.muted, margin: 0 }}>
+                    ↺ {t.community.repostedBy} {p.authorName}
                   </p>
                 )}
 
-                {/* Body text (editable or static) */}
+                {/* Body text */}
                 {editingId === p.id ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <textarea
-                      style={S.editTextarea}
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      autoFocus
-                    />
+                    <textarea style={S.editTextarea} value={editText} onChange={(e) => setEditText(e.target.value)} autoFocus />
                     <div style={S.editActions}>
                       <button style={S.cancelBtn} onClick={() => setEditingId(null)}>Cancel</button>
                       <button style={S.saveBtn}   onClick={() => handleSaveEdit(p.id)}>Save</button>
                     </div>
                   </div>
                 ) : (
-                  p.text && !p.repostOf && <p style={S.postText}>{p.text}</p>
+                  p.text && <p style={S.postText}>{p.text}</p>
                 )}
 
                 {/* Embedded repost card */}
                 {p.repostOf && (
                   <div style={S.repostCard}>
                     <p style={S.repostLabel}>{t.community.originalPost}</p>
-                    <div style={S.repostHeader}>
-                      <Avatar
-                        photoURL={p.repostOf.originalAuthorPhotoURL}
-                        name={p.repostOf.originalAuthorName}
-                        size={28}
-                        fontSize={10}
-                      />
+                    <div
+                      className="repost-author-link"
+                      style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                      onClick={() => p.repostOf.originalAuthorId && setViewAuthor({
+                        authorId: p.repostOf.originalAuthorId,
+                        authorName: p.repostOf.originalAuthorName,
+                      })}
+                    >
+                      <Avatar photoURL={p.repostOf.originalAuthorPhotoURL} name={p.repostOf.originalAuthorName} size={28} fontSize={10} />
                       <p style={S.repostAuthor}>{p.repostOf.originalAuthorName}</p>
                     </div>
-                    {p.repostOf.originalText && (
-                      <p style={S.repostText}>{p.repostOf.originalText}</p>
-                    )}
+                    {p.repostOf.originalText && <p style={S.repostText}>{p.repostOf.originalText}</p>}
                     {p.repostOf.originalMedia?.map((m, i) =>
                       m.type === "image"
-                        ? <img  key={i} src={m.url} style={{ ...S.postImage, maxHeight: "240px" }} alt="" />
-                        : <video key={i} src={m.url} style={{ ...S.postVideo, maxHeight: "180px" }} controls />
+                        ? <img key={i} src={m.url} style={{ ...S.postImage, maxHeight: "200px" }} alt="" />
+                        : <video key={i} src={m.url} style={{ ...S.postVideo, maxHeight: "160px" }} controls />
                     )}
                   </div>
                 )}
@@ -805,13 +669,9 @@ export default function CommunityPage() {
                     style={S.socialBtn(isLiked)}
                     onClick={() => handleLike(p)}
                   >
-                    {isLiked ? t.community.liked : t.community.like}
+                    👍 {isLiked ? t.community.liked : t.community.like}
                     {likesCount > 0 && (
-                      <span style={{
-                        background: isLiked ? "#dbeafe" : "#f1f5f9",
-                        color: isLiked ? "#1e40af" : "#64748b",
-                        borderRadius: "99px", padding: "1px 7px", fontSize: "11px", fontWeight: "700",
-                      }}>
+                      <span style={{ background: isLiked ? "#dbeafe" : T.tagBg, color: isLiked ? "#1e40af" : T.sub, borderRadius: "99px", padding: "1px 7px", fontSize: "11px", fontWeight: "700" }}>
                         {likesCount}
                       </span>
                     )}
@@ -823,12 +683,9 @@ export default function CommunityPage() {
                     style={S.socialBtn(commOpen)}
                     onClick={() => toggleComments(p.id)}
                   >
-                    {t.community.comment}
+                    💬 {t.community.comment}
                     {commCount > 0 && (
-                      <span style={{
-                        background: "#f1f5f9", color: "#64748b",
-                        borderRadius: "99px", padding: "1px 7px", fontSize: "11px", fontWeight: "700",
-                      }}>
+                      <span style={{ background: T.tagBg, color: T.sub, borderRadius: "99px", padding: "1px 7px", fontSize: "11px", fontWeight: "700" }}>
                         {commCount}
                       </span>
                     )}
@@ -839,18 +696,18 @@ export default function CommunityPage() {
                     <button
                       className="social-btn"
                       style={S.socialBtn(false)}
-                      onClick={() => handleRepost(p)}
+                      onClick={() => setRepostTarget(p)}
                     >
-                      {t.community.repost}
+                      ↺ {t.community.repost}
                     </button>
                   )}
                 </div>
 
-                {/* ── Comments panel ── */}
+                {/* Comments panel */}
                 {commOpen && (
                   <div style={S.commentsSection}>
                     {comments.length === 0 && (
-                      <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>
+                      <p style={{ fontSize: "12px", color: T.muted, margin: 0 }}>
                         {t.community.noComments}
                       </p>
                     )}
@@ -864,7 +721,6 @@ export default function CommunityPage() {
                         </div>
                       </div>
                     ))}
-                    {/* Comment compose */}
                     <div style={S.commentCompose}>
                       <Avatar photoURL={authProfile?.photoURL} name={myName} size={30} fontSize={10} />
                       <input
@@ -873,17 +729,12 @@ export default function CommunityPage() {
                         type="text"
                         placeholder={t.community.commentPlaceholder}
                         value={commentText[p.id] ?? ""}
-                        onChange={(e) =>
-                          setCommentText((prev) => ({ ...prev, [p.id]: e.target.value }))
-                        }
+                        onChange={(e) => setCommentText((prev) => ({ ...prev, [p.id]: e.target.value }))}
                         onKeyDown={(e) => e.key === "Enter" && handleAddComment(p.id)}
                       />
                       <button
                         className="send-comment-btn"
-                        style={{
-                          ...S.sendCommentBtn,
-                          opacity: sendingComment[p.id] ? 0.6 : 1,
-                        }}
+                        style={{ ...S.sendCommentBtn, opacity: sendingComment[p.id] ? 0.6 : 1 }}
                         onClick={() => handleAddComment(p.id)}
                         disabled={sendingComment[p.id]}
                       >
@@ -897,10 +748,10 @@ export default function CommunityPage() {
           })}
         </div>
 
-        {/* ── Right sidebar: Birthdays ── */}
+        {/* ── Right: Birthdays ── */}
         <div style={S.sidebar}>
           <div style={{ ...sideCard, borderLeftColor: "#fde047" }}>
-            <p style={sectionLabel}>{t.community.upcomingBirthdays}</p>
+            <p style={{ ...sectionLabel, color: T.muted }}>{t.community.upcomingBirthdays}</p>
             {birthdays.length === 0 && <p style={S.emptyText}>{t.community.noBirthdays}</p>}
             {birthdays.map((u) => {
               const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
@@ -913,9 +764,7 @@ export default function CommunityPage() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={S.bdayName}>{fullName}</p>
-                    <p style={S.bdayDate}>
-                      {u.daysUntil === 0 ? t.community.today : t.community.inDays(u.daysUntil)}
-                    </p>
+                    <p style={S.bdayDate}>{u.daysUntil === 0 ? t.community.today : t.community.inDays(u.daysUntil)}</p>
                   </div>
                   {u.daysUntil === 0 && <span style={S.todayPill}>{t.community.today}</span>}
                 </div>
@@ -925,14 +774,14 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      {/* Author profile modal */}
+      {/* Author modal */}
       {viewAuthor && (
-        <AuthorModal
-          authorId={viewAuthor.authorId}
-          authorName={viewAuthor.authorName}
-          onClose={() => setViewAuthor(null)}
-          t={t}
-        />
+        <AuthorModal authorId={viewAuthor.authorId} authorName={viewAuthor.authorName} onClose={() => setViewAuthor(null)} t={t} T={T} />
+      )}
+
+      {/* Repost modal */}
+      {repostTarget && (
+        <RepostModal originalPost={repostTarget} onClose={() => setRepostTarget(null)} onRepost={handleRepost} t={t} T={T} />
       )}
     </div>
   );

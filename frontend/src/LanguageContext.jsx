@@ -15,7 +15,7 @@ const translations = {
     },
     dash: {
       member: "חבר/ה",
-      org: "קהילה 2026 — מנהיגות שווה",
+      org: "BogrotNet — מנהיגות שווה",
       overview: "סקירה",
       communityUpdates: "עדכוני קהילה",
       communityUpdatesBody:
@@ -67,6 +67,7 @@ const translations = {
       repostedBy: "שותף על ידי",
       originalPost: "פוסט מקורי",
       noComments: "אין תגובות עדיין. היה/י הראשון/ה!",
+      addThoughtsPlaceholder: "הוסף/י את דעתך...",
     },
     support: {
       title: "תמיכה",
@@ -142,6 +143,8 @@ const translations = {
       cancel: "ביטול",
       confirm: "אשר",
       errorGeneral: "משהו השתבש. נסה/י שוב.",
+      myPosts: "הפוסטים שלי",
+      noMyPosts: "עדיין לא פרסמת פוסטים. לך לקהילה ושתף/י משהו!",
     },
     network: {
       joinNetwork: "הצטרף לרשת",
@@ -169,11 +172,11 @@ const translations = {
     },
     dash: {
       member: "Member",
-      org: "Kehila 2026 — Manhigut Shava",
+      org: "BogrotNet — Manhigut Shava",
       overview: "Overview",
       communityUpdates: "Community Updates",
       communityUpdatesBody:
-        "News, announcements, and initiatives from Manhigut Shava posted here for registered members.",
+        "News, announcements, and initiatives from BogrotNet posted here for registered members.",
       myProfile: "My Profile",
       myProfileBody:
         "Manage your personal information, privacy settings, and how your profile appears to other members.",
@@ -221,6 +224,7 @@ const translations = {
       repostedBy: "Reposted by",
       originalPost: "Original Post",
       noComments: "No comments yet. Be the first!",
+      addThoughtsPlaceholder: "Add your thoughts...",
     },
     support: {
       title: "Support",
@@ -296,6 +300,8 @@ const translations = {
       cancel: "Cancel",
       confirm: "Confirm",
       errorGeneral: "Something went wrong. Please try again.",
+      myPosts: "My Posts",
+      noMyPosts: "You haven't posted anything yet. Go to Community and share something!",
     },
     network: {
       joinNetwork: "Join Network",
@@ -323,7 +329,7 @@ const translations = {
     },
     dash: {
       member: "عضو",
-      org: "كهيلا 2026 — مانهيجوت شافا",
+      org: "BogrotNet — مانهيجوت شافا",
       overview: "نظرة عامة",
       communityUpdates: "تحديثات المجتمع",
       communityUpdatesBody:
@@ -375,6 +381,7 @@ const translations = {
       repostedBy: "أُعيد نشره بواسطة",
       originalPost: "المنشور الأصلي",
       noComments: "لا توجد تعليقات بعد. كن الأول!",
+      addThoughtsPlaceholder: "أضف أفكارك...",
     },
     support: {
       title: "الدعم",
@@ -450,6 +457,8 @@ const translations = {
       cancel: "إلغاء",
       confirm: "تأكيد",
       errorGeneral: "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+      myPosts: "منشوراتي",
+      noMyPosts: "لم تنشر أي شيء بعد. اذهب إلى المجتمع وشارك شيئاً!",
     },
     network: {
       joinNetwork: "انضم للشبكة",
@@ -473,8 +482,17 @@ export const RTL_LANGS = ["he", "ar"];
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState("he"); // Hebrew default
-  const t = translations[lang];
+  /* Persist language selection; fall back to Hebrew on first visit */
+  const [lang, setLangState] = useState(
+    () => localStorage.getItem("lang") ?? "he"
+  );
+
+  const setLang = (code) => {
+    localStorage.setItem("lang", code);
+    setLangState(code);
+  };
+
+  const t    = translations[lang] ?? translations.he;
   const isRTL = RTL_LANGS.includes(lang);
 
   return (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { LanguageProvider } from "./LanguageContext";
+import { ThemeProvider } from "./ThemeContext";
 import AuthPage from "./AuthPage";
 import LandingPage from "./LandingPage";
 import CompleteProfilePage from "./CompleteProfilePage";
@@ -58,11 +59,13 @@ function AppContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

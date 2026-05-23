@@ -224,11 +224,26 @@ const PROFESSION_CATEGORIES = [
   },
 ];
 
-function matchesProfessionCategories(profession, selectedCategories) {
+/* Returns true if profession matches ANY known category (used for suggested strip) */
+function matchesAnyKnownCategory(profession) {
+  if (!profession) return false;
+  const lower = profession.toLowerCase();
+  return PROFESSION_CATEGORIES.some((cat) =>
+    cat.keywords.some((kw) => lower.includes(kw.toLowerCase()))
+  );
+}
+
+/* Returns true if profession matches ANY of the selected categories.
+   "other" key is handled with free-text (otherSearch). */
+function matchesProfessionCategories(profession, selectedCategories, otherSearch = "") {
   if (!selectedCategories || selectedCategories.length === 0) return true;
   if (!profession) return false;
   const lower = profession.toLowerCase();
   return selectedCategories.some((catKey) => {
+    if (catKey === "other") {
+      const q = otherSearch.trim().toLowerCase();
+      return q ? lower.includes(q) : true;
+    }
     const cat = PROFESSION_CATEGORIES.find((c) => c.key === catKey);
     if (!cat) return false;
     return cat.keywords.some((kw) => lower.includes(kw.toLowerCase()));
@@ -576,6 +591,7 @@ export default function SupportPage() {
   const [memberName,          setMemberName]          = useState("");
   const [selectedCity,        setSelectedCity]        = useState("");
   const [selectedCategories,  setSelectedCategories]  = useState([]);
+  const [otherSearch,         setOtherSearch]         = useState("");
 
   /* ── Result/data state ── */
   const [results,       setResults]       = useState([]);
@@ -611,9 +627,10 @@ export default function SupportPage() {
 
         const allUsers = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-        /* Suggested: has a profession, not self, most recently joined */
+        /* Suggested: profession matches a known category (filters out junk like "sadsa"),
+           not self, most recently joined */
         const suggested = allUsers
-          .filter((m) => m.id !== user.uid && m.profession)
+          .filter((m) => m.id !== user.uid && matchesAnyKnownCategory(m.profession))
           .sort((a, b) => ((b.createdAt ?? "") > (a.createdAt ?? "") ? 1 : -1))
           .slice(0, 6);
         setSuggestedUsers(suggested);
@@ -644,7 +661,7 @@ export default function SupportPage() {
         const matchName    = memberName       ? fullName.includes(memberName.toLowerCase()) : true;
         const memberCityKey = normalizeCityToKey(member.city);
         const matchCity    = selectedCity     ? memberCityKey === selectedCity              : true;
-        const matchProf    = matchesProfessionCategories(member.profession, selectedCategories);
+        const matchProf    = matchesProfessionCategories(member.profession, selectedCategories, otherSearch);
         return matchName && matchCity && matchProf;
       });
       setResults(filtered);
@@ -718,11 +735,12 @@ export default function SupportPage() {
     setMemberName("");
     setSelectedCity("");
     setSelectedCategories([]);
+    setOtherSearch("");
     setResults([]);
     setSearched(false);
   };
 
-  const hasFilters = memberName || selectedCity || selectedCategories.length > 0;
+  const hasFilters = memberName || selectedCity || selectedCategories.length > 0 || otherSearch;
 
   /* ══ Styles ══ */
   const S = {
@@ -913,10 +931,26 @@ export default function SupportPage() {
                     {u.networksCount} {t.network?.networkCount ?? "connections"}
                   </span>
                 )}
-                <ConnectButton
-                  targetUserId={u.id}
-                  size="sm"
-                />
+                {/* Connect button */}
+                <ConnectButton targetUserId={u.id} size="sm" />
+                {/* Send Request button */}
+                {requested[u.id] ? (
+                  <span style={{
+                    fontSize: "11px", fontWeight: "700", color: "#166534",
+                    background: "#f0fdf4", border: "1px solid #bbf7d0",
+                    borderRadius: "99px", padding: "3px 12px",
+                  }}>
+                    ✓ {t.support.sent}
+                  </span>
+                ) : (
+                  <button
+                    className="req-btn"
+                    style={S.suggestedReqBtn}
+                    onClick={(e) => { e.stopPropagation(); setRequestTarget(u); }}
+                  >
+                    {t.support.sendRequest}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -976,7 +1010,33 @@ export default function SupportPage() {
                 </button>
               );
             })}
+            {/* "Other" pill for free-text search */}
+            {(() => {
+              const otherActive = selectedCategories.includes("other");
+              const otherLabel = lang === "he" ? "אחר" : lang === "ar" ? "أخرى" : "Other";
+              return (
+                <button
+                  className={`category-pill${otherActive ? " category-pill-active" : ""}`}
+                  style={S.pill(otherActive)}
+                  onClick={() => toggleCategory("other")}
+                >
+                  {otherLabel}
+                </button>
+              );
+            })()}
           </div>
+          {/* Free-text input shown when "Other" is active */}
+          {selectedCategories.includes("other") && (
+            <input
+              className="support-input"
+              style={{ ...S.input, marginTop: "10px", maxWidth: "320px" }}
+              type="text"
+              placeholder={lang === "he" ? "הקלד/י מקצוע לחיפוש חופשי…" : lang === "ar" ? "اكتب مهنة للبحث الحر…" : "Type a profession to search freely…"}
+              value={otherSearch}
+              onChange={(e) => setOtherSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+          )}
         </div>
 
         {/* Row 3: Action buttons */}

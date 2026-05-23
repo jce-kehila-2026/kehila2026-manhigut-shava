@@ -3,6 +3,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
+import { useTheme } from "./ThemeContext";
 import SupportPage from "./Supportpage";
 import CommunityPage from "./CommunityPage";
 import ProfilePage from "./ProfilePage.jsx";
@@ -108,6 +109,27 @@ function LangSwitcher() {
   );
 }
 
+/* ─── Theme toggle button ─── */
+function ThemeToggle() {
+  const { dark, toggleTheme } = useTheme();
+  return (
+    <button
+      title={dark ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={toggleTheme}
+      style={{
+        background: "rgba(255,255,255,0.12)",
+        border: "1px solid rgba(255,255,255,0.25)",
+        borderRadius: "9px", padding: "7px 10px",
+        cursor: "pointer", fontSize: "16px",
+        lineHeight: 1, transition: "background 0.2s",
+        display: "flex", alignItems: "center",
+      }}
+    >
+      {dark ? "☀️" : "🌙"}
+    </button>
+  );
+}
+
 /* ─── Mini member avatar ─── */
 function MiniAvatar({ u, size = 44 }) {
   const initials =
@@ -138,7 +160,8 @@ const BASE_NAV_KEYS = ["Profile", "Home", "Community", "Support"];
 ═══════════════════════════════════════════════════════ */
 export default function DashboardPage() {
   const { user, logout, profile } = useAuth();
-  const { t, isRTL } = useLang();
+  const { t, isRTL, lang } = useLang();
+  const { dark, T } = useTheme();
 
   /* Persist active tab */
   const [activeNav, setActiveNav] = useState(
@@ -235,9 +258,13 @@ export default function DashboardPage() {
   /* ══ Styles ══ */
   const S = {
     page: {
-      minHeight: "100vh", background: "#f5f7fa",
+      minHeight: "100vh",
+      background: dark
+        ? "linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #0f172a 100%)"
+        : "linear-gradient(160deg, #f0f7ff 0%, #f5f7fa 60%, #eef2ff 100%)",
       display: "flex", flexDirection: "column",
       direction: isRTL ? "rtl" : "ltr",
+      transition: "background 0.3s",
     },
     header: {
       background: "linear-gradient(135deg, #1a3c5e 0%, #0ea5e9 55%, #7dd3fc 100%)",
@@ -266,7 +293,7 @@ export default function DashboardPage() {
       cursor: "pointer", transition: "background 0.2s",
     },
     main:      { flex: 1, width: "100%" },
-    homeInner: { padding: "2rem 2.5rem", width: "100%", boxSizing: "border-box" },
+    homeInner: { padding: "2rem 2.5rem", width: "100%", boxSizing: "border-box", maxWidth: "1200px", margin: "0 auto" },
 
     /* Welcome card */
     welcomeCard: {
@@ -299,7 +326,7 @@ export default function DashboardPage() {
 
     /* Section label */
     sectionLabel: {
-      fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+      fontSize: "11px", fontWeight: "700", color: T.muted,
       letterSpacing: "0.1em", textTransform: "uppercase",
       margin: "0 0 1rem",
     },
@@ -313,9 +340,9 @@ export default function DashboardPage() {
     },
 
     /* Quick actions */
-    quickRow:   { display: "flex", gap: "1rem", marginBottom: "2rem" },
+    quickRow:   { display: "flex", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" },
     quickCard: {
-      flex: 1, borderRadius: "16px", padding: "1.25rem",
+      flex: 1, minWidth: "120px", borderRadius: "16px", padding: "1.25rem",
       display: "flex", flexDirection: "column", gap: "6px",
       border: "1.5px solid transparent", cursor: "pointer",
       transition: "transform 0.18s, box-shadow 0.18s",
@@ -331,19 +358,19 @@ export default function DashboardPage() {
       scrollbarWidth: "none", marginBottom: "2rem",
     },
     memberCard: {
-      background: "#fff", borderRadius: "16px", padding: "1.25rem",
+      background: T.card, borderRadius: "16px", padding: "1.25rem",
       minWidth: "160px", maxWidth: "180px",
-      border: "1.5px solid #f1f5f9", borderTop: "3px solid #38bdf8",
+      border: `1.5px solid ${T.cardBorder}`, borderTop: "3px solid #38bdf8",
       boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
       display: "flex", flexDirection: "column", alignItems: "center",
       gap: "0.5rem", cursor: "pointer",
       transition: "transform 0.18s, box-shadow 0.18s", flexShrink: 0,
     },
-    memberName: { fontSize: "13px", fontWeight: "700", color: "#1a3c5e", margin: 0, textAlign: "center" },
-    memberProf: { fontSize: "11px", color: "#64748b", margin: 0, textAlign: "center" },
+    memberName: { fontSize: "13px", fontWeight: "700", color: T.text, margin: 0, textAlign: "center" },
+    memberProf: { fontSize: "11px", color: T.sub, margin: 0, textAlign: "center" },
     memberCity: {
-      fontSize: "11px", color: "#94a3b8",
-      background: "#f8fafc", border: "1px solid #e2e8f0",
+      fontSize: "11px", color: T.muted,
+      background: T.tagBg, border: `1px solid ${T.inputBorder}`,
       borderRadius: "99px", padding: "2px 8px",
     },
 
@@ -354,15 +381,15 @@ export default function DashboardPage() {
       gap: "1.25rem", marginBottom: "2rem",
     },
     card: {
-      background: "#fff", borderRadius: "18px", padding: "1.5rem",
-      border: "1.5px solid #f1f5f9", borderLeft: "4px solid #e2e8f0",
+      background: T.card, borderRadius: "18px", padding: "1.5rem",
+      border: `1.5px solid ${T.cardBorder}`, borderLeft: "4px solid #e2e8f0",
       boxShadow: "0 2px 8px rgba(15,23,42,0.05)", cursor: "pointer",
       transition: "transform 0.18s, box-shadow 0.18s",
       display: "flex", flexDirection: "column", gap: "0.6rem",
     },
     cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2px" },
-    cardTitle:  { fontSize: "15px", fontWeight: "700", color: "#1a3c5e", margin: 0 },
-    cardBody:   { fontSize: "13px", color: "#64748b", lineHeight: "1.65", margin: 0, flex: 1 },
+    cardTitle:  { fontSize: "15px", fontWeight: "700", color: T.text, margin: 0 },
+    cardBody:   { fontSize: "13px", color: T.sub, lineHeight: "1.65", margin: 0, flex: 1 },
     cardLink:   { fontSize: "12px", fontWeight: "700", color: "#0ea5e9", marginTop: "auto" },
   };
 
@@ -371,7 +398,7 @@ export default function DashboardPage() {
       {/* ── Header ── */}
       <header style={S.header}>
         <div style={S.headerLeft}>
-          <span style={S.logo}>Manhigut Shava</span>
+          <span style={S.logo}>🌐 BogrotNet</span>
           <nav style={S.headerNav}>
             {NAV_KEYS.map((key) => (
               <button
@@ -386,6 +413,7 @@ export default function DashboardPage() {
           </nav>
         </div>
         <div style={S.headerRight}>
+          <ThemeToggle />
           <LangSwitcher />
           <button className="logout-btn" style={S.logoutBtn} onClick={logout}>
             {t.nav.logout}
@@ -495,6 +523,166 @@ export default function DashboardPage() {
                   <span style={S.cardLink}>{t.dash.viewDetails}</span>
                 </div>
               ))}
+            </div>
+
+            {/* ── About Us ── */}
+            <div style={{
+              marginTop: "1rem", marginBottom: "3rem",
+              borderRadius: "24px", overflow: "hidden",
+              boxShadow: "0 8px 40px rgba(15,23,42,0.12)",
+            }}>
+              {/* About header banner */}
+              <div style={{
+                background: "linear-gradient(135deg, #1a3c5e 0%, #0ea5e9 50%, #7dd3fc 100%)",
+                padding: "3rem 2.5rem 2.5rem",
+                textAlign: isRTL ? "right" : "left",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "0.75rem" }}>
+                  <span style={{ fontSize: "32px" }}>🌐</span>
+                  <h2 style={{ fontSize: "28px", fontWeight: "800", color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
+                    BogrotNet
+                  </h2>
+                </div>
+                <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.85)", margin: "0 0 0.5rem", lineHeight: "1.6" }}>
+                  {lang === "en"
+                    ? "The graduate network of Manhigut Shava — connecting leaders who are building an equal future"
+                    : lang === "ar"
+                    ? "شبكة خريجات مانهيجوت شافا — تربط القيادات اللواتي يبنين مستقبلاً متساوياً"
+                    : "רשת הבוגרות של מנהיגות שווה — מחברת מנהיגות שבונות עתיד שוויוני"}
+                </p>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "1rem" }}>
+                  {[
+                    { emoji: "🤝", label: lang === "en" ? "Mutual Help" : lang === "ar" ? "مساعدة متبادلة" : "עזרה הדדית" },
+                    { emoji: "🌱", label: lang === "en" ? "Leadership Dev" : lang === "ar" ? "تطوير القيادة" : "פיתוח מנהיגות" },
+                    { emoji: "💬", label: lang === "en" ? "Active Community" : lang === "ar" ? "مجتمع نشط" : "קהילה פעילה" },
+                    { emoji: "🔗", label: lang === "en" ? "Professional Network" : lang === "ar" ? "شبكة مهنية" : "רשת קשרים" },
+                  ].map((tag) => (
+                    <span key={tag.label} style={{
+                      background: "rgba(255,255,255,0.18)",
+                      border: "1px solid rgba(255,255,255,0.3)",
+                      borderRadius: "99px", padding: "5px 14px",
+                      fontSize: "12px", fontWeight: "600", color: "#fff",
+                    }}>
+                      {tag.emoji} {tag.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* About body */}
+              <div style={{
+                background: dark ? "#1e293b" : "#fff",
+                padding: "2.5rem",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "1.5rem",
+              }}>
+                {[
+                  {
+                    emoji: "🎯",
+                    gradient: "linear-gradient(135deg, #eff6ff, #dbeafe)",
+                    borderColor: "#bfdbfe",
+                    titleColor: "#1e40af",
+                    title: lang === "en" ? "Our Mission" : lang === "ar" ? "مهمتنا" : "המשימה שלנו",
+                    text: lang === "en"
+                      ? "Manhigut Shava advances gender equality in public life. BogrotNet is the digital home connecting our program graduates."
+                      : lang === "ar"
+                      ? "مانهيجوت شافا تعزز المساواة بين الجنسين في الحياة العامة. BogrotNet هو البيت الرقمي الذي يربط خريجات البرنامج."
+                      : "מנהיגות שווה היא תנועה לקידום שוויון מגדרי במרחב הציבורי. BogrotNet היא הרשת הדיגיטלית של בוגרות התוכנית.",
+                  },
+                  {
+                    emoji: "💡",
+                    gradient: "linear-gradient(135deg, #fdf4ff, #ede9fe)",
+                    borderColor: "#d8b4fe",
+                    titleColor: "#7c3aed",
+                    title: lang === "en" ? "What Can You Do?" : lang === "ar" ? "ماذا يمكنك أن تفعلي؟" : "מה אפשר לעשות כאן?",
+                    text: lang === "en"
+                      ? "Post updates, find members who can help professionally, request advice, and build meaningful connections."
+                      : lang === "ar"
+                      ? "انشري التحديثات، وابحثي عن أعضاء يمكنهم المساعدة مهنياً، واطلبي المشورة، وابني علاقات مهنية."
+                      : "פרסמי פוסטים, מצאי חברות שיכולות לעזור במקצוע, בקשי ייעוץ, הצטרפי לרשת ותיצרי קשרים חדשים.",
+                  },
+                  {
+                    emoji: "🌟",
+                    gradient: "linear-gradient(135deg, #fff7ed, #fef3c7)",
+                    borderColor: "#fcd34d",
+                    titleColor: "#92400e",
+                    title: lang === "en" ? "Community Values" : lang === "ar" ? "قيم المجتمع" : "ערכי הקהילה",
+                    text: lang === "en"
+                      ? "Equality, mutual respect, collaboration, and empowerment. We are leaders who believe in the power of community."
+                      : lang === "ar"
+                      ? "المساواة، الاحترام المتبادل، التعاون، والتمكين. نحن قائدات نؤمن بقوة المجتمع الداعم."
+                      : "שוויון, כבוד הדדי, שיתוף פעולה, והעצמה. אנחנו מנהיגות שמאמינות בכוח של קהילה תומכת.",
+                  },
+                  {
+                    emoji: "📈",
+                    gradient: "linear-gradient(135deg, #f0fdf4, #dcfce7)",
+                    borderColor: "#86efac",
+                    titleColor: "#166534",
+                    title: lang === "en" ? "Growing Together" : lang === "ar" ? "نمو مشترك" : "צמיחה משותפת",
+                    text: lang === "en"
+                      ? "Hundreds of graduates across law, medicine, tech, education and more — working together to create change."
+                      : lang === "ar"
+                      ? "مئات الخريجات من مجالات القانون والطب والتكنولوجيا والتعليم وغيرها — يعملن معاً لإحداث التغيير."
+                      : "מאות בוגרות ממגוון תחומים — משפטים, רפואה, טכנולוגיה, חינוך ועוד — פועלות יחד כדי ליצור שינוי.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} style={{
+                    background: dark
+                      ? "rgba(255,255,255,0.05)"
+                      : item.gradient,
+                    borderRadius: "16px", padding: "1.5rem",
+                    border: dark ? `1px solid rgba(255,255,255,0.08)` : `1.5px solid ${item.borderColor}`,
+                    display: "flex", flexDirection: "column", gap: "0.75rem",
+                  }}>
+                    <span style={{ fontSize: "28px" }}>{item.emoji}</span>
+                    <h3 style={{
+                      fontSize: "14px", fontWeight: "800",
+                      color: dark ? "#f1f5f9" : item.titleColor,
+                      margin: 0, textTransform: "uppercase", letterSpacing: "0.05em",
+                    }}>
+                      {item.title}
+                    </h3>
+                    <p style={{
+                      fontSize: "13px", lineHeight: "1.65",
+                      color: dark ? "#94a3b8" : "#374151",
+                      margin: 0,
+                    }}>
+                      {item.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer strip */}
+              <div style={{
+                background: dark
+                  ? "linear-gradient(135deg, #0f172a, #1e293b)"
+                  : "linear-gradient(135deg, #f8fafc, #eff6ff)",
+                padding: "1.25rem 2.5rem",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                flexWrap: "wrap", gap: "12px",
+                borderTop: dark ? "1px solid #334155" : "1px solid #e2e8f0",
+              }}>
+                <p style={{ fontSize: "13px", color: dark ? "#64748b" : "#94a3b8", margin: 0 }}>
+                  {lang === "en"
+                    ? "© 2026 Manhigut Shava — BogrotNet"
+                    : lang === "ar"
+                    ? "© 2026 مانهيجوت شافا — BogrotNet"
+                    : "© 2026 מנהיגות שווה — BogrotNet"}
+                </p>
+                <a
+                  href="https://ywp-online.my.canva.site/manhigot2026"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: "12px", fontWeight: "700", color: "#0ea5e9",
+                    textDecoration: "none",
+                  }}
+                >
+                  {lang === "en" ? "Organization Website ↗" : lang === "ar" ? "موقع المنظمة ↗" : "אתר הארגון ↗"}
+                </a>
+              </div>
             </div>
 
           </div>
