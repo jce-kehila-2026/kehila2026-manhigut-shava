@@ -200,14 +200,16 @@ export default function AdminPage() {
                     <td style={S.td}>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
                     <td style={S.td}>
                       {u.isAdmin && <span style={S.adminBadge}>Admin</span>}
-                      <button
-                        style={S.adminBtn}
-                        onMouseEnter={e => e.currentTarget.style.background = "#ede9fe"}
-                        onMouseLeave={e => e.currentTarget.style.background = "none"}
-                        onClick={() => toggleAdmin(u.id, u.isAdmin)}
-                      >
-                        {u.isAdmin ? "Revoke Admin" : "Make Admin"}
-                      </button>
+                      {u.id !== user?.uid && (
+                        <button
+                          style={S.adminBtn}
+                          onMouseEnter={e => e.currentTarget.style.background = "#ede9fe"}
+                          onMouseLeave={e => e.currentTarget.style.background = "none"}
+                          onClick={() => toggleAdmin(u.id, u.isAdmin)}
+                        >
+                          {u.isAdmin ? "Revoke Admin" : "Make Admin"}
+                        </button>
+                      )}
                       {u.id !== user?.uid && (
                         <button
                           style={S.delBtn}
