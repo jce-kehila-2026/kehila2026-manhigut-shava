@@ -306,10 +306,10 @@ export default function CommunityPage() {
     postTime:   { fontSize:"11px", color:"#94a3b8", margin:0 },
     postText:   { fontSize:"14px", color:"#374151", lineHeight:"1.65", margin:0 },
     postDeleteBtn: {
-      marginLeft:"auto", background:"none", border:"none",
-      color:"#cbd5e1", cursor:"pointer", fontSize:"18px",
-      lineHeight:1, padding:"2px 6px", borderRadius:"6px",
-      transition:"color 0.15s, background 0.15s",
+      marginLeft:"auto", background:"none", border:"1px solid #e2e8f0",
+      color:"#94a3b8", cursor:"pointer", fontSize:"11px", fontWeight:"600",
+      padding:"4px 10px", borderRadius:"6px",
+      transition:"color 0.15s, background 0.15s, border-color 0.15s",
     },
     postImage:  { width:"100%", maxHeight:"600px", objectFit:"contain", borderRadius:"12px", background:"#f8fafc" },
     postVideo:  { width:"100%", maxHeight:"320px", borderRadius:"12px" },
@@ -416,7 +416,7 @@ export default function CommunityPage() {
                     title="Delete post"
                     onClick={() => handleDeletePost(p.id)}
                   >
-                    ×
+                    Remove
                   </button>
                 )}
               </div>
