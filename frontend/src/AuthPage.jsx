@@ -60,7 +60,7 @@ const inp = {
   width: "100%", padding: "0.78rem 1rem", boxSizing: "border-box",
   background: "#f8fafc", border: "1.5px solid #e2e8f0",
   borderRadius: 9, color: "#1e293b", fontSize: "0.9rem",
-  fontFamily: "'Segoe UI', system-ui, sans-serif",
+  fontFamily: "'Heebo', system-ui, sans-serif",
   outline: "none", transition: "border-color 0.2s, background 0.2s",
 };
 const lbl = {
@@ -72,7 +72,7 @@ const primaryBtn = {
   background: `linear-gradient(135deg,${C.bright},${C.light})`,
   color: "#fff", border: "none", borderRadius: 9,
   fontSize: "0.95rem", fontWeight: 800, cursor: "pointer",
-  fontFamily: "'Segoe UI', system-ui, sans-serif",
+  fontFamily: "'Heebo', system-ui, sans-serif",
   boxShadow: "0 4px 18px rgba(47,95,212,0.28)",
   transition: "transform 0.2s, box-shadow 0.2s",
   marginBottom: "0.9rem",
@@ -82,7 +82,7 @@ const ghostBtn = {
   background: "#f8fafc", color: "#475569",
   border: "1px solid #e2e8f0", borderRadius: 9,
   fontSize: "0.88rem", fontWeight: 600, cursor: "pointer",
-  fontFamily: "'Segoe UI', system-ui, sans-serif",
+  fontFamily: "'Heebo', system-ui, sans-serif",
   transition: "background 0.2s", marginBottom: "0.9rem",
 };
 const errBox = {
@@ -169,7 +169,7 @@ function PhoneAuth({ onBack }) {
 
   return (
     <div style={{ direction: "rtl" }}>
-      <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: "0.83rem", cursor: "pointer", padding: "0 0 1.2rem", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: "0.83rem", cursor: "pointer", padding: "0 0 1.2rem", fontFamily: "'Heebo', system-ui, sans-serif" }}>
         ← חזרה לכניסה
       </button>
       {step === "number" ? (
@@ -440,7 +440,7 @@ export default function AuthPage() {
   return (
     <div style={{
       minHeight: "100vh", position: "relative",
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
+      fontFamily: "'Heebo', system-ui, sans-serif",
       overflow: "hidden",
     }}>
       {/* Background photo */}
@@ -506,7 +506,7 @@ export default function AuthPage() {
                     flex: 1, padding: "0.52rem", borderRadius: 8, border: "none",
                     background: tab === key ? "#1a3c5e" : "transparent",
                     color: tab === key ? "#fff" : "#64748b",
-                    fontFamily: "'Segoe UI', system-ui, sans-serif",
+                    fontFamily: "'Heebo', system-ui, sans-serif",
                     fontSize: "0.87rem", fontWeight: 700, cursor: "pointer",
                     boxShadow: tab === key ? "0 2px 8px rgba(26,60,94,0.2)" : "none",
                     transition: "all 0.2s",

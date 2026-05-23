@@ -12,8 +12,7 @@ const storage = getStorage();
 /* ─── Inject styles ─── */
 const styleTag = document.createElement("style");
 styleTag.textContent = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
-  * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+  * { font-family: 'Heebo', system-ui, sans-serif; box-sizing: border-box; }
 
   @keyframes fadeSlideUp {
     from { opacity: 0; transform: translateY(14px); }
