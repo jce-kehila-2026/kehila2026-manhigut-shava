@@ -154,7 +154,7 @@ function PhoneAuth({ onBack }) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, rcRef.current, { size: "invisible" });
       const result = await signInWithPhoneNumber(auth, normalizePhone(phone), window.recaptchaVerifier);
       setConf(result); setStep("code");
-    } catch (e) { setError(firebaseMsg(e.code)); }
+    } catch (e) { console.error("Phone auth error:", e); setError(firebaseMsg(e.code)); }
     finally { setLoading(false); }
   };
 

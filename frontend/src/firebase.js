@@ -17,6 +17,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
+if (window.location.hostname === "localhost") {
+  auth.settings.appVerificationDisabledForTesting = true;
+}
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 export const analytics = getAnalytics(app);
