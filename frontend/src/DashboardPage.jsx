@@ -53,44 +53,16 @@ if (!document.head.querySelector("#dashboard-styles")) {
 }
 
 /* ─── Nav items ─── */
-const NAV_ITEMS = ["Profile", "Home", "Community", "Events", "Support"];
+const NAV_ITEMS = ["Profile", "Home", "Community", "Support"];
 
 /* ─── Dashboard cards ─── */
 const CARDS = [
-  {
-    tag: "Coming Soon",
-    tagColor: "gray",
-    title: "Elections 2026",
-    body: "Stay updated on the upcoming Kehila leadership elections. Candidate lists and voting information will appear here.",
-    accent: "#e2e8f0",
-  },
   {
     tag: "Active",
     tagColor: "green",
     title: "Community Updates",
     body: "News, announcements, and initiatives from Manhigut Shava posted here for registered members.",
     accent: "#38bdf8",
-  },
-  {
-    tag: "Coming Soon",
-    tagColor: "gray",
-    title: "Member Directory",
-    body: "Connect with other registered community members. Directory access is available to all signed-up participants.",
-    accent: "#e2e8f0",
-  },
-  {
-    tag: "Coming Soon",
-    tagColor: "gray",
-    title: "Events",
-    body: "View upcoming community events, RSVP, and get notified about activities happening near you.",
-    accent: "#e2e8f0",
-  },
-  {
-    tag: "Coming Soon",
-    tagColor: "gray",
-    title: "Notifications",
-    body: "Real-time alerts for event reminders, connection requests, and community announcements.",
-    accent: "#e2e8f0",
   },
   {
     tag: "Active",
