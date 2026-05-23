@@ -97,7 +97,12 @@ function Tag({ label, color }) {
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const [profile, setProfile]   = useState(null);
-  const [activeNav, setActiveNav] = useState("Home");
+  const [activeNav, setActiveNav] = useState(() => localStorage.getItem("activeNav") || "Home");
+
+  const navigate = (tab) => {
+    localStorage.setItem("activeNav", tab);
+    setActiveNav(tab);
+  };
 
   const navItems = profile?.isAdmin ? ADMIN_ITEMS : NAV_ITEMS;
 
@@ -283,7 +288,7 @@ export default function DashboardPage() {
                 key={item}
                 className="nav-btn"
                 style={S.navBtn(activeNav === item)}
-                onClick={() => setActiveNav(item)}
+                onClick={() => navigate(item)}
               >
                 {item}
               </button>
@@ -313,7 +318,7 @@ export default function DashboardPage() {
             <div
               className="welcome-card"
               style={S.welcomeCard}
-              onClick={() => setActiveNav("Profile")}
+              onClick={() => navigate("Profile")}
             >
               <div style={S.welcomeLeft}>
                 <div style={S.avatarRing}>
