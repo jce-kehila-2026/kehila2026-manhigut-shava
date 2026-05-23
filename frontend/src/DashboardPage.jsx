@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
-import { db } from "./firebase";
-import SupportPage from "./SupportPage";
+import { useLang } from "./LanguageContext";
+import SupportPage from "./Supportpage";
 import CommunityPage from "./CommunityPage";
 import ProfilePage from "./ProfilePage.jsx";
+import { useState } from "react";
 
 /* ─── Inject shared styles ─── */
 const styleTag = document.createElement("style");
@@ -27,11 +26,6 @@ styleTag.textContent = `
   }
   .dash-card:nth-child(1) { animation-delay: 0.04s; }
   .dash-card:nth-child(2) { animation-delay: 0.08s; }
-  .dash-card:nth-child(3) { animation-delay: 0.12s; }
-  .dash-card:nth-child(4) { animation-delay: 0.16s; }
-  .dash-card:nth-child(5) { animation-delay: 0.20s; }
-  .dash-card:nth-child(6) { animation-delay: 0.24s; }
-
   .dash-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 32px rgba(15,23,42,0.1) !important;
@@ -43,35 +37,20 @@ styleTag.textContent = `
   .logout-btn:hover {
     background: rgba(255,255,255,0.18) !important;
   }
-  .welcome-card:hover {
-    opacity: 0.94;
+  .lang-btn:hover {
+    background: rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+  }
+  .lang-btn-active {
+    background: rgba(255,255,255,0.25) !important;
+    color: #fff !important;
+    font-weight: 700 !important;
   }
 `;
 if (!document.head.querySelector("#dashboard-styles")) {
   styleTag.id = "dashboard-styles";
   document.head.appendChild(styleTag);
 }
-
-/* ─── Nav items ─── */
-const NAV_ITEMS = ["Profile", "Home", "Community", "Support"];
-
-/* ─── Dashboard cards ─── */
-const CARDS = [
-  {
-    tag: "Active",
-    tagColor: "green",
-    title: "Community Updates",
-    body: "News, announcements, and initiatives from Manhigut Shava posted here for registered members.",
-    accent: "#38bdf8",
-  },
-  {
-    tag: "Active",
-    tagColor: "green",
-    title: "My Profile",
-    body: "Manage your personal information, privacy settings, and how your profile appears to other members.",
-    accent: "#a78bfa",
-  },
-];
 
 /* ─── Tag badge ─── */
 function Tag({ label, color }) {
@@ -92,25 +71,87 @@ function Tag({ label, color }) {
   );
 }
 
+/* ─── Language switcher ─── */
+function LangSwitcher() {
+  const { lang, setLang } = useLang();
+  const LANGS = [
+    { code: "he", label: "עב" },
+    { code: "en", label: "EN" },
+    { code: "ar", label: "عر" },
+  ];
+  return (
+    <div style={{
+      display:"flex", alignItems:"center", gap:"2px",
+      background:"rgba(255,255,255,0.1)",
+      borderRadius:"10px", padding:"3px",
+    }}>
+      {LANGS.map(({ code, label }) => (
+        <button
+          key={code}
+          className={`lang-btn ${lang === code ? "lang-btn-active" : ""}`}
+          onClick={() => setLang(code)}
+          style={{
+            background: lang === code ? "rgba(255,255,255,0.25)" : "transparent",
+            color: lang === code ? "#fff" : "rgba(255,255,255,0.6)",
+            border: "none",
+            borderRadius: "7px",
+            padding: "5px 10px",
+            fontSize: "12px",
+            fontWeight: lang === code ? "700" : "400",
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-  const { user, logout } = useAuth();
-  const [profile, setProfile]   = useState(null);
+  /* ── Use profile directly from AuthContext — no double fetch ── */
+  const { user, logout, profile } = useAuth();
+  const { t, isRTL } = useLang();
   const [activeNav, setActiveNav] = useState("Home");
 
-  useEffect(() => {
-    if (!user) return;
-    getDoc(doc(db, "users", user.uid)).then((snap) => {
-      if (snap.exists()) setProfile(snap.data());
-    });
-  }, [user]);
+  const NAV_KEYS = ["Profile", "Home", "Community", "Support"];
+  const NAV_LABELS = {
+    Profile:   t.nav.profile,
+    Home:      t.nav.home,
+    Community: t.nav.community,
+    Support:   t.nav.support,
+  };
 
-  const displayName = profile
-    ? `${profile.firstName} ${profile.lastName}`
-    : user?.email ?? "";
+  /* ── Display helpers ── */
+  const displayName =
+    profile?.firstName && profile?.lastName
+      ? `${profile.firstName} ${profile.lastName}`
+      : user?.email ?? "";
 
-  const initials = profile
-    ? `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase()
-    : (user?.email?.[0] ?? "?").toUpperCase();
+  const initials =
+    profile?.firstName && profile?.lastName
+      ? `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase()
+      : (user?.email?.[0] ?? "?").toUpperCase();
+
+  const photoURL = profile?.photoURL ?? null;
+
+  const CARDS = [
+    {
+      tag: t.dash.active,
+      tagColor: "green",
+      title: t.dash.communityUpdates,
+      body: t.dash.communityUpdatesBody,
+      accent: "#38bdf8",
+    },
+    {
+      tag: t.dash.active,
+      tagColor: "green",
+      title: t.dash.myProfile,
+      body: t.dash.myProfileBody,
+      accent: "#a78bfa",
+    },
+  ];
 
   const S = {
     page: {
@@ -118,8 +159,8 @@ export default function DashboardPage() {
       background:"#f5f7fa",
       display:"flex",
       flexDirection:"column",
+      direction: isRTL ? "rtl" : "ltr",
     },
-    /* ── Header ── */
     header: {
       background:"linear-gradient(135deg, #1a3c5e 0%, #0ea5e9 55%, #7dd3fc 100%)",
       backgroundSize:"300% 300%",
@@ -136,7 +177,7 @@ export default function DashboardPage() {
       boxShadow:"0 2px 16px rgba(15,23,42,0.14)",
     },
     headerLeft: {
-      display:"flex", alignItems:"center", gap:"2rem",
+      display:"flex", alignItems:"center", gap:"1.5rem",
     },
     logo: {
       fontSize:"16px", fontWeight:"700", letterSpacing:"-0.3px",
@@ -144,6 +185,9 @@ export default function DashboardPage() {
     },
     headerNav: {
       display:"flex", gap:"2px",
+    },
+    headerRight: {
+      display:"flex", alignItems:"center", gap:"10px",
     },
     navBtn: (active) => ({
       background: active ? "rgba(255,255,255,0.18)" : "transparent",
@@ -167,17 +211,8 @@ export default function DashboardPage() {
       cursor:"pointer",
       transition:"background 0.2s",
     },
-    /* ── Main ── */
-    main: {
-      flex:1,
-      width:"100%",
-    },
-    homeInner: {
-      padding:"2rem 2.5rem",
-      width:"100%",
-      boxSizing:"border-box",
-    },
-    /* ── Welcome card ── */
+    main: { flex:1, width:"100%" },
+    homeInner: { padding:"2rem 2.5rem", width:"100%", boxSizing:"border-box" },
     welcomeCard: {
       background:"#1a3c5e",
       borderRadius:"20px",
@@ -191,27 +226,23 @@ export default function DashboardPage() {
       transition:"opacity 0.2s",
       boxShadow:"0 2px 8px rgba(15,23,42,0.08)",
     },
-    welcomeLeft: {
-      display:"flex", alignItems:"center", gap:"1.25rem",
-    },
+    welcomeLeft: { display:"flex", alignItems:"center", gap:"1.25rem" },
     avatarRing: {
       width:"52px", height:"52px", borderRadius:"50%",
       background:"linear-gradient(135deg, #38bdf8, #1a3c5e)",
       padding:"2.5px",
       boxShadow:"0 2px 8px rgba(15,23,42,0.1)",
+      flexShrink: 0,
     },
     avatarInner: {
       width:"100%", height:"100%", borderRadius:"50%",
       background:"rgba(255,255,255,0.18)",
       display:"flex", alignItems:"center", justifyContent:"center",
       fontSize:"18px", fontWeight:"700", color:"#fff",
+      overflow:"hidden",
     },
-    welcomeName: {
-      fontSize:"18px", fontWeight:"700", margin:"0 0 3px",
-    },
-    welcomeSub: {
-      fontSize:"12px", color:"rgba(255,255,255,0.62)", margin:0,
-    },
+    welcomeName: { fontSize:"18px", fontWeight:"700", margin:"0 0 3px" },
+    welcomeSub:  { fontSize:"12px", color:"rgba(255,255,255,0.62)", margin:0 },
     welcomeBadge: {
       background:"rgba(255,255,255,0.14)",
       border:"1px solid rgba(255,255,255,0.25)",
@@ -223,13 +254,11 @@ export default function DashboardPage() {
       letterSpacing:"0.06em",
       textTransform:"uppercase",
     },
-    /* ── Section label ── */
     sectionLabel: {
       fontSize:"11px", fontWeight:"700",
       color:"#94a3b8", letterSpacing:"0.1em",
       textTransform:"uppercase", marginBottom:"1rem",
     },
-    /* ── Grid ── */
     grid: {
       display:"grid",
       gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))",
@@ -250,58 +279,45 @@ export default function DashboardPage() {
       gap:"0.6rem",
     },
     cardHeader: {
-      display:"flex",
-      alignItems:"center",
-      justifyContent:"space-between",
-      marginBottom:"2px",
+      display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"2px",
     },
-    cardTitle: {
-      fontSize:"15px", fontWeight:"700", color:"#1a3c5e", margin:0,
-    },
-    cardBody: {
-      fontSize:"13px", color:"#64748b", lineHeight:"1.65", margin:0, flex:1,
-    },
-    cardLink: {
-      fontSize:"12px", fontWeight:"700",
-      color:"#0ea5e9", marginTop:"auto",
-    },
+    cardTitle: { fontSize:"15px", fontWeight:"700", color:"#1a3c5e", margin:0 },
+    cardBody:  { fontSize:"13px", color:"#64748b", lineHeight:"1.65", margin:0, flex:1 },
+    cardLink:  { fontSize:"12px", fontWeight:"700", color:"#0ea5e9", marginTop:"auto" },
   };
 
   return (
     <div style={S.page}>
-      {/* Header */}
+      {/* ── Header ── */}
       <header style={S.header}>
         <div style={S.headerLeft}>
           <span style={S.logo}>Manhigut Shava</span>
           <nav style={S.headerNav}>
-            {NAV_ITEMS.map((item) => (
+            {NAV_KEYS.map((key) => (
               <button
-                key={item}
+                key={key}
                 className="nav-btn"
-                style={S.navBtn(activeNav === item)}
-                onClick={() => setActiveNav(item)}
+                style={S.navBtn(activeNav === key)}
+                onClick={() => setActiveNav(key)}
               >
-                {item}
+                {NAV_LABELS[key]}
               </button>
             ))}
           </nav>
         </div>
-        <button
-          className="logout-btn"
-          style={S.logoutBtn}
-          onClick={logout}
-        >
-          Log Out
-        </button>
+        <div style={S.headerRight}>
+          <LangSwitcher />
+          <button className="logout-btn" style={S.logoutBtn} onClick={logout}>
+            {t.nav.logout}
+          </button>
+        </div>
       </header>
 
       <main style={S.main}>
-        {/* Sub-pages render full-width, no wrapper */}
         {activeNav === "Support"   && <SupportPage />}
         {activeNav === "Community" && <CommunityPage />}
         {activeNav === "Profile"   && <ProfilePage />}
 
-        {/* Home content gets its own padded container */}
         {activeNav === "Home" && (
           <div style={S.homeInner}>
             {/* Welcome card */}
@@ -312,17 +328,21 @@ export default function DashboardPage() {
             >
               <div style={S.welcomeLeft}>
                 <div style={S.avatarRing}>
-                  <div style={S.avatarInner}>{initials}</div>
+                  <div style={S.avatarInner}>
+                    {photoURL
+                      ? <img src={photoURL} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"50%" }} alt="avatar" />
+                      : initials}
+                  </div>
                 </div>
                 <div>
-                  <p style={S.welcomeName}>Welcome back, {displayName}</p>
-                  <p style={S.welcomeSub}>Kehila 2026 — Manhigut Shava</p>
+                  <p style={S.welcomeName}>{t.dash.welcomeBack} {displayName}</p>
+                  <p style={S.welcomeSub}>{t.dash.org}</p>
                 </div>
               </div>
-              <span style={S.welcomeBadge}>Member</span>
+              <span style={S.welcomeBadge}>{t.dash.member}</span>
             </div>
 
-            <p style={S.sectionLabel}>Overview</p>
+            <p style={S.sectionLabel}>{t.dash.overview}</p>
             <div style={S.grid}>
               {CARDS.map((card) => (
                 <div
@@ -335,7 +355,7 @@ export default function DashboardPage() {
                     <Tag label={card.tag} color={card.tagColor} />
                   </div>
                   <p style={S.cardBody}>{card.body}</p>
-                  <span style={S.cardLink}>View details →</span>
+                  <span style={S.cardLink}>{t.dash.viewDetails}</span>
                 </div>
               ))}
             </div>

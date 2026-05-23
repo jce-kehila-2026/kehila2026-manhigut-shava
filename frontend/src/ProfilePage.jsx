@@ -8,6 +8,7 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { useLang } from "./LanguageContext";
 
 const storage = getStorage();
 
@@ -15,7 +16,6 @@ const storage = getStorage();
 const styleTag = document.createElement("style");
 styleTag.textContent = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
-
   * { font-family: 'DM Sans', sans-serif; }
 
   @keyframes fadeSlideUp {
@@ -40,9 +40,7 @@ styleTag.textContent = `
     50%  { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
-  .profile-card {
-    animation: fadeSlideUp 0.4s ease both;
-  }
+  .profile-card { animation: fadeSlideUp 0.4s ease both; }
   .profile-card:nth-child(2) { animation-delay: 0.06s; }
   .profile-card:nth-child(3) { animation-delay: 0.12s; }
 
@@ -58,44 +56,30 @@ styleTag.textContent = `
     background: #fff !important;
     outline: none;
   }
-  .upload-btn:hover {
-    background: rgba(255,255,255,1) !important;
-    border-color: rgba(255,255,255,0.9) !important;
-  }
-  .change-btn:hover {
-    background: #e0f2fe !important;
-    border-color: #7dd3fc !important;
-  }
-  .cancel-btn:hover { background: #e2e8f0 !important; }
+  .upload-btn:hover  { background: rgba(255,255,255,1) !important; border-color: rgba(255,255,255,0.9) !important; }
+  .change-btn:hover  { background: #e0f2fe !important; border-color: #7dd3fc !important; }
+  .cancel-btn:hover  { background: #e2e8f0 !important; }
   .save-btn-shimmer {
     background: linear-gradient(90deg, #1a3c5e 0%, #1e5080 40%, #1a3c5e 60%, #1a3c5e 100%);
     background-size: 400px 100%;
     animation: shimmer 1.6s infinite linear;
   }
-  .check-svg {
-    animation: checkPop 0.35s ease both;
-  }
+  .check-svg { animation: checkPop 0.35s ease both; }
 `;
 if (!document.head.querySelector("#profile-styles")) {
   styleTag.id = "profile-styles";
   document.head.appendChild(styleTag);
 }
 
-/* ─── Inline check mark (text only, no icon library) ─── */
 function CheckMark() {
   return (
-    <svg
-      className="check-svg"
-      width="16" height="16" viewBox="0 0 24 24"
-      fill="none" stroke="#fff" strokeWidth="2.8"
-      strokeLinecap="round" strokeLinejoin="round"
-    >
+    <svg className="check-svg" width="16" height="16" viewBox="0 0 24 24"
+      fill="none" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
 }
 
-/* ─── Completeness bar ─── */
 function CompletenessBadge({ pct }) {
   const color  = pct >= 80 ? "#16a34a" : pct >= 50 ? "#d97706" : "#dc2626";
   const bg     = pct >= 80 ? "#f0fdf4" : pct >= 50 ? "#fffbeb" : "#fff5f5";
@@ -106,8 +90,7 @@ function CompletenessBadge({ pct }) {
         <div style={{
           width:`${pct}%`, height:"100%",
           background:`linear-gradient(90deg, ${color}, ${color}bb)`,
-          borderRadius:"99px",
-          transition:"width 0.6s cubic-bezier(.4,0,.2,1)",
+          borderRadius:"99px", transition:"width 0.6s cubic-bezier(.4,0,.2,1)",
         }} />
       </div>
       <span style={{
@@ -121,30 +104,26 @@ function CompletenessBadge({ pct }) {
   );
 }
 
-/* ─── Section title ─── */
 function SectionTitle({ label }) {
   return (
     <p style={{
       fontSize:"11px", fontWeight:"700", color:"#1a3c5e",
-      textTransform:"uppercase", letterSpacing:"0.12em",
-      margin:"0 0 1.25rem",
+      textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 1.25rem",
     }}>
       {label}
     </p>
   );
 }
 
-/* ─── Plain input (no icon) ─── */
 function PlainInput(props) {
   return (
     <input
       className="profile-input"
       style={{
         width:"100%", boxSizing:"border-box",
-        padding:"12px 14px",
-        fontSize:"14px", border:"1.5px solid #e2e8f0",
-        borderRadius:"13px", color:"#1a2e42",
-        background:"#f8fafc", fontFamily:"inherit",
+        padding:"12px 14px", fontSize:"14px",
+        border:"1.5px solid #e2e8f0", borderRadius:"13px",
+        color:"#1a2e42", background:"#f8fafc", fontFamily:"inherit",
         transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
       }}
       {...props}
@@ -152,18 +131,18 @@ function PlainInput(props) {
   );
 }
 
-/* ─── Main component ─── */
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
+  const { t, isRTL } = useLang();
   const fileRef = useRef();
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"",
   });
   const [photoURL, setPhotoURL] = useState(null);
-  const [saving, setSaving]     = useState(false);
-  const [saved,  setSaved]      = useState(false);
-  const [error,  setError]      = useState("");
+  const [saving,   setSaving]   = useState(false);
+  const [saved,    setSaved]    = useState(false);
+  const [error,    setError]    = useState("");
 
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail,       setNewEmail]       = useState("");
@@ -178,21 +157,22 @@ export default function ProfilePage() {
       if (snap.exists()) {
         const d = snap.data();
         setForm({
-          firstName: d.firstName ?? "", lastName: d.lastName ?? "",
-          phone: d.phone ?? "",        city: d.city ?? "",
-          profession: d.profession ?? "", bio: d.bio ?? "",
+          firstName:  d.firstName  ?? "",
+          lastName:   d.lastName   ?? "",
+          phone:      d.phone      ?? "",
+          city:       d.city       ?? "",
+          profession: d.profession ?? "",
+          bio:        d.bio        ?? "",
         });
         setPhotoURL(d.photoURL ?? null);
       }
     });
   }, [user]);
 
-  const handleChange = (e) =>
-    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  /* ── Completeness ── */
   const fields = [form.firstName, form.lastName, form.phone, form.city, form.profession, form.bio];
-  const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  const pct    = Math.round((fields.filter(Boolean).length / fields.length) * 100);
 
   /* ── Photo upload ── */
   const handlePhotoUpload = async (e) => {
@@ -203,6 +183,7 @@ export default function ProfilePage() {
     const url = await getDownloadURL(storageRef);
     setPhotoURL(url);
     await updateDoc(doc(db, "users", user.uid), { photoURL: url });
+    refreshProfile(); // keep AuthContext in sync so Dashboard shows updated photo
   };
 
   /* ── Save ── */
@@ -210,10 +191,11 @@ export default function ProfilePage() {
     setSaving(true); setError("");
     try {
       await updateDoc(doc(db, "users", user.uid), { ...form });
+      await refreshProfile();
       setSaved(true);
       setTimeout(() => setSaved(false), 2200);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t.profile.errorGeneral);
     } finally {
       setSaving(false);
     }
@@ -230,9 +212,9 @@ export default function ProfilePage() {
       setEmailSuccess("Email updated successfully.");
       setPassword(""); setNewEmail("");
     } catch (err) {
-      if (err.code === "auth/wrong-password")  setEmailError("Incorrect password.");
+      if (err.code === "auth/wrong-password")   setEmailError("Incorrect password.");
       else if (err.code === "auth/invalid-email") setEmailError("Invalid email address.");
-      else setEmailError("Something went wrong. Please try again.");
+      else setEmailError(t.profile.errorGeneral);
     }
   };
 
@@ -247,81 +229,42 @@ export default function ProfilePage() {
   const S = {
     page: {
       display:"flex", flexDirection:"column",
-      width:"100%",
-      padding:"0 0 3rem", boxSizing:"border-box", minHeight:"100vh",
+      width:"100%", padding:"0 0 3rem",
+      boxSizing:"border-box", minHeight:"100vh",
+      direction: isRTL ? "rtl" : "ltr",
     },
     banner: {
       width:"100%", height:"130px", borderRadius:"0 0 28px 28px",
       background:"linear-gradient(135deg, #1a3c5e 0%, #0ea5e9 55%, #7dd3fc 100%)",
-      backgroundSize:"300% 300%",
-      animation:"bannerFlow 9s ease infinite",
+      backgroundSize:"300% 300%", animation:"bannerFlow 9s ease infinite",
       position:"relative", marginBottom:"58px", flexShrink:0,
     },
-    avatarWrap: {
-      position:"absolute", bottom:"-46px", left:"2rem",
-    },
-    avatarRing: {
-      width:"92px", height:"92px", borderRadius:"50%",
-      background:"linear-gradient(135deg, #38bdf8, #1a3c5e)",
-      padding:"3px",
-      boxShadow:"0 2px 8px rgba(15,23,42,0.12)",
-    },
-    avatarInner: {
-      width:"100%", height:"100%", borderRadius:"50%",
-      background:"#1a3c5e", color:"#ffffff",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      fontSize:"26px", fontWeight:"700", overflow:"hidden",
-    },
-    avatarImg: { width:"100%", height:"100%", objectFit:"cover" },
-    uploadPill: {
-      position:"absolute", bottom:"-46px", right:"2rem",
-      display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"4px",
-    },
+    avatarWrap:  { position:"absolute", bottom:"-46px", ...(isRTL ? { right:"2rem" } : { left:"2rem" }) },
+    avatarRing:  { width:"92px", height:"92px", borderRadius:"50%", background:"linear-gradient(135deg, #38bdf8, #1a3c5e)", padding:"3px", boxShadow:"0 2px 8px rgba(15,23,42,0.12)" },
+    avatarInner: { width:"100%", height:"100%", borderRadius:"50%", background:"#1a3c5e", color:"#ffffff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", fontWeight:"700", overflow:"hidden" },
+    avatarImg:   { width:"100%", height:"100%", objectFit:"cover" },
+    uploadPill:  { position:"absolute", bottom:"-46px", ...(isRTL ? { left:"2rem" } : { right:"2rem" }), display:"flex", flexDirection:"column", alignItems: isRTL ? "flex-start" : "flex-end", gap:"4px" },
     uploadBtn: {
-      padding:"9px 16px",
-      background:"rgba(255,255,255,0.88)",
-      color:"#1a3c5e",
-      border:"1.5px solid rgba(255,255,255,0.6)",
-      borderRadius:"11px", fontSize:"12px", fontWeight:"700",
-      cursor:"pointer", backdropFilter:"blur(6px)",
-      boxShadow:"0 2px 8px rgba(0,0,0,0.1)",
-      transition:"background 0.2s",
+      padding:"9px 16px", background:"rgba(255,255,255,0.88)", color:"#1a3c5e",
+      border:"1.5px solid rgba(255,255,255,0.6)", borderRadius:"11px",
+      fontSize:"12px", fontWeight:"700", cursor:"pointer",
+      backdropFilter:"blur(6px)", boxShadow:"0 2px 8px rgba(0,0,0,0.1)", transition:"background 0.2s",
     },
-    avatarHint: {
-      fontSize:"10px", color:"rgba(255,255,255,0.75)", margin:0, textAlign:"right",
-    },
+    avatarHint: { fontSize:"10px", color:"rgba(255,255,255,0.75)", margin:0, textAlign: isRTL ? "left" : "right" },
     body: { padding:"0 2rem" },
-    twoCol: {
-      display:"grid",
-      gridTemplateColumns:"1fr 1fr",
-      gap:"1.25rem",
-      alignItems:"start",
-    },
-    greeting: {
-      fontSize:"23px", fontWeight:"700", color:"#1a3c5e", margin:"0 0 4px",
-    },
-    greetingSub: {
-      fontSize:"13px", color:"#94a3b8", margin:"0 0 1rem",
-    },
+    twoCol: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", alignItems:"start" },
+    greeting:    { fontSize:"23px", fontWeight:"700", color:"#1a3c5e", margin:"0 0 4px" },
+    greetingSub: { fontSize:"13px", color:"#94a3b8", margin:"0 0 1rem" },
     card: {
-      background:"#fff",
-      borderRadius:"20px",
+      background:"#fff", borderRadius:"20px",
       border:"1.5px solid #f1f5f9",
       boxShadow:"0 4px 24px rgba(15,23,42,0.06)",
-      padding:"1.75rem",
-      marginBottom:"1.25rem",
+      padding:"1.75rem", marginBottom:"1.25rem",
       borderLeft:"4px solid #38bdf8",
     },
-    row: {
-      display:"grid",
-      gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",
-      gap:"1rem", marginBottom:"1rem",
-    },
+    row:   { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:"1rem", marginBottom:"1rem" },
     group: { display:"flex", flexDirection:"column", gap:"7px" },
-    label: {
-      fontSize:"11px", fontWeight:"700", color:"#94a3b8",
-      textTransform:"uppercase", letterSpacing:"0.08em",
-    },
+    label: { fontSize:"11px", fontWeight:"700", color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.08em" },
     bioWrap: { position:"relative" },
     textarea: {
       width:"100%", boxSizing:"border-box",
@@ -331,78 +274,32 @@ export default function ProfilePage() {
       fontFamily:"inherit", resize:"vertical", minHeight:"100px",
       transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
     },
-    charCount: {
-      position:"absolute", bottom:"10px", right:"12px",
-      fontSize:"10px", pointerEvents:"none",
-    },
+    charCount: { position:"absolute", bottom:"10px", right:"12px", fontSize:"10px", pointerEvents:"none" },
     actionRow: { display:"flex", alignItems:"center", gap:"12px", marginTop:"0.25rem" },
     saveBtn: {
       padding:"11px 28px",
       background: saved ? "linear-gradient(135deg,#16a34a,#22c55e)" : "#1a3c5e",
-      color:"#fff", border:"none",
-      borderRadius:"13px", fontSize:"14px", fontWeight:"700",
+      color:"#fff", border:"none", borderRadius:"13px",
+      fontSize:"14px", fontWeight:"700",
       cursor: saving ? "not-allowed" : "pointer",
       transition:"background 0.3s, transform 0.15s, box-shadow 0.2s",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.1)",
+      boxShadow:"0 2px 8px rgba(15,23,42,0.1)",
       display:"flex", alignItems:"center", gap:"7px",
       opacity: saving ? 0.7 : 1,
     },
-    errorMsg: {
-      fontSize:"13px", color:"#b91c1c",
-      background:"#fff0f0", border:"1px solid #fca5a5",
-      borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem",
-    },
-    emailRow: { display:"flex", gap:"10px", alignItems:"flex-end" },
-    inputDisabled: {
-      padding:"12px 14px", fontSize:"14px",
-      border:"1.5px solid #e2e8f0", borderRadius:"13px",
-      color:"#94a3b8", background:"#f1f5f9",
-      width:"100%", boxSizing:"border-box", fontFamily:"inherit",
-    },
-    changeBtn: {
-      padding:"10px 16px", background:"#eff6ff",
-      color:"#1d4ed8", border:"1.5px solid #bfdbfe",
-      borderRadius:"10px", fontSize:"13px", fontWeight:"600",
-      cursor:"pointer", whiteSpace:"nowrap",
-      transition:"background 0.2s, border-color 0.2s",
-    },
-    emailSuccessMsg: {
-      fontSize:"13px", color:"#166534",
-      background:"#f0fdf4", border:"1px solid #bbf7d0",
-      borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem",
-    },
-    modal: {
-      position:"fixed", inset:0,
-      background:"rgba(15,23,42,0.4)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      zIndex:100, padding:"1.25rem",
-      backdropFilter:"blur(4px)",
-    },
-    modalBox: {
-      background:"#fff", borderRadius:"22px",
-      padding:"2rem", width:"100%", maxWidth:"420px",
-      display:"flex", flexDirection:"column", gap:"1rem",
-      boxShadow:"0 32px 70px rgba(15,23,42,0.18)",
-      animation:"modalPop 0.28s cubic-bezier(.34,1.56,.64,1) both",
-    },
-    modalTitle: { fontSize:"17px", fontWeight:"700", color:"#1a3c5e", margin:0 },
-    modalSub:   { fontSize:"13px", color:"#64748b", margin:0 },
-    modalInput: {
-      width:"100%", boxSizing:"border-box",
-      padding:"11px 14px", fontSize:"14px",
-      border:"1.5px solid #e2e8f0", borderRadius:"12px",
-      color:"#1a2e42", background:"#f8fafc", fontFamily:"inherit",
-    },
+    errorMsg:       { fontSize:"13px", color:"#b91c1c", background:"#fff0f0", border:"1px solid #fca5a5", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
+    emailRow:       { display:"flex", gap:"10px", alignItems:"flex-end" },
+    inputDisabled:  { padding:"12px 14px", fontSize:"14px", border:"1.5px solid #e2e8f0", borderRadius:"13px", color:"#94a3b8", background:"#f1f5f9", width:"100%", boxSizing:"border-box", fontFamily:"inherit" },
+    changeBtn:      { padding:"10px 16px", background:"#eff6ff", color:"#1d4ed8", border:"1.5px solid #bfdbfe", borderRadius:"10px", fontSize:"13px", fontWeight:"600", cursor:"pointer", whiteSpace:"nowrap", transition:"background 0.2s, border-color 0.2s" },
+    emailSuccessMsg:{ fontSize:"13px", color:"#166534", background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
+    modal:    { position:"fixed", inset:0, background:"rgba(15,23,42,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"1.25rem", backdropFilter:"blur(4px)" },
+    modalBox: { background:"#fff", borderRadius:"22px", padding:"2rem", width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"1rem", boxShadow:"0 32px 70px rgba(15,23,42,0.18)", animation:"modalPop 0.28s cubic-bezier(.34,1.56,.64,1) both" },
+    modalTitle:   { fontSize:"17px", fontWeight:"700", color:"#1a3c5e", margin:0 },
+    modalSub:     { fontSize:"13px", color:"#64748b", margin:0 },
+    modalInput:   { width:"100%", boxSizing:"border-box", padding:"11px 14px", fontSize:"14px", border:"1.5px solid #e2e8f0", borderRadius:"12px", color:"#1a2e42", background:"#f8fafc", fontFamily:"inherit" },
     modalActions: { display:"flex", gap:"8px", marginTop:"0.25rem" },
-    confirmBtn: {
-      flex:1, padding:"11px", background:"#1a3c5e", color:"#fff",
-      border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"700", cursor:"pointer",
-    },
-    cancelBtn: {
-      flex:1, padding:"11px", background:"#f1f5f9", color:"#64748b",
-      border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"600", cursor:"pointer",
-      transition:"background 0.2s",
-    },
+    confirmBtn:   { flex:1, padding:"11px", background:"#1a3c5e", color:"#fff", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"700", cursor:"pointer" },
+    cancelBtn:    { flex:1, padding:"11px", background:"#f1f5f9", color:"#64748b", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"600", cursor:"pointer", transition:"background 0.2s" },
   };
 
   return (
@@ -419,66 +316,55 @@ export default function ProfilePage() {
           </div>
         </div>
         <div style={S.uploadPill}>
-          <button
-            className="upload-btn"
-            style={S.uploadBtn}
-            onClick={() => fileRef.current.click()}
-          >
-            Upload Photo
+          <button className="upload-btn" style={S.uploadBtn} onClick={() => fileRef.current.click()}>
+            {t.profile.uploadPhoto}
           </button>
-          <p style={S.avatarHint}>JPG or PNG · max 5 MB</p>
-          <input
-            ref={fileRef} type="file" accept="image/*"
-            style={{ display:"none" }} onChange={handlePhotoUpload}
-          />
+          <p style={S.avatarHint}>{t.profile.photoHint}</p>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handlePhotoUpload} />
         </div>
       </div>
 
       {/* Body */}
       <div style={S.body}>
-        {/* Greeting + completeness */}
         <div style={{ marginBottom:"1.5rem" }}>
           <p style={S.greeting}>
-            {form.firstName ? `Hey, ${form.firstName}` : "My Profile"}
+            {form.firstName ? t.profile.greeting(form.firstName) : t.profile.myProfile}
           </p>
-          <p style={S.greetingSub}>
-            Keep your info up to date so your community knows you.
-          </p>
+          <p style={S.greetingSub}>{t.profile.subtitle}</p>
           <CompletenessBadge pct={pct} />
         </div>
 
-        {/* Two-column layout */}
         <div style={S.twoCol}>
-          {/* Left col — Personal Info */}
+          {/* Left — Personal Info */}
           <div className="profile-card" style={{ ...S.card, marginBottom:0 }}>
-            <SectionTitle label="Personal Information" />
+            <SectionTitle label={t.profile.personalInfo} />
             {error && <div style={S.errorMsg}>{error}</div>}
 
             <div style={S.row}>
               <div style={S.group}>
-                <label style={S.label}>First Name</label>
-                <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder="Jane" />
+                <label style={S.label}>{t.profile.firstName}</label>
+                <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} />
               </div>
               <div style={S.group}>
-                <label style={S.label}>Last Name</label>
-                <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder="Smith" />
+                <label style={S.label}>{t.profile.lastName}</label>
+                <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} />
               </div>
             </div>
 
             <div style={S.row}>
               <div style={S.group}>
-                <label style={S.label}>Phone</label>
-                <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder="+1 555 000 0000" />
+                <label style={S.label}>{t.profile.phone}</label>
+                <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} />
               </div>
               <div style={S.group}>
-                <label style={S.label}>City</label>
-                <PlainInput name="city" value={form.city} onChange={handleChange} placeholder="Tel Aviv" />
+                <label style={S.label}>{t.profile.city}</label>
+                <PlainInput name="city" value={form.city} onChange={handleChange} placeholder={t.profile.cityPlaceholder} />
               </div>
             </div>
 
             <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>Profession / Job</label>
-              <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder="Software Engineer" />
+              <label style={S.label}>{t.profile.professionJob}</label>
+              <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} />
             </div>
 
             <div style={S.actionRow}>
@@ -490,25 +376,23 @@ export default function ProfilePage() {
                 onMouseOver={(e) => { if (!saving && !saved) e.currentTarget.style.transform = "translateY(-1px)"; }}
                 onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
               >
-                {saved ? <><CheckMark /> Saved</> : saving ? "Saving…" : "Save Changes"}
+                {saved ? <><CheckMark /> {t.profile.saved}</> : saving ? t.profile.saving : t.profile.saveChanges}
               </button>
             </div>
           </div>
 
-          {/* Right col — Bio + Email */}
+          {/* Right — Bio + Email */}
           <div style={{ display:"flex", flexDirection:"column", gap:"1.25rem" }}>
             <div className="profile-card" style={{ ...S.card, marginBottom:0 }}>
-              <SectionTitle label="Bio" />
+              <SectionTitle label={t.profile.bio} />
               <div style={S.bioWrap}>
                 <textarea
                   className="profile-textarea"
                   style={{ ...S.textarea, minHeight:"148px" }}
                   name="bio"
                   value={form.bio}
-                  onChange={(e) => {
-                    if (e.target.value.length <= BIO_LIMIT) handleChange(e);
-                  }}
-                  placeholder="Tell the community about yourself…"
+                  onChange={(e) => { if (e.target.value.length <= BIO_LIMIT) handleChange(e); }}
+                  placeholder={t.profile.bioPlaceholder}
                 />
                 <span style={{
                   ...S.charCount,
@@ -520,19 +404,15 @@ export default function ProfilePage() {
             </div>
 
             <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa", marginBottom:0 }}>
-              <SectionTitle label="Email Address" />
+              <SectionTitle label={t.profile.emailAddress} />
               {emailSuccess && <div style={S.emailSuccessMsg}>{emailSuccess}</div>}
               <div style={S.emailRow}>
                 <div style={{ ...S.group, flex:1, marginBottom:0 }}>
-                  <label style={S.label}>Current Email</label>
+                  <label style={S.label}>{t.profile.currentEmail}</label>
                   <input style={S.inputDisabled} value={user?.email ?? ""} disabled />
                 </div>
-                <button
-                  className="change-btn"
-                  style={S.changeBtn}
-                  onClick={() => setShowEmailModal(true)}
-                >
-                  Change
+                <button className="change-btn" style={S.changeBtn} onClick={() => setShowEmailModal(true)}>
+                  {t.profile.change}
                 </button>
               </div>
             </div>
@@ -544,31 +424,23 @@ export default function ProfilePage() {
       {showEmailModal && (
         <div style={S.modal} onClick={() => setShowEmailModal(false)}>
           <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
-            <p style={S.modalTitle}>Change Email</p>
-            <p style={S.modalSub}>Confirm your current password to continue.</p>
+            <p style={S.modalTitle}>{t.profile.changeEmail}</p>
+            <p style={S.modalSub}>{t.profile.emailModalSub}</p>
             {emailError && <div style={S.errorMsg}>{emailError}</div>}
 
             <div style={S.group}>
-              <label style={S.label}>Current Password</label>
-              <input
-                className="profile-input"
-                style={S.modalInput}
-                type="password" placeholder="••••••••"
-                value={password} onChange={(e) => setPassword(e.target.value)}
-              />
+              <label style={S.label}>{t.profile.currentPassword}</label>
+              <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
+                value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <div style={S.group}>
-              <label style={S.label}>New Email</label>
-              <input
-                className="profile-input"
-                style={S.modalInput}
-                type="email" placeholder="new@email.com"
-                value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
-              />
+              <label style={S.label}>{t.profile.newEmail}</label>
+              <input className="profile-input" style={S.modalInput} type="email" placeholder="new@email.com"
+                value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
             </div>
             <div style={S.modalActions}>
-              <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowEmailModal(false)}>Cancel</button>
-              <button style={S.confirmBtn} onClick={handleEmailChange}>Confirm</button>
+              <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowEmailModal(false)}>{t.profile.cancel}</button>
+              <button style={S.confirmBtn} onClick={handleEmailChange}>{t.profile.confirm}</button>
             </div>
           </div>
         </div>
