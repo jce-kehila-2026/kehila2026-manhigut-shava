@@ -33,7 +33,8 @@ styleTag.textContent = `
   .attach-btn:hover  { border-color: #38bdf8 !important; color: #0ea5e9 !important; }
   .post-btn:hover    { background: #122d47 !important; }
   .delete-link:hover { color: #dc2626 !important; }
-  .post-delete-btn:hover { color: #dc2626 !important; background: #fee2e2 !important; }
+  .post-delete-btn:hover { color: #dc2626 !important; background: #fee2e2 !important; border-color: #fca5a5 !important; }
+  .post-edit-btn:hover   { color: #0ea5e9 !important; background: #e0f2fe !important; border-color: #7dd3fc !important; }
 `;
 if (!document.head.querySelector("#community-styles")) {
   styleTag.id = "community-styles";
@@ -88,6 +89,8 @@ export default function CommunityPage() {
   const [requests, setRequests] = useState([]);
   const [birthdays,setBirthdays]= useState([]);
   const [profile,  setProfile]  = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editText,  setEditText]  = useState("");
   const fileRef = useRef();
 
   useEffect(() => {
@@ -148,6 +151,13 @@ export default function CommunityPage() {
       fetchPosts();
     } catch (err) { console.error(err); }
     finally { setPosting(false); }
+  };
+
+  const handleSaveEdit = async (postId) => {
+    if (!editText.trim()) return;
+    await updateDoc(doc(db, "posts", postId), { text: editText });
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, text: editText } : p));
+    setEditingId(null);
   };
 
   const handleDeletePost = async (postId) => {
@@ -305,11 +315,35 @@ export default function CommunityPage() {
     postAuthor: { fontSize:"14px", fontWeight:"700", color:"#1a3c5e", margin:0 },
     postTime:   { fontSize:"11px", color:"#94a3b8", margin:0 },
     postText:   { fontSize:"14px", color:"#374151", lineHeight:"1.65", margin:0 },
+    postActions: { marginLeft:"auto", display:"flex", gap:"6px" },
+    postEditBtn: {
+      background:"none", border:"1px solid #e2e8f0",
+      color:"#64748b", cursor:"pointer", fontSize:"11px", fontWeight:"600",
+      padding:"4px 10px", borderRadius:"6px",
+      transition:"color 0.15s, background 0.15s, border-color 0.15s",
+    },
     postDeleteBtn: {
-      marginLeft:"auto", background:"none", border:"1px solid #e2e8f0",
+      background:"none", border:"1px solid #e2e8f0",
       color:"#94a3b8", cursor:"pointer", fontSize:"11px", fontWeight:"600",
       padding:"4px 10px", borderRadius:"6px",
       transition:"color 0.15s, background 0.15s, border-color 0.15s",
+    },
+    editTextarea: {
+      width:"100%", padding:"10px 13px", fontSize:"14px",
+      border:"1.5px solid #38bdf8", borderRadius:"10px",
+      resize:"none", fontFamily:"inherit", color:"#1a2e42",
+      background:"#f0f9ff", minHeight:"72px", outline:"none",
+    },
+    editActions: { display:"flex", gap:"8px", justifyContent:"flex-end" },
+    saveBtn: {
+      padding:"7px 18px", background:"#1a3c5e", color:"#fff",
+      border:"none", borderRadius:"8px", fontSize:"12px", fontWeight:"700",
+      cursor:"pointer",
+    },
+    cancelBtn: {
+      padding:"7px 18px", background:"none", color:"#64748b",
+      border:"1px solid #e2e8f0", borderRadius:"8px", fontSize:"12px", fontWeight:"600",
+      cursor:"pointer",
     },
     postImage:  { width:"100%", maxHeight:"600px", objectFit:"contain", borderRadius:"12px", background:"#f8fafc" },
     postVideo:  { width:"100%", maxHeight:"320px", borderRadius:"12px" },
@@ -410,17 +444,40 @@ export default function CommunityPage() {
                   <p style={S.postTime}>{timeAgo(p.createdAt)}</p>
                 </div>
                 {user && user.uid === p.authorId && (
-                  <button
-                    className="post-delete-btn"
-                    style={S.postDeleteBtn}
-                    title="Delete post"
-                    onClick={() => handleDeletePost(p.id)}
-                  >
-                    Remove
-                  </button>
+                  <div style={S.postActions}>
+                    <button
+                      className="post-edit-btn"
+                      style={S.postEditBtn}
+                      onClick={() => { setEditingId(p.id); setEditText(p.text || ""); }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="post-delete-btn"
+                      style={S.postDeleteBtn}
+                      onClick={() => handleDeletePost(p.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 )}
               </div>
-              {p.text && <p style={S.postText}>{p.text}</p>}
+              {editingId === p.id ? (
+                <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                  <textarea
+                    style={S.editTextarea}
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    autoFocus
+                  />
+                  <div style={S.editActions}>
+                    <button style={S.cancelBtn} onClick={() => setEditingId(null)}>Cancel</button>
+                    <button style={S.saveBtn} onClick={() => handleSaveEdit(p.id)}>Save</button>
+                  </div>
+                </div>
+              ) : (
+                p.text && <p style={S.postText}>{p.text}</p>
+              )}
               {p.media?.map((m, i) =>
                 m.type === "image"
                   ? <img  key={i} src={m.url} style={S.postImage} alt="" />
