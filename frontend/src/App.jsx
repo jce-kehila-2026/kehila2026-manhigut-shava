@@ -50,13 +50,12 @@ function AppContent() {
   /* Logged in but no Firestore profile (Google / Phone first-time user) */
   if (profile === null) return <CompleteProfilePage />;
 
-  /* Email not verified — only applies to email/password users.
-     Google and Phone users are already verified by their provider,
-     so skip the OTP page for them. */
-  const isEmailPasswordUser = user.providerData?.some(
-    (p) => p.providerId === "password"
-  );
-  if (isEmailPasswordUser && !profile.emailVerified) return <OtpVerificationPage />;
+  /* OTP verification gate:
+     - user.emailVerified  = Firebase Auth's OWN flag (true for Google, false for unverified email)
+     - profile.emailVerified = our Firestore flag (true after OTP completed)
+     Only show OTP page when BOTH say unverified — this safely passes Google/Phone users
+     because Firebase Auth marks them verified automatically. */
+  if (!user.emailVerified && !profile.emailVerified) return <OtpVerificationPage />;
 
   /* All good → dashboard */
   return <DashboardPage />;
