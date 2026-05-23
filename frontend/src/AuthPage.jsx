@@ -239,17 +239,17 @@ function LoginForm({ onSwitchTab }) {
   };
 
   return (
-    <form onSubmit={submit} style={{ direction: "rtl" }}>
+    <form onSubmit={submit} style={{ direction: "rtl" }} autoComplete="off">
       <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>ברוכה הבאה! 👋</div>
       <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.6rem" }}>היכנסי לרשת הבוגרות שלך</p>
       {error && <div style={errBox}>{error}</div>}
       {resetSent && <div style={okBox}>נשלח אימייל לאיפוס סיסמה ✓</div>}
       <Fld label="אימייל">
-        <input style={inp} type="email" name="email" placeholder="your@email.com" dir="ltr" value={form.email} onChange={set} required
+        <input style={inp} type="email" name="email" placeholder="your@email.com" dir="ltr" value={form.email} onChange={set} required autoComplete="off"
           onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
       </Fld>
       <Fld label="סיסמה">
-        <input style={inp} type="password" name="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={set} required
+        <input style={inp} type="password" name="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={set} required autoComplete="new-password"
           onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
       </Fld>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.4rem" }}>
