@@ -33,6 +33,7 @@ styleTag.textContent = `
   .attach-btn:hover  { border-color: #38bdf8 !important; color: #0ea5e9 !important; }
   .post-btn:hover    { background: #122d47 !important; }
   .delete-link:hover { color: #dc2626 !important; }
+  .post-delete-btn:hover { color: #dc2626 !important; background: #fee2e2 !important; }
 `;
 if (!document.head.querySelector("#community-styles")) {
   styleTag.id = "community-styles";
@@ -147,6 +148,12 @@ export default function CommunityPage() {
       fetchPosts();
     } catch (err) { console.error(err); }
     finally { setPosting(false); }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    await deleteDoc(doc(db, "posts", postId));
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
   const handleRequest = async (reqId, status) => {
@@ -298,7 +305,13 @@ export default function CommunityPage() {
     postAuthor: { fontSize:"14px", fontWeight:"700", color:"#1a3c5e", margin:0 },
     postTime:   { fontSize:"11px", color:"#94a3b8", margin:0 },
     postText:   { fontSize:"14px", color:"#374151", lineHeight:"1.65", margin:0 },
-    postImage:  { width:"100%", maxHeight:"320px", objectFit:"cover", borderRadius:"12px" },
+    postDeleteBtn: {
+      marginLeft:"auto", background:"none", border:"none",
+      color:"#cbd5e1", cursor:"pointer", fontSize:"18px",
+      lineHeight:1, padding:"2px 6px", borderRadius:"6px",
+      transition:"color 0.15s, background 0.15s",
+    },
+    postImage:  { width:"100%", maxHeight:"600px", objectFit:"contain", borderRadius:"12px", background:"#f8fafc" },
     postVideo:  { width:"100%", maxHeight:"320px", borderRadius:"12px" },
   };
 
@@ -396,6 +409,16 @@ export default function CommunityPage() {
                   <p style={S.postAuthor}>{p.authorName}</p>
                   <p style={S.postTime}>{timeAgo(p.createdAt)}</p>
                 </div>
+                {user && user.uid === p.authorId && (
+                  <button
+                    className="post-delete-btn"
+                    style={S.postDeleteBtn}
+                    title="Delete post"
+                    onClick={() => handleDeletePost(p.id)}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
               {p.text && <p style={S.postText}>{p.text}</p>}
               {p.media?.map((m, i) =>
