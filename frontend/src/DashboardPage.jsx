@@ -5,6 +5,7 @@ import { db } from "./firebase";
 import SupportPage from "./SupportPage";
 import CommunityPage from "./CommunityPage";
 import ProfilePage from "./ProfilePage.jsx";
+import AdminPage from "./AdminPage.jsx";
 
 /* ─── Inject shared styles ─── */
 const styleTag = document.createElement("style");
@@ -54,6 +55,7 @@ if (!document.head.querySelector("#dashboard-styles")) {
 
 /* ─── Nav items ─── */
 const NAV_ITEMS = ["Profile", "Home", "Community", "Support"];
+const ADMIN_ITEMS = [...NAV_ITEMS, "Admin"];
 
 /* ─── Dashboard cards ─── */
 const CARDS = [
@@ -96,6 +98,8 @@ export default function DashboardPage() {
   const { user, logout } = useAuth();
   const [profile, setProfile]   = useState(null);
   const [activeNav, setActiveNav] = useState("Home");
+
+  const navItems = profile?.isAdmin ? ADMIN_ITEMS : NAV_ITEMS;
 
   useEffect(() => {
     if (!user) return;
@@ -274,7 +278,7 @@ export default function DashboardPage() {
         <div style={S.headerLeft}>
           <span style={S.logo}>Manhigut Shava</span>
           <nav style={S.headerNav}>
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <button
                 key={item}
                 className="nav-btn"
@@ -300,6 +304,7 @@ export default function DashboardPage() {
         {activeNav === "Support"   && <SupportPage />}
         {activeNav === "Community" && <CommunityPage />}
         {activeNav === "Profile"   && <ProfilePage />}
+        {activeNav === "Admin"     && <AdminPage />}
 
         {/* Home content gets its own padded container */}
         {activeNav === "Home" && (
