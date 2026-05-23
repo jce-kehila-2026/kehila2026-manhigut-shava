@@ -25,23 +25,27 @@ function normalizePhone(raw) {
   return s;
 }
 
-function firebaseMsg(code) {
+function firebaseMsg(code, message) {
   const m = {
-    "auth/invalid-credential": "אימייל או סיסמה שגויים.",
-    "auth/user-not-found": "לא נמצא חשבון עם אימייל זה.",
-    "auth/wrong-password": "סיסמה שגויה.",
-    "auth/email-already-in-use": "קיים כבר חשבון עם אימייל זה.",
-    "auth/weak-password": "הסיסמה חייבת לכלול לפחות 6 תווים.",
-    "auth/invalid-email": "כתובת אימייל לא תקינה.",
-    "auth/too-many-requests": "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
-    "auth/popup-closed-by-user": "הכניסה בוטלה.",
-    "auth/invalid-phone-number": "מספר טלפון לא תקין (לדוג. +972501234567).",
-    "auth/code-expired": "קוד האימות פג. בקשי קוד חדש.",
+    "auth/invalid-credential":    "אימייל או סיסמה שגויים.",
+    "auth/user-not-found":        "לא נמצא חשבון עם אימייל זה.",
+    "auth/wrong-password":        "סיסמה שגויה.",
+    "auth/email-already-in-use":  "קיים כבר חשבון עם אימייל זה.",
+    "auth/weak-password":         "הסיסמה חייבת לכלול לפחות 6 תווים.",
+    "auth/invalid-email":         "כתובת אימייל לא תקינה.",
+    "auth/too-many-requests":     "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
+    "auth/popup-closed-by-user":  "הכניסה בוטלה.",
+    "auth/cancelled-popup-request": "הכניסה בוטלה.",
+    "auth/invalid-phone-number":  "מספר טלפון לא תקין (לדוג. +972501234567).",
+    "auth/code-expired":          "קוד האימות פג. בקשי קוד חדש.",
     "auth/invalid-verification-code": "קוד שגוי. בדקי ונסי שוב.",
-    "auth/operation-not-allowed": "כניסה בטלפון אינה מופעלת. פני למנהל.",
-    "auth/internal-error": "כניסה בטלפון אינה מופעלת. פני למנהל.",
+    "auth/operation-not-allowed": "שיטת הכניסה אינה מופעלת. פני למנהל.",
+    "auth/internal-error":        "שגיאה פנימית. נסי שוב.",
+    "auth/network-request-failed":"בעיית רשת. בדקי חיבור אינטרנט ונסי שוב.",
+    "auth/account-exists-with-different-credential":
+      "קיים חשבון עם אימייל זה בשיטת כניסה אחרת. נסי להיכנס עם האימייל + סיסמה.",
   };
-  return m[code] || `שגיאה (${code || "unknown"}). נסי שוב.`;
+  return m[code] || `שגיאה: ${message || code || "unknown"}`;
 }
 
 function GoogleIcon() {
@@ -112,7 +116,10 @@ function GoogleButton({ label }) {
   const handle = async () => {
     setLoading(true); setError("");
     try { await signInWithPopup(auth, googleProvider); }
-    catch (e) { if (e.code !== "auth/popup-closed-by-user") setError(firebaseMsg(e.code)); }
+    catch (e) {
+      if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request")
+        setError(firebaseMsg(e.code, e.message));
+    }
     finally { setLoading(false); }
   };
   return (
@@ -228,14 +235,14 @@ function LoginForm({ onSwitchTab }) {
   const submit = async (e) => {
     e.preventDefault(); setError(""); setLoading(true);
     try { await signInWithEmailAndPassword(auth, form.email, form.password); }
-    catch (e) { setError(firebaseMsg(e.code)); }
+    catch (e) { setError(firebaseMsg(e.code, e.message)); }
     finally { setLoading(false); }
   };
 
   const forgot = async () => {
     if (!form.email) { setError("הכניסי אימייל למעלה לפני איפוס הסיסמה."); return; }
     try { await sendPasswordResetEmail(auth, form.email); setResetSent(true); setError(""); }
-    catch (e) { setError(firebaseMsg(e.code)); }
+    catch (e) { setError(firebaseMsg(e.code, e.message)); }
   };
 
   return (
