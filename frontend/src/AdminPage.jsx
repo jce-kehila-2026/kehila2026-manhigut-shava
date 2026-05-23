@@ -93,7 +93,7 @@ function getInitials(name) {
 }
 
 export default function AdminPage() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [tab, setTab] = useState("users");
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
@@ -208,14 +208,16 @@ export default function AdminPage() {
                       >
                         {u.isAdmin ? "Revoke Admin" : "Make Admin"}
                       </button>
-                      <button
-                        style={S.delBtn}
-                        onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                        onMouseLeave={e => e.currentTarget.style.background = "none"}
-                        onClick={() => deleteUser(u.id)}
-                      >
-                        Delete
-                      </button>
+                      {u.id !== user?.uid && (
+                        <button
+                          style={S.delBtn}
+                          onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
+                          onMouseLeave={e => e.currentTarget.style.background = "none"}
+                          onClick={() => deleteUser(u.id)}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
