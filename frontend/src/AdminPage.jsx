@@ -106,13 +106,11 @@ export default function AdminPage() {
   }
 
   const deleteUser = async (id) => {
-    if (!window.confirm("Delete this user from the database?")) return;
     await deleteDoc(doc(db, "users", id));
     setUsers(prev => prev.filter(u => u.id !== id));
   };
 
   const deletePost = async (id) => {
-    if (!window.confirm("Delete this post?")) return;
     await deleteDoc(doc(db, "posts", id));
     setPosts(prev => prev.filter(p => p.id !== id));
   };
