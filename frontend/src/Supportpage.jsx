@@ -113,17 +113,23 @@ export default function SupportPage() {
     if (nameInputRef.current) {
       const r = nameInputRef.current.getBoundingClientRect();
       setDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    } else {
+      /* fallback: just enable the dropdown without fixed position */
+      setDropPos({ top: 0, left: 0, width: 260 });
     }
     setShowSuggest(true);
   };
 
-  /* live name suggestions */
+  /* live name suggestions — search first/last name and email */
   const suggestions = memberName.trim().length > 0
     ? allUsers.filter((u) => {
-        const full = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase().trim();
         const q = memberName.toLowerCase().trim();
-        return full.startsWith(q) || full.includes(q);
-      }).slice(0, 7)
+        const first = (u.firstName ?? "").toLowerCase();
+        const last  = (u.lastName  ?? "").toLowerCase();
+        const full  = `${first} ${last}`.trim();
+        const email = (u.email ?? "").toLowerCase();
+        return first.startsWith(q) || last.startsWith(q) || full.includes(q) || email.includes(q);
+      }).slice(0, 8)
     : [];
 
   const handleSearch = async () => {
@@ -381,8 +387,8 @@ export default function SupportPage() {
               />
             </div>
 
-            {/* Dropdown rendered with position:fixed to escape any overflow:hidden parent */}
-            {showSuggest && suggestions.length > 0 && dropPos && (
+            {/* Suggestions dropdown — position:fixed bypasses any overflow:hidden ancestor */}
+            {showSuggest && memberName.trim().length > 0 && dropPos && (
               <div style={{
                 position: "fixed",
                 top: dropPos.top,
@@ -395,8 +401,9 @@ export default function SupportPage() {
                 overflow: "hidden",
                 zIndex: 9999,
                 animation: "dropIn 0.16s ease",
+                minWidth: 220,
               }}>
-                {suggestions.map((u) => (
+                {suggestions.length > 0 ? suggestions.map((u) => (
                   <button
                     key={u.id}
                     className="suggest-item"
@@ -432,7 +439,11 @@ export default function SupportPage() {
                       )}
                     </div>
                   </button>
-                ))}
+                )) : (
+                  <div style={{ padding: "11px 14px", fontSize: "13px", color: "#94a3b8" }}>
+                    No members found
+                  </div>
+                )}
               </div>
             )}
           </div>
