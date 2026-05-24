@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, getRedirectResult } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
@@ -9,9 +9,15 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
   const [profile, setProfile] = useState(undefined);
   const [loading, setLoading] = useState(true);
+  const [redirectError, setRedirectError] = useState(null);
 
   useEffect(() => {
+    getRedirectResult(auth).catch((err) => {
+      setRedirectError(err.code ?? "unknown");
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
       setUser(firebaseUser ?? null);
       if (firebaseUser) {
         const snap = await getDoc(doc(db, "users", firebaseUser.uid));
@@ -39,7 +45,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile, redirectError, clearRedirectError: () => setRedirectError(null) }}>
       {children}
     </AuthContext.Provider>
   );

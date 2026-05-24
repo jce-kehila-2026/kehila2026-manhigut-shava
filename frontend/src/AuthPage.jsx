@@ -3,10 +3,11 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signInWithPopup,
+  signInWithRedirect,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
+import { useAuth } from "./AuthContext";
 
 /* ─── colours ─── */
 const C = {
@@ -101,14 +102,14 @@ function Fld({ label, children }) {
 
 /* ─── GOOGLE BUTTON ─── */
 function GoogleButton({ label }) {
+  const { redirectError, clearRedirectError } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const handle = async () => {
-    setLoading(true); setError("");
-    try { await signInWithPopup(auth, googleProvider); }
-    catch (e) { if (e.code !== "auth/popup-closed-by-user") setError(firebaseMsg(e.code)); }
-    finally { setLoading(false); }
+    setLoading(true);
+    clearRedirectError();
+    await signInWithRedirect(auth, googleProvider);
   };
+  const error = redirectError ? firebaseMsg(redirectError) : "";
   return (
     <>
       {error && <div style={errBox}>{error}</div>}
