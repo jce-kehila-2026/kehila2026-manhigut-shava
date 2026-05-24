@@ -1,130 +1,135 @@
 import { useState, useEffect } from "react";
 import {
-  collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc,
+  collection, getDocs, deleteDoc, doc, query,
+  orderBy, updateDoc, where, onSnapshot,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
 import { useAuth } from "./AuthContext";
 
-const S = {
-  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", fontFamily: "'Heebo', system-ui, sans-serif" },
-  denied: { textAlign: "center", padding: "4rem", color: "#dc2626", fontSize: "1.1rem", fontWeight: 700 },
-
-  header: { marginBottom: "1.75rem" },
-  title: { fontSize: "22px", fontWeight: 800, color: "#1a3c5e", margin: "0 0 3px" },
-  sub: { fontSize: "13px", color: "#94a3b8", margin: 0 },
-
-  stats: { display: "flex", gap: "1rem", marginBottom: "1.75rem" },
-  statCard: {
-    background: "#fff", borderRadius: "14px", padding: "1rem 1.5rem",
-    border: "1.5px solid #f1f5f9", boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
-    minWidth: "120px",
-  },
-  statNum: { fontSize: "26px", fontWeight: 800, color: "#1a3c5e", margin: 0 },
-  statLabel: { fontSize: "11px", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 },
-
-  tabs: { display: "flex", gap: "6px", marginBottom: "1.5rem" },
-  tab: (active) => ({
-    padding: "8px 20px", borderRadius: "9px", border: "none", cursor: "pointer",
-    fontSize: "13px", fontWeight: 700, fontFamily: "'Heebo', system-ui, sans-serif",
-    background: active ? "#1a3c5e" : "#f1f5f9",
-    color: active ? "#fff" : "#64748b",
-    transition: "all 0.15s",
-  }),
-
-  table: { width: "100%", borderCollapse: "collapse" },
-  th: {
-    textAlign: "left", padding: "10px 14px",
-    fontSize: "11px", fontWeight: 700, color: "#94a3b8",
-    textTransform: "uppercase", letterSpacing: "0.08em",
-    borderBottom: "2px solid #f1f5f9", background: "#f8fafc",
-  },
-  td: {
-    padding: "12px 14px", fontSize: "13px", color: "#374151",
-    borderBottom: "1px solid #f1f5f9", verticalAlign: "middle",
-  },
-  row: { background: "#fff", transition: "background 0.12s" },
-
-  name: { fontWeight: 700, color: "#1a3c5e", margin: 0 },
-  meta: { fontSize: "11px", color: "#94a3b8", margin: 0 },
-
-  badge: (verified) => ({
-    fontSize: "10px", fontWeight: 700, padding: "2px 9px", borderRadius: "99px",
-    background: verified ? "#dcfce7" : "#fef9c3",
-    color: verified ? "#166534" : "#854d0e",
-    border: verified ? "1px solid #bbf7d0" : "1px solid #fde047",
-  }),
-
-  delBtn: {
-    background: "none", border: "1px solid #fca5a5", color: "#dc2626",
-    borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
-    cursor: "pointer", fontFamily: "'Heebo', system-ui, sans-serif",
-    transition: "background 0.15s",
-  },
-  adminBtn: {
-    background: "none", border: "1px solid #a78bfa", color: "#7c3aed",
-    borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
-    cursor: "pointer", fontFamily: "'Heebo', system-ui, sans-serif",
-    transition: "background 0.15s", marginLeft: "6px",
-  },
-  adminBadge: {
-    fontSize: "10px", fontWeight: 700, padding: "2px 9px", borderRadius: "99px",
-    background: "#ede9fe", color: "#6d28d9", border: "1px solid #c4b5fd",
-  },
-
-  empty: { textAlign: "center", padding: "3rem", color: "#cbd5e1", fontSize: "14px" },
-  tableWrap: {
-    background: "#fff", borderRadius: "16px",
-    border: "1.5px solid #f1f5f9", overflow: "hidden",
-    boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
-  },
-};
-
+/* ── Helpers ── */
 function timeAgo(ts) {
-  if (!ts) return "";
-  const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (!ts) return "—";
+  const s = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (s < 60)    return "just now";
+  if (s < 3600)  return `${Math.floor(s/60)}m ago`;
+  if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+  return `${Math.floor(s/86400)}d ago`;
+}
+function getInitials(name) {
+  return name ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0,2) : "?";
+}
+function avatarColor(name) {
+  const c = ["#2563eb","#7c3aed","#0891b2","#059669","#dc2626","#d97706"];
+  return c[(name?.charCodeAt(0)||0) % c.length];
 }
 
-function getInitials(name) {
-  return name ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "?";
+/* ── Stat card ── */
+function StatCard({ label, value, sub, color, icon }) {
+  return (
+    <div className="card slide-up" style={{
+      padding: "1.25rem 1.5rem",
+      borderLeft: `4px solid ${color}`,
+      display: "flex", alignItems: "center", gap: "1rem",
+    }}>
+      <div style={{
+        width: 44, height: 44, borderRadius: "var(--r-md)",
+        background: `${color}18`, display: "flex",
+        alignItems: "center", justifyContent: "center",
+        fontSize: 22, flexShrink: 0,
+      }}>{icon}</div>
+      <div>
+        <p style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1 }}>{value}</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginTop: 3 }}>{label}</p>
+        {sub && <p style={{ fontSize: 11, color: color, marginTop: 1 }}>{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ── Section header ── */
+function SectionHeader({ title, count, action }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", marginTop: "1.75rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{title}</h2>
+        {count !== undefined && (
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-full)", background: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
+            {count}
+          </span>
+        )}
+      </div>
+      {action}
+    </div>
+  );
 }
 
 export default function AdminPage() {
   const { user, profile } = useAuth();
-  const [tab, setTab] = useState("users");
+  const [tab, setTab]     = useState("overview");
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchUser, setSearchUser] = useState("");
 
   useEffect(() => {
     if (!profile?.isAdmin) return;
     Promise.all([
       getDocs(collection(db, "users")),
       getDocs(query(collection(db, "posts"), orderBy("createdAt", "desc"))),
-    ]).then(([uSnap, pSnap]) => {
+      getDocs(collection(db, "conversations")),
+    ]).then(([uSnap, pSnap, cSnap]) => {
       setUsers(uSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setPosts(pSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setConvs(cSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
   }, [profile]);
 
   if (!profile?.isAdmin) {
-    return <div style={S.denied}>⛔ Access Denied — Admins only.</div>;
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="empty-state">
+          <div style={{ fontSize: 48 }}>⛔</div>
+          <h3>Access Denied</h3>
+          <p>This area is restricted to administrators only.</p>
+        </div>
+      </div>
+    );
   }
 
+  /* ── Computed stats ── */
+  const now = Date.now();
+  const onlineNow   = users.filter(u => u.isOnline).length;
+  const verifiedN   = users.filter(u => u.emailVerified).length;
+  const adminsN     = users.filter(u => u.isAdmin).length;
+  const newThisWeek = users.filter(u => u.createdAt && (now - new Date(u.createdAt)) < 7*86400*1000).length;
+  const totalLikes  = posts.reduce((s, p) => s + (p.likesCount || 0), 0);
+  const totalComments = posts.reduce((s, p) => s + (p.commentCount || 0), 0);
+
+  /* ── Profession distribution ── */
+  const professionMap = {};
+  users.forEach(u => {
+    if (u.profession) professionMap[u.profession] = (professionMap[u.profession] || 0) + 1;
+  });
+  const topProfessions = Object.entries(professionMap).sort((a,b) => b[1]-a[1]).slice(0,5);
+
+  /* ── City distribution ── */
+  const cityMap = {};
+  users.forEach(u => {
+    if (u.city) cityMap[u.city] = (cityMap[u.city] || 0) + 1;
+  });
+  const topCities = Object.entries(cityMap).sort((a,b) => b[1]-a[1]).slice(0,5);
+
+  /* ── User actions ── */
   const deleteUser = async (id) => {
-    if (!window.confirm("למחוק את המשתמש לצמיתות?")) return;
+    if (!window.confirm("Permanently delete this user?")) return;
     try {
       await httpsCallable(functions, "deleteUserAccount")({ uid: id });
       await deleteDoc(doc(db, "users", id));
       setUsers(prev => prev.filter(u => u.id !== id));
-    } catch (e) {
-      alert("שגיאה במחיקה: " + e.message);
-    }
+    } catch (e) { alert("Error: " + e.message); }
   };
 
   const toggleAdmin = async (id, current) => {
@@ -133,174 +138,290 @@ export default function AdminPage() {
   };
 
   const deletePost = async (id) => {
+    if (!window.confirm("Delete this post?")) return;
     await deleteDoc(doc(db, "posts", id));
     setPosts(prev => prev.filter(p => p.id !== id));
   };
 
-  return (
-    <div style={S.page}>
-      <div style={S.header}>
-        <p style={S.title}>Admin Panel</p>
-        <p style={S.sub}>Manage users and content</p>
-      </div>
+  const pinPost = async (id, current) => {
+    await updateDoc(doc(db, "posts", id), { isPinned: !current });
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, isPinned: !current } : p));
+  };
 
-      {/* Stats */}
-      <div style={S.stats}>
-        <div style={S.statCard}>
-          <p style={S.statNum}>{users.length}</p>
-          <p style={S.statLabel}>Total Users</p>
-        </div>
-        <div style={S.statCard}>
-          <p style={S.statNum}>{posts.length}</p>
-          <p style={S.statLabel}>Total Posts</p>
-        </div>
-        <div style={S.statCard}>
-          <p style={S.statNum}>{users.filter(u => u.emailVerified).length}</p>
-          <p style={S.statLabel}>Verified</p>
-        </div>
+  const filteredUsers = users.filter(u => {
+    if (!searchUser) return true;
+    const s = searchUser.toLowerCase();
+    return `${u.firstName} ${u.lastName} ${u.email} ${u.profession} ${u.city}`.toLowerCase().includes(s);
+  });
+
+  const TABS = [
+    { id: "overview", label: "Overview" },
+    { id: "users",    label: `Users (${users.length})` },
+    { id: "posts",    label: `Posts (${posts.length})` },
+  ];
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: "1.75rem 2rem", fontFamily: "var(--font)" }}>
+      {/* Page header */}
+      <div style={{ marginBottom: "1.5rem" }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 3 }}>Admin Dashboard</h1>
+        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Platform management and analytics</p>
       </div>
 
       {/* Tabs */}
-      <div style={S.tabs}>
-        <button style={S.tab(tab === "users")} onClick={() => setTab("users")}>Users ({users.length})</button>
-        <button style={S.tab(tab === "posts")} onClick={() => setTab("posts")}>Posts ({posts.length})</button>
+      <div style={{ display: "flex", gap: 4, marginBottom: "1.5rem", background: "var(--bg-tertiary)", borderRadius: "var(--r-md)", padding: 4, width: "fit-content" }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding: "7px 16px", borderRadius: "var(--r-sm)", border: "none",
+            background: tab === t.id ? "var(--bg-primary)" : "transparent",
+            color: tab === t.id ? "var(--text-primary)" : "var(--text-muted)",
+            fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer",
+            boxShadow: tab === t.id ? "var(--shadow-xs)" : "none",
+            transition: "all var(--t-fast)",
+          }}>{t.label}</button>
+        ))}
       </div>
 
-      {loading && <p style={S.empty}>Loading…</p>}
+      {loading && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1rem" }}>
+          {Array.from({length:4}).map((_,i) => <div key={i} className="skeleton card" style={{height:88}} />)}
+        </div>
+      )}
 
-      {/* ── Users Table ── */}
+      {/* ── Overview tab ── */}
+      {!loading && tab === "overview" && (
+        <>
+          {/* Stat cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+            <StatCard label="Total Members"   value={users.length}    icon="👥" color="#2563eb" sub={`+${newThisWeek} this week`} />
+            <StatCard label="Online Now"      value={onlineNow}       icon="🟢" color="#22c55e" sub="Active members" />
+            <StatCard label="Verified"        value={verifiedN}       icon="✅" color="#0891b2" sub={`${Math.round(verifiedN/Math.max(users.length,1)*100)}% verified`} />
+            <StatCard label="Total Posts"     value={posts.length}    icon="📝" color="#8b5cf6" sub={`${totalLikes} likes · ${totalComments} comments`} />
+            <StatCard label="Conversations"   value={convs.length}    icon="💬" color="#f59e0b" />
+            <StatCard label="Admins"          value={adminsN}         icon="🛡️" color="#dc2626" />
+          </div>
+
+          {/* Distribution charts (text-based) */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+            {/* Profession distribution */}
+            <div className="card" style={{ padding: "1.25rem" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Professions</p>
+              {topProfessions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No data yet</p>}
+              {topProfessions.map(([prof, count]) => (
+                <div key={prof} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{prof}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>{count}</span>
+                  </div>
+                  <div style={{ height: 6, background: "var(--bg-tertiary)", borderRadius: "var(--r-full)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "var(--brand)", borderRadius: "var(--r-full)", transition: "width 0.8s ease" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* City distribution */}
+            <div className="card" style={{ padding: "1.25rem" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Cities</p>
+              {topCities.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No data yet</p>}
+              {topCities.map(([city, count]) => (
+                <div key={city} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{city}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>{count}</span>
+                  </div>
+                  <div style={{ height: 6, background: "var(--bg-tertiary)", borderRadius: "var(--r-full)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "#8b5cf6", borderRadius: "var(--r-full)", transition: "width 0.8s ease" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent signups */}
+            <div className="card" style={{ padding: "1.25rem" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Recent Members</p>
+              {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5).map(u => (
+                <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: avatarColor(`${u.firstName} ${u.lastName}`), color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, flexShrink:0 }}>
+                    {getInitials(`${u.firstName} ${u.lastName}`)}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.firstName} {u.lastName}</p>
+                    <p style={{ fontSize:10, color:"var(--text-muted)" }}>{timeAgo(u.createdAt)}</p>
+                  </div>
+                  {u.emailVerified && <span className="badge badge-green">✓</span>}
+                </div>
+              ))}
+            </div>
+
+            {/* Top posts */}
+            <div className="card" style={{ padding: "1.25rem" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Posts</p>
+              {posts.slice().sort((a,b)=>(b.likesCount||0)-(a.likesCount||0)).slice(0,4).map(p => (
+                <div key={p.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid var(--bg-tertiary)" }}>
+                  <p style={{ fontSize:12, color:"var(--text-primary)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:2 }}>
+                    {p.text || "(media post)"}
+                  </p>
+                  <div style={{ display:"flex", gap:10 }}>
+                    <span style={{ fontSize:10, color:"var(--text-muted)" }}>❤️ {p.likesCount||0}</span>
+                    <span style={{ fontSize:10, color:"var(--text-muted)" }}>💬 {p.commentCount||0}</span>
+                    <span style={{ fontSize:10, color:"var(--text-muted)" }}>by {p.authorName}</span>
+                  </div>
+                </div>
+              ))}
+              {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted)"}}>No posts yet</p>}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Users tab ── */}
       {!loading && tab === "users" && (
-        <div style={S.tableWrap}>
-          {users.length === 0 ? (
-            <p style={S.empty}>No users yet.</p>
-          ) : (
-            <table style={S.table}>
+        <>
+          <SectionHeader
+            title="All Members"
+            count={filteredUsers.length}
+            action={
+              <input
+                className="input"
+                placeholder="Search by name, email, profession…"
+                value={searchUser}
+                onChange={e => setSearchUser(e.target.value)}
+                style={{ fontSize: 12, width: 240 }}
+              />
+            }
+          />
+          <div className="card" style={{ overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>
-                  <th style={S.th}>Name</th>
-                  <th style={S.th}>Email</th>
-                  <th style={S.th}>Profession</th>
-                  <th style={S.th}>City</th>
-                  <th style={S.th}>Status</th>
-                  <th style={S.th}>Joined</th>
-                  <th style={S.th}></th>
+                <tr style={{ background: "var(--bg-secondary)" }}>
+                  {["Member","Email","Profession","City","Status","Joined","Actions"].map(h => (
+                    <th key={h} style={{ padding:"10px 14px", textAlign:"left", fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", borderBottom:"1px solid var(--border)", whiteSpace:"nowrap" }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => (
-                  <tr key={u.id} style={S.row}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                {filteredUsers.map((u) => (
+                  <tr key={u.id}
+                    style={{ borderBottom: "1px solid var(--bg-tertiary)", transition: "background var(--t-fast)" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    <td style={S.td}>
-                      <p style={S.name}>{u.firstName} {u.lastName}</p>
-                      <p style={S.meta}>{u.phone || "—"}</p>
+                    <td style={{ padding:"11px 14px" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        {u.avatarUrl
+                          ? <img src={u.avatarUrl} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover" }} alt="" />
+                          : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
+                        }
+                        <div>
+                          <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary)" }}>{u.firstName} {u.lastName}</p>
+                          <p style={{ fontSize:10,color:"var(--text-muted)" }}>{u.phone||""}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td style={S.td}>{u.email || "—"}</td>
-                    <td style={S.td}>{u.profession || "—"}</td>
-                    <td style={S.td}>{u.city || "—"}</td>
-                    <td style={S.td}>
-                      <span style={S.badge(u.emailVerified)}>
-                        {u.emailVerified ? "Verified" : "Pending"}
-                      </span>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary)" }}>{u.email||"—"}</td>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary)" }}>{u.profession||"—"}</td>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary)" }}>{u.city||"—"}</td>
+                    <td style={{ padding:"11px 14px" }}>
+                      <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                        <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
+                          {u.emailVerified ? "Verified" : "Pending"}
+                        </span>
+                        {u.isAdmin && <span className="badge badge-purple">Admin</span>}
+                        {u.isOnline && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● Online</span>}
+                      </div>
                     </td>
-                    <td style={S.td}>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
-                    <td style={S.td}>
-                      {u.isAdmin && <span style={S.adminBadge}>Admin</span>}
+                    <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted)",whiteSpace:"nowrap" }}>
+                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                    </td>
+                    <td style={{ padding:"11px 14px" }}>
                       {u.id !== user?.uid && (
-                        <button
-                          style={S.adminBtn}
-                          onMouseEnter={e => e.currentTarget.style.background = "#ede9fe"}
-                          onMouseLeave={e => e.currentTarget.style.background = "none"}
-                          onClick={() => toggleAdmin(u.id, u.isAdmin)}
-                        >
-                          {u.isAdmin ? "Revoke Admin" : "Make Admin"}
-                        </button>
-                      )}
-                      {u.id !== user?.uid && (
-                        <button
-                          style={S.delBtn}
-                          onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                          onMouseLeave={e => e.currentTarget.style.background = "none"}
-                          onClick={() => deleteUser(u.id)}
-                        >
-                          Delete
-                        </button>
+                        <div style={{ display:"flex", gap:4 }}>
+                          <button
+                            onClick={() => toggleAdmin(u.id, u.isAdmin)}
+                            style={{ padding:"4px 10px", borderRadius:"var(--r-sm)", fontSize:11, fontWeight:600, border:"1px solid #c4b5fd", background:"#ede9fe", color:"#6d28d9", cursor:"pointer", transition:"all var(--t-fast)", whiteSpace:"nowrap" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#ddd6fe"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#ede9fe"}
+                          >{u.isAdmin ? "Revoke" : "Make Admin"}</button>
+                          <button
+                            onClick={() => deleteUser(u.id)}
+                            style={{ padding:"4px 10px", borderRadius:"var(--r-sm)", fontSize:11, fontWeight:600, border:"1px solid #fca5a5", background:"#fee2e2", color:"#dc2626", cursor:"pointer", transition:"all var(--t-fast)" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#fecaca"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#fee2e2"}
+                          >Delete</button>
+                        </div>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+            {filteredUsers.length === 0 && (
+              <div className="empty-state"><p>No members found.</p></div>
+            )}
+          </div>
+        </>
       )}
 
-      {/* ── Posts Table ── */}
+      {/* ── Posts tab ── */}
       {!loading && tab === "posts" && (
-        <div style={S.tableWrap}>
-          {posts.length === 0 ? (
-            <p style={S.empty}>No posts yet.</p>
-          ) : (
-            <table style={S.table}>
+        <>
+          <SectionHeader title="All Posts" count={posts.length} />
+          <div className="card" style={{ overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>
-                  <th style={S.th}>Author</th>
-                  <th style={S.th}>Content</th>
-                  <th style={S.th}>Media</th>
-                  <th style={S.th}>Posted</th>
-                  <th style={S.th}></th>
+                <tr style={{ background: "var(--bg-secondary)" }}>
+                  {["Author","Content","Engagement","Posted","Actions"].map(h => (
+                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border)" }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {posts.map(p => (
-                  <tr key={p.id} style={S.row}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                  <tr key={p.id}
+                    style={{ borderBottom:"1px solid var(--bg-tertiary)",transition:"background var(--t-fast)" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    <td style={S.td}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <div style={{
-                          width: "32px", height: "32px", borderRadius: "50%", flexShrink: 0,
-                          background: "linear-gradient(135deg,#1a3c5e,#0ea5e9)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "11px", fontWeight: 700, color: "#fff",
-                        }}>
-                          {getInitials(p.authorName)}
-                        </div>
-                        <p style={{ ...S.name, fontSize: "12px" }}>{p.authorName}</p>
+                    <td style={{ padding:"11px 14px",fontSize:12,fontWeight:600,color:"var(--text-primary)",whiteSpace:"nowrap" }}>{p.authorName}</td>
+                    <td style={{ padding:"11px 14px",maxWidth:320 }}>
+                      <p style={{ fontSize:12,color:"var(--text-secondary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:300 }}>
+                        {p.text || <em style={{color:"var(--text-muted)"}}>Media post</em>}
+                      </p>
+                      {p.media?.length > 0 && (
+                        <span style={{ fontSize:10,background:"var(--brand-pale)",color:"var(--brand-dark)",borderRadius:"var(--r-full)",padding:"1px 7px",fontWeight:700,marginTop:3,display:"inline-block" }}>
+                          {p.media.length} media
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding:"11px 14px" }}>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <span style={{ fontSize:11,color:"var(--text-secondary)",display:"flex",alignItems:"center",gap:3 }}>❤️ {p.likesCount||0}</span>
+                        <span style={{ fontSize:11,color:"var(--text-secondary)",display:"flex",alignItems:"center",gap:3 }}>💬 {p.commentCount||0}</span>
                       </div>
                     </td>
-                    <td style={{ ...S.td, maxWidth: "320px" }}>
-                      <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "300px", color: p.text ? "#374151" : "#94a3b8" }}>
-                        {p.text || "(image only)"}
-                      </p>
-                    </td>
-                    <td style={S.td}>
-                      {p.media?.length > 0
-                        ? <span style={{ fontSize: "11px", background: "#dbeafe", color: "#1e40af", borderRadius: "99px", padding: "2px 9px", fontWeight: 700 }}>
-                            {p.media.length} file{p.media.length > 1 ? "s" : ""}
-                          </span>
-                        : <span style={{ color: "#cbd5e1" }}>—</span>
-                      }
-                    </td>
-                    <td style={S.td}>{timeAgo(p.createdAt)}</td>
-                    <td style={S.td}>
-                      <button
-                        style={S.delBtn}
-                        onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                        onMouseLeave={e => e.currentTarget.style.background = "none"}
-                        onClick={() => deletePost(p.id)}
-                      >
-                        Delete
-                      </button>
+                    <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
+                    <td style={{ padding:"11px 14px" }}>
+                      <div style={{ display:"flex", gap:4 }}>
+                        <button
+                          onClick={() => pinPost(p.id, p.isPinned)}
+                          style={{ padding:"4px 10px",borderRadius:"var(--r-sm)",fontSize:11,fontWeight:600,border:"1px solid #fde047",background:"#fef9c3",color:"#854d0e",cursor:"pointer",transition:"all var(--t-fast)" }}
+                        >{p.isPinned ? "Unpin" : "📌 Pin"}</button>
+                        <button
+                          onClick={() => deletePost(p.id)}
+                          style={{ padding:"4px 10px",borderRadius:"var(--r-sm)",fontSize:11,fontWeight:600,border:"1px solid #fca5a5",background:"#fee2e2",color:"#dc2626",cursor:"pointer",transition:"all var(--t-fast)" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#fecaca"}
+                          onMouseLeave={e => e.currentTarget.style.background = "#fee2e2"}
+                        >Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+            {posts.length === 0 && <div className="empty-state"><p>No posts yet.</p></div>}
+          </div>
+        </>
       )}
     </div>
   );
