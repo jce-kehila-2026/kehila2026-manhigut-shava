@@ -13,15 +13,17 @@ export function useConversations(userId) {
 
   useEffect(() => {
     if (!userId) return;
+    /* Single field filter — no composite index needed. Sort client-side. */
     const q = query(
       collection(db, "conversations"),
       where("participants", "array-contains", userId),
-      orderBy("updatedAt", "desc"),
     );
     const unsub = onSnapshot(q, (snap) => {
-      setConversations(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const convs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      convs.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+      setConversations(convs);
       setLoading(false);
-    }, () => setLoading(false));
+    }, (err) => { console.error("conversations listener:", err); setLoading(false); });
     return unsub;
   }, [userId]);
 

@@ -289,6 +289,7 @@ export default function ChatPage({ onUnreadChange }) {
   const [replyTo, setReplyTo] = useState(null);
   const [sending, setSending] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
+  const [activePeer, setActivePeer] = useState(null); // cached peer info before conv loads
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -313,10 +314,10 @@ export default function ChatPage({ onUnreadChange }) {
   }, [conversations]);
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
-  const otherId = activeConv?.participants?.find((p) => p !== user?.uid);
-  const otherUser = allUsers.find((u) => u.id === otherId);
-  const otherName = activeConv?.participantNames?.[otherId] || "";
-  const otherAvatar = activeConv?.participantAvatars?.[otherId] || null;
+  const otherId = activeConv?.participants?.find((p) => p !== user?.uid) || activePeer?.id;
+  const otherUser = allUsers.find((u) => u.id === otherId) || activePeer;
+  const otherName = activeConv?.participantNames?.[otherId] || (activePeer ? `${activePeer.firstName} ${activePeer.lastName}`.trim() : "");
+  const otherAvatar = activeConv?.participantAvatars?.[otherId] || activePeer?.avatarUrl || null;
 
   /* "Seen" — show when other user has read all messages */
   const lastMyMsgIdx = messages.map((m, i) => m.senderId === user?.uid ? i : -1).filter(i => i >= 0).pop();
@@ -352,6 +353,7 @@ export default function ChatPage({ onUnreadChange }) {
       avatarUrl: user.photoURL || null,
     };
     try {
+      setActivePeer(targetUser);
       const convId = await getOrCreateConversation(user.uid, targetUser.id, myProfile, targetUser);
       setActiveConvId(convId);
       setShowNewChat(false);
