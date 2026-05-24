@@ -171,8 +171,9 @@ function PostCard({ post, currentUser, isAdmin, onDelete }) {
               </span>
             )}
             {post.isPinned && (
-              <span style={{ fontSize: 10, fontWeight: 700, background: "#fef9c3", color: "#854d0e", border: "1px solid #fde047", borderRadius: "var(--r-full)", padding: "1px 7px" }}>
-                📌 Pinned
+              <span style={{ fontSize: 10, fontWeight: 700, background: "#fef9c3", color: "#854d0e", border: "1px solid #fde047", borderRadius: "var(--r-full)", padding: "1px 7px", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M16 2v4l2 2-1.5 1.5-3-3L12 8l1 1-6 6H4l-2 2 4 4 2-2v-3l6-6 1 1-1.5 1.5-3-3L12 8l2-1.5L16 2z"/></svg>
+                Pinned
               </span>
             )}
           </div>
@@ -272,7 +273,17 @@ function PostCard({ post, currentUser, isAdmin, onDelete }) {
           onMouseEnter={(e) => { if (!liked) e.currentTarget.style.background = "var(--bg-tertiary)"; }}
           onMouseLeave={(e) => { if (!liked) e.currentTarget.style.background = "transparent"; }}
         >
-          <span className={liked ? "like-pop" : ""} style={{ fontSize: 16 }}>{liked ? "❤️" : "🤍"}</span>
+          <span className={liked ? "like-pop" : ""} style={{ display: "flex", alignItems: "center" }}>
+            {liked ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            )}
+          </span>
           <span>{likes || ""}</span>
           <span>Like</span>
         </button>
@@ -291,7 +302,9 @@ function PostCard({ post, currentUser, isAdmin, onDelete }) {
           onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-tertiary)"}
           onMouseLeave={(e) => { if (!showComments) e.currentTarget.style.background = "transparent"; }}
         >
-          <span style={{ fontSize: 15 }}>💬</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
           <span>{commentCount > 0 ? commentCount : ""}</span>
           <span>Comment</span>
         </button>
@@ -421,7 +434,8 @@ function ComposeBox({ currentUser, profile, onPost }) {
                   </div>
                 ) : (
                   <span key={i} style={{ fontSize: 11, background: "var(--bg-tertiary)", borderRadius: "var(--r-sm)", padding: "4px 10px", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>
-                    📎 {f.name}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    {f.name}
                     <button onClick={() => setFiles((p) => p.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
                   </span>
                 )
@@ -440,7 +454,8 @@ function ComposeBox({ currentUser, profile, onPost }) {
               onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--brand)"; e.currentTarget.style.color = "var(--brand)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             >
-              <span>📎</span> Attach
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              Attach
             </button>
             <input ref={fileRef} type="file" accept="image/*,video/*" multiple style={{ display: "none" }}
               onChange={(e) => setFiles((p) => [...p, ...Array.from(e.target.files)])} />
@@ -603,7 +618,7 @@ export default function CommunityPage() {
           {/* Regular feed */}
           {!loading && regularPosts.length === 0 && pinnedPosts.length === 0 && (
             <div className="empty-state">
-              <div style={{ fontSize: 48 }}>📝</div>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
               <h3>No posts yet</h3>
               <p>Be the first to share something with the community!</p>
             </div>
@@ -616,8 +631,9 @@ export default function CommunityPage() {
         {/* ── Right: Birthdays ── */}
         <aside style={{ position: "sticky", top: "1.5rem" }}>
           <div className="card" style={{ padding: "1rem" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.75rem" }}>
-              🎂 Upcoming Birthdays
+            <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: 5 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Upcoming Birthdays
             </p>
             {birthdays.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "0.5rem 0" }}>No upcoming birthdays.</p>}
             {birthdays.map((u) => (
@@ -628,10 +644,12 @@ export default function CommunityPage() {
                     {u.firstName} {u.lastName}
                   </p>
                   <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                    {u.daysUntil === 0 ? "🎉 Today!" : `In ${u.daysUntil} day${u.daysUntil > 1 ? "s" : ""}`}
+                    {u.daysUntil === 0 ? "Today!" : `In ${u.daysUntil} day${u.daysUntil > 1 ? "s" : ""}`}
                   </p>
                 </div>
-                {u.daysUntil === 0 && <span style={{ fontSize: 14 }}>🎂</span>}
+                {u.daysUntil === 0 && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                )}
               </div>
             ))}
           </div>

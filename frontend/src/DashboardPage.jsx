@@ -121,31 +121,55 @@ function NavBtn({ item, active, badge, onClick }) {
   );
 }
 
+/* ── Quick card icons ── */
+const QIcon = {
+  community: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  chat: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  members: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  ),
+  profile: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  ),
+};
+
 /* ── Home overview page ── */
 function HomePage({ profile, onNavigate }) {
   const initials = profile
     ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
     : "?";
-  const displayName = profile ? `${profile.firstName} ${profile.lastName}` : "";
 
   const quickCards = [
     {
-      icon: "💬", title: "Community Feed",
+      icon: QIcon.community, title: "Community Feed",
       desc: "See what's happening in your network. Share updates, achievements, and ideas.",
       action: "community", cta: "Open Feed", color: "#3b82f6",
     },
     {
-      icon: "✉️", title: "Direct Messages",
+      icon: QIcon.chat, title: "Direct Messages",
       desc: "Connect privately with fellow members. Start a real-time conversation.",
       action: "chat", cta: "Open Messages", color: "#8b5cf6",
     },
     {
-      icon: "🔍", title: "Find Members",
+      icon: QIcon.members, title: "Find Members",
       desc: "Search graduates by profession, city, or institution. Expand your network.",
       action: "members", cta: "Search Members", color: "#0ea5e9",
     },
     {
-      icon: "👤", title: "My Profile",
+      icon: QIcon.profile, title: "My Profile",
       desc: "Update your professional info, bio, and profile photo.",
       action: "profile", cta: "Edit Profile", color: "#10b981",
     },
@@ -189,7 +213,7 @@ function HomePage({ profile, onNavigate }) {
 
         <div style={{ flex: 1 }}>
           <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 4 }}>
-            Welcome back, {profile?.firstName || "Member"} 👋
+            Welcome back, {profile?.firstName || "Member"}
           </p>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.72)", margin: 0 }}>
             {profile?.profession ? `${profile.profession} · ` : ""}
@@ -205,7 +229,7 @@ function HomePage({ profile, onNavigate }) {
           fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.9)",
           letterSpacing: "0.06em", textTransform: "uppercase",
           flexShrink: 0,
-        }}>Member ✓</div>
+        }}>Member</div>
       </div>
 
       {/* Section label */}
@@ -226,7 +250,13 @@ function HomePage({ profile, onNavigate }) {
             style={{ padding: "1.5rem", cursor: "pointer", borderLeft: `4px solid ${card.color}` }}
             onClick={() => onNavigate(card.action)}
           >
-            <div style={{ fontSize: 28, marginBottom: "0.75rem" }}>{card.icon}</div>
+            <div style={{
+          width: 44, height: 44, borderRadius: "var(--r-md)",
+          background: `${card.color}14`,
+          color: card.color,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          marginBottom: "0.85rem", flexShrink: 0,
+        }}>{card.icon}</div>
             <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.4rem" }}>{card.title}</p>
             <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "1rem" }}>{card.desc}</p>
             <span style={{ fontSize: 12, fontWeight: 700, color: card.color }}>{card.cta} →</span>

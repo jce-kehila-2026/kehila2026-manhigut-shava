@@ -148,7 +148,7 @@ function LoginForm({ onSwitchTab }) {
 
   return (
     <form onSubmit={submit} style={{ direction: "rtl" }} autoComplete="off">
-      <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>ברוכה הבאה! 👋</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>ברוכה הבאה!</div>
       <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.6rem" }}>היכנסי לרשת הבוגרות שלך</p>
       {error && <div style={errBox}>{error}</div>}
       {resetSent && <div style={okBox}>נשלח אימייל לאיפוס סיסמה ✓</div>}

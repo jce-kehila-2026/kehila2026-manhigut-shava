@@ -484,7 +484,7 @@ export default function ChatPage({ onUnreadChange }) {
           <div style={{ flex: 1, overflow: "auto", padding: "1rem 0" }}>
             {messages.length === 0 && (
               <div className="empty-state" style={{ marginTop: "3rem" }}>
-                <div style={{ fontSize: 48, marginBottom: "0.5rem" }}>👋</div>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "0.5rem" }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 <h3>Say hello!</h3>
                 <p>This is the beginning of your conversation with {otherName}.</p>
               </div>
@@ -664,7 +664,7 @@ export default function ChatPage({ onUnreadChange }) {
         /* No conversation selected */
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-secondary)" }}>
           <div className="empty-state">
-            <div style={{ fontSize: 64, marginBottom: "0.5rem" }}>💬</div>
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "0.5rem" }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <h3>Your Messages</h3>
             <p>Select a conversation from the left, or start a new one by clicking "+ New".</p>
           </div>
