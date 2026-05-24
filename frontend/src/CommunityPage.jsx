@@ -10,6 +10,7 @@ import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { useTheme } from "./ThemeContext";
 import ConnectButton from "./ConnectButton";
+import { logActivity } from "./activityLogger";
 
 const storage = getStorage();
 
@@ -34,8 +35,6 @@ styleTag.textContent = `
     box-shadow: 0 0 0 3px rgba(56,189,248,0.15) !important;
     outline: none;
   }
-  .accept-btn:hover  { background: #dcfce7 !important; }
-  .decline-btn:hover { background: #fee2e2 !important; }
   .attach-btn:hover  { border-color: #38bdf8 !important; color: #0ea5e9 !important; }
   .post-btn:hover    { background: #122d47 !important; }
   .delete-link:hover { color: #dc2626 !important; }
@@ -48,6 +47,7 @@ styleTag.textContent = `
   .social-btn-liked:hover { background: #dbeafe !important; }
   .send-comment-btn:hover { background: #0284c7 !important; }
   .repost-author-link:hover { text-decoration: underline; cursor: pointer; }
+  .comment-action-btn:hover { color: #374151 !important; }
 `;
 if (!document.head.querySelector("#community-styles")) {
   styleTag.id = "community-styles";
@@ -149,7 +149,7 @@ function RepostModal({ originalPost, onClose, onRepost, t, T }) {
     <div style={{ position:"fixed",inset:0,background:"rgba(15,23,42,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"1rem",backdropFilter:"blur(4px)" }} onClick={onClose}>
       <div style={{ background:T.card,borderRadius:"22px",padding:"2rem",width:"100%",maxWidth:"500px",boxShadow:"0 16px 48px rgba(15,23,42,0.18)",display:"flex",flexDirection:"column",gap:"1rem",animation:"modalPop 0.26s cubic-bezier(.34,1.56,.64,1) both",maxHeight:"90vh",overflowY:"auto" }} onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-          <p style={{ fontSize:"16px",fontWeight:"700",color:T.text,margin:0 }}>↺ {t.community.repost}</p>
+          <p style={{ fontSize:"16px",fontWeight:"700",color:T.text,margin:0 }}>&#8635; {t.community.repost}</p>
           <button style={{ background:T.tagBg,border:"none",borderRadius:"9px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:"600",color:T.sub }} onClick={onClose}>{t.community.close}</button>
         </div>
         <textarea
@@ -181,7 +181,7 @@ function RepostModal({ originalPost, onClose, onRepost, t, T }) {
             onClose();
           }}
         >
-          {posting ? "…" : `↺ ${t.community.repost}`}
+          {posting ? "…" : `&#8635; ${t.community.repost}`}
         </button>
       </div>
     </div>
@@ -208,7 +208,6 @@ export default function CommunityPage() {
   const [text,      setText]      = useState("");
   const [files,     setFiles]     = useState([]); // File[]
   const [posting,   setPosting]   = useState(false);
-  const [requests,  setRequests]  = useState([]);
   const [birthdays, setBirthdays] = useState([]);
   const fileRef = useRef();
 
@@ -216,7 +215,7 @@ export default function CommunityPage() {
   const [viewAuthor,    setViewAuthor]    = useState(null); // { authorId, authorName }
   const [repostTarget,  setRepostTarget]  = useState(null); // post to repost
 
-  /* ── Edit state ── */
+  /* ── Edit state (posts) ── */
   const [editingId, setEditingId] = useState(null);
   const [editText,  setEditText]  = useState("");
 
@@ -225,6 +224,10 @@ export default function CommunityPage() {
   const [postComments,     setPostComments]     = useState({});
   const [commentText,      setCommentText]      = useState({});
   const [sendingComment,   setSendingComment]   = useState({});
+
+  /* ── Comment inline edit state ── */
+  const [editingCommentId,   setEditingCommentId]   = useState(null); // commentId being edited
+  const [editingCommentText, setEditingCommentText] = useState("");
 
   /* ── My name ── */
   const myName =
@@ -235,7 +238,6 @@ export default function CommunityPage() {
   /* ── Initial fetch ── */
   useEffect(() => {
     fetchPosts();
-    fetchRequests();
     fetchBirthdays();
   }, []);
 
@@ -245,18 +247,11 @@ export default function CommunityPage() {
     setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   };
 
-  const fetchRequests = async () => {
-    if (!user) return;
-    const q = query(collection(db, "helpRequests"), where("toUserId", "==", user.uid));
-    const snap = await getDocs(q);
-    setRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  };
-
   const fetchBirthdays = async () => {
     const snap = await getDocs(collection(db, "users"));
     const upcoming = snap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
-      .map((u) => ({ ...u, daysUntil: isBirthdaySoon(u.birthdate) }))
+      .map((u) => ({ ...u, daysUntil: isBirthdaySoon(u.birthdate ?? u.birthDate) }))
       .filter((u) => u.daysUntil !== null)
       .sort((a, b) => a.daysUntil - b.daysUntil);
     setBirthdays(upcoming);
@@ -282,13 +277,14 @@ export default function CommunityPage() {
         const url = await getDownloadURL(storageRef);
         mediaUrls.push({ url, type: file.type.startsWith("video") ? "video" : "image" });
       }
-      await addDoc(collection(db, "posts"), {
+      const docRef = await addDoc(collection(db, "posts"), {
         text, media: mediaUrls,
         authorId: user.uid, authorName: myName,
         authorPhotoURL: authProfile?.photoURL ?? null,
         createdAt: new Date().toISOString(),
         likesCount: 0, likedBy: [], commentsCount: 0,
       });
+      logActivity({ type: "post", actorId: user.uid, actorName: myName, targetId: docRef.id, targetType: "post", details: { text: text?.slice(0, 150) } });
       setText(""); setFiles([]);
       fetchPosts();
     } catch (err) { console.error("Post error:", err); }
@@ -308,12 +304,6 @@ export default function CommunityPage() {
     if (!window.confirm("Delete this post?")) return;
     await deleteDoc(doc(db, "posts", postId));
     setPosts((prev) => prev.filter((p) => p.id !== postId));
-  };
-
-  /* ── Help request response ── */
-  const handleRequest = async (reqId, status) => {
-    await updateDoc(doc(db, "helpRequests", reqId), { status, responderName: myName });
-    setRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status, responderName: myName } : r));
   };
 
   /* ── Like toggle ── */
@@ -366,8 +356,51 @@ export default function CommunityPage() {
       setPostComments((prev) => ({ ...prev, [postId]: [...(prev[postId] ?? []), { id: docRef.id, ...comment }] }));
       setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, commentsCount: newCount } : p));
       setCommentText((prev) => ({ ...prev, [postId]: "" }));
+      logActivity({ type: "comment", actorId: user.uid, actorName: myName, targetId: docRef.id, targetType: "comment", details: { postId, text: ct?.slice(0, 100) } });
     } catch (err) { console.error("Comment error — check Firestore rules:", err); }
     finally { setSendingComment((prev) => ({ ...prev, [postId]: false })); }
+  };
+
+  /* ── Edit comment ── */
+  const handleSaveCommentEdit = async (postId, commentId) => {
+    const newText = editingCommentText.trim();
+    if (!newText) return;
+    try {
+      await updateDoc(doc(db, "posts", postId, "comments", commentId), { text: newText, edited: true });
+      setPostComments((prev) => ({
+        ...prev,
+        [postId]: (prev[postId] ?? []).map((c) =>
+          c.id === commentId ? { ...c, text: newText, edited: true } : c
+        ),
+      }));
+      setEditingCommentId(null);
+      setEditingCommentText("");
+    } catch (err) { console.error("Edit comment error:", err); }
+  };
+
+  /* ── Delete comment ── */
+  const handleDeleteComment = async (postId, c) => {
+    if (!window.confirm("Delete this comment?")) return;
+    try {
+      await deleteDoc(doc(db, "posts", postId, "comments", c.id));
+      const post = posts.find((p) => p.id === postId);
+      const newCount = Math.max(0, (post?.commentsCount ?? 1) - 1);
+      await updateDoc(doc(db, "posts", postId), { commentsCount: newCount });
+      setPostComments((prev) => ({
+        ...prev,
+        [postId]: (prev[postId] ?? []).filter((cm) => cm.id !== c.id),
+      }));
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, commentsCount: newCount } : p));
+      const isAdminAction = authProfile?.isAdmin && c.authorId !== user.uid;
+      logActivity({
+        type: isAdminAction ? "admin_delete_comment" : "comment_delete",
+        actorId: user.uid,
+        actorName: myName,
+        targetId: c.id,
+        targetType: "comment",
+        details: { postId, text: c.text?.slice(0, 100) },
+      });
+    } catch (err) { console.error("Delete comment error:", err); }
   };
 
   /* ── Repost ── */
@@ -405,19 +438,9 @@ export default function CommunityPage() {
     page:      { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", direction: isRTL ? "rtl" : "ltr", background: T.bg, minHeight: "100vh" },
     pageTitle: { fontSize: "22px", fontWeight: "700", color: T.text, margin: "0 0 3px" },
     pageSub:   { fontSize: "13px", color: T.muted, margin: "0 0 1.75rem" },
-    layout: { display: "grid", gridTemplateColumns: "260px 1fr 260px", gap: "1.5rem", alignItems: "start" },
+    layout: { display: "grid", gridTemplateColumns: "1fr 260px", gap: "1.5rem", alignItems: "start" },
     sidebar: { display: "flex", flexDirection: "column" },
 
-    reqItem:    { padding: "0.85rem 0", borderBottom: `1px solid ${T.divider}`, display: "flex", flexDirection: "column", gap: "4px" },
-    reqName:    { fontSize: "13px", fontWeight: "700", color: T.text, margin: 0 },
-    reqSub:     { fontSize: "12px", color: T.sub,  margin: 0 },
-    reqDetail:  { fontSize: "11px", color: T.muted, margin: 0 },
-    reqNote:    { fontSize: "12px", color: T.sub, margin: 0, fontStyle: "italic" },
-    reqActions: { display: "flex", gap: "6px", marginTop: "6px" },
-    acceptBtn:  { flex:1, padding:"6px 0", background:"#f0fdf4", color:"#166534", border:"1px solid #bbf7d0", borderRadius:"8px", fontSize:"11px", fontWeight:"700", cursor:"pointer", transition:"background 0.15s" },
-    declineBtn: { flex:1, padding:"6px 0", background:"#fff0f0", color:"#b91c1c", border:"1px solid #fca5a5", borderRadius:"8px", fontSize:"11px", fontWeight:"700", cursor:"pointer", transition:"background 0.15s" },
-    statusTag: (ok) => ({ fontSize:"11px", fontWeight:"700", color: ok?"#166534":"#b91c1c", background: ok?"#f0fdf4":"#fff0f0", border:`1px solid ${ok?"#bbf7d0":"#fca5a5"}`, borderRadius:"6px", padding:"2px 8px", display:"inline-block", marginTop:"4px" }),
-    deleteLink: { background:"none", border:"none", color:"#94a3b8", cursor:"pointer", fontSize:"11px", padding:0, marginTop:"4px", transition:"color 0.15s" },
     emptyText:  { fontSize:"12px", color:T.muted, textAlign:"center", padding:"1rem 0" },
 
     bdayItem: { display:"flex", alignItems:"center", gap:"10px", padding:"0.65rem 0", borderBottom:`1px solid ${T.divider}` },
@@ -475,6 +498,7 @@ export default function CommunityPage() {
     commentCompose:  { display:"flex", gap:"8px", alignItems:"center" },
     commentInput:    { flex:1, padding:"9px 13px", fontSize:"13px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"10px", fontFamily:"inherit", color:T.text, background:T.inputBg, transition:"border-color 0.2s, box-shadow 0.2s" },
     sendCommentBtn:  { padding:"9px 16px", background:"#0ea5e9", color:"#fff", border:"none", borderRadius:"10px", fontSize:"12px", fontWeight:"700", cursor:"pointer", transition:"background 0.15s", flexShrink:0 },
+    commentActionBtn: { background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:"11px", fontWeight:"600", padding:"2px 6px", marginLeft:"4px", borderRadius:"5px", transition:"color 0.15s" },
   };
 
   /* ─────────────────────────────────────── RENDER ─── */
@@ -484,40 +508,6 @@ export default function CommunityPage() {
       <p style={S.pageSub}>{t.community.subtitle}</p>
 
       <div style={S.layout}>
-        {/* ── Left: Requests ── */}
-        <div style={S.sidebar}>
-          <div style={{ ...sideCard, borderLeftColor: "#a78bfa" }}>
-            <p style={{ ...sectionLabel, color: T.muted }}>{t.community.requestsReceived}</p>
-            {requests.length === 0 && <p style={S.emptyText}>{t.community.noRequests}</p>}
-            {requests.map((r) => (
-              <div key={r.id} style={S.reqItem}>
-                <p style={S.reqName}>{r.fromUserName}</p>
-                <p style={S.reqSub}>{r.fromUserProfession}</p>
-                <p style={S.reqDetail}>{r.fromUserEmail}</p>
-                {r.fromUserPhone && <p style={S.reqDetail}>{r.fromUserPhone}</p>}
-                {r.helpNote && <p style={S.reqNote}>"{r.helpNote}"</p>}
-                {!r.status && (
-                  <div style={S.reqActions}>
-                    <button className="accept-btn"  style={S.acceptBtn}  onClick={() => handleRequest(r.id, "accepted")}>{t.community.accept}</button>
-                    <button className="decline-btn" style={S.declineBtn} onClick={() => handleRequest(r.id, "declined")}>{t.community.decline}</button>
-                  </div>
-                )}
-                {r.status && (
-                  <span style={S.statusTag(r.status === "accepted")}>
-                    {r.status === "accepted" ? t.community.accepted : t.community.declined} {t.community.by} {r.responderName}
-                  </span>
-                )}
-                <button className="delete-link" style={S.deleteLink} onClick={async () => {
-                  await deleteDoc(doc(db, "helpRequests", r.id));
-                  setRequests((prev) => prev.filter((req) => req.id !== r.id));
-                }}>
-                  {t.community.delete}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* ── Center: Feed ── */}
         <div style={S.feed}>
           {/* Compose */}
@@ -550,7 +540,7 @@ export default function CommunityPage() {
                         lineHeight: 1,
                       }}
                     >
-                      ✕
+                      &#215;
                     </button>
                   </div>
                 ))}
@@ -613,7 +603,7 @@ export default function CommunityPage() {
                 {/* Repost banner */}
                 {p.repostOf && (
                   <p style={{ fontSize: "11px", color: T.muted, margin: 0 }}>
-                    ↺ {t.community.repostedBy} {p.authorName}
+                    &#8635; {t.community.repostedBy} {p.authorName}
                   </p>
                 )}
 
@@ -669,7 +659,7 @@ export default function CommunityPage() {
                     style={S.socialBtn(isLiked)}
                     onClick={() => handleLike(p)}
                   >
-                    👍 {isLiked ? t.community.liked : t.community.like}
+                    {isLiked ? t.community.liked : t.community.like}
                     {likesCount > 0 && (
                       <span style={{ background: isLiked ? "#dbeafe" : T.tagBg, color: isLiked ? "#1e40af" : T.sub, borderRadius: "99px", padding: "1px 7px", fontSize: "11px", fontWeight: "700" }}>
                         {likesCount}
@@ -683,7 +673,7 @@ export default function CommunityPage() {
                     style={S.socialBtn(commOpen)}
                     onClick={() => toggleComments(p.id)}
                   >
-                    💬 {t.community.comment}
+                    {t.community.comment}
                     {commCount > 0 && (
                       <span style={{ background: T.tagBg, color: T.sub, borderRadius: "99px", padding: "1px 7px", fontSize: "11px", fontWeight: "700" }}>
                         {commCount}
@@ -698,7 +688,7 @@ export default function CommunityPage() {
                       style={S.socialBtn(false)}
                       onClick={() => setRepostTarget(p)}
                     >
-                      ↺ {t.community.repost}
+                      &#8635; {t.community.repost}
                     </button>
                   )}
                 </div>
@@ -716,8 +706,50 @@ export default function CommunityPage() {
                         <Avatar photoURL={c.authorPhotoURL} name={c.authorName} size={30} fontSize={10} />
                         <div style={S.commentBubble}>
                           <p style={S.commentAuthor}>{c.authorName}</p>
-                          <p style={S.commentText}>{c.text}</p>
-                          <p style={S.commentTime}>{timeAgo(c.createdAt, t)}</p>
+                          {editingCommentId === c.id ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                              <textarea
+                                style={{ ...S.editTextarea, minHeight: "56px" }}
+                                value={editingCommentText}
+                                onChange={(e) => setEditingCommentText(e.target.value)}
+                                autoFocus
+                              />
+                              <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                                <button style={{ ...S.cancelBtn, padding: "5px 12px", fontSize: "11px" }} onClick={() => { setEditingCommentId(null); setEditingCommentText(""); }}>Cancel</button>
+                                <button style={{ ...S.saveBtn, padding: "5px 12px", fontSize: "11px" }} onClick={() => handleSaveCommentEdit(p.id, c.id)}>Save</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p style={S.commentText}>
+                                {c.text}
+                                {c.edited && <span style={{ fontSize: "10px", color: T.muted, marginLeft: "6px" }}>(edited)</span>}
+                              </p>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <p style={S.commentTime}>{timeAgo(c.createdAt, t)}</p>
+                                {(c.authorId === user?.uid || authProfile?.isAdmin) && (
+                                  <div>
+                                    {c.authorId === user?.uid && (
+                                      <button
+                                        className="comment-action-btn"
+                                        style={S.commentActionBtn}
+                                        onClick={() => { setEditingCommentId(c.id); setEditingCommentText(c.text); }}
+                                      >
+                                        Edit
+                                      </button>
+                                    )}
+                                    <button
+                                      className="comment-action-btn"
+                                      style={{ ...S.commentActionBtn, color: "#b91c1c" }}
+                                      onClick={() => handleDeleteComment(p.id, c)}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}

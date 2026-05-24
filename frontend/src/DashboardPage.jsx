@@ -16,15 +16,9 @@ styleTag.textContent = `
   * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
 
   @keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
   }
-  @keyframes bannerFlow {
-    0%   { background-position: 0% 50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-
   .dash-card { animation: fadeSlideUp 0.38s ease both; }
   .dash-card:nth-child(1) { animation-delay: 0.04s; }
   .dash-card:nth-child(2) { animation-delay: 0.08s; }
@@ -267,9 +261,7 @@ export default function DashboardPage() {
       transition: "background 0.3s",
     },
     header: {
-      background: "linear-gradient(135deg, #1a3c5e 0%, #0ea5e9 55%, #7dd3fc 100%)",
-      backgroundSize: "300% 300%",
-      animation: "bannerFlow 9s ease infinite",
+      background: "linear-gradient(135deg, #0f1f3d 0%, #1a3c5e 50%, #0ea5e9 100%)",
       color: "#fff", padding: "0 2.5rem", height: "58px",
       display: "flex", alignItems: "center", justifyContent: "space-between",
       position: "sticky", top: 0, zIndex: 20,
@@ -302,6 +294,7 @@ export default function DashboardPage() {
       display: "flex", alignItems: "center", justifyContent: "space-between",
       color: "#fff", cursor: "pointer", transition: "opacity 0.2s",
       boxShadow: "0 4px 20px rgba(15,23,42,0.15)",
+      animation: "fadeSlideUp 0.4s 0.05s ease both",
     },
     welcomeLeft:  { display: "flex", alignItems: "center", gap: "1.25rem" },
     avatarRing: {

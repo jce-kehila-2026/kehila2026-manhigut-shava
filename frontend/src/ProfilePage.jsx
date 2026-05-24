@@ -137,7 +137,7 @@ export default function ProfilePage() {
   const fileRef = useRef();
 
   const [form, setForm] = useState({
-    firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"",
+    firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"",
   });
   const [photoURL, setPhotoURL] = useState(null);
   const [saving,   setSaving]   = useState(false);
@@ -169,6 +169,7 @@ export default function ProfilePage() {
           city:       d.city       ?? "",
           profession: d.profession ?? "",
           bio:        d.bio        ?? "",
+          birthDate:  d.birthDate  ?? "",
         });
         setPhotoURL(d.photoURL ?? null);
         setNetworksCount(d.networksCount ?? 0);
@@ -193,7 +194,7 @@ export default function ProfilePage() {
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const fields = [form.firstName, form.lastName, form.phone, form.city, form.profession, form.bio];
+  const fields = [form.firstName, form.lastName, form.phone, form.city, form.profession, form.bio, form.birthDate];
   const pct    = Math.round((fields.filter(Boolean).length / fields.length) * 100);
 
   /* ── Photo upload ── */
@@ -403,6 +404,16 @@ export default function ProfilePage() {
                 <label style={S.label}>{t.profile.city}</label>
                 <PlainInput name="city" value={form.city} onChange={handleChange} placeholder={t.profile.cityPlaceholder} />
               </div>
+            </div>
+
+            <div style={{ ...S.group, marginBottom:"1rem" }}>
+              <label style={S.label}>{t.profile.birthDate ?? "Birth Date"}</label>
+              <PlainInput
+                type="date"
+                name="birthDate"
+                value={form.birthDate}
+                onChange={handleChange}
+              />
             </div>
 
             <div style={{ ...S.group, marginBottom:"1rem" }}>

@@ -6,6 +6,7 @@ import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import ConnectButton from "./ConnectButton";
+import { logActivity } from "./activityLogger";
 
 /* ─── Inject styles ─── */
 const styleTag = document.createElement("style");
@@ -594,12 +595,13 @@ export default function SupportPage() {
   const [otherSearch,         setOtherSearch]         = useState("");
 
   /* ── Result/data state ── */
-  const [results,       setResults]       = useState([]);
-  const [searched,      setSearched]      = useState(false);
-  const [loading,       setLoading]       = useState(false);
-  const [requested,     setRequested]     = useState({});  // uid → true
-  const [sentRequests,  setSentRequests]  = useState([]);
-  const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [results,          setResults]          = useState([]);
+  const [searched,         setSearched]         = useState(false);
+  const [loading,          setLoading]          = useState(false);
+  const [requested,        setRequested]        = useState({});  // uid → true
+  const [sentRequests,     setSentRequests]     = useState([]);
+  const [receivedRequests, setReceivedRequests] = useState([]);
+  const [suggestedUsers,   setSuggestedUsers]   = useState([]);
 
   /* ── Modal state ── */
   const [selectedUser,  setSelectedUser]  = useState(null); // profile modal
@@ -615,14 +617,15 @@ export default function SupportPage() {
   /* ── City label by current language ── */
   const getCityLabel = (city) => city[lang] ?? city.en;
 
-  /* ── Initial fetch: suggested users + sent requests ── */
+  /* ── Initial fetch: suggested users + sent requests + received requests ── */
   useEffect(() => {
     if (!user) return;
     (async () => {
       try {
-        const [usersSnap, reqSnap] = await Promise.all([
+        const [usersSnap, reqSnap, receivedSnap] = await Promise.all([
           getDocs(collection(db, "users")),
           getDocs(query(collection(db, "helpRequests"), where("fromUserId", "==", user.uid))),
+          getDocs(query(collection(db, "helpRequests"), where("toUserId", "==", user.uid))),
         ]);
 
         const allUsers = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -638,6 +641,10 @@ export default function SupportPage() {
         /* My sent requests */
         const reqs = reqSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
         setSentRequests(reqs);
+
+        /* Received requests */
+        const received = receivedSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setReceivedRequests(received);
 
         /* Pre-mark already-requested users */
         const reqMap = {};
@@ -685,10 +692,36 @@ export default function SupportPage() {
         status:             null,
         createdAt:          new Date().toISOString(),
       };
-      await addDoc(collection(db, "helpRequests"), newReq);
+      const docRef = await addDoc(collection(db, "helpRequests"), newReq);
       setRequested((prev) => ({ ...prev, [targetUser.id]: true }));
-      setSentRequests((prev) => [...prev, { id: `tmp_${Date.now()}`, ...newReq }]);
+      setSentRequests((prev) => [...prev, { id: docRef.id, ...newReq }]);
+      logActivity({
+        type: "request_sent",
+        actorId: user.uid,
+        actorName: senderName,
+        targetId: targetUser.id,
+        targetType: "user",
+        details: { toUserName: getFullName(targetUser), helpNote: helpNote?.slice(0, 100) },
+      });
     } catch (err) { console.error("Request error:", err); }
+  };
+
+  /* ── Respond to received request (accept / decline) ── */
+  const handleRespondRequest = async (reqId, status) => {
+    try {
+      await updateDoc(doc(db, "helpRequests", reqId), { status, responderName: senderName });
+      setReceivedRequests((prev) =>
+        prev.map((r) => r.id === reqId ? { ...r, status, responderName: senderName } : r)
+      );
+      logActivity({
+        type: status === "accepted" ? "request_accepted" : "request_declined",
+        actorId: user.uid,
+        actorName: senderName,
+        targetId: reqId,
+        targetType: "request",
+        details: { status },
+      });
+    } catch (err) { console.error("Respond request error:", err); }
   };
 
   /* ── Mark done ── */
@@ -895,6 +928,30 @@ export default function SupportPage() {
       marginTop: "4px", padding: "7px 0",
       background: "#f0fdf4", color: "#166534",
       border: "1.5px solid #bbf7d0", borderRadius: "9px",
+      fontSize: "12px", fontWeight: "700", cursor: "pointer",
+      transition: "background 0.15s",
+    },
+
+    /* Received Requests */
+    receivedReqSection: { marginTop: "2.5rem" },
+    receivedReqCard: {
+      background: "#fff", borderRadius: "16px", padding: "1.25rem",
+      border: "1.5px solid #f1f5f9", borderLeft: "4px solid #f59e0b",
+      boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+      display: "flex", flexDirection: "column", gap: "6px",
+    },
+    receivedReqActions: { display: "flex", gap: "8px", marginTop: "6px" },
+    acceptBtn: {
+      flex: 1, padding: "7px 0",
+      background: "#f0fdf4", color: "#166534",
+      border: "1.5px solid #bbf7d0", borderRadius: "9px",
+      fontSize: "12px", fontWeight: "700", cursor: "pointer",
+      transition: "background 0.15s",
+    },
+    declineBtn: {
+      flex: 1, padding: "7px 0",
+      background: "#fff0f0", color: "#b91c1c",
+      border: "1.5px solid #fca5a5", borderRadius: "9px",
       fontSize: "12px", fontWeight: "700", cursor: "pointer",
       transition: "background 0.15s",
     },
@@ -1120,6 +1177,49 @@ export default function SupportPage() {
                   >
                     {t.support.markDone}
                   </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Received Requests ── */}
+      {receivedRequests.length > 0 && (
+        <div style={S.receivedReqSection}>
+          <p style={S.sectionLabel}>{t.support?.receivedRequests ?? "Received Requests"}</p>
+          <div style={S.myReqGrid}>
+            {receivedRequests.map((r) => (
+              <div key={r.id} style={S.receivedReqCard}>
+                <p style={S.myReqName}>{r.fromUserName || "Community Member"}</p>
+                {r.fromUserProfession && (
+                  <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>{r.fromUserProfession}</p>
+                )}
+                {r.fromUserEmail && (
+                  <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>{r.fromUserEmail}</p>
+                )}
+                {r.helpNote && <p style={S.myReqNote}>"{r.helpNote}"</p>}
+                {!r.status ? (
+                  <div style={S.receivedReqActions}>
+                    <button
+                      style={S.acceptBtn}
+                      onMouseEnter={e => e.currentTarget.style.background = "#dcfce7"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#f0fdf4"}
+                      onClick={() => handleRespondRequest(r.id, "accepted")}
+                    >
+                      {t.community?.accept ?? "Accept"}
+                    </button>
+                    <button
+                      style={S.declineBtn}
+                      onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#fff0f0"}
+                      onClick={() => handleRespondRequest(r.id, "declined")}
+                    >
+                      {t.community?.decline ?? "Decline"}
+                    </button>
+                  </div>
+                ) : (
+                  <StatusPill status={r.status} t={t} />
                 )}
               </div>
             ))}

@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:ywp-online.my.canva.site)"
+      "WebFetch(domain:ywp-online.my.canva.site)",
+      "PowerShell(firebase login:list 2>&1)",
+      "PowerShell(firebase login 2>&1)",
+      "Bash(node -e \"const fs = require\\('fs'\\); ['frontend/src/activityLogger.js','frontend/src/DashboardPage.jsx','frontend/src/ProfilePage.jsx','frontend/src/CommunityPage.jsx','frontend/src/Supportpage.jsx','frontend/src/AdminPage.jsx'].forEach\\(f => { try { fs.readFileSync\\(f\\); console.log\\('OK:', f\\); } catch\\(e\\) { console.log\\('MISSING:', f\\); } }\\);\")"
     ]
   }
 }
