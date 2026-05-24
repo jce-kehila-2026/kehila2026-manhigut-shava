@@ -57,7 +57,8 @@
   --shadow-lg: 0 8px 32px rgba(15,23,42,0.14);
   --shadow-xl: 0 16px 48px rgba(15,23,42,0.20);
 
-  /* Chat bubbles */
+  /* Chat */
+  --bg-chat:          #edf2f8;
   --bubble-me:        #2563eb;
   --bubble-them:      #ffffff;
   --bubble-me-text:   #ffffff;

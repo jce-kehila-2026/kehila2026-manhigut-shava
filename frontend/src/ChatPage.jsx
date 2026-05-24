@@ -4,7 +4,7 @@ import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import {
   useConversations, useMessages,
-  sendMessage, getOrCreateConversation, markRead, setTyping,
+  sendMessage, getOrCreateConversation, markRead, setTyping, uploadChatImage,
 } from "./hooks/useMessages";
 
 /* ── Helpers ── */
@@ -60,14 +60,14 @@ function Avatar({ url, name, size = 40, online = false, ring = false }) {
         <span style={{
           position: "absolute", bottom: ring ? 3 : 1, right: ring ? 3 : 1,
           width: size * 0.27, height: size * 0.27, borderRadius: "50%",
-          background: "#22c55e", border: `2px solid var(--bg-primary)`,
+          background: "#22c55e", border: "2px solid var(--bg-primary)",
         }} />
       )}
     </div>
   );
 }
 
-/* ── Conversation item ── */
+/* ── Conversation list item ── */
 function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
   const otherId = conv.participants?.find((p) => p !== currentUid);
   const otherName = conv.participantNames?.[otherId] || "Unknown";
@@ -81,12 +81,12 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
     <button onClick={onClick} style={{
       width: "100%", display: "flex", alignItems: "center", gap: 12,
       padding: "10px 16px",
-      background: active ? "rgba(0,0,0,0.04)" : "transparent",
+      background: active ? "rgba(37,99,235,0.06)" : "transparent",
       border: "none", cursor: "pointer", textAlign: "left",
       transition: "background 0.15s",
     }}
       onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.03)"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = active ? "rgba(37,99,235,0.06)" : "transparent"; }}
     >
       <Avatar url={otherAvatar} name={otherName} size={52} online={isOnline} />
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -104,14 +104,17 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
             color: unread > 0 ? "var(--text-primary)" : "var(--text-muted)",
             fontWeight: unread > 0 ? 600 : 400,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 155,
+            display: "flex", alignItems: "center", gap: 4,
           }}>
-            {lastMsg?.text || "Start a conversation…"}
+            {lastMsg?.type === "image" && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+              </svg>
+            )}
+            {lastMsg?.type === "image" ? "Photo" : (lastMsg?.text || "Start a conversation…")}
           </p>
           {unread > 0 && (
-            <span style={{
-              width: 8, height: 8, borderRadius: "50%",
-              background: "var(--brand)", flexShrink: 0, marginLeft: 4,
-            }} />
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", flexShrink: 0, marginLeft: 4 }} />
           )}
         </div>
       </div>
@@ -119,35 +122,32 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
   );
 }
 
-/* ── Message bubble (Instagram style) ── */
-function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup }) {
+/* ── Message bubble ── */
+function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup, onReply, onViewImage }) {
   const EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🎉"];
-  const [showPicker, setShowPicker] = useState(false);
   const [hovering, setHovering] = useState(false);
   const reactionEntries = Object.entries(msg.reactions || {}).filter(([, u]) => u.length > 0);
+  const isImage = msg.type === "image" && msg.imageUrl;
 
-  const myBubbleStyle = {
+  const myBubble = {
     background: "linear-gradient(135deg, #2563eb, #7c3aed)",
     color: "#fff",
     borderRadius: "22px 22px 6px 22px",
     padding: "10px 15px",
     fontSize: 14, lineHeight: 1.5,
-    wordBreak: "break-word",
-    maxWidth: "100%",
-    position: "relative",
-    boxShadow: "0 1px 4px rgba(37,99,235,0.2)",
+    wordBreak: "break-word", maxWidth: "100%",
+    boxShadow: "0 2px 8px rgba(37,99,235,0.25)",
   };
 
-  const theirBubbleStyle = {
-    background: "var(--bg-tertiary)",
+  const theirBubble = {
+    background: "#fff",
     color: "var(--text-primary)",
     borderRadius: "22px 22px 22px 6px",
     padding: "10px 15px",
     fontSize: 14, lineHeight: 1.5,
-    wordBreak: "break-word",
-    maxWidth: "100%",
-    position: "relative",
-    border: "1px solid var(--border)",
+    wordBreak: "break-word", maxWidth: "100%",
+    border: "1px solid #e5eaf2",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
   };
 
   return (
@@ -161,49 +161,72 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
       marginBottom: isLastInGroup ? 8 : 2,
     }}
       onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => { setHovering(false); setShowPicker(false); }}
+      onMouseLeave={() => setHovering(false)}
     >
-      {/* Avatar — only shown at bottom of their group */}
+      {/* Avatar at bottom of their group */}
       {!isMe && (
         <div style={{ width: 28, flexShrink: 0, alignSelf: "flex-end" }}>
-          {showAvatar ? <Avatar url={senderAvatar} name={senderName} size={28} /> : null}
+          {showAvatar && <Avatar url={senderAvatar} name={senderName} size={28} />}
         </div>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 2, maxWidth: "70%" }}>
-        {/* Reply preview */}
+
+        {/* Reply preview inside bubble */}
         {msg.replyTo && (
           <div style={{
-            background: isMe ? "rgba(255,255,255,0.15)" : "var(--bg-secondary)",
+            background: isMe ? "rgba(255,255,255,0.12)" : "#f0f4fa",
             borderLeft: `3px solid ${isMe ? "rgba(255,255,255,0.5)" : "var(--brand)"}`,
             borderRadius: 8, padding: "4px 10px", marginBottom: 2,
-            fontSize: 11, color: isMe ? "rgba(255,255,255,0.75)" : "var(--text-secondary)",
-            maxWidth: "100%", overflow: "hidden",
+            fontSize: 11, maxWidth: "100%", overflow: "hidden",
           }}>
-            <p style={{ fontWeight: 700, fontSize: 10, marginBottom: 1, opacity: 0.8 }}>{msg.replyTo.senderName}</p>
-            <p style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{msg.replyTo.text}</p>
+            <p style={{ fontWeight: 700, fontSize: 10, marginBottom: 1, color: isMe ? "rgba(255,255,255,0.85)" : "var(--brand)" }}>
+              {msg.replyTo.senderName}
+            </p>
+            <p style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isMe ? "rgba(255,255,255,0.7)" : "var(--text-secondary)" }}>
+              {msg.replyTo.text}
+            </p>
           </div>
         )}
 
-        {/* Bubble + reaction picker */}
+        {/* Bubble */}
         <div style={{ position: "relative" }}>
-          <div style={isMe ? myBubbleStyle : theirBubbleStyle}>
-            {msg.deleted
-              ? <em style={{ opacity: 0.5, fontSize: 13 }}>Message deleted</em>
-              : msg.text
-            }
-          </div>
+          {isImage ? (
+            <div>
+              <img
+                src={msg.imageUrl}
+                alt="photo"
+                onClick={() => onViewImage?.(msg.imageUrl)}
+                style={{
+                  maxWidth: 240, maxHeight: 300, display: "block",
+                  borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                  cursor: "zoom-in", objectFit: "cover",
+                  boxShadow: "0 2px 14px rgba(0,0,0,0.14)",
+                }}
+              />
+              {msg.text && (
+                <div style={{ ...(isMe ? myBubble : theirBubble), marginTop: 4 }}>
+                  {msg.text}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={isMe ? myBubble : theirBubble}>
+              {msg.deleted
+                ? <em style={{ opacity: 0.5, fontSize: 13 }}>Message deleted</em>
+                : msg.text
+              }
+            </div>
+          )}
 
           {/* Reaction picker on hover */}
           {hovering && !msg.deleted && (
             <div style={{
-              position: "absolute",
-              top: -38,
+              position: "absolute", top: -40,
               [isMe ? "right" : "left"]: 0,
-              background: "var(--bg-primary)",
-              border: "1px solid var(--border)",
-              borderRadius: 99,
-              padding: "5px 10px",
+              background: "#fff",
+              border: "1px solid #e5eaf2",
+              borderRadius: 99, padding: "5px 10px",
               display: "flex", gap: 2,
               boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
               zIndex: 20, animation: "popIn 0.15s ease",
@@ -212,8 +235,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
               {EMOJIS.map((e) => (
                 <button key={e} style={{
                   fontSize: 18, padding: "2px 4px", background: "none", border: "none",
-                  cursor: "pointer", borderRadius: 6, transition: "transform 0.1s",
-                  lineHeight: 1,
+                  cursor: "pointer", borderRadius: 6, transition: "transform 0.1s", lineHeight: 1,
                 }}
                   onMouseEnter={(ev) => ev.currentTarget.style.transform = "scale(1.4)"}
                   onMouseLeave={(ev) => ev.currentTarget.style.transform = "scale(1)"}
@@ -223,12 +245,12 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
           )}
         </div>
 
-        {/* Emoji reactions */}
+        {/* Reactions */}
         {reactionEntries.length > 0 && (
           <div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginTop: 2 }}>
             {reactionEntries.map(([emoji, users]) => (
               <span key={emoji} style={{
-                background: "var(--bg-primary)", border: "1px solid var(--border)",
+                background: "#fff", border: "1px solid #e5eaf2",
                 borderRadius: 99, padding: "1px 6px",
                 fontSize: 12, display: "flex", alignItems: "center", gap: 3, cursor: "pointer",
               }}>
@@ -241,27 +263,24 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
 
         {/* Timestamp */}
         {showTime && (
-          <span style={{ fontSize: 10, color: "var(--text-muted)", margin: "1px 2px", opacity: hovering ? 1 : 0.6, transition: "opacity 0.2s" }}>
+          <span style={{ fontSize: 10, color: "var(--text-muted)", margin: "1px 2px", opacity: hovering ? 1 : 0.55, transition: "opacity 0.2s" }}>
             {formatTime(msg.createdAt)}
           </span>
         )}
       </div>
 
-      {/* Hover reply button */}
-      {hovering && (
-        <div style={{
-          alignSelf: "center",
-          opacity: hovering ? 1 : 0,
-          transition: "opacity 0.15s",
-        }}>
+      {/* Reply button */}
+      {hovering && !msg.deleted && (
+        <div style={{ alignSelf: "center" }}>
           <button
-            data-reply-btn
+            onClick={() => onReply?.({ id: msg.id, text: isImage ? "Photo" : msg.text, senderName: isMe ? "You" : senderName })}
             style={{
               background: "none", border: "none", cursor: "pointer",
-              color: "var(--text-muted)", padding: "4px",
-              borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--text-muted)", padding: 4, borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "background 0.12s",
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-tertiary)"}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.07)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "none"}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -289,10 +308,14 @@ export default function ChatPage({ onUnreadChange }) {
   const [replyTo, setReplyTo] = useState(null);
   const [sending, setSending] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
-  const [activePeer, setActivePeer] = useState(null); // cached peer info before conv loads
+  const [activePeer, setActivePeer] = useState(null);
+  const [imgFile, setImgFile] = useState(null);
+  const [imgPreview, setImgPreview] = useState(null);
+  const [lightbox, setLightbox] = useState(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const imgInputRef = useRef(null);
 
   useEffect(() => {
     getDocs(collection(db, "users")).then((snap) =>
@@ -319,17 +342,32 @@ export default function ChatPage({ onUnreadChange }) {
   const otherName = activeConv?.participantNames?.[otherId] || (activePeer ? `${activePeer.firstName} ${activePeer.lastName}`.trim() : "");
   const otherAvatar = activeConv?.participantAvatars?.[otherId] || activePeer?.avatarUrl || null;
 
-  /* "Seen" — show when other user has read all messages */
+  /* Seen: other user has read all my messages */
   const lastMyMsgIdx = messages.map((m, i) => m.senderId === user?.uid ? i : -1).filter(i => i >= 0).pop();
   const otherHasSeen = (activeConv?.unreadCounts?.[otherId] || 0) === 0 && lastMyMsgIdx !== undefined;
 
+  const handleImgSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImgFile(file);
+    setImgPreview(URL.createObjectURL(file));
+    e.target.value = "";
+  };
+
   const handleSend = async () => {
-    if (!text.trim() || !activeConvId || sending) return;
+    if (!activeConvId || sending) return;
+    if (!text.trim() && !imgFile) return;
     setSending(true);
-    const t = text, r = replyTo;
-    setText(""); setReplyTo(null);
-    try { await sendMessage(activeConvId, user.uid, t, r); }
-    finally { setSending(false); }
+    const t = text, r = replyTo, f = imgFile;
+    setText(""); setReplyTo(null); setImgFile(null); setImgPreview(null);
+    try {
+      if (f) {
+        const url = await uploadChatImage(f, activeConvId);
+        await sendMessage(activeConvId, user.uid, t, r, url);
+      } else {
+        await sendMessage(activeConvId, user.uid, t, r);
+      }
+    } finally { setSending(false); }
     inputRef.current?.focus();
   };
 
@@ -385,7 +423,38 @@ export default function ChatPage({ onUnreadChange }) {
   return (
     <div style={{ display: "flex", width: "100%", height: "100%", overflow: "hidden", fontFamily: "var(--font)", background: "var(--bg-primary)" }}>
 
-      {/* ── Left: Conversations sidebar ── */}
+      {/* ── Fullscreen image lightbox ── */}
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.9)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "zoom-out", animation: "fadeIn 0.15s ease",
+          }}
+        >
+          <img
+            src={lightbox}
+            alt="full size"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "92vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 12, boxShadow: "0 8px 40px rgba(0,0,0,0.5)", cursor: "default" }}
+          />
+          <button
+            onClick={() => setLightbox(null)}
+            style={{
+              position: "absolute", top: 20, right: 20,
+              width: 40, height: 40, borderRadius: "50%",
+              background: "rgba(255,255,255,0.15)", color: "#fff",
+              border: "none", cursor: "pointer", fontSize: 22,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(4px)",
+            }}
+          >×</button>
+        </div>
+      )}
+
+      {/* ── Left sidebar ── */}
       <aside style={{
         width: 320, minWidth: 320,
         borderRight: "1px solid var(--border)",
@@ -416,30 +485,26 @@ export default function ChatPage({ onUnreadChange }) {
               )}
             </button>
           </div>
-
-          {/* Search */}
           <div style={{ position: "relative" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
               style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
               style={{
                 width: "100%", padding: "8px 12px 8px 32px",
                 border: "none", borderRadius: 99,
                 background: "var(--bg-tertiary)",
                 fontSize: 13, color: "var(--text-primary)",
-                outline: "none", fontFamily: "var(--font)",
-                boxSizing: "border-box",
+                outline: "none", fontFamily: "var(--font)", boxSizing: "border-box",
               }}
             />
           </div>
         </div>
 
-        {/* New chat picker */}
+        {/* New chat user picker */}
         {showNewChat && (
           <div style={{
             background: "var(--bg-secondary)",
@@ -457,16 +522,14 @@ export default function ChatPage({ onUnreadChange }) {
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
+                value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
                 placeholder="Search people…"
                 style={{
                   width: "100%", padding: "7px 10px 7px 28px",
                   border: "none", borderRadius: 99,
                   background: "var(--bg-tertiary)",
                   fontSize: 13, color: "var(--text-primary)",
-                  outline: "none", fontFamily: "var(--font)",
-                  boxSizing: "border-box",
+                  outline: "none", fontFamily: "var(--font)", boxSizing: "border-box",
                 }}
               />
             </div>
@@ -504,17 +567,17 @@ export default function ChatPage({ onUnreadChange }) {
               active={conv.id === activeConvId}
               currentUid={user?.uid}
               allUsers={allUsers}
-              onClick={() => setActiveConvId(conv.id)}
+              onClick={() => { setActiveConvId(conv.id); setActivePeer(null); }}
             />
           ))}
         </div>
       </aside>
 
-      {/* ── Right: Chat area ── */}
+      {/* ── Right: chat area ── */}
       {activeConvId ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-primary)" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-          {/* Header */}
+          {/* Chat header */}
           <div style={{
             height: 60, display: "flex", alignItems: "center", gap: 12,
             padding: "0 1.25rem",
@@ -524,12 +587,11 @@ export default function ChatPage({ onUnreadChange }) {
           }}>
             <Avatar url={otherAvatar} name={otherName} size={40} online={otherUser?.isOnline} />
             <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", lineHeight: 1.2 }}>{otherName}</p>
+              <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", lineHeight: 1.2 }}>{otherName || "…"}</p>
               <p style={{ fontSize: 11, color: otherUser?.isOnline ? "#22c55e" : "var(--text-muted)", marginTop: 1 }}>
                 {otherUser?.isOnline ? "Active now" : otherUser?.profession || "Offline"}
               </p>
             </div>
-            {/* Info icon */}
             <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 6, borderRadius: "50%", display: "flex" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-tertiary)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "none"}
@@ -540,22 +602,22 @@ export default function ChatPage({ onUnreadChange }) {
             </button>
           </div>
 
-          {/* Messages area */}
-          <div style={{ flex: 1, overflow: "auto", padding: "1.25rem 0 0.5rem" }}>
+          {/* Messages feed — subtle blue-grey background */}
+          <div style={{ flex: 1, overflow: "auto", padding: "1.25rem 0 0.5rem", background: "var(--bg-chat)" }}>
 
             {/* Empty state */}
             {messages.length === 0 && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12, padding: "3rem 2rem" }}>
-                <Avatar url={otherAvatar} name={otherName} size={72} />
+                <Avatar url={otherAvatar} name={otherName} size={76} />
                 <p style={{ fontWeight: 700, fontSize: 16, color: "var(--text-primary)" }}>{otherName}</p>
                 {otherUser?.profession && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{otherUser.profession}</p>}
                 <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", maxWidth: 260, lineHeight: 1.6 }}>
-                  This is the beginning of your conversation. Send a message to get started.
+                  This is the beginning of your conversation. Say hello!
                 </p>
               </div>
             )}
 
-            {/* Messages */}
+            {/* Message list */}
             {messages.map((msg, i) => {
               const prev = messages[i - 1];
               const next = messages[i + 1];
@@ -566,44 +628,36 @@ export default function ChatPage({ onUnreadChange }) {
               const senderName = senderProfile ? `${senderProfile.firstName} ${senderProfile.lastName}` : "";
               const senderAvatar = senderProfile?.avatarUrl || null;
 
-              /* Last message in group = next is different sender or time gap > 3min */
               const isLastInGroup = !next || next.senderId !== msg.senderId ||
                 (new Date(next.createdAt) - new Date(msg.createdAt)) > 3 * 60 * 1000;
-
-              /* Show avatar at bottom of received group */
-              const showAvatar = !isMe && isLastInGroup;
-
-              /* Show time on last in group */
-              const showTime = isLastInGroup;
 
               return (
                 <div key={msg.id}>
                   {dateLabel && (
                     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 1.5rem 8px" }}>
-                      <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                      <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
                       <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{dateLabel}</span>
-                      <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                      <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
                     </div>
                   )}
-                  <div
-                    onClick={(e) => {
-                      const replyBtn = e.currentTarget.querySelector("[data-reply-btn]");
-                      if (replyBtn && e.target === replyBtn) {
-                        setReplyTo({ id: msg.id, text: msg.text, senderName: isMe ? "You" : senderName });
-                      }
-                    }}
-                  >
-                    <MessageBubble
-                      msg={msg} isMe={isMe}
-                      senderName={senderName} senderAvatar={senderAvatar}
-                      showAvatar={showAvatar} showTime={showTime}
-                      isLastInGroup={isLastInGroup}
-                    />
-                  </div>
-                  {/* Seen indicator below last sent message */}
+
+                  <MessageBubble
+                    msg={msg} isMe={isMe}
+                    senderName={senderName} senderAvatar={senderAvatar}
+                    showAvatar={!isMe && isLastInGroup}
+                    showTime={isLastInGroup}
+                    isLastInGroup={isLastInGroup}
+                    onReply={(r) => setReplyTo(r)}
+                    onViewImage={(url) => setLightbox(url)}
+                  />
+
+                  {/* Seen indicator — below last sent message the other person has read */}
                   {isMe && isLastInGroup && i === lastMyMsgIdx && otherHasSeen && (
-                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 4, paddingInlineEnd: "0.75rem", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Seen</span>
+                    <div style={{
+                      display: "flex", justifyContent: "flex-end", alignItems: "center",
+                      gap: 4, paddingInlineEnd: "0.85rem", marginBottom: 6, marginTop: -4,
+                    }}>
+                      <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }}>Seen</span>
                       <Avatar url={otherAvatar} name={otherName} size={14} />
                     </div>
                   )}
@@ -616,9 +670,10 @@ export default function ChatPage({ onUnreadChange }) {
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, padding: "4px 0.75rem 10px" }}>
                 <Avatar url={otherAvatar} name={otherName} size={28} />
                 <div style={{
-                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                  background: "#fff", border: "1px solid #e5eaf2",
                   borderRadius: "22px 22px 22px 6px",
                   padding: "10px 16px", display: "flex", gap: 5, alignItems: "center",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                 }}>
                   <span className="typing-dot" />
                   <span className="typing-dot" />
@@ -630,11 +685,11 @@ export default function ChatPage({ onUnreadChange }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Reply preview */}
+          {/* Reply bar */}
           {replyTo && (
             <div style={{
               margin: "0 0.75rem 4px",
-              background: "var(--bg-tertiary)",
+              background: "#f0f4fa",
               borderLeft: "3px solid var(--brand)",
               borderRadius: 8, padding: "6px 12px",
               display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -644,24 +699,52 @@ export default function ChatPage({ onUnreadChange }) {
                 <p style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 2 }}>Replying to {replyTo.senderName}</p>
                 <p style={{ fontSize: 12, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 280 }}>{replyTo.text}</p>
               </div>
-              <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
+              <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
             </div>
           )}
 
-          {/* Input bar — Instagram pill style */}
+          {/* Image preview before sending */}
+          {imgPreview && (
+            <div style={{ padding: "4px 12px 2px", display: "flex" }}>
+              <div style={{ position: "relative" }}>
+                <img src={imgPreview} alt="preview" style={{ height: 80, width: 80, objectFit: "cover", borderRadius: 12, border: "2px solid var(--border)", display: "block" }} />
+                <button
+                  onClick={() => { setImgFile(null); setImgPreview(null); }}
+                  style={{
+                    position: "absolute", top: -6, right: -6,
+                    width: 20, height: 20, borderRadius: "50%",
+                    background: "#ef4444", color: "#fff", border: "2px solid #fff",
+                    cursor: "pointer", fontSize: 13, fontWeight: 700,
+                    display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+                  }}
+                >×</button>
+              </div>
+            </div>
+          )}
+
+          {/* Input bar */}
           <div style={{
             padding: "0.6rem 0.75rem 0.75rem",
             borderTop: "1px solid var(--border)",
             display: "flex", alignItems: "flex-end", gap: 8,
             background: "var(--bg-primary)",
           }}>
-            {/* Camera icon */}
-            <button style={{
-              width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-              background: "none", border: "none", cursor: "pointer",
-              color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "color 0.15s",
-            }}
+            {/* Hidden file input */}
+            <input
+              type="file" accept="image/*"
+              ref={imgInputRef} style={{ display: "none" }}
+              onChange={handleImgSelect}
+            />
+
+            {/* Camera / gallery button */}
+            <button
+              onClick={() => imgInputRef.current?.click()}
+              style={{
+                width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+                background: "none", border: "none", cursor: "pointer",
+                color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "color 0.15s",
+              }}
               onMouseEnter={(e) => e.currentTarget.style.color = "var(--brand)"}
               onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
             >
@@ -678,7 +761,7 @@ export default function ChatPage({ onUnreadChange }) {
                 value={text}
                 onChange={handleTyping}
                 onKeyDown={handleKeyDown}
-                placeholder={`Message ${otherName}…`}
+                placeholder={`Message ${otherName || ""}…`}
                 rows={1}
                 style={{
                   width: "100%", padding: "10px 16px",
@@ -702,22 +785,29 @@ export default function ChatPage({ onUnreadChange }) {
               />
             </div>
 
-            {/* Send / Heart button */}
-            {text.trim() ? (
+            {/* Send or Heart */}
+            {(text.trim() || imgFile) ? (
               <button onClick={handleSend} disabled={sending} style={{
                 width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
                 background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-                color: "#fff", border: "none", cursor: "pointer",
+                color: "#fff", border: "none", cursor: sending ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "transform 0.15s, opacity 0.15s",
                 boxShadow: "0 2px 10px rgba(37,99,235,0.35)",
+                opacity: sending ? 0.7 : 1,
               }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.07)"}
+                onMouseEnter={(e) => { if (!sending) e.currentTarget.style.transform = "scale(1.07)"; }}
                 onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
               >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/>
-                </svg>
+                {sending ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: "spin 0.8s linear infinite" }}>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                ) : (
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/>
+                  </svg>
+                )}
               </button>
             ) : (
               <button style={{
@@ -738,11 +828,12 @@ export default function ChatPage({ onUnreadChange }) {
         </div>
       ) : (
         /* No conversation selected */
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, background: "var(--bg-primary)" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, background: "var(--bg-chat)" }}>
           <div style={{
             width: 80, height: 80, borderRadius: "50%",
-            background: "var(--bg-tertiary)",
+            background: "#fff", border: "1px solid #e5eaf2",
             display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
           }}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>

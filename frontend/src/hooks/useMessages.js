@@ -4,7 +4,8 @@ import {
   onSnapshot, addDoc, updateDoc, doc,
   getDocs, arrayUnion, serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../firebase";
 
 /* ── Real-time conversations list ── */
 export function useConversations(userId) {
@@ -52,21 +53,37 @@ export function useMessages(conversationId) {
 }
 
 /* ── Send a message ── */
-export async function sendMessage(conversationId, senderId, text, replyTo = null) {
+export async function sendMessage(conversationId, senderId, text, replyTo = null, imageUrl = null) {
   const now = new Date().toISOString();
-  await addDoc(collection(db, "conversations", conversationId, "messages"), {
-    senderId, text: text.trim(),
-    type: "text",
+  const msgData = {
+    senderId,
+    text: (text || "").trim(),
+    type: imageUrl ? "image" : "text",
+    imageUrl: imageUrl || null,
     replyTo: replyTo || null,
     reactions: {},
     readBy: [senderId],
     createdAt: now,
     deleted: false,
-  });
+  };
+  await addDoc(collection(db, "conversations", conversationId, "messages"), msgData);
   await updateDoc(doc(db, "conversations", conversationId), {
-    lastMessage: { text: text.trim(), senderId, createdAt: now },
+    lastMessage: {
+      text: imageUrl ? "Photo" : (text || "").trim(),
+      type: imageUrl ? "image" : "text",
+      senderId, createdAt: now,
+    },
     updatedAt: now,
   });
+}
+
+/* ── Upload chat image to Firebase Storage ── */
+export async function uploadChatImage(file, conversationId) {
+  const ext = file.name.split(".").pop().toLowerCase();
+  const path = `chat-images/${conversationId}/${Date.now()}.${ext}`;
+  const storageRef = ref(storage, path);
+  const snapshot = await uploadBytes(storageRef, file);
+  return getDownloadURL(snapshot.ref);
 }
 
 /* ── Toggle emoji reaction ── */
