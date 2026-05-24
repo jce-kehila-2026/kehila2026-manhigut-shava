@@ -128,7 +128,7 @@ export default function SupportPage() {
         const last  = (u.lastName  ?? "").toLowerCase();
         const full  = `${first} ${last}`.trim();
         const email = (u.email ?? "").toLowerCase();
-        return first.startsWith(q) || last.startsWith(q) || full.includes(q) || email.includes(q);
+        return first.startsWith(q) || last.startsWith(q);
       }).slice(0, 8)
     : [];
 
