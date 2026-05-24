@@ -239,6 +239,10 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
     await deleteMessage(conversationId, msg.id);
   };
 
+  const hoverLift = hovering && !editing
+    ? { transform: "scale(1.022) translateY(-1.5px)", transition: "transform 0.18s ease, box-shadow 0.18s ease" }
+    : { transform: "scale(1) translateY(0)", transition: "transform 0.18s ease, box-shadow 0.18s ease" };
+
   const myBubble = {
     background: "linear-gradient(135deg, #2563eb, #7c3aed)",
     color: "#fff",
@@ -246,7 +250,10 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
     padding: "10px 15px",
     fontSize: 14, lineHeight: 1.5,
     wordBreak: "break-word", maxWidth: "100%",
-    boxShadow: "0 2px 8px rgba(37,99,235,0.25)",
+    boxShadow: hovering && !editing
+      ? "0 6px 20px rgba(37,99,235,0.42)"
+      : "0 2px 8px rgba(37,99,235,0.25)",
+    ...hoverLift,
   };
 
   const theirBubble = {
@@ -257,7 +264,10 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
     fontSize: 14, lineHeight: 1.5,
     wordBreak: "break-word", maxWidth: "100%",
     border: "1px solid #e5eaf2",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    boxShadow: hovering && !editing
+      ? "0 4px 16px rgba(0,0,0,0.13)"
+      : "0 1px 4px rgba(0,0,0,0.06)",
+    ...hoverLift,
   };
 
   return (
@@ -333,7 +343,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
           {/* Bubble */}
           <div ref={bubbleRef} style={{ position: "relative" }}>
             {isImage ? (
-              <div>
+              <div style={{ ...hoverLift }}>
                 <img
                   src={msg.imageUrl}
                   alt="photo"
@@ -342,7 +352,10 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                     maxWidth: 240, maxHeight: 300, display: "block",
                     borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                     cursor: "zoom-in", objectFit: "cover",
-                    boxShadow: "0 2px 14px rgba(0,0,0,0.14)",
+                    boxShadow: hovering && !editing
+                      ? "0 6px 22px rgba(0,0,0,0.22)"
+                      : "0 2px 14px rgba(0,0,0,0.14)",
+                    transition: "box-shadow 0.18s ease",
                   }}
                 />
                 {msg.text && (
