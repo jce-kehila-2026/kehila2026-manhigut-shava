@@ -345,11 +345,20 @@ export default function ChatPage({ onUnreadChange }) {
   };
 
   const handleNewConversation = async (targetUser) => {
-    if (!profile) return;
-    const convId = await getOrCreateConversation(user.uid, targetUser.id, profile, targetUser);
-    setActiveConvId(convId);
-    setShowNewChat(false);
-    setUserSearch("");
+    if (!user) return;
+    const myProfile = profile || {
+      firstName: user.displayName?.split(" ")[0] || user.email?.split("@")[0] || "",
+      lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
+      avatarUrl: user.photoURL || null,
+    };
+    try {
+      const convId = await getOrCreateConversation(user.uid, targetUser.id, myProfile, targetUser);
+      setActiveConvId(convId);
+      setShowNewChat(false);
+      setUserSearch("");
+    } catch (e) {
+      console.error("Failed to open conversation:", e);
+    }
   };
 
   const getDateLabel = (msg, prev) => {
