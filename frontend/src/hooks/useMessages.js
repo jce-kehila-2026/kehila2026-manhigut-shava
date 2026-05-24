@@ -146,6 +146,21 @@ export async function getOrCreateConversation(uid1, uid2, profile1, profile2) {
   return ref.id;
 }
 
+/* ── Edit a message ── */
+export async function editMessage(conversationId, messageId, newText) {
+  await updateDoc(doc(db, "conversations", conversationId, "messages", messageId), {
+    text: newText.trim(),
+    edited: true,
+  });
+}
+
+/* ── Soft-delete a message ── */
+export async function deleteMessage(conversationId, messageId) {
+  await updateDoc(doc(db, "conversations", conversationId, "messages", messageId), {
+    deleted: true,
+  });
+}
+
 /* ── Set typing indicator ── */
 export async function setTyping(conversationId, userId, isTyping) {
   await updateDoc(doc(db, "conversations", conversationId), {

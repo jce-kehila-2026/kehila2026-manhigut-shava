@@ -5,6 +5,7 @@ import { useAuth } from "./AuthContext";
 import {
   useConversations, useMessages,
   sendMessage, getOrCreateConversation, markRead, setTyping, uploadChatImage,
+  editMessage, deleteMessage,
 } from "./hooks/useMessages";
 
 /* ── Helpers ── */
@@ -122,14 +123,23 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
   );
 }
 
-/* ── Message bubble with swipe-to-reply ── */
-function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup, onReply, onViewImage }) {
+/* ── Message bubble with swipe-to-reply + long-press context menu ── */
+function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup, onReply, onViewImage, conversationId }) {
   const EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🎉"];
   const [hovering, setHovering] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(msg.text || "");
+
   const swipeDragging = useRef(false);
   const swipeStartX = useRef(0);
   const swipeTriggered = useRef(false);
+  const longPressTimer = useRef(null);
+  const longPressStart = useRef({ x: 0, y: 0 });
+  const longPressMoved = useRef(false);
+  const bubbleRef = useRef(null);
   const SWIPE_THRESHOLD = 65;
 
   const reactionEntries = Object.entries(msg.reactions || {}).filter(([, u]) => u.length > 0);
@@ -142,9 +152,37 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
   const iconScale = 0.45 + swipeProgress * 0.55;
   const iconTriggered = absSwipe >= SWIPE_THRESHOLD;
 
+  /* close menu on outside click */
+  useEffect(() => {
+    if (!showMenu) return;
+    const close = (e) => {
+      if (!e.target.closest("[data-ctx-menu]")) setShowMenu(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [showMenu]);
+
+  /* cleanup timer on unmount */
+  useEffect(() => () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }, []);
+
+  const triggerMenu = () => {
+    if (!isMe || msg.deleted || !bubbleRef.current) return;
+    const rect = bubbleRef.current.getBoundingClientRect();
+    const menuH = 98;
+    const top = rect.top > menuH + 12 ? rect.top - menuH - 6 : rect.bottom + 6;
+    const left = isMe
+      ? Math.max(8, rect.right - 152)
+      : Math.min(rect.left, window.innerWidth - 160);
+    setMenuPos({ top, left });
+    setShowMenu(true);
+  };
+
   const processSwipe = (clientX) => {
     const dx = clientX - swipeStartX.current;
-    /* received → swipe right (+dx);  sent → swipe left (-dx) */
     const allowed = isMe ? -dx : dx;
     if (allowed > 0) {
       const clamped = Math.min(allowed, 82);
@@ -159,18 +197,46 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
   };
 
   const handleSwipeStart = (e) => {
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
     swipeDragging.current = true;
     swipeTriggered.current = false;
-    swipeStartX.current = e.touches ? e.touches[0].clientX : e.clientX;
+    swipeStartX.current = cx;
+    longPressStart.current = { x: cx, y: cy };
+    longPressMoved.current = false;
+    if (isMe && !msg.deleted) {
+      longPressTimer.current = setTimeout(triggerMenu, 500);
+    }
   };
   const handleSwipeMove = (e) => {
     if (!swipeDragging.current) return;
-    processSwipe(e.touches ? e.touches[0].clientX : e.clientX);
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const dx = Math.abs(cx - longPressStart.current.x);
+    const dy = Math.abs(cy - longPressStart.current.y);
+    if ((dx > 8 || dy > 8) && !longPressMoved.current) {
+      longPressMoved.current = true;
+      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    }
+    processSwipe(cx);
   };
   const handleSwipeEnd = () => {
     swipeDragging.current = false;
     swipeTriggered.current = false;
     setSwipeX(0);
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === msg.text) { setEditing(false); return; }
+    await editMessage(conversationId, msg.id, trimmed);
+    setEditing(false);
+  };
+
+  const handleDelete = async () => {
+    setShowMenu(false);
+    await deleteMessage(conversationId, msg.id);
   };
 
   const myBubble = {
@@ -265,7 +331,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
           )}
 
           {/* Bubble */}
-          <div style={{ position: "relative" }}>
+          <div ref={bubbleRef} style={{ position: "relative" }}>
             {isImage ? (
               <div>
                 <img
@@ -283,14 +349,46 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                   <div style={{ ...(isMe ? myBubble : theirBubble), marginTop: 4 }}>{msg.text}</div>
                 )}
               </div>
+            ) : editing ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 180, maxWidth: 280 }}>
+                <textarea
+                  autoFocus
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); } if (e.key === "Escape") setEditing(false); }}
+                  style={{
+                    width: "100%", padding: "9px 13px",
+                    border: "2px solid var(--brand)", borderRadius: 14,
+                    fontSize: 14, lineHeight: 1.5, resize: "none",
+                    fontFamily: "var(--font)", background: "#fff",
+                    color: "var(--text-primary)", outline: "none",
+                    minHeight: 60, maxHeight: 140, overflow: "auto",
+                    boxSizing: "border-box",
+                  }}
+                  onInput={(e) => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 140) + "px"; }}
+                />
+                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                  <button
+                    onClick={() => setEditing(false)}
+                    style={{ padding: "5px 13px", borderRadius: 99, fontSize: 12, fontWeight: 600, background: "var(--bg-tertiary)", color: "var(--text-secondary)", border: "none", cursor: "pointer" }}
+                  >Cancel</button>
+                  <button
+                    onClick={handleSaveEdit}
+                    style={{ padding: "5px 13px", borderRadius: 99, fontSize: 12, fontWeight: 700, background: "var(--brand)", color: "#fff", border: "none", cursor: "pointer" }}
+                  >Save</button>
+                </div>
+              </div>
             ) : (
               <div style={isMe ? myBubble : theirBubble}>
-                {msg.deleted ? <em style={{ opacity: 0.5, fontSize: 13 }}>Message deleted</em> : msg.text}
+                {msg.deleted
+                  ? <em style={{ opacity: 0.5, fontSize: 13 }}>Message deleted</em>
+                  : <>{msg.text}{msg.edited && <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 6, fontStyle: "italic" }}>(edited)</span>}</>
+                }
               </div>
             )}
 
             {/* Reaction picker on hover */}
-            {hovering && !msg.deleted && (
+            {hovering && !msg.deleted && !editing && (
               <div style={{
                 position: "absolute", top: -40,
                 [isMe ? "right" : "left"]: 0,
@@ -310,6 +408,65 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                     onMouseLeave={(ev) => ev.currentTarget.style.transform = "scale(1)"}
                   >{e}</button>
                 ))}
+              </div>
+            )}
+
+            {/* Long-press context menu */}
+            {showMenu && (
+              <div
+                data-ctx-menu
+                style={{
+                  position: "fixed",
+                  top: menuPos.top, left: menuPos.left,
+                  zIndex: 9998,
+                  background: "#1e293b",
+                  borderRadius: 14,
+                  padding: "5px",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+                  minWidth: 150,
+                  animation: "popIn 0.14s ease",
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => { setShowMenu(false); setEditText(msg.text || ""); setEditing(true); }}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 14px", background: "none", border: "none",
+                    cursor: "pointer", borderRadius: 10,
+                    color: "#e2e8f0", fontSize: 14, fontWeight: 500,
+                    fontFamily: "var(--font)", textAlign: "left",
+                    transition: "background 0.12s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 14px", background: "none", border: "none",
+                    cursor: "pointer", borderRadius: 10,
+                    color: "#f87171", fontSize: 14, fontWeight: 500,
+                    fontFamily: "var(--font)", textAlign: "left",
+                    transition: "background 0.12s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.12)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                  Delete
+                </button>
               </div>
             )}
           </div>
@@ -719,6 +876,7 @@ export default function ChatPage({ onUnreadChange }) {
                     isLastInGroup={isLastInGroup}
                     onReply={(r) => setReplyTo(r)}
                     onViewImage={(url) => setLightbox(url)}
+                    conversationId={activeConvId}
                   />
 
                   {/* Seen indicator — below last sent message the other person has read */}
