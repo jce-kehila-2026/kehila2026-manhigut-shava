@@ -104,7 +104,7 @@ export default function SupportPage() {
     getDocs(collection(db, "users")).then((snap) => {
       const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const me = docs.find((d) => d.id === user.uid);
-      if (me) setSenderProfile(me.data());
+      if (me) setSenderProfile(me);
       setAllUsers(docs.filter((d) => d.id !== user.uid));
     });
   }, [user]);
@@ -441,7 +441,7 @@ export default function SupportPage() {
                   </button>
                 )) : (
                   <div style={{ padding: "11px 14px", fontSize: "13px", color: "#94a3b8" }}>
-                    {allUsers.length === 0 ? "Loading members…" : `No members found (${allUsers.length} loaded)`}
+                    {allUsers.length === 0 ? "Loading members…" : "No members found"}
                   </div>
                 )}
               </div>
