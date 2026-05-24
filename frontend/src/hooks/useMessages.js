@@ -94,13 +94,17 @@ export async function markRead(conversationId, userId) {
 
 /* ── Find or create a DM conversation ── */
 export async function getOrCreateConversation(uid1, uid2, profile1, profile2) {
+  /* Single array-contains query — no composite index needed.
+     Filter type and participants client-side. */
   const q = query(
     collection(db, "conversations"),
     where("participants", "array-contains", uid1),
-    where("type", "==", "direct"),
   );
   const snap = await getDocs(q);
-  const existing = snap.docs.find((d) => d.data().participants.includes(uid2));
+  const existing = snap.docs.find((d) => {
+    const data = d.data();
+    return data.type === "direct" && data.participants?.includes(uid2);
+  });
   if (existing) return existing.id;
 
   const now = new Date().toISOString();
