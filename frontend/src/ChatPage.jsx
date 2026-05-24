@@ -122,12 +122,56 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
   );
 }
 
-/* ── Message bubble ── */
+/* ── Message bubble with swipe-to-reply ── */
 function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup, onReply, onViewImage }) {
   const EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🎉"];
   const [hovering, setHovering] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
+  const swipeDragging = useRef(false);
+  const swipeStartX = useRef(0);
+  const swipeTriggered = useRef(false);
+  const SWIPE_THRESHOLD = 65;
+
   const reactionEntries = Object.entries(msg.reactions || {}).filter(([, u]) => u.length > 0);
   const isImage = msg.type === "image" && msg.imageUrl;
+
+  /* swipe progress 0→1 */
+  const absSwipe = Math.abs(swipeX);
+  const swipeProgress = Math.min(absSwipe / SWIPE_THRESHOLD, 1);
+  const iconOpacity = swipeProgress;
+  const iconScale = 0.45 + swipeProgress * 0.55;
+  const iconTriggered = absSwipe >= SWIPE_THRESHOLD;
+
+  const processSwipe = (clientX) => {
+    const dx = clientX - swipeStartX.current;
+    /* received → swipe right (+dx);  sent → swipe left (-dx) */
+    const allowed = isMe ? -dx : dx;
+    if (allowed > 0) {
+      const clamped = Math.min(allowed, 82);
+      setSwipeX(isMe ? -clamped : clamped);
+      if (allowed >= SWIPE_THRESHOLD && !swipeTriggered.current) {
+        swipeTriggered.current = true;
+        onReply?.({ id: msg.id, text: isImage ? "Photo" : msg.text, senderName: isMe ? "You" : senderName });
+      }
+    } else {
+      setSwipeX(0);
+    }
+  };
+
+  const handleSwipeStart = (e) => {
+    swipeDragging.current = true;
+    swipeTriggered.current = false;
+    swipeStartX.current = e.touches ? e.touches[0].clientX : e.clientX;
+  };
+  const handleSwipeMove = (e) => {
+    if (!swipeDragging.current) return;
+    processSwipe(e.touches ? e.touches[0].clientX : e.clientX);
+  };
+  const handleSwipeEnd = () => {
+    swipeDragging.current = false;
+    swipeTriggered.current = false;
+    setSwipeX(0);
+  };
 
   const myBubble = {
     background: "linear-gradient(135deg, #2563eb, #7c3aed)",
@@ -151,144 +195,170 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
   };
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: isMe ? "row-reverse" : "row",
-      alignItems: "flex-end",
-      gap: 6,
-      paddingInlineStart: isMe ? "3rem" : "0.75rem",
-      paddingInlineEnd: isMe ? "0.75rem" : "3rem",
-      marginBottom: isLastInGroup ? 8 : 2,
-    }}
+    <div
+      style={{ position: "relative", touchAction: "pan-y", userSelect: "none" }}
+      onMouseDown={handleSwipeStart}
+      onMouseMove={handleSwipeMove}
+      onMouseUp={handleSwipeEnd}
       onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
+      onMouseLeave={() => { handleSwipeEnd(); setHovering(false); }}
+      onTouchStart={handleSwipeStart}
+      onTouchMove={handleSwipeMove}
+      onTouchEnd={handleSwipeEnd}
     >
-      {/* Avatar at bottom of their group */}
-      {!isMe && (
-        <div style={{ width: 28, flexShrink: 0, alignSelf: "flex-end" }}>
-          {showAvatar && <Avatar url={senderAvatar} name={senderName} size={28} />}
-        </div>
-      )}
+      {/* Reply icon — revealed as message slides away */}
+      <div style={{
+        position: "absolute",
+        [isMe ? "right" : "left"]: 8,
+        top: "50%",
+        transform: `translateY(-50%) scale(${iconScale})`,
+        opacity: iconOpacity,
+        width: 32, height: 32, borderRadius: "50%",
+        background: iconTriggered ? "rgba(37,99,235,0.15)" : "rgba(0,0,0,0.07)",
+        color: iconTriggered ? "#2563eb" : "var(--text-muted)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        pointerEvents: "none",
+        transition: swipeDragging.current ? "color 0.1s, background 0.1s" : "all 0.32s cubic-bezier(0.34,1.56,0.64,1)",
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+        </svg>
+      </div>
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 2, maxWidth: "70%" }}>
-
-        {/* Reply preview inside bubble */}
-        {msg.replyTo && (
-          <div style={{
-            background: isMe ? "rgba(255,255,255,0.12)" : "#f0f4fa",
-            borderLeft: `3px solid ${isMe ? "rgba(255,255,255,0.5)" : "var(--brand)"}`,
-            borderRadius: 8, padding: "4px 10px", marginBottom: 2,
-            fontSize: 11, maxWidth: "100%", overflow: "hidden",
-          }}>
-            <p style={{ fontWeight: 700, fontSize: 10, marginBottom: 1, color: isMe ? "rgba(255,255,255,0.85)" : "var(--brand)" }}>
-              {msg.replyTo.senderName}
-            </p>
-            <p style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isMe ? "rgba(255,255,255,0.7)" : "var(--text-secondary)" }}>
-              {msg.replyTo.text}
-            </p>
+      {/* Message row — translates on swipe */}
+      <div style={{
+        display: "flex",
+        flexDirection: isMe ? "row-reverse" : "row",
+        alignItems: "flex-end",
+        gap: 6,
+        paddingInlineStart: isMe ? "3rem" : "0.75rem",
+        paddingInlineEnd: isMe ? "0.75rem" : "3rem",
+        marginBottom: isLastInGroup ? 8 : 2,
+        transform: `translateX(${swipeX}px)`,
+        transition: swipeDragging.current ? "none" : "transform 0.36s cubic-bezier(0.34,1.56,0.64,1)",
+        willChange: "transform",
+      }}>
+        {/* Avatar at bottom of their group */}
+        {!isMe && (
+          <div style={{ width: 28, flexShrink: 0, alignSelf: "flex-end" }}>
+            {showAvatar && <Avatar url={senderAvatar} name={senderName} size={28} />}
           </div>
         )}
 
-        {/* Bubble */}
-        <div style={{ position: "relative" }}>
-          {isImage ? (
-            <div>
-              <img
-                src={msg.imageUrl}
-                alt="photo"
-                onClick={() => onViewImage?.(msg.imageUrl)}
-                style={{
-                  maxWidth: 240, maxHeight: 300, display: "block",
-                  borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                  cursor: "zoom-in", objectFit: "cover",
-                  boxShadow: "0 2px 14px rgba(0,0,0,0.14)",
-                }}
-              />
-              {msg.text && (
-                <div style={{ ...(isMe ? myBubble : theirBubble), marginTop: 4 }}>
-                  {msg.text}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={isMe ? myBubble : theirBubble}>
-              {msg.deleted
-                ? <em style={{ opacity: 0.5, fontSize: 13 }}>Message deleted</em>
-                : msg.text
-              }
+        <div style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", gap: 2, maxWidth: "70%" }}>
+
+          {/* Reply quote */}
+          {msg.replyTo && (
+            <div style={{
+              background: isMe ? "rgba(255,255,255,0.12)" : "#f0f4fa",
+              borderLeft: `3px solid ${isMe ? "rgba(255,255,255,0.5)" : "var(--brand)"}`,
+              borderRadius: 8, padding: "4px 10px", marginBottom: 2,
+              fontSize: 11, maxWidth: "100%", overflow: "hidden",
+            }}>
+              <p style={{ fontWeight: 700, fontSize: 10, marginBottom: 1, color: isMe ? "rgba(255,255,255,0.85)" : "var(--brand)" }}>
+                {msg.replyTo.senderName}
+              </p>
+              <p style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isMe ? "rgba(255,255,255,0.7)" : "var(--text-secondary)" }}>
+                {msg.replyTo.text}
+              </p>
             </div>
           )}
 
-          {/* Reaction picker on hover */}
-          {hovering && !msg.deleted && (
-            <div style={{
-              position: "absolute", top: -40,
-              [isMe ? "right" : "left"]: 0,
-              background: "#fff",
-              border: "1px solid #e5eaf2",
-              borderRadius: 99, padding: "5px 10px",
-              display: "flex", gap: 2,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
-              zIndex: 20, animation: "popIn 0.15s ease",
-              whiteSpace: "nowrap",
-            }}>
-              {EMOJIS.map((e) => (
-                <button key={e} style={{
-                  fontSize: 18, padding: "2px 4px", background: "none", border: "none",
-                  cursor: "pointer", borderRadius: 6, transition: "transform 0.1s", lineHeight: 1,
-                }}
-                  onMouseEnter={(ev) => ev.currentTarget.style.transform = "scale(1.4)"}
-                  onMouseLeave={(ev) => ev.currentTarget.style.transform = "scale(1)"}
-                >{e}</button>
+          {/* Bubble */}
+          <div style={{ position: "relative" }}>
+            {isImage ? (
+              <div>
+                <img
+                  src={msg.imageUrl}
+                  alt="photo"
+                  onClick={() => onViewImage?.(msg.imageUrl)}
+                  style={{
+                    maxWidth: 240, maxHeight: 300, display: "block",
+                    borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                    cursor: "zoom-in", objectFit: "cover",
+                    boxShadow: "0 2px 14px rgba(0,0,0,0.14)",
+                  }}
+                />
+                {msg.text && (
+                  <div style={{ ...(isMe ? myBubble : theirBubble), marginTop: 4 }}>{msg.text}</div>
+                )}
+              </div>
+            ) : (
+              <div style={isMe ? myBubble : theirBubble}>
+                {msg.deleted ? <em style={{ opacity: 0.5, fontSize: 13 }}>Message deleted</em> : msg.text}
+              </div>
+            )}
+
+            {/* Reaction picker on hover */}
+            {hovering && !msg.deleted && (
+              <div style={{
+                position: "absolute", top: -40,
+                [isMe ? "right" : "left"]: 0,
+                background: "#fff", border: "1px solid #e5eaf2",
+                borderRadius: 99, padding: "5px 10px",
+                display: "flex", gap: 2,
+                boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                zIndex: 20, animation: "popIn 0.15s ease",
+                whiteSpace: "nowrap",
+              }}>
+                {EMOJIS.map((e) => (
+                  <button key={e} style={{
+                    fontSize: 18, padding: "2px 4px", background: "none", border: "none",
+                    cursor: "pointer", borderRadius: 6, transition: "transform 0.1s", lineHeight: 1,
+                  }}
+                    onMouseEnter={(ev) => ev.currentTarget.style.transform = "scale(1.4)"}
+                    onMouseLeave={(ev) => ev.currentTarget.style.transform = "scale(1)"}
+                  >{e}</button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Reactions */}
+          {reactionEntries.length > 0 && (
+            <div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginTop: 2 }}>
+              {reactionEntries.map(([emoji, users]) => (
+                <span key={emoji} style={{
+                  background: "#fff", border: "1px solid #e5eaf2",
+                  borderRadius: 99, padding: "1px 6px",
+                  fontSize: 12, display: "flex", alignItems: "center", gap: 3, cursor: "pointer",
+                }}>
+                  {emoji}
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>{users.length}</span>
+                </span>
               ))}
             </div>
           )}
+
+          {/* Timestamp */}
+          {showTime && (
+            <span style={{ fontSize: 10, color: "var(--text-muted)", margin: "1px 2px", opacity: hovering ? 1 : 0.55, transition: "opacity 0.2s" }}>
+              {formatTime(msg.createdAt)}
+            </span>
+          )}
         </div>
 
-        {/* Reactions */}
-        {reactionEntries.length > 0 && (
-          <div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginTop: 2 }}>
-            {reactionEntries.map(([emoji, users]) => (
-              <span key={emoji} style={{
-                background: "#fff", border: "1px solid #e5eaf2",
-                borderRadius: 99, padding: "1px 6px",
-                fontSize: 12, display: "flex", alignItems: "center", gap: 3, cursor: "pointer",
-              }}>
-                {emoji}
-                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>{users.length}</span>
-              </span>
-            ))}
+        {/* Hover reply button (desktop) */}
+        {hovering && !msg.deleted && absSwipe < 5 && (
+          <div style={{ alignSelf: "center" }}>
+            <button
+              onClick={() => onReply?.({ id: msg.id, text: isImage ? "Photo" : msg.text, senderName: isMe ? "You" : senderName })}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "var(--text-muted)", padding: 4, borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "background 0.12s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.07)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+              </svg>
+            </button>
           </div>
         )}
-
-        {/* Timestamp */}
-        {showTime && (
-          <span style={{ fontSize: 10, color: "var(--text-muted)", margin: "1px 2px", opacity: hovering ? 1 : 0.55, transition: "opacity 0.2s" }}>
-            {formatTime(msg.createdAt)}
-          </span>
-        )}
       </div>
-
-      {/* Reply button */}
-      {hovering && !msg.deleted && (
-        <div style={{ alignSelf: "center" }}>
-          <button
-            onClick={() => onReply?.({ id: msg.id, text: isImage ? "Photo" : msg.text, senderName: isMe ? "You" : senderName })}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: "var(--text-muted)", padding: 4, borderRadius: "50%",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "background 0.12s",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.07)"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
-            </svg>
-          </button>
-        </div>
-      )}
     </div>
   );
 }
