@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, query, where, collection, getDocs } from "firebase/firestore";
 import {
   updateEmail,
   reauthenticateWithCredential,
@@ -144,13 +144,19 @@ export default function ProfilePage() {
   const [saved,    setSaved]    = useState(false);
   const [error,    setError]    = useState("");
 
+  const [networksCount, setNetworksCount] = useState(0);
+
+  /* ── My Posts ── */
+  const [myPosts,      setMyPosts]      = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail,       setNewEmail]       = useState("");
   const [password,       setPassword]       = useState("");
   const [emailError,     setEmailError]     = useState("");
   const [emailSuccess,   setEmailSuccess]   = useState("");
 
-  /* ── Load profile ── */
+  /* ── Load profile + network count ── */
   useEffect(() => {
     if (!user) return;
     getDoc(doc(db, "users", user.uid)).then((snap) => {
@@ -165,8 +171,24 @@ export default function ProfilePage() {
           bio:        d.bio        ?? "",
         });
         setPhotoURL(d.photoURL ?? null);
+        setNetworksCount(d.networksCount ?? 0);
       }
     });
+  }, [user]);
+
+  /* ── Load my posts ── */
+  useEffect(() => {
+    if (!user) return;
+    setPostsLoading(true);
+    getDocs(query(collection(db, "posts"), where("authorId", "==", user.uid)))
+      .then((snap) => {
+        const posts = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => ((b.createdAt ?? "") > (a.createdAt ?? "") ? 1 : -1));
+        setMyPosts(posts);
+      })
+      .catch((err) => console.error("Failed to load my posts:", err))
+      .finally(() => setPostsLoading(false));
   }, [user]);
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -225,6 +247,16 @@ export default function ProfilePage() {
   };
 
   const BIO_LIMIT = 300;
+
+  /* ── Relative timestamp ── */
+  const relativeTime = (iso) => {
+    if (!iso) return "";
+    const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60)   return t.common.justNow;
+    if (diff < 3600) return t.common.minutesAgo(Math.floor(diff / 60));
+    if (diff < 86400) return t.common.hoursAgo(Math.floor(diff / 3600));
+    return t.common.daysAgo(Math.floor(diff / 86400));
+  };
 
   const S = {
     page: {
@@ -331,6 +363,17 @@ export default function ProfilePage() {
             {form.firstName ? t.profile.greeting(form.firstName) : t.profile.myProfile}
           </p>
           <p style={S.greetingSub}>{t.profile.subtitle}</p>
+          {networksCount > 0 && (
+            <div style={{ marginBottom:"1rem" }}>
+              <span style={{
+                fontSize:"13px", fontWeight:"700", color:"#1d4ed8",
+                background:"#eff6ff", border:"1px solid #bfdbfe",
+                borderRadius:"99px", padding:"5px 16px", display:"inline-block",
+              }}>
+                {networksCount} {t.network?.networkCount ?? "Connections"}
+              </span>
+            </div>
+          )}
           <CompletenessBadge pct={pct} />
         </div>
 
@@ -417,6 +460,116 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ── My Posts ── */}
+        <div style={{ marginTop: "2rem" }}>
+          <p style={{
+            fontSize: "11px", fontWeight: "700", color: "#1a3c5e",
+            textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 1.25rem",
+          }}>
+            {t.profile.myPosts}
+          </p>
+
+          {postsLoading && (
+            <p style={{ color: "#94a3b8", fontSize: "14px" }}>…</p>
+          )}
+
+          {!postsLoading && myPosts.length === 0 && (
+            <div style={{
+              textAlign: "center", padding: "2.5rem",
+              background: "#f8fafc", borderRadius: "16px",
+              border: "1.5px dashed #e2e8f0", color: "#94a3b8", fontSize: "14px",
+            }}>
+              {t.profile.noMyPosts}
+            </div>
+          )}
+
+          {!postsLoading && myPosts.length > 0 && (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: "1.25rem",
+            }}>
+              {myPosts.map((post) => (
+                <div key={post.id} className="profile-card" style={{
+                  background: "#fff", borderRadius: "18px",
+                  border: "1.5px solid #f1f5f9", borderLeft: "4px solid #38bdf8",
+                  boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+                  padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem",
+                }}>
+                  {/* Post text */}
+                  {post.text && (
+                    <p style={{
+                      fontSize: "14px", color: "#1a2e42", margin: 0,
+                      lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-word",
+                      display: "-webkit-box", WebkitLineClamp: 4,
+                      WebkitBoxOrient: "vertical", overflow: "hidden",
+                    }}>
+                      {post.text}
+                    </p>
+                  )}
+
+                  {/* Repost badge */}
+                  {post.repostOf && (
+                    <span style={{
+                      fontSize: "11px", color: "#64748b",
+                      background: "#f1f5f9", borderRadius: "6px",
+                      padding: "3px 8px", display: "inline-block", alignSelf: "flex-start",
+                    }}>
+                      ↺ {t.community.repostedBy} {post.repostOf.authorName ?? ""}
+                    </span>
+                  )}
+
+                  {/* Images thumbnail strip */}
+                  {Array.isArray(post.imageURLs) && post.imageURLs.length > 0 && (
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {post.imageURLs.slice(0, 3).map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt=""
+                          style={{
+                            width: "72px", height: "72px", objectFit: "cover",
+                            borderRadius: "8px", border: "1px solid #e2e8f0",
+                          }}
+                        />
+                      ))}
+                      {post.imageURLs.length > 3 && (
+                        <div style={{
+                          width: "72px", height: "72px", borderRadius: "8px",
+                          background: "#f1f5f9", border: "1px solid #e2e8f0",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "14px", fontWeight: "700", color: "#64748b",
+                        }}>
+                          +{post.imageURLs.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Stats + date */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      {(post.likes?.length ?? 0) > 0 && (
+                        <span style={{ fontSize: "12px", color: "#64748b" }}>
+                          👍 {post.likes.length}
+                        </span>
+                      )}
+                      {(post.commentsCount ?? 0) > 0 && (
+                        <span style={{ fontSize: "12px", color: "#64748b" }}>
+                          💬 {post.commentsCount}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                      {relativeTime(post.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

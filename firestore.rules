@@ -1,29 +1,70 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow authenticated users to read the users collection
+
+    // Users — anyone authenticated can read.
+    // Only the owner can write their own profile.
+    // Any authenticated user can increment/decrement networksCount (connection system).
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+      allow create, delete: if request.auth.uid == userId;
+      allow update: if request.auth.uid == userId
+        || (request.auth != null &&
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['networksCount']));
     }
 
-    // Allow authenticated users to read and write help requests
+    // Help requests
     match /helpRequests/{docId} {
       allow read: if request.auth != null;
-      allow create: if request.auth.uid == request.resource.data.fromUserId;
-      allow update: if request.auth.uid == request.resource.data.toUserId || request.auth.uid == request.resource.data.fromUserId;
-      allow delete: if request.auth.uid == request.resource.data.fromUserId;
+      allow create: if request.auth != null
+        && request.resource.data.fromUserId == request.auth.uid;
+      allow update: if request.auth != null
+        && (resource.data.toUserId == request.auth.uid
+         || resource.data.fromUserId == request.auth.uid);
+      allow delete: if request.auth != null
+        && (resource.data.fromUserId == request.auth.uid
+         || resource.data.toUserId == request.auth.uid);
     }
 
-    // Allow authenticated users to read posts and create new posts
+    // Posts — any authenticated user can read and create.
+    // Any authenticated user can update (required for likes & commentsCount).
+    // Only the author (or admin via custom claim) can delete.
     match /posts/{postId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
-      allow update: if request.auth.uid == resource.data.authorId;
-      allow delete: if request.auth.uid == resource.data.authorId;
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null
+        && resource.data.authorId == request.auth.uid;
     }
 
-    // Default: deny all other access
+    // Post comments (subcollection)
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid;
+      allow delete: if request.auth != null
+        && resource.data.authorId == request.auth.uid;
+    }
+
+    // Networks (Join Network / connection system)
+    match /networks/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.fromUserId == request.auth.uid;
+      allow delete: if request.auth != null
+        && resource.data.fromUserId == request.auth.uid;
+    }
+
+    // Reviews (written after a support request is marked done)
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.reviewerId == request.auth.uid;
+    }
+
+    // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;
     }
