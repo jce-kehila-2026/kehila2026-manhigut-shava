@@ -13,6 +13,10 @@ styleTag.textContent = `
     from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes dropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
   @keyframes modalPop {
     from { opacity: 0; transform: scale(0.94) translateY(8px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
@@ -33,6 +37,7 @@ styleTag.textContent = `
   .search-btn:hover    { background: #122d47 !important; }
   .view-btn:hover      { background: #f1f5f9 !important; border-color: #cbd5e1 !important; }
   .req-btn:hover       { background: #dbeafe !important; }
+  .suggest-item:hover  { background: #f0f7ff !important; }
 `;
 if (!document.head.querySelector("#support-styles")) {
   styleTag.id = "support-styles";
@@ -79,6 +84,8 @@ export default function SupportPage() {
   const [selectedUser,  setSelectedUser]  = useState(null);
   const [senderProfile, setSenderProfile] = useState(null);
   const [sentRequests,  setSentRequests]  = useState([]);
+  const [allUsers,      setAllUsers]      = useState([]);
+  const [showSuggest,   setShowSuggest]   = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -93,10 +100,21 @@ export default function SupportPage() {
   useEffect(() => {
     if (!user) return;
     getDocs(collection(db, "users")).then((snap) => {
-      const me = snap.docs.find((d) => d.id === user.uid);
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const me = docs.find((d) => d.id === user.uid);
       if (me) setSenderProfile(me.data());
+      setAllUsers(docs.filter((d) => d.id !== user.uid));
     });
   }, [user]);
+
+  /* live name suggestions */
+  const suggestions = memberName.trim().length > 0
+    ? allUsers.filter((u) => {
+        const full = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase().trim();
+        const q = memberName.toLowerCase().trim();
+        return full.startsWith(q) || full.includes(q);
+      }).slice(0, 7)
+    : [];
 
   const handleSearch = async () => {
     if (!user) {
@@ -337,15 +355,70 @@ export default function SupportPage() {
         <div style={S.searchGrid}>
           <div style={S.group}>
             <label style={S.label}>Member Name</label>
-            <input
-              className="support-input"
-              style={S.input}
-              type="text"
-              placeholder="e.g. Sara Cohen"
-              value={memberName}
-              onChange={(e) => setMemberName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                className="support-input"
+                style={S.input}
+                type="text"
+                placeholder="e.g. Sara Cohen"
+                value={memberName}
+                onChange={(e) => { setMemberName(e.target.value); setShowSuggest(true); }}
+                onFocus={() => setShowSuggest(true)}
+                onBlur={() => setTimeout(() => setShowSuggest(false), 160)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                autoComplete="off"
+              />
+              {showSuggest && suggestions.length > 0 && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0,
+                  background: "#fff",
+                  borderRadius: "13px",
+                  border: "1.5px solid #e2e8f0",
+                  boxShadow: "0 8px 28px rgba(15,23,42,0.12)",
+                  overflow: "hidden",
+                  zIndex: 100,
+                  animation: "dropIn 0.16s ease",
+                }}>
+                  {suggestions.map((u) => (
+                    <button
+                      key={u.id}
+                      className="suggest-item"
+                      onMouseDown={() => {
+                        setMemberName(getFullName(u));
+                        setShowSuggest(false);
+                      }}
+                      style={{
+                        width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                        padding: "9px 14px", background: "transparent", border: "none",
+                        borderBottom: "1px solid #f1f5f9",
+                        cursor: "pointer", textAlign: "left",
+                        transition: "background 0.12s",
+                      }}
+                    >
+                      <div style={{
+                        width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+                        background: u.avatarUrl ? "transparent" : "linear-gradient(135deg,#1a3c5e,#0ea5e9)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        overflow: "hidden",
+                      }}>
+                        {u.avatarUrl
+                          ? <img src={u.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                          : <span style={{ color: "#fff", fontSize: "11px", fontWeight: "700" }}>{getInitials(u)}</span>
+                        }
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: "13px", fontWeight: "700", color: "#1a3c5e", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {getFullName(u)}
+                        </p>
+                        {u.profession && (
+                          <p style={{ fontSize: "11px", color: "#94a3b8", margin: 0 }}>{u.profession}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div style={S.group}>
             <label style={S.label}>Profession</label>
