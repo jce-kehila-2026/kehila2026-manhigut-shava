@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import {
   collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase";
 import { useAuth } from "./AuthContext";
 
 const S = {
@@ -116,8 +117,14 @@ export default function AdminPage() {
   }
 
   const deleteUser = async (id) => {
-    await deleteDoc(doc(db, "users", id));
-    setUsers(prev => prev.filter(u => u.id !== id));
+    if (!window.confirm("למחוק את המשתמש לצמיתות?")) return;
+    try {
+      await httpsCallable(functions, "deleteUserAccount")({ uid: id });
+      await deleteDoc(doc(db, "users", id));
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch (e) {
+      alert("שגיאה במחיקה: " + e.message);
+    }
   };
 
   const toggleAdmin = async (id, current) => {
