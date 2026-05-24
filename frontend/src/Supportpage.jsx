@@ -441,7 +441,7 @@ export default function SupportPage() {
                   </button>
                 )) : (
                   <div style={{ padding: "11px 14px", fontSize: "13px", color: "#94a3b8" }}>
-                    No members found
+                    {allUsers.length === 0 ? "Loading members…" : `No members found (${allUsers.length} loaded)`}
                   </div>
                 )}
               </div>
