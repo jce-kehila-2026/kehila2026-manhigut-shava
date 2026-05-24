@@ -193,7 +193,8 @@ function Hero({ onLogin }) {
           onMouseOver={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 10px 32px rgba(0,0,0,0.25)"; }}
           onMouseOut={e => { e.target.style.transform = ""; e.target.style.boxShadow = "0 6px 24px rgba(0,0,0,0.2)"; }}
         >
-          🔍 מצאי בוגרת
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6, verticalAlign: "middle" }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          מצאי בוגרת
         </button>
         <button onClick={onLogin} style={{
           background: "rgba(255,255,255,0.1)", color: "#fff",
@@ -255,10 +256,10 @@ function HowItWorks() {
   const [gridRef, gridVisible] = useReveal(0.08);
 
   const steps = [
-    { n: "01", icon: "📝", title: "הרשמי ובני פרופיל", desc: "מלאי את טופס ההצטרפות עם תחומי מומחיות, תחומי עניין ורקע. השדות מוגדרים על-ידי מנהל המערכת." },
-    { n: "02", icon: "🔍", title: "חפשי ברשת", desc: "מצאי בוגרות לפי תחום, מומחיות או עזרה ספציפית שדרושה. תוצאות מוצגות עד 20 פרופילים בעמוד." },
-    { n: "03", icon: "📨", title: "שלחי בקשת עזרה", desc: "פני לבוגרת שמומחיותה תואמת את צורכך. המקבלת בוחנת את בקשתך בפרטיות." },
-    { n: "04", icon: "🤝", title: "התחברי בביטחון", desc: "רק לאחר שהבוגרת אישרה, פרטי הקשר שלך ישותפו — דרך וואטסאפ או אימייל, בתנאים שלך." },
+    { n: "01", icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.royalBright} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>, title: "הרשמי ובני פרופיל", desc: "מלאי את טופס ההצטרפות עם תחומי מומחיות, תחומי עניין ורקע. השדות מוגדרים על-ידי מנהל המערכת." },
+    { n: "02", icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.royalBright} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>, title: "חפשי ברשת", desc: "מצאי בוגרות לפי תחום, מומחיות או עזרה ספציפית שדרושה. תוצאות מוצגות עד 20 פרופילים בעמוד." },
+    { n: "03", icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.royalBright} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, title: "שלחי בקשת עזרה", desc: "פני לבוגרת שמומחיותה תואמת את צורכך. המקבלת בוחנת את בקשתך בפרטיות." },
+    { n: "04", icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.royalBright} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, title: "התחברי בביטחון", desc: "רק לאחר שהבוגרת אישרה, פרטי הקשר שלך ישותפו — דרך וואטסאפ או אימייל, בתנאים שלך." },
   ];
 
   return (
@@ -316,7 +317,7 @@ function StepCard({ n, icon, title, desc, visible = true, delay = 0 }) {
           }} />
         )}
         <div style={{ fontSize: "3rem", fontWeight: 700, color: C.pale, lineHeight: 1, marginBottom: "1rem" }}>{n}</div>
-        <div style={{ fontSize: "1.8rem", marginBottom: "0.75rem" }}>{icon}</div>
+        <div style={{ marginBottom: "0.75rem" }}>{icon}</div>
         <div style={{ fontWeight: 700, fontSize: "1rem", color: C.deep, marginBottom: "0.5rem" }}>{title}</div>
         <p style={{ color: C.muted, fontSize: "0.85rem", lineHeight: 1.65, margin: 0 }}>{desc}</p>
       </div>
@@ -329,15 +330,16 @@ function Features() {
   const [headerRef, headerVisible] = useReveal();
   const [gridRef, gridVisible] = useReveal(0.06);
 
+  const S = { w: 22, h: 22, viewBox: "0 0 24 24", fill: "none", stroke: C.sky, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
   const feats = [
-    { icon: "🔍", title: "חיפוש חכם", desc: "חיפוש מבוסס מילות מפתח ותגיות. תוצאות תוך שנייה אחת, עד 20 בעמוד." },
-    { icon: "📨", title: "מערכת בקשות עזרה", desc: "שליחת בקשות ממוקדות עם תהליך אישור מלא לפני שיתוף פרטי קשר." },
-    { icon: "🔔", title: "התראות חכמות", desc: "אירועים נשלחים רק לבוגרות שתחומי עניינן תואמים — ללא ספאם." },
-    { icon: "📊", title: "לוח מחוונים למנהל", desc: "סטטיסטיקות בזמן אמת, מעקב אחר מחזורים, ייבוא אקסל וניהול בוגרות." },
-    { icon: "📥", title: "ייבוא מאסיבי מאקסל", desc: "העלאת קבצי .xlsx עם אימות אוטומטי — מחליף את הגיליונות הידניים." },
-    { icon: "📰", title: "פיד קהילתי", desc: "בוגרות מפרסמות עדכונים והזדמנויות. התוכן החדש ביותר תמיד ראשון." },
-    { icon: "🔒", title: "בקרת פרטיות", desc: "פרטי קשר מוסתרים כברירת מחדל. סיסמאות bcrypt, RBAC, יומני ביקורת." },
-    { icon: "📱", title: "ידידותי לנייד", desc: "רספונסיבי לחלוטין על נייד ודסקטופ, נגיש לכולם." },
+    { icon: <svg {...S}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>, title: "חיפוש חכם", desc: "חיפוש מבוסס מילות מפתח ותגיות. תוצאות תוך שנייה אחת, עד 20 בעמוד." },
+    { icon: <svg {...S}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, title: "מערכת בקשות עזרה", desc: "שליחת בקשות ממוקדות עם תהליך אישור מלא לפני שיתוף פרטי קשר." },
+    { icon: <svg {...S}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>, title: "התראות חכמות", desc: "אירועים נשלחים רק לבוגרות שתחומי עניינן תואמים — ללא ספאם." },
+    { icon: <svg {...S}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>, title: "לוח מחוונים למנהל", desc: "סטטיסטיקות בזמן אמת, מעקב אחר מחזורים, ייבוא אקסל וניהול בוגרות." },
+    { icon: <svg {...S}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>, title: "ייבוא מאסיבי מאקסל", desc: "העלאת קבצי .xlsx עם אימות אוטומטי — מחליף את הגיליונות הידניים." },
+    { icon: <svg {...S}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>, title: "פיד קהילתי", desc: "בוגרות מפרסמות עדכונים והזדמנויות. התוכן החדש ביותר תמיד ראשון." },
+    { icon: <svg {...S}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, title: "בקרת פרטיות", desc: "פרטי קשר מוסתרים כברירת מחדל. סיסמאות bcrypt, RBAC, יומני ביקורת." },
+    { icon: <svg {...S}><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>, title: "ידידותי לנייד", desc: "רספונסיבי לחלוטין על נייד ודסקטופ, נגיש לכולם." },
   ];
 
   return (

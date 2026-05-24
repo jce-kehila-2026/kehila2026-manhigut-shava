@@ -99,8 +99,8 @@ export default function CompleteProfilePage() {
   return (
     <div style={{ minHeight: "100vh", position: "relative", fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}>
       {/* Background */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, backgroundImage: "url(/background.jpg)", backgroundSize: "cover", backgroundPosition: "center", filter: "brightness(0.5)" }} />
-      <div style={{ position: "fixed", inset: 0, zIndex: 1, background: "linear-gradient(135deg,rgba(7,20,64,0.82) 0%,rgba(26,58,143,0.65) 100%)" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, backgroundImage: "url(/background.jpg)", backgroundSize: "cover", backgroundPosition: "center", filter: "brightness(0.75)" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 1, background: "linear-gradient(135deg,rgba(7,20,64,0.55) 0%,rgba(26,58,143,0.40) 100%)" }} />
 
       {/* Top bar */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 10, padding: "1.2rem 2.5rem", display: "flex", alignItems: "center", direction: "rtl" }}>

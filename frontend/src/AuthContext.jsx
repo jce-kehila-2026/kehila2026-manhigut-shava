@@ -9,9 +9,9 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
   const [profile, setProfile] = useState(undefined);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
       setUser(firebaseUser ?? null);
       if (firebaseUser) {
         const snap = await getDoc(doc(db, "users", firebaseUser.uid));

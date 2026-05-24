@@ -45,6 +45,27 @@ exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
   return { success: true };
 });
 
+/* ── Delete user from Firebase Auth (admin only) ── */
+exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
+  const callerUid = context.auth?.uid;
+  if (!callerUid) {
+    throw new functions.https.HttpsError("unauthenticated", "Must be signed in.");
+  }
+
+  const callerDoc = await db.collection("users").doc(callerUid).get();
+  if (!callerDoc.exists || !callerDoc.data().isAdmin) {
+    throw new functions.https.HttpsError("permission-denied", "Admins only.");
+  }
+
+  const { uid } = data;
+  if (!uid) {
+    throw new functions.https.HttpsError("invalid-argument", "Missing uid.");
+  }
+
+  await admin.auth().deleteUser(uid);
+  return { success: true };
+});
+
 /* ── Verify OTP entered by user ── */
 exports.verifyOtp = functions.https.onCall(async (data, context) => {
   const { uid, otp } = data;

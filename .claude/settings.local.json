@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx kill-port *)",
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'fix: upgrade Cloud Functions runtime to Node.js 20 *)",
+      "Bash(git commit -m 'feat: remove Terms page from user flow *)",
+      "Bash(git commit -m 'fix: remove duplicate OTP send from AuthPage — OtpVerificationPage handles it on mount *)",
+      "Bash(git commit -m 'chore: add background image and functions lockfile *)"
+    ]
+  }
+}
