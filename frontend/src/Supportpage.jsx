@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
@@ -86,6 +86,8 @@ export default function SupportPage() {
   const [sentRequests,  setSentRequests]  = useState([]);
   const [allUsers,      setAllUsers]      = useState([]);
   const [showSuggest,   setShowSuggest]   = useState(false);
+  const [dropPos,       setDropPos]       = useState(null);
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     if (!user) return;
@@ -106,6 +108,14 @@ export default function SupportPage() {
       setAllUsers(docs.filter((d) => d.id !== user.uid));
     });
   }, [user]);
+
+  const openSuggest = () => {
+    if (nameInputRef.current) {
+      const r = nameInputRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+    setShowSuggest(true);
+  };
 
   /* live name suggestions */
   const suggestions = memberName.trim().length > 0
@@ -357,68 +367,74 @@ export default function SupportPage() {
             <label style={S.label}>Member Name</label>
             <div style={{ position: "relative" }}>
               <input
+                ref={nameInputRef}
                 className="support-input"
                 style={S.input}
                 type="text"
                 placeholder="e.g. Sara Cohen"
                 value={memberName}
-                onChange={(e) => { setMemberName(e.target.value); setShowSuggest(true); }}
-                onFocus={() => setShowSuggest(true)}
+                onChange={(e) => { setMemberName(e.target.value); openSuggest(); }}
+                onFocus={openSuggest}
                 onBlur={() => setTimeout(() => setShowSuggest(false), 160)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 autoComplete="off"
               />
-              {showSuggest && suggestions.length > 0 && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0,
-                  background: "#fff",
-                  borderRadius: "13px",
-                  border: "1.5px solid #e2e8f0",
-                  boxShadow: "0 8px 28px rgba(15,23,42,0.12)",
-                  overflow: "hidden",
-                  zIndex: 100,
-                  animation: "dropIn 0.16s ease",
-                }}>
-                  {suggestions.map((u) => (
-                    <button
-                      key={u.id}
-                      className="suggest-item"
-                      onMouseDown={() => {
-                        setMemberName(getFullName(u));
-                        setShowSuggest(false);
-                      }}
-                      style={{
-                        width: "100%", display: "flex", alignItems: "center", gap: "10px",
-                        padding: "9px 14px", background: "transparent", border: "none",
-                        borderBottom: "1px solid #f1f5f9",
-                        cursor: "pointer", textAlign: "left",
-                        transition: "background 0.12s",
-                      }}
-                    >
-                      <div style={{
-                        width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-                        background: u.avatarUrl ? "transparent" : "linear-gradient(135deg,#1a3c5e,#0ea5e9)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        overflow: "hidden",
-                      }}>
-                        {u.avatarUrl
-                          ? <img src={u.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
-                          : <span style={{ color: "#fff", fontSize: "11px", fontWeight: "700" }}>{getInitials(u)}</span>
-                        }
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: "13px", fontWeight: "700", color: "#1a3c5e", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {getFullName(u)}
-                        </p>
-                        {u.profession && (
-                          <p style={{ fontSize: "11px", color: "#94a3b8", margin: 0 }}>{u.profession}</p>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
+
+            {/* Dropdown rendered with position:fixed to escape any overflow:hidden parent */}
+            {showSuggest && suggestions.length > 0 && dropPos && (
+              <div style={{
+                position: "fixed",
+                top: dropPos.top,
+                left: dropPos.left,
+                width: dropPos.width,
+                background: "#fff",
+                borderRadius: "13px",
+                border: "1.5px solid #e2e8f0",
+                boxShadow: "0 8px 28px rgba(15,23,42,0.14)",
+                overflow: "hidden",
+                zIndex: 9999,
+                animation: "dropIn 0.16s ease",
+              }}>
+                {suggestions.map((u) => (
+                  <button
+                    key={u.id}
+                    className="suggest-item"
+                    onMouseDown={() => {
+                      setMemberName(getFullName(u));
+                      setShowSuggest(false);
+                    }}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                      padding: "9px 14px", background: "transparent", border: "none",
+                      borderBottom: "1px solid #f1f5f9",
+                      cursor: "pointer", textAlign: "left",
+                      transition: "background 0.12s",
+                    }}
+                  >
+                    <div style={{
+                      width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+                      background: u.avatarUrl ? "transparent" : "linear-gradient(135deg,#1a3c5e,#0ea5e9)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      overflow: "hidden",
+                    }}>
+                      {u.avatarUrl
+                        ? <img src={u.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                        : <span style={{ color: "#fff", fontSize: "11px", fontWeight: "700" }}>{getInitials(u)}</span>
+                      }
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: "13px", fontWeight: "700", color: "#1a3c5e", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {getFullName(u)}
+                      </p>
+                      {u.profession && (
+                        <p style={{ fontSize: "11px", color: "#94a3b8", margin: 0 }}>{u.profession}</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div style={S.group}>
             <label style={S.label}>Profession</label>
