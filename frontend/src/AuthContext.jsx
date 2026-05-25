@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged, signOut, getRedirectResult } from "firebase/auth";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 const AuthContext = createContext(null);
@@ -10,12 +10,37 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(undefined);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    /* Process the result of signInWithRedirect (Google sign-in).
+       This resolves silently if there's no pending redirect. */
+    getRedirectResult(auth).catch((err) => {
+      console.error("Google redirect sign-in error:", err.code, err.message);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       setUser(firebaseUser ?? null);
       if (firebaseUser) {
         const snap = await getDoc(doc(db, "users", firebaseUser.uid));
-        setProfile(snap.exists() ? snap.data() : null);
+        if (snap.exists()) {
+          let profileData = snap.data();
+
+          /* Auto-fix: Google / Phone users should always be treated as email-verified.
+             If their Firestore profile still has emailVerified:false (set during a prior
+             email-signup flow), silently patch it so they reach the Dashboard. */
+          const isEmailPassword = firebaseUser.providerData?.some(
+            (p) => p.providerId === "password"
+          );
+          if (!isEmailPassword && profileData.emailVerified === false) {
+            try {
+              await updateDoc(doc(db, "users", firebaseUser.uid), { emailVerified: true });
+              profileData = { ...profileData, emailVerified: true };
+            } catch (_) { /* ignore — worst case the OTP check handles it */ }
+          }
+
+          setProfile(profileData);
+        } else {
+          setProfile(null);
+        }
       } else {
         setProfile(null);
       }

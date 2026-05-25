@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
+import { LanguageProvider } from "./LanguageContext";
+import { ThemeProvider } from "./ThemeContext";
 import AuthPage from "./AuthPage";
 import LandingPage from "./LandingPage";
 import CompleteProfilePage from "./CompleteProfilePage";
@@ -48,8 +50,12 @@ function AppContent() {
   /* Logged in but no Firestore profile (Google / Phone first-time user) */
   if (profile === null) return <CompleteProfilePage />;
 
-  /* Email not verified yet */
-  if (!profile.emailVerified) return <OtpVerificationPage />;
+  /* OTP verification gate:
+     - user.emailVerified  = Firebase Auth's OWN flag (true for Google, false for unverified email)
+     - profile.emailVerified = our Firestore flag (true after OTP completed)
+     Only show OTP page when BOTH say unverified — this safely passes Google/Phone users
+     because Firebase Auth marks them verified automatically. */
+  if (!user.emailVerified && !profile.emailVerified) return <OtpVerificationPage />;
 
   /* All good → dashboard */
   return <DashboardPage />;
@@ -57,9 +63,13 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 
