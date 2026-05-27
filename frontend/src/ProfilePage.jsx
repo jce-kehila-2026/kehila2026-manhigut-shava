@@ -171,7 +171,7 @@ export default function ProfilePage() {
           bio:        d.bio        ?? "",
           birthDate:  d.birthDate  ?? "",
         });
-        setPhotoURL(d.photoURL ?? null);
+        setPhotoURL(d.photoURL ?? d.avatarUrl ?? null);
         setNetworksCount(d.networksCount ?? 0);
       }
     });
@@ -262,14 +262,14 @@ export default function ProfilePage() {
   const S = {
     page: {
       display:"flex", flexDirection:"column",
-      width:"100%", padding:"0 0 3rem",
-      boxSizing:"border-box", minHeight:"100vh",
+      width:"100%", height:"100%", overflow:"auto",
+      padding:"0 0 3rem",
+      boxSizing:"border-box",
       direction: isRTL ? "rtl" : "ltr",
     },
     banner: {
       width:"100%", height:"130px", borderRadius:"0 0 28px 28px",
       background:"linear-gradient(135deg, #1a3c5e 0%, #0ea5e9 55%, #7dd3fc 100%)",
-      backgroundSize:"300% 300%", animation:"bannerFlow 9s ease infinite",
       position:"relative", marginBottom:"58px", flexShrink:0,
     },
     avatarWrap:  { position:"absolute", bottom:"-46px", ...(isRTL ? { right:"2rem" } : { left:"2rem" }) },
@@ -562,14 +562,16 @@ export default function ProfilePage() {
                   {/* Stats + date */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
                     <div style={{ display: "flex", gap: "12px" }}>
-                      {(post.likes?.length ?? 0) > 0 && (
-                        <span style={{ fontSize: "12px", color: "#64748b" }}>
-                          👍 {post.likes.length}
+                      {(post.likes?.length ?? post.likesCount ?? 0) > 0 && (
+                        <span style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                          {post.likes?.length ?? post.likesCount}
                         </span>
                       )}
                       {(post.commentsCount ?? 0) > 0 && (
-                        <span style={{ fontSize: "12px", color: "#64748b" }}>
-                          💬 {post.commentsCount}
+                        <span style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          {post.commentsCount}
                         </span>
                       )}
                     </div>

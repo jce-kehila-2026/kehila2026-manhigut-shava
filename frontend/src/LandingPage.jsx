@@ -290,6 +290,25 @@ function Hero({ onLogin }) {
         >
           כניסה לחשבון
         </button>
+        <a
+          href="https://ywp-online.my.canva.site/manhigot2026"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: "0.4rem",
+            background: "rgba(255,255,255,0.05)", color: "rgba(191,219,254,0.8)",
+            padding: "15px 26px", borderRadius: 12,
+            border: "1px solid rgba(191,219,254,0.2)",
+            fontSize: "0.95rem", fontWeight: 500, cursor: "pointer",
+            transition: "background 0.2s, border-color 0.2s, color 0.2s",
+            textDecoration: "none", fontFamily: "inherit",
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.borderColor = "rgba(191,219,254,0.45)"; e.currentTarget.style.color = "#fff"; }}
+          onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = "rgba(191,219,254,0.2)"; e.currentTarget.style.color = "rgba(191,219,254,0.8)"; }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          אתר התנועה
+        </a>
       </div>
 
       {/* Animated stats */}
@@ -751,6 +770,15 @@ function Footer() {
             מנהיגות שווה · רשת הבוגרות
           </span>
         </div>
+        <a
+          href="https://ywp-online.my.canva.site/manhigot2026"
+          target="_blank" rel="noopener noreferrer"
+          style={{ color: "rgba(191,219,254,0.5)", fontSize: "0.78rem", textDecoration: "none", transition: "color 0.2s" }}
+          onMouseOver={e => e.currentTarget.style.color = "#7dd3fc"}
+          onMouseOut={e => e.currentTarget.style.color = "rgba(191,219,254,0.5)"}
+        >
+          אתר התנועה
+        </a>
         <div style={{ color: "rgba(191,219,254,0.28)", fontSize: "0.74rem" }}>
           © 2026 · פלטפורמה פנימית מאובטחת
         </div>

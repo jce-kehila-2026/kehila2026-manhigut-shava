@@ -487,7 +487,7 @@ const LanguageContext = createContext(null);
 export function LanguageProvider({ children }) {
   /* Persist language selection; fall back to Hebrew on first visit */
   const [lang, setLangState] = useState(
-    () => localStorage.getItem("lang") ?? "he"
+    () => localStorage.getItem("lang") ?? "en"   // default English for new users
   );
 
   const setLang = (code) => {
