@@ -1,54 +1,47 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc,
-  limit, where, addDoc,
+  collection, getDocs, deleteDoc, doc, query,
+  orderBy, updateDoc, limit, where,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { logActivity } from "./activityLogger";
 
-/* ─── Styles ─── */
+/* ─── Styles (our S object — used by EditUsers, Logs, EditUserModal) ─── */
 const S = {
-  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", fontFamily: "'DM Sans', system-ui, sans-serif" },
+  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)", flex: 1, overflow: "auto" },
   denied: { textAlign: "center", padding: "4rem", color: "#dc2626", fontSize: "1.1rem", fontWeight: 700 },
 
   header: { marginBottom: "1.75rem" },
-  title: { fontSize: "22px", fontWeight: 800, color: "#1a3c5e", margin: "0 0 3px" },
-  sub: { fontSize: "13px", color: "#94a3b8", margin: 0 },
+  title: { fontSize: "22px", fontWeight: 800, color: "var(--text-primary,#1a3c5e)", margin: "0 0 3px" },
+  sub: { fontSize: "13px", color: "var(--text-muted,#94a3b8)", margin: 0 },
 
-  stats: { display: "flex", gap: "1rem", marginBottom: "1.75rem", flexWrap: "wrap" },
-  statCard: {
-    background: "#fff", borderRadius: "14px", padding: "1rem 1.5rem",
-    border: "1.5px solid #f1f5f9", boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
-    minWidth: "120px",
-  },
-  statNum: { fontSize: "26px", fontWeight: 800, color: "#1a3c5e", margin: 0 },
-  statLabel: { fontSize: "11px", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 },
-
-  tabs: { display: "flex", gap: "6px", marginBottom: "1.5rem", flexWrap: "wrap" },
+  tabs: { display: "flex", gap: "4px", marginBottom: "1.5rem", flexWrap: "wrap", background: "var(--bg-tertiary,#f1f5f9)", borderRadius: "var(--r-md,10px)", padding: "4px", width: "fit-content" },
   tab: (active) => ({
-    padding: "8px 20px", borderRadius: "9px", border: "none", cursor: "pointer",
-    fontSize: "13px", fontWeight: 700, fontFamily: "'DM Sans', system-ui, sans-serif",
-    background: active ? "#1a3c5e" : "#f1f5f9",
-    color: active ? "#fff" : "#64748b",
+    padding: "7px 16px", borderRadius: "var(--r-sm,8px)", border: "none", cursor: "pointer",
+    fontSize: "13px", fontWeight: active ? 700 : 500, fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+    background: active ? "var(--bg-primary,#fff)" : "transparent",
+    color: active ? "var(--text-primary,#1a3c5e)" : "var(--text-muted,#64748b)",
+    boxShadow: active ? "var(--shadow-xs,0 1px 4px rgba(15,23,42,0.07))" : "none",
     transition: "all 0.15s",
   }),
 
   table: { width: "100%", borderCollapse: "collapse" },
   th: {
     textAlign: "left", padding: "10px 14px",
-    fontSize: "11px", fontWeight: 700, color: "#94a3b8",
+    fontSize: "11px", fontWeight: 700, color: "var(--text-muted,#94a3b8)",
     textTransform: "uppercase", letterSpacing: "0.08em",
-    borderBottom: "2px solid #f1f5f9", background: "#f8fafc",
+    borderBottom: "1px solid var(--border,#f1f5f9)", background: "var(--bg-secondary,#f8fafc)",
   },
   td: {
-    padding: "12px 14px", fontSize: "13px", color: "#374151",
-    borderBottom: "1px solid #f1f5f9", verticalAlign: "middle",
+    padding: "12px 14px", fontSize: "13px", color: "var(--text-secondary,#374151)",
+    borderBottom: "1px solid var(--bg-tertiary,#f1f5f9)", verticalAlign: "middle",
   },
-  row: { background: "#fff", transition: "background 0.12s" },
+  row: { background: "var(--bg-primary,#fff)", transition: "background 0.12s" },
 
-  name: { fontWeight: 700, color: "#1a3c5e", margin: 0 },
-  meta: { fontSize: "11px", color: "#94a3b8", margin: 0 },
+  name: { fontWeight: 700, color: "var(--text-primary,#1a3c5e)", margin: 0 },
+  meta: { fontSize: "11px", color: "var(--text-muted,#94a3b8)", margin: 0 },
 
   badge: (verified) => ({
     fontSize: "10px", fontWeight: 700, padding: "2px 9px", borderRadius: "99px",
@@ -60,19 +53,19 @@ const S = {
   delBtn: {
     background: "none", border: "1px solid #fca5a5", color: "#dc2626",
     borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
-    cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif",
+    cursor: "pointer", fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
     transition: "background 0.15s",
   },
   adminBtn: {
     background: "none", border: "1px solid #a78bfa", color: "#7c3aed",
     borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
-    cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif",
+    cursor: "pointer", fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
     transition: "background 0.15s", marginLeft: "6px",
   },
   editBtn: {
     background: "none", border: "1px solid #93c5fd", color: "#1d4ed8",
     borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
-    cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif",
+    cursor: "pointer", fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
     transition: "background 0.15s", marginLeft: "6px",
   },
   adminBadge: {
@@ -82,18 +75,17 @@ const S = {
 
   empty: { textAlign: "center", padding: "3rem", color: "#cbd5e1", fontSize: "14px" },
   tableWrap: {
-    background: "#fff", borderRadius: "16px",
-    border: "1.5px solid #f1f5f9", overflow: "hidden",
+    background: "var(--bg-primary,#fff)", borderRadius: "16px",
+    border: "1.5px solid var(--border,#f1f5f9)", overflow: "hidden",
     boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
   },
 
-  /* Search bar */
   searchInput: {
     padding: "9px 14px", fontSize: "13px",
-    border: "1.5px solid #e2e8f0", borderRadius: "10px",
-    color: "#1a2e42", background: "#f8fafc",
+    border: "1.5px solid var(--border,#e2e8f0)", borderRadius: "10px",
+    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#f8fafc)",
     width: "260px", marginBottom: "1rem",
-    fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
   },
 
   /* Modal overlay */
@@ -103,74 +95,62 @@ const S = {
     zIndex: 200, padding: "1rem", backdropFilter: "blur(4px)",
   },
   modalBox: {
-    background: "#fff", borderRadius: "22px", padding: "2rem",
+    background: "var(--bg-primary,#fff)", borderRadius: "22px", padding: "2rem",
     width: "100%", maxWidth: "480px",
     boxShadow: "0 16px 48px rgba(15,23,42,0.18)",
     display: "flex", flexDirection: "column", gap: "1rem",
     maxHeight: "90vh", overflowY: "auto",
   },
-  modalTitle: { fontSize: "17px", fontWeight: 700, color: "#1a3c5e", margin: 0 },
-  modalLabel: { fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" },
+  modalTitle: { fontSize: "17px", fontWeight: 700, color: "var(--text-primary,#1a3c5e)", margin: 0 },
+  modalLabel: { fontSize: "11px", fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" },
   modalInput: {
     width: "100%", boxSizing: "border-box",
     padding: "10px 13px", fontSize: "13px",
-    border: "1.5px solid #e2e8f0", borderRadius: "10px",
-    color: "#1a2e42", background: "#f8fafc",
-    fontFamily: "'DM Sans', system-ui, sans-serif",
+    border: "1.5px solid var(--border,#e2e8f0)", borderRadius: "10px",
+    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#f8fafc)",
+    fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
   },
   modalActions: { display: "flex", gap: "8px", marginTop: "0.5rem" },
   saveModalBtn: {
     flex: 1, padding: "11px",
-    background: "#1a3c5e", color: "#fff",
+    background: "var(--brand,#1a3c5e)", color: "#fff",
     border: "none", borderRadius: "11px",
     fontSize: "14px", fontWeight: 700, cursor: "pointer",
   },
   cancelModalBtn: {
     flex: 1, padding: "11px",
-    background: "#f1f5f9", color: "#64748b",
+    background: "var(--bg-tertiary,#f1f5f9)", color: "var(--text-muted,#64748b)",
     border: "none", borderRadius: "11px",
     fontSize: "14px", fontWeight: 600, cursor: "pointer",
   },
 
   /* Comments section per post */
   commentsWrap: {
-    background: "#f8fafc", borderRadius: "10px",
+    background: "var(--bg-secondary,#f8fafc)", borderRadius: "10px",
     padding: "0.75rem 1rem", marginTop: "4px",
-    border: "1px solid #f1f5f9",
+    border: "1px solid var(--border,#f1f5f9)",
     display: "flex", flexDirection: "column", gap: "6px",
   },
   commentRow: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "6px 0", borderBottom: "1px solid #f1f5f9",
-    fontSize: "12px", color: "#374151",
+    padding: "6px 0", borderBottom: "1px solid var(--bg-tertiary,#f1f5f9)",
+    fontSize: "12px", color: "var(--text-secondary,#374151)",
   },
 
   /* Logs tab */
   logPanel: {
-    background: "#f8fafc", borderRadius: "16px",
-    border: "1.5px solid #f1f5f9",
+    background: "var(--bg-secondary,#f8fafc)", borderRadius: "16px",
+    border: "1.5px solid var(--border,#f1f5f9)",
     boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
     overflow: "hidden",
-  },
-  logFilters: {
-    padding: "1rem 1.25rem",
-    borderBottom: "1px solid #f1f5f9",
-    background: "#fff",
-    display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center",
-  },
-  logFilterInput: {
-    padding: "7px 12px", fontSize: "12px",
-    border: "1.5px solid #e2e8f0", borderRadius: "9px",
-    color: "#1a2e42", background: "#f8fafc",
-    fontFamily: "'DM Sans', system-ui, sans-serif",
   },
   logList: { padding: "0.5rem 0" },
   logRow: (typeColor) => ({
     display: "flex", alignItems: "flex-start", gap: "12px",
     padding: "10px 1.25rem",
     borderLeft: `3px solid ${typeColor}`,
-    borderBottom: "1px solid #f1f5f9",
-    background: "#fff",
+    borderBottom: "1px solid var(--border,#f1f5f9)",
+    background: "var(--bg-primary,#fff)",
     transition: "background 0.12s",
     marginBottom: "2px",
   }),
@@ -181,10 +161,10 @@ const S = {
     border: `1px solid ${color}22`,
     letterSpacing: "0.04em",
   }),
-  logTimestamp: { fontSize: "11px", color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 },
-  logActor: { fontSize: "13px", fontWeight: 700, color: "#1a3c5e" },
-  logDesc:  { fontSize: "12px", color: "#64748b" },
-  logDetails: { fontSize: "11px", color: "#94a3b8", fontStyle: "italic" },
+  logTimestamp: { fontSize: "11px", color: "var(--text-muted,#94a3b8)", whiteSpace: "nowrap", flexShrink: 0 },
+  logActor: { fontSize: "13px", fontWeight: 700, color: "var(--text-primary,#1a3c5e)" },
+  logDesc:  { fontSize: "12px", color: "var(--text-secondary,#64748b)" },
+  logDetails: { fontSize: "11px", color: "var(--text-muted,#94a3b8)", fontStyle: "italic" },
 
   refreshBtn: {
     padding: "7px 16px", background: "#eff6ff", color: "#1d4ed8",
@@ -192,20 +172,69 @@ const S = {
     fontSize: "12px", fontWeight: 700, cursor: "pointer",
     transition: "background 0.15s",
   },
+  logFilterInput: {
+    padding: "7px 12px", fontSize: "12px",
+    border: "1.5px solid var(--border,#e2e8f0)", borderRadius: "9px",
+    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#f8fafc)",
+    fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+  },
 };
 
 /* ─── Helpers ─── */
 function timeAgo(ts) {
-  if (!ts) return "";
-  const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (!ts) return "—";
+  const s = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (s < 60)    return "just now";
+  if (s < 3600)  return `${Math.floor(s/60)}m ago`;
+  if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+  return `${Math.floor(s/86400)}d ago`;
+}
+function getInitials(name) {
+  return name ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0,2) : "?";
+}
+function avatarColor(name) {
+  const c = ["#2563eb","#7c3aed","#0891b2","#059669","#dc2626","#d97706"];
+  return c[(name?.charCodeAt(0)||0) % c.length];
 }
 
-function getInitials(name) {
-  return name ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "?";
+/* ── Stat card ── */
+function StatCard({ label, value, sub, color, icon }) {
+  return (
+    <div className="card slide-up" style={{
+      padding: "1.25rem 1.5rem",
+      borderLeft: `4px solid ${color}`,
+      display: "flex", alignItems: "center", gap: "1rem",
+    }}>
+      <div style={{
+        width: 44, height: 44, borderRadius: "var(--r-md,10px)",
+        background: `${color}18`, display: "flex",
+        alignItems: "center", justifyContent: "center",
+        color, flexShrink: 0,
+      }}>{icon}</div>
+      <div>
+        <p style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary,#1a3c5e)", lineHeight: 1 }}>{value}</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted,#94a3b8)", marginTop: 3 }}>{label}</p>
+        {sub && <p style={{ fontSize: 11, color: color, marginTop: 1 }}>{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ── Section header ── */
+function SectionHeader({ title, count, action }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", marginTop: "1.75rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary,#1a3c5e)" }}>{title}</h2>
+        {count !== undefined && (
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-full,99px)", background: "var(--bg-tertiary,#f1f5f9)", color: "var(--text-secondary,#64748b)" }}>
+            {count}
+          </span>
+        )}
+      </div>
+      {action}
+    </div>
+  );
 }
 
 /* ─── Log type config ─── */
@@ -255,9 +284,7 @@ function humanDescription(log) {
 
 function formatAbsoluteTime(ts) {
   if (!ts) return "";
-  try {
-    return new Date(ts).toLocaleString();
-  } catch { return ts; }
+  try { return new Date(ts).toLocaleString(); } catch { return ts; }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -352,7 +379,7 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved }) {
             onChange={handleChange}
             style={{ width: "16px", height: "16px", cursor: "pointer" }}
           />
-          <label htmlFor="isAdminCheck" style={{ fontSize: "13px", fontWeight: 600, color: "#1a3c5e", cursor: "pointer" }}>
+          <label htmlFor="isAdminCheck" style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary,#1a3c5e)", cursor: "pointer" }}>
             Admin privileges
           </label>
         </div>
@@ -373,10 +400,12 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved }) {
 ═══════════════════════════════════════════════════════ */
 export default function AdminPage() {
   const { user, profile } = useAuth();
-  const [tab, setTab] = useState("users");
-  const [users, setUsers]   = useState([]);
-  const [posts, setPosts]   = useState([]);
+  const [tab, setTab]     = useState("overview");
+  const [users, setUsers] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchUser, setSearchUser] = useState("");
 
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
@@ -404,9 +433,11 @@ export default function AdminPage() {
     Promise.all([
       getDocs(collection(db, "users")),
       getDocs(query(collection(db, "posts"), orderBy("createdAt", "desc"))),
-    ]).then(([uSnap, pSnap]) => {
+      getDocs(collection(db, "conversations")),
+    ]).then(([uSnap, pSnap, cSnap]) => {
       setUsers(uSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setPosts(pSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setConvs(cSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
   }, [profile]);
@@ -425,20 +456,49 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (tab === "logs" && logs.length === 0) {
-      fetchLogs();
-    }
+    if (tab === "logs" && logs.length === 0) fetchLogs();
   }, [tab]);
 
+  /* ── Access denied ── */
   if (!profile?.isAdmin) {
-    return <div style={S.denied}>Access Denied — Admins only.</div>;
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted,#94a3b8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <h3>Access Denied</h3>
+          <p>This area is restricted to administrators only.</p>
+        </div>
+      </div>
+    );
   }
+
+  /* ── Computed stats (overview) ── */
+  const now          = Date.now();
+  const onlineNow    = users.filter(u => u.isOnline).length;
+  const verifiedN    = users.filter(u => u.emailVerified).length;
+  const adminsN      = users.filter(u => u.isAdmin).length;
+  const newThisWeek  = users.filter(u => u.createdAt && (now - new Date(u.createdAt)) < 7*86400*1000).length;
+  const totalLikes   = posts.reduce((s, p) => s + (p.likesCount || 0), 0);
+  const totalComments = posts.reduce((s, p) => s + (p.commentCount || 0), 0);
+
+  /* ── Profession distribution ── */
+  const professionMap = {};
+  users.forEach(u => { if (u.profession) professionMap[u.profession] = (professionMap[u.profession] || 0) + 1; });
+  const topProfessions = Object.entries(professionMap).sort((a,b) => b[1]-a[1]).slice(0,5);
+
+  /* ── City distribution ── */
+  const cityMap = {};
+  users.forEach(u => { if (u.city) cityMap[u.city] = (cityMap[u.city] || 0) + 1; });
+  const topCities = Object.entries(cityMap).sort((a,b) => b[1]-a[1]).slice(0,5);
 
   /* ── User operations ── */
   const deleteUser = async (id) => {
-    if (!window.confirm("Delete this user?")) return;
-    await deleteDoc(doc(db, "users", id));
-    setUsers(prev => prev.filter(u => u.id !== id));
+    if (!window.confirm("Permanently delete this user?")) return;
+    try {
+      await httpsCallable(functions, "deleteUserAccount")({ uid: id });
+      await deleteDoc(doc(db, "users", id));
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch (e) { alert("Error: " + e.message); }
   };
 
   const toggleAdmin = async (id, current) => {
@@ -459,6 +519,11 @@ export default function AdminPage() {
       targetType: "post",
       details: {},
     });
+  };
+
+  const pinPost = async (id, current) => {
+    await updateDoc(doc(db, "posts", id), { isPinned: !current });
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, isPinned: !current } : p));
   };
 
   /* ── Toggle post comments expansion ── */
@@ -508,132 +573,237 @@ export default function AdminPage() {
     if (logDateTo   && log.timestamp > logDateTo + "T23:59:59") return false;
     return true;
   });
-
   const allLogTypes = [...new Set(logs.map(l => l.type))].filter(Boolean).sort();
-
   const toggleLogType = (type) => {
-    setLogTypeFilter(prev =>
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    );
+    setLogTypeFilter(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
   };
 
-  /* ── Edit Users: filtered list ── */
-  const filteredUsers = users.filter(u => {
-    if (!userSearch.trim()) return true;
-    const q = userSearch.toLowerCase();
+  /* ── Filtered users (shared between Users + EditUsers tabs) ── */
+  const filteredBySearch = users.filter(u => {
+    const s = (searchUser || userSearch).toLowerCase();
+    if (!s) return true;
     const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-    return name.includes(q) || (u.email ?? "").toLowerCase().includes(q) || (u.profession ?? "").toLowerCase().includes(q);
+    return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
   });
+
+  /* ── TABS config ── */
+  const TABS = [
+    { id: "overview",  label: "Overview" },
+    { id: "users",     label: `Users (${users.length})` },
+    { id: "editUsers", label: "Edit Users" },
+    { id: "posts",     label: `Posts (${posts.length})` },
+    { id: "logs",      label: "Activity Logs" },
+  ];
 
   /* ─────────────────────────────────────── RENDER ─── */
   return (
     <div style={S.page}>
+      {/* Page header */}
       <div style={S.header}>
-        <p style={S.title}>Admin Panel</p>
-        <p style={S.sub}>Manage users, content, and activity logs</p>
-      </div>
-
-      {/* Stats */}
-      <div style={S.stats}>
-        <div style={S.statCard}>
-          <p style={S.statNum}>{users.length}</p>
-          <p style={S.statLabel}>Total Users</p>
-        </div>
-        <div style={S.statCard}>
-          <p style={S.statNum}>{posts.length}</p>
-          <p style={S.statLabel}>Total Posts</p>
-        </div>
-        <div style={S.statCard}>
-          <p style={S.statNum}>{users.filter(u => u.emailVerified).length}</p>
-          <p style={S.statLabel}>Verified</p>
-        </div>
-        <div style={S.statCard}>
-          <p style={S.statNum}>{logs.length}</p>
-          <p style={S.statLabel}>Log Entries</p>
-        </div>
+        <p style={S.title}>Admin Dashboard</p>
+        <p style={S.sub}>Platform management and analytics</p>
       </div>
 
       {/* Tabs */}
       <div style={S.tabs}>
-        <button style={S.tab(tab === "users")}     onClick={() => setTab("users")}>Users ({users.length})</button>
-        <button style={S.tab(tab === "editUsers")} onClick={() => setTab("editUsers")}>Users (Edit)</button>
-        <button style={S.tab(tab === "posts")}     onClick={() => setTab("posts")}>Posts ({posts.length})</button>
-        <button style={S.tab(tab === "logs")}      onClick={() => setTab("logs")}>Activity Logs</button>
+        {TABS.map(t => (
+          <button key={t.id} style={S.tab(tab === t.id)} onClick={() => setTab(t.id)}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {loading && <p style={S.empty}>Loading…</p>}
+      {loading && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1rem" }}>
+          {Array.from({length:4}).map((_,i) => <div key={i} className="skeleton card" style={{height:88}} />)}
+        </div>
+      )}
 
-      {/* ── Users Table ── */}
+      {/* ══ OVERVIEW TAB ══ */}
+      {!loading && tab === "overview" && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+            <StatCard label="Total Members"  value={users.length}   color="#2563eb" sub={`+${newThisWeek} this week`}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
+            <StatCard label="Online Now"     value={onlineNow}      color="#22c55e" sub="Active members"
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>} />
+            <StatCard label="Verified"       value={verifiedN}      color="#0891b2" sub={`${Math.round(verifiedN/Math.max(users.length,1)*100)}% verified`}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>} />
+            <StatCard label="Total Posts"    value={posts.length}   color="#8b5cf6" sub={`${totalLikes} likes · ${totalComments} comments`}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>} />
+            <StatCard label="Conversations"  value={convs.length}   color="#f59e0b"
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} />
+            <StatCard label="Admins"         value={adminsN}        color="#dc2626"
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+            {/* Profession distribution */}
+            <div className="card" style={{ padding: "1.25rem" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Professions</p>
+              {topProfessions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#94a3b8)" }}>No data yet</p>}
+              {topProfessions.map(([prof, count]) => (
+                <div key={prof} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#374151)" }}>{prof}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted,#94a3b8)", fontWeight: 600 }}>{count}</span>
+                  </div>
+                  <div style={{ height: 6, background: "var(--bg-tertiary,#f1f5f9)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "var(--brand,#1a3c5e)", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* City distribution */}
+            <div className="card" style={{ padding: "1.25rem" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Cities</p>
+              {topCities.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#94a3b8)" }}>No data yet</p>}
+              {topCities.map(([city, count]) => (
+                <div key={city} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#374151)" }}>{city}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted,#94a3b8)", fontWeight: 600 }}>{count}</span>
+                  </div>
+                  <div style={{ height: 6, background: "var(--bg-tertiary,#f1f5f9)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "#8b5cf6", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent signups */}
+            <div className="card" style={{ padding: "1.25rem" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Recent Members</p>
+              {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5).map(u => (
+                <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ width:28,height:28,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>
+                    {getInitials(`${u.firstName} ${u.lastName}`)}
+                  </div>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#1a3c5e)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{u.firstName} {u.lastName}</p>
+                    <p style={{ fontSize:10,color:"var(--text-muted,#94a3b8)" }}>{timeAgo(u.createdAt)}</p>
+                  </div>
+                  {u.emailVerified && <span className="badge badge-green">✓</span>}
+                </div>
+              ))}
+            </div>
+
+            {/* Top posts */}
+            <div className="card" style={{ padding: "1.25rem" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Posts</p>
+              {posts.slice().sort((a,b)=>(b.likesCount||0)-(a.likesCount||0)).slice(0,4).map(p => (
+                <div key={p.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid var(--bg-tertiary,#f1f5f9)" }}>
+                  <p style={{ fontSize:12,color:"var(--text-primary,#1a3c5e)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2 }}>
+                    {p.text || "(media post)"}
+                  </p>
+                  <div style={{ display:"flex", gap:10 }}>
+                    <span style={{ fontSize:10,color:"var(--text-muted,#94a3b8)",display:"flex",alignItems:"center",gap:2 }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                      {p.likesCount||0}
+                    </span>
+                    <span style={{ fontSize:10,color:"var(--text-muted,#94a3b8)",display:"flex",alignItems:"center",gap:2 }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      {p.commentCount||0}
+                    </span>
+                    <span style={{ fontSize:10,color:"var(--text-muted,#94a3b8)" }}>by {p.authorName}</span>
+                  </div>
+                </div>
+              ))}
+              {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted,#94a3b8)"}}>No posts yet</p>}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══ USERS TAB ══ */}
       {!loading && tab === "users" && (
-        <div style={S.tableWrap}>
-          {users.length === 0 ? (
-            <p style={S.empty}>No users yet.</p>
-          ) : (
-            <table style={S.table}>
+        <>
+          <SectionHeader
+            title="All Members"
+            count={filteredBySearch.length}
+            action={
+              <input
+                className="input"
+                placeholder="Search by name, email, profession…"
+                value={searchUser}
+                onChange={e => setSearchUser(e.target.value)}
+                style={{ fontSize: 12, width: 240 }}
+              />
+            }
+          />
+          <div className="card" style={{ overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>
-                  <th style={S.th}>Name</th>
-                  <th style={S.th}>Email</th>
-                  <th style={S.th}>Profession</th>
-                  <th style={S.th}>City</th>
-                  <th style={S.th}>Status</th>
-                  <th style={S.th}>Joined</th>
-                  <th style={S.th}></th>
+                <tr style={{ background: "var(--bg-secondary,#f8fafc)" }}>
+                  {["Member","Email","Profession","City","Status","Joined","Actions"].map(h => (
+                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#94a3b8)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#f1f5f9)",whiteSpace:"nowrap" }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => (
-                  <tr key={u.id} style={S.row}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                {filteredBySearch.map((u) => (
+                  <tr key={u.id}
+                    style={{ borderBottom:"1px solid var(--bg-tertiary,#f1f5f9)",transition:"background 0.12s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f8fafc)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    <td style={S.td}>
-                      <p style={S.name}>{u.firstName} {u.lastName}</p>
-                      <p style={S.meta}>{u.phone || "—"}</p>
+                    <td style={{ padding:"11px 14px" }}>
+                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                        {u.avatarUrl
+                          ? <img src={u.avatarUrl} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover" }} alt="" />
+                          : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
+                        }
+                        <div>
+                          <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#1a3c5e)" }}>{u.firstName} {u.lastName}</p>
+                          <p style={{ fontSize:10,color:"var(--text-muted,#94a3b8)" }}>{u.phone||""}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td style={S.td}>{u.email || "—"}</td>
-                    <td style={S.td}>{u.profession || "—"}</td>
-                    <td style={S.td}>{u.city || "—"}</td>
-                    <td style={S.td}>
-                      <span style={S.badge(u.emailVerified)}>
-                        {u.emailVerified ? "Verified" : "Pending"}
-                      </span>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#374151)" }}>{u.email||"—"}</td>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#374151)" }}>{u.profession||"—"}</td>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#374151)" }}>{u.city||"—"}</td>
+                    <td style={{ padding:"11px 14px" }}>
+                      <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                        <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
+                          {u.emailVerified ? "Verified" : "Pending"}
+                        </span>
+                        {u.isAdmin && <span className="badge badge-purple">Admin</span>}
+                        {u.isOnline && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● Online</span>}
+                      </div>
                     </td>
-                    <td style={S.td}>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
-                    <td style={S.td}>
-                      {u.isAdmin && <span style={S.adminBadge}>Admin</span>}
+                    <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#94a3b8)",whiteSpace:"nowrap" }}>
+                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                    </td>
+                    <td style={{ padding:"11px 14px" }}>
                       {u.id !== user?.uid && (
-                        <button
-                          style={S.adminBtn}
-                          onMouseEnter={e => e.currentTarget.style.background = "#ede9fe"}
-                          onMouseLeave={e => e.currentTarget.style.background = "none"}
-                          onClick={() => toggleAdmin(u.id, u.isAdmin)}
-                        >
-                          {u.isAdmin ? "Revoke Admin" : "Make Admin"}
-                        </button>
-                      )}
-                      {u.id !== user?.uid && (
-                        <button
-                          style={S.delBtn}
-                          onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                          onMouseLeave={e => e.currentTarget.style.background = "none"}
-                          onClick={() => deleteUser(u.id)}
-                        >
-                          Delete
-                        </button>
+                        <div style={{ display:"flex",gap:4 }}>
+                          <button
+                            onClick={() => toggleAdmin(u.id, u.isAdmin)}
+                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}
+                          >{u.isAdmin ? "Revoke" : "Make Admin"}</button>
+                          <button
+                            onClick={() => deleteUser(u.id)}
+                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #fca5a5",background:"#fee2e2",color:"#dc2626",cursor:"pointer" }}
+                          >Delete</button>
+                        </div>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+            {filteredBySearch.length === 0 && (
+              <div className="empty-state"><p>No members found.</p></div>
+            )}
+          </div>
+        </>
       )}
 
-      {/* ── Edit Users Tab ── */}
+      {/* ══ EDIT USERS TAB ══ */}
       {!loading && tab === "editUsers" && (
         <div>
+          <SectionHeader title="Edit Users" count={users.length} />
           <input
             style={S.searchInput}
             type="text"
@@ -642,7 +812,7 @@ export default function AdminPage() {
             onChange={e => setUserSearch(e.target.value)}
           />
           <div style={S.tableWrap}>
-            {filteredUsers.length === 0 ? (
+            {filteredBySearch.length === 0 ? (
               <p style={S.empty}>No users match your search.</p>
             ) : (
               <table style={S.table}>
@@ -657,10 +827,10 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map(u => (
+                  {filteredBySearch.map(u => (
                     <tr key={u.id} style={S.row}
                       onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                      onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
                     >
                       <td style={S.td}>
                         <p style={S.name}>{u.firstName} {u.lastName}</p>
@@ -691,98 +861,88 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ── Posts Table ── */}
+      {/* ══ POSTS TAB ══ */}
       {!loading && tab === "posts" && (
-        <div style={S.tableWrap}>
-          {posts.length === 0 ? (
-            <p style={S.empty}>No posts yet.</p>
-          ) : (
-            <table style={S.table}>
+        <>
+          <SectionHeader title="All Posts" count={posts.length} />
+          <div className="card" style={{ overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>
-                  <th style={S.th}>Author</th>
-                  <th style={S.th}>Content</th>
-                  <th style={S.th}>Media</th>
-                  <th style={S.th}>Comments</th>
-                  <th style={S.th}>Posted</th>
-                  <th style={S.th}></th>
+                <tr style={{ background: "var(--bg-secondary,#f8fafc)" }}>
+                  {["Author","Content","Media","Comments","Posted","Actions"].map(h => (
+                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#94a3b8)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#f1f5f9)" }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {posts.map(p => (
                   <>
-                    <tr key={p.id} style={S.row}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                    <tr key={p.id}
+                      style={{ borderBottom:"1px solid var(--bg-tertiary,#f1f5f9)",transition:"background 0.12s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f8fafc)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
-                      <td style={S.td}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <div style={{
-                            width: "32px", height: "32px", borderRadius: "50%", flexShrink: 0,
-                            background: "linear-gradient(135deg,#1a3c5e,#0ea5e9)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: "11px", fontWeight: 700, color: "#fff",
-                          }}>
+                      <td style={{ padding:"11px 14px" }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                          <div style={{ width:28,height:28,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff" }}>
                             {getInitials(p.authorName)}
                           </div>
-                          <p style={{ ...S.name, fontSize: "12px" }}>{p.authorName}</p>
+                          <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#1a3c5e)" }}>{p.authorName}</p>
                         </div>
                       </td>
-                      <td style={{ ...S.td, maxWidth: "280px" }}>
-                        <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "260px", color: p.text ? "#374151" : "#94a3b8" }}>
-                          {p.text || "(image only)"}
+                      <td style={{ padding:"11px 14px",maxWidth:280 }}>
+                        <p style={{ fontSize:12,color:"var(--text-secondary,#374151)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:260 }}>
+                          {p.text || <em style={{color:"var(--text-muted,#94a3b8)"}}>Media post</em>}
                         </p>
                       </td>
-                      <td style={S.td}>
+                      <td style={{ padding:"11px 14px" }}>
                         {p.media?.length > 0
-                          ? <span style={{ fontSize: "11px", background: "#dbeafe", color: "#1e40af", borderRadius: "99px", padding: "2px 9px", fontWeight: 700 }}>
-                              {p.media.length} file{p.media.length > 1 ? "s" : ""}
-                            </span>
-                          : <span style={{ color: "#cbd5e1" }}>—</span>
+                          ? <span style={{ fontSize:"11px",background:"#dbeafe",color:"#1e40af",borderRadius:"99px",padding:"2px 9px",fontWeight:700 }}>{p.media.length} file{p.media.length>1?"s":""}</span>
+                          : <span style={{ color:"#cbd5e1" }}>—</span>
                         }
                       </td>
-                      <td style={S.td}>
+                      <td style={{ padding:"11px 14px" }}>
                         <button
-                          style={{
-                            background: "none", border: "1px solid #e2e8f0", borderRadius: "7px",
-                            padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer",
-                            color: "#64748b",
-                          }}
+                          style={{ background:"none",border:"1px solid var(--border,#e2e8f0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#64748b)" }}
                           onClick={() => togglePostComments(p.id)}
                         >
                           {expandedPostComments[p.id] ? "Hide" : `Show (${p.commentsCount ?? 0})`}
                         </button>
                       </td>
-                      <td style={S.td}>{timeAgo(p.createdAt)}</td>
-                      <td style={S.td}>
-                        <button
-                          style={S.delBtn}
-                          onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                          onMouseLeave={e => e.currentTarget.style.background = "none"}
-                          onClick={() => deletePost(p.id)}
-                        >
-                          Delete
-                        </button>
+                      <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#94a3b8)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
+                      <td style={{ padding:"11px 14px" }}>
+                        <div style={{ display:"flex",gap:4 }}>
+                          <button
+                            onClick={() => pinPost(p.id, p.isPinned)}
+                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #fde047",background:"#fef9c3",color:"#854d0e",cursor:"pointer" }}
+                          >{p.isPinned ? "Unpin" : "Pin"}</button>
+                          <button
+                            onClick={() => deletePost(p.id)}
+                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #fca5a5",background:"#fee2e2",color:"#dc2626",cursor:"pointer" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#fecaca"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#fee2e2"}
+                          >Delete</button>
+                        </div>
                       </td>
                     </tr>
                     {expandedPostComments[p.id] && (
                       <tr key={`${p.id}-comments`}>
-                        <td colSpan={6} style={{ padding: "0 14px 12px 46px", background: "#fafafa" }}>
+                        <td colSpan={6} style={{ padding:"0 14px 12px 46px",background:"var(--bg-secondary,#f8fafc)" }}>
                           <div style={S.commentsWrap}>
                             {!postCommentsList[p.id] ? (
-                              <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>Loading comments…</p>
+                              <p style={{ fontSize:"12px",color:"var(--text-muted,#94a3b8)",margin:0 }}>Loading comments…</p>
                             ) : postCommentsList[p.id].length === 0 ? (
-                              <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>No comments yet.</p>
+                              <p style={{ fontSize:"12px",color:"var(--text-muted,#94a3b8)",margin:0 }}>No comments yet.</p>
                             ) : (
                               postCommentsList[p.id].map(c => (
                                 <div key={c.id} style={S.commentRow}>
-                                  <div style={{ flex: 1 }}>
-                                    <span style={{ fontWeight: 700, color: "#1a3c5e", marginRight: "8px" }}>{c.authorName}</span>
-                                    <span style={{ color: "#374151" }}>{c.text}</span>
-                                    <span style={{ color: "#94a3b8", fontSize: "10px", marginLeft: "8px" }}>{timeAgo(c.createdAt)}</span>
+                                  <div style={{ flex:1 }}>
+                                    <span style={{ fontWeight:700,color:"var(--text-primary,#1a3c5e)",marginRight:"8px" }}>{c.authorName}</span>
+                                    <span style={{ color:"var(--text-secondary,#374151)" }}>{c.text}</span>
+                                    <span style={{ color:"var(--text-muted,#94a3b8)",fontSize:"10px",marginLeft:"8px" }}>{timeAgo(c.createdAt)}</span>
                                   </div>
                                   <button
-                                    style={{ ...S.delBtn, padding: "3px 9px", fontSize: "10px" }}
+                                    style={{ ...S.delBtn,padding:"3px 9px",fontSize:"10px" }}
                                     onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
                                     onMouseLeave={e => e.currentTarget.style.background = "none"}
                                     onClick={() => deleteComment(p.id, c)}
@@ -800,56 +960,41 @@ export default function AdminPage() {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+            {posts.length === 0 && <div className="empty-state"><p>No posts yet.</p></div>}
+          </div>
+        </>
       )}
 
-      {/* ── Logs Tab ── */}
+      {/* ══ LOGS TAB ══ */}
       {tab === "logs" && (
         <div>
-          {/* Filter bar */}
-          <div style={{
-            background: "#fff", borderRadius: "16px", padding: "1.25rem",
-            border: "1.5px solid #f1f5f9", marginBottom: "1rem",
-            boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
-            display: "flex", flexDirection: "column", gap: "0.75rem",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-              <p style={{ fontSize: "13px", fontWeight: 700, color: "#1a3c5e", margin: 0 }}>
-                Activity Log Filters
-              </p>
-              <button style={S.refreshBtn} onClick={fetchLogs}>
-                {logsLoading ? "Loading…" : "&#8635; Refresh"}
-              </button>
-            </div>
+          <SectionHeader title="Activity Logs" count={filteredLogs.length} action={
+            <button style={S.refreshBtn} onClick={fetchLogs}>
+              {logsLoading ? "Loading…" : "↻ Refresh"}
+            </button>
+          } />
+
+          {/* Filter card */}
+          <div style={{ background:"var(--bg-primary,#fff)",borderRadius:"16px",padding:"1.25rem",border:"1.5px solid var(--border,#f1f5f9)",marginBottom:"1rem",boxShadow:"0 2px 8px rgba(15,23,42,0.05)",display:"flex",flexDirection:"column",gap:"0.75rem" }}>
 
             {/* Type filter pills */}
             {allLogTypes.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
                 {allLogTypes.map(type => {
                   const cfg = getLogTypeConfig(type);
                   const active = logTypeFilter.includes(type);
                   return (
-                    <button
-                      key={type}
-                      onClick={() => toggleLogType(type)}
-                      style={{
-                        padding: "4px 12px", borderRadius: "99px", fontSize: "11px", fontWeight: 700,
-                        cursor: "pointer", border: `1.5px solid ${active ? cfg.borderColor : "#e2e8f0"}`,
-                        background: active ? cfg.bg : "#f8fafc",
-                        color: active ? cfg.color : "#64748b",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {cfg.label}
-                    </button>
+                    <button key={type} onClick={() => toggleLogType(type)} style={{
+                      padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",
+                      border:`1.5px solid ${active ? cfg.borderColor : "var(--border,#e2e8f0)"}`,
+                      background: active ? cfg.bg : "var(--bg-secondary,#f8fafc)",
+                      color: active ? cfg.color : "var(--text-muted,#64748b)",
+                      transition:"all 0.15s",
+                    }}>{cfg.label}</button>
                   );
                 })}
                 {logTypeFilter.length > 0 && (
-                  <button
-                    onClick={() => setLogTypeFilter([])}
-                    style={{ padding: "4px 12px", borderRadius: "99px", fontSize: "11px", fontWeight: 700, cursor: "pointer", border: "1.5px solid #e2e8f0", background: "#f1f5f9", color: "#64748b" }}
-                  >
+                  <button onClick={() => setLogTypeFilter([])} style={{ padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",border:"1.5px solid var(--border,#e2e8f0)",background:"var(--bg-tertiary,#f1f5f9)",color:"var(--text-muted,#64748b)" }}>
                     Clear filter
                   </button>
                 )}
@@ -857,47 +1002,29 @@ export default function AdminPage() {
             )}
 
             {/* Actor + Date range */}
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display:"flex",gap:"0.75rem",flexWrap:"wrap",alignItems:"center" }}>
               <div>
-                <p style={{ ...S.modalLabel, marginBottom: "3px" }}>Actor name</p>
-                <input
-                  style={{ ...S.logFilterInput, width: "200px" }}
-                  type="text"
-                  placeholder="Filter by actor name…"
-                  value={logActorFilter}
-                  onChange={e => setLogActorFilter(e.target.value)}
-                />
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>Actor name</p>
+                <input style={{ ...S.logFilterInput,width:"200px" }} type="text" placeholder="Filter by actor…" value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
               </div>
               <div>
-                <p style={{ ...S.modalLabel, marginBottom: "3px" }}>From date</p>
-                <input
-                  style={S.logFilterInput}
-                  type="date"
-                  value={logDateFrom}
-                  onChange={e => setLogDateFrom(e.target.value)}
-                />
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>From date</p>
+                <input style={S.logFilterInput} type="date" value={logDateFrom} onChange={e => setLogDateFrom(e.target.value)} />
               </div>
               <div>
-                <p style={{ ...S.modalLabel, marginBottom: "3px" }}>To date</p>
-                <input
-                  style={S.logFilterInput}
-                  type="date"
-                  value={logDateTo}
-                  onChange={e => setLogDateTo(e.target.value)}
-                />
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>To date</p>
+                <input style={S.logFilterInput} type="date" value={logDateTo} onChange={e => setLogDateTo(e.target.value)} />
               </div>
               {(logActorFilter || logDateFrom || logDateTo) && (
-                <button
-                  onClick={() => { setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
-                  style={{ ...S.refreshBtn, background: "#f1f5f9", color: "#64748b", border: "1.5px solid #e2e8f0", marginTop: "18px" }}
-                >
+                <button onClick={() => { setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
+                  style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f1f5f9)",color:"var(--text-muted,#64748b)",border:"1.5px solid var(--border,#e2e8f0)",marginTop:"18px" }}>
                   Clear
                 </button>
               )}
             </div>
           </div>
 
-          {/* Log list */}
+          {/* Log entries */}
           <div style={S.logPanel}>
             {logsLoading && <p style={S.empty}>Loading logs…</p>}
             {!logsLoading && filteredLogs.length === 0 && (
@@ -905,8 +1032,8 @@ export default function AdminPage() {
             )}
             {!logsLoading && filteredLogs.length > 0 && (
               <div style={S.logList}>
-                <div style={{ padding: "10px 1.25rem 6px", background: "#fff", borderBottom: "1px solid #f1f5f9" }}>
-                  <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>
+                <div style={{ padding:"10px 1.25rem 6px",background:"var(--bg-primary,#fff)",borderBottom:"1px solid var(--border,#f1f5f9)" }}>
+                  <p style={{ fontSize:"12px",color:"var(--text-muted,#94a3b8)",margin:0 }}>
                     Showing {filteredLogs.length} of {logs.length} entries
                   </p>
                 </div>
@@ -916,17 +1043,14 @@ export default function AdminPage() {
                   const relTime = timeAgo(log.timestamp);
                   const absTime = formatAbsoluteTime(log.timestamp);
                   const hasDetails = log.details && Object.keys(log.details).length > 0;
-
                   return (
-                    <div
-                      key={log.id}
-                      style={S.logRow(cfg.borderColor)}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                    <div key={log.id} style={S.logRow(cfg.borderColor)}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f8fafc)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
                     >
                       <span style={S.logBadge(cfg.bg, cfg.color)}>{cfg.label}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <div style={{ display:"flex",alignItems:"baseline",gap:"8px",flexWrap:"wrap" }}>
                           <span style={S.logActor}>{log.actorName ?? log.actorId ?? "Unknown"}</span>
                           <span style={S.logDesc}>{desc.replace(/^.*?—\s*/, "")}</span>
                         </div>
@@ -942,12 +1066,7 @@ export default function AdminPage() {
                           </p>
                         )}
                       </div>
-                      <span
-                        style={S.logTimestamp}
-                        title={absTime}
-                      >
-                        {relTime}
-                      </span>
+                      <span style={S.logTimestamp} title={absTime}>{relTime}</span>
                     </div>
                   );
                 })}

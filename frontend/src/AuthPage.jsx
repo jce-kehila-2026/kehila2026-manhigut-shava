@@ -1,11 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signInWithRedirect,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
+  signInWithPopup,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
@@ -25,27 +23,19 @@ function normalizePhone(raw) {
   return s;
 }
 
-function firebaseMsg(code, message) {
+function firebaseMsg(code) {
   const m = {
-    "auth/invalid-credential":    "אימייל או סיסמה שגויים.",
-    "auth/user-not-found":        "לא נמצא חשבון עם אימייל זה.",
-    "auth/wrong-password":        "סיסמה שגויה.",
-    "auth/email-already-in-use":  "קיים כבר חשבון עם אימייל זה.",
-    "auth/weak-password":         "הסיסמה חייבת לכלול לפחות 6 תווים.",
-    "auth/invalid-email":         "כתובת אימייל לא תקינה.",
-    "auth/too-many-requests":     "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
-    "auth/popup-closed-by-user":  "הכניסה בוטלה.",
-    "auth/cancelled-popup-request": "הכניסה בוטלה.",
-    "auth/invalid-phone-number":  "מספר טלפון לא תקין (לדוג. +972501234567).",
-    "auth/code-expired":          "קוד האימות פג. בקשי קוד חדש.",
-    "auth/invalid-verification-code": "קוד שגוי. בדקי ונסי שוב.",
-    "auth/operation-not-allowed": "שיטת הכניסה אינה מופעלת. פני למנהל.",
-    "auth/internal-error":        "שגיאה פנימית. נסי שוב.",
-    "auth/network-request-failed":"בעיית רשת. בדקי חיבור אינטרנט ונסי שוב.",
-    "auth/account-exists-with-different-credential":
-      "קיים חשבון עם אימייל זה בשיטת כניסה אחרת. נסי להיכנס עם האימייל + סיסמה.",
+    "auth/invalid-credential": "אימייל או סיסמה שגויים.",
+    "auth/user-not-found": "לא נמצא חשבון עם אימייל זה.",
+    "auth/wrong-password": "סיסמה שגויה.",
+    "auth/email-already-in-use": "קיים כבר חשבון עם אימייל זה.",
+    "auth/weak-password": "הסיסמה חייבת לכלול לפחות 6 תווים.",
+    "auth/invalid-email": "כתובת אימייל לא תקינה.",
+    "auth/too-many-requests": "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
+    "auth/popup-closed-by-user": "הכניסה בוטלה.",
+
   };
-  return m[code] || `שגיאה: ${message || code || "unknown"}`;
+  return m[code] || `שגיאה (${code || "unknown"}). נסי שוב.`;
 }
 
 function GoogleIcon() {
@@ -113,22 +103,12 @@ function Fld({ label, children }) {
 function GoogleButton({ label }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const handle = async () => {
     setLoading(true); setError("");
-    try {
-      /* signInWithRedirect is more reliable than signInWithPopup across
-         browsers and Vite dev environments. The page redirects to Google,
-         then back to the app. AuthContext handles the result via
-         getRedirectResult + onAuthStateChanged. */
-      await signInWithRedirect(auth, googleProvider);
-    } catch (e) {
-      setError(firebaseMsg(e.code, e.message));
-      setLoading(false);
-    }
-    /* Don't setLoading(false) on success — the page navigates away */
+    try { await signInWithPopup(auth, googleProvider); }
+    catch (e) { if (e.code !== "auth/popup-closed-by-user") setError(firebaseMsg(e.code)); }
+    finally { setLoading(false); }
   };
-
   return (
     <>
       {error && <div style={errBox}>{error}</div>}
@@ -139,95 +119,9 @@ function GoogleButton({ label }) {
         onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
         onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}
       >
-        <GoogleIcon /> {loading ? "מעביר לגוגל..." : label}
+        <GoogleIcon /> {loading ? "מתחבר..." : label}
       </button>
     </>
-  );
-}
-
-/* ─── PHONE AUTH ─── */
-function PhoneAuth({ onBack }) {
-  const [step, setStep] = useState("number");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [conf, setConf] = useState(null);
-  const rcRef = useRef(null);
-
-  useEffect(() => () => {
-    if (window.recaptchaVerifier) { try { window.recaptchaVerifier.clear(); } catch (_) {} window.recaptchaVerifier = null; }
-  }, []);
-
-  const sendCode = async (e) => {
-    e.preventDefault();
-    if (!phone.trim()) { setError("הכניסי מספר טלפון."); return; }
-    setLoading(true); setError("");
-    try {
-      if (window.recaptchaVerifier) { try { window.recaptchaVerifier.clear(); } catch (_) {} }
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, rcRef.current, { size: "invisible" });
-      const result = await signInWithPhoneNumber(auth, normalizePhone(phone), window.recaptchaVerifier);
-      setConf(result); setStep("code");
-    } catch (e) { setError(firebaseMsg(e.code)); }
-    finally { setLoading(false); }
-  };
-
-  const verifyCode = async (e) => {
-    e.preventDefault();
-    if (!code.trim()) { setError("הכניסי את קוד האימות."); return; }
-    setLoading(true); setError("");
-    try { await conf.confirm(code); }
-    catch (e) { setError(firebaseMsg(e.code)); }
-    finally { setLoading(false); }
-  };
-
-  return (
-    <div style={{ direction: "rtl" }}>
-      <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: "0.83rem", cursor: "pointer", padding: "0 0 1.2rem", fontFamily: "'Heebo', system-ui, sans-serif" }}>
-        ← חזרה לכניסה
-      </button>
-      {step === "number" ? (
-        <form onSubmit={sendCode}>
-          <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>כניסה בטלפון</div>
-          <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.5rem" }}>נשלח קוד אימות למספר שלך</p>
-          {error && <div style={errBox}>{error}</div>}
-          <Fld label="מספר טלפון">
-            <input style={inp} type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-              placeholder="052-1234567" dir="ltr"
-              onFocus={e => e.target.style.borderColor = C.sky}
-              onBlur={e => e.target.style.borderColor = "#e2e8f0"}
-            />
-          </Fld>
-          <div ref={rcRef} />
-          <button type="submit" disabled={loading} style={primaryBtn}
-            onMouseOver={e => e.target.style.transform = "translateY(-1px)"}
-            onMouseOut={e => e.target.style.transform = ""}
-          >{loading ? "שולח..." : "שלחי קוד אימות →"}</button>
-        </form>
-      ) : (
-        <form onSubmit={verifyCode}>
-          <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>הכניסי את הקוד</div>
-          <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.5rem" }}>נשלח ל־<strong style={{ color: C.blue }}>{phone}</strong></p>
-          {error && <div style={errBox}>{error}</div>}
-          <Fld label="קוד בן 6 ספרות">
-            <input style={{ ...inp, letterSpacing: 8, textAlign: "center", fontSize: "1.4rem", fontWeight: 800 }}
-              type="text" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              maxLength={6} autoFocus placeholder="• • • • • •" dir="ltr"
-              onFocus={e => e.target.style.borderColor = C.sky}
-              onBlur={e => e.target.style.borderColor = "#e2e8f0"}
-            />
-          </Fld>
-          <button type="submit" disabled={loading} style={primaryBtn}>{loading ? "מאמת..." : "אמתי וכנסי →"}</button>
-          <p style={{ textAlign: "center", color: "#94a3b8", fontSize: "0.78rem" }}>
-            לא קיבלת?{" "}
-            <button type="button" onClick={() => { setStep("number"); setCode(""); setError(""); }}
-              style={{ background: "none", border: "none", color: C.bright, fontWeight: 700, cursor: "pointer", fontSize: "0.78rem" }}>
-              שלחי שוב
-            </button>
-          </p>
-        </form>
-      )}
-    </div>
   );
 }
 
@@ -242,19 +136,19 @@ function LoginForm({ onSwitchTab }) {
   const submit = async (e) => {
     e.preventDefault(); setError(""); setLoading(true);
     try { await signInWithEmailAndPassword(auth, form.email, form.password); }
-    catch (e) { setError(firebaseMsg(e.code, e.message)); }
+    catch (e) { setError(firebaseMsg(e.code)); }
     finally { setLoading(false); }
   };
 
   const forgot = async () => {
     if (!form.email) { setError("הכניסי אימייל למעלה לפני איפוס הסיסמה."); return; }
     try { await sendPasswordResetEmail(auth, form.email); setResetSent(true); setError(""); }
-    catch (e) { setError(firebaseMsg(e.code, e.message)); }
+    catch (e) { setError(firebaseMsg(e.code)); }
   };
 
   return (
     <form onSubmit={submit} style={{ direction: "rtl" }} autoComplete="off">
-      <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>ברוכה הבאה! 👋</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>ברוכה הבאה!</div>
       <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.6rem" }}>היכנסי לרשת הבוגרות שלך</p>
       {error && <div style={errBox}>{error}</div>}
       {resetSent && <div style={okBox}>נשלח אימייל לאיפוס סיסמה ✓</div>}
@@ -449,7 +343,6 @@ function SignUpForm({ onSwitchTab }) {
 /* ─── MAIN ─── */
 export default function AuthPage({ onBack }) {
   const [tab, setTab] = useState("login");
-  const [showPhone, setShowPhone] = useState(false);
 
   return (
     <div style={{
@@ -522,10 +415,7 @@ export default function AuthPage({ onBack }) {
           boxShadow: "0 24px 60px rgba(0,0,0,0.18)",
           animation: "cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
         }}>
-          {showPhone ? (
-            <PhoneAuth onBack={() => setShowPhone(false)} />
-          ) : (
-            <>
+          <>
               {/* Tabs */}
               <div style={{
                 display: "flex", background: "#f1f5f9",
@@ -548,13 +438,6 @@ export default function AuthPage({ onBack }) {
               {tab === "login" ? (
                 <>
                   <GoogleButton label="המשכי עם Google" />
-                  <button style={{ ...ghostBtn, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
-                    onClick={() => setShowPhone(true)}
-                    onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
-                    onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}
-                  >
-                    📱 המשכי עם טלפון
-                  </button>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "1.25rem 0" }}>
                     <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
                     <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 500 }}>או המשכי עם אימייל</span>
@@ -574,7 +457,6 @@ export default function AuthPage({ onBack }) {
                 </>
               )}
             </>
-          )}
         </div>
       </div>
 

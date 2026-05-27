@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "./firebase";
 
 const C = {
   blue: "#1a3a8f", bright: "#2f5fd4", light: "#4a7ae8",
@@ -20,10 +22,10 @@ export default function OtpVerificationPage() {
   const [countdown, setCountdown] = useState(0);
   const inputs = useRef([]);
 
-  /* Auto-send OTP when page loads */
+  /* Auto-send OTP once user is available */
   useEffect(() => {
-    if (user) sendOtp();
-  }, []);
+    if (user && !sent) sendOtp();
+  }, [user]);
 
   /* Countdown timer for resend */
   useEffect(() => {
@@ -85,8 +87,8 @@ export default function OtpVerificationPage() {
   return (
     <div style={{ minHeight: "100vh", position: "relative", fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}>
       {/* Background */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, backgroundImage: "url(/background.jpg)", backgroundSize: "cover", backgroundPosition: "center", filter: "brightness(0.5)" }} />
-      <div style={{ position: "fixed", inset: 0, zIndex: 1, background: "linear-gradient(135deg,rgba(7,20,64,0.82) 0%,rgba(26,58,143,0.65) 100%)" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, backgroundImage: "url(/background.jpg)", backgroundSize: "cover", backgroundPosition: "center", filter: "brightness(0.75)" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 1, background: "linear-gradient(135deg,rgba(7,20,64,0.55) 0%,rgba(26,58,143,0.40) 100%)" }} />
 
       {/* Top bar */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 10, padding: "1.2rem 2.5rem", display: "flex", alignItems: "center", direction: "rtl" }}>
@@ -102,14 +104,16 @@ export default function OtpVerificationPage() {
       {/* Card */}
       <div style={{ position: "relative", zIndex: 5, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "6rem 1rem 5rem" }}>
         <div style={{
-          width: "100%", maxWidth: 400,
+          width: "100%", maxWidth: 480,
           background: "rgba(7,20,64,0.78)", backdropFilter: "blur(22px)",
           border: "1px solid rgba(255,255,255,0.12)", borderRadius: 22,
           padding: "2.4rem", boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
           direction: "rtl", textAlign: "center",
           animation: "cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
         }}>
-          <div style={{ fontSize: "2.8rem", marginBottom: "0.75rem" }}>📧</div>
+          <div style={{ marginBottom: "0.75rem", display: "flex", justifyContent: "center" }}>
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="rgba(200,221,251,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
           <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", marginBottom: "0.4rem" }}>אימות כתובת האימייל</h2>
           <p style={{ color: "rgba(200,221,251,0.6)", fontSize: "0.85rem", lineHeight: 1.6, marginBottom: "1.8rem" }}>
             {sent ? <>שלחנו קוד בן 6 ספרות ל<br/><strong style={{ color: C.pale }}>{user?.email}</strong></> : "שולחת קוד..."}
@@ -122,7 +126,7 @@ export default function OtpVerificationPage() {
           )}
 
           {/* 6-digit OTP inputs */}
-          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", marginBottom: "1.8rem" }} onPaste={handlePaste}>
+          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", marginBottom: "1.8rem", direction: "ltr" }} onPaste={handlePaste}>
             {digits.map((d, i) => (
               <input
                 key={i}
@@ -167,7 +171,7 @@ export default function OtpVerificationPage() {
           </button>
 
           {/* Resend */}
-          <div style={{ fontSize: "0.8rem", color: "rgba(200,221,251,0.5)" }}>
+          <div style={{ fontSize: "0.8rem", color: "rgba(200,221,251,0.5)", marginBottom: "1.2rem" }}>
             לא קיבלת?{" "}
             {countdown > 0 ? (
               <span style={{ color: "rgba(200,221,251,0.35)" }}>שלחי שוב בעוד {countdown} שניות</span>
@@ -177,12 +181,30 @@ export default function OtpVerificationPage() {
               </button>
             )}
           </div>
+
+          {/* Back button */}
+          <button
+            onClick={() => signOut(auth)}
+            style={{
+              width: "100%", padding: "0.7rem",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 9, color: "rgba(200,221,251,0.7)",
+              fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
+              fontFamily: "'Segoe UI', system-ui, sans-serif",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => e.target.style.background = "rgba(255,255,255,0.12)"}
+            onMouseLeave={e => e.target.style.background = "rgba(255,255,255,0.06)"}
+          >
+            ← חזרה / שינוי כתובת אימייל
+          </button>
         </div>
       </div>
 
       {/* Stats bar */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 10, display: "flex", justifyContent: "center", gap: "3.5rem", padding: "0.9rem", background: "rgba(7,20,64,0.65)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        {[["500+", "בוגרות"], ["10+", "שנות פעילות"], ["🔒", "פרטיות מלאה"], ["חינם", "להצטרפות"]].map(([n, l]) => (
+        {[["500+", "בוגרות"], ["10+", "שנות פעילות"], ["100%", "פרטיות מלאה"], ["חינם", "להצטרפות"]].map(([n, l]) => (
           <div key={l} style={{ textAlign: "center" }}>
             <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{n}</div>
             <div style={{ color: "rgba(200,221,251,0.45)", fontSize: "0.67rem", marginTop: "0.1rem" }}>{l}</div>

@@ -9,7 +9,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
   const [profile, setProfile] = useState(undefined);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     /* Process the result of signInWithRedirect (Google sign-in).
        This resolves silently if there's no pending redirect. */
@@ -18,6 +17,7 @@ export function AuthProvider({ children }) {
     });
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
       setUser(firebaseUser ?? null);
       if (firebaseUser) {
         const snap = await getDoc(doc(db, "users", firebaseUser.uid));

@@ -1,685 +1,456 @@
-import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { useState, useEffect, useCallback } from "react";
+import { doc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
-import { useLang } from "./LanguageContext";
-import { useTheme } from "./ThemeContext";
-import SupportPage from "./Supportpage";
+import SupportPage   from "./SupportPage";
 import CommunityPage from "./CommunityPage";
-import ProfilePage from "./ProfilePage.jsx";
-import AdminPage from "./AdminPage.jsx";
+import ProfilePage   from "./ProfilePage";
+import AdminPage     from "./AdminPage";
+import ChatPage      from "./ChatPage";
 
-/* ─── Inject shared styles ─── */
-const styleTag = document.createElement("style");
-styleTag.textContent = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
-  * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+/* ── SVG icon set ── */
+const Icon = {
+  home: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/>
+    </svg>
+  ),
+  community: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  chat: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  members: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  ),
+  profile: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  ),
+  admin: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  ),
+  logout: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  ),
+};
 
-  @keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(16px) scale(0.98); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  .dash-card { animation: fadeSlideUp 0.38s ease both; }
-  .dash-card:nth-child(1) { animation-delay: 0.04s; }
-  .dash-card:nth-child(2) { animation-delay: 0.08s; }
-  .dash-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(15,23,42,0.1) !important;
-  }
-  .nav-btn:hover {
-    color: #ffffff !important;
-    background: rgba(255,255,255,0.12) !important;
-  }
-  .logout-btn:hover { background: rgba(255,255,255,0.18) !important; }
-  .lang-btn:hover   { background: rgba(255,255,255,0.2) !important; color: #fff !important; }
-  .lang-btn-active  { background: rgba(255,255,255,0.25) !important; color: #fff !important; font-weight: 700 !important; }
+const NAV = [
+  { id: "home",      label: "Home",      icon: Icon.home      },
+  { id: "community", label: "Community", icon: Icon.community  },
+  { id: "chat",      label: "Messages",  icon: Icon.chat       },
+  { id: "members",   label: "Members",   icon: Icon.members    },
+  { id: "profile",   label: "Profile",   icon: Icon.profile    },
+];
 
-  .quick-action:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(15,23,42,0.12) !important;
-  }
-  .member-preview-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(15,23,42,0.12) !important;
-  }
-  .welcome-card:hover { opacity: 0.95; }
-`;
-if (!document.head.querySelector("#dashboard-styles")) {
-  styleTag.id = "dashboard-styles";
-  document.head.appendChild(styleTag);
+function timeAgo(ts) {
+  if (!ts) return "";
+  const d = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (d < 60)    return "just now";
+  if (d < 3600)  return `${Math.floor(d/60)}m ago`;
+  if (d < 86400) return `${Math.floor(d/3600)}h ago`;
+  return `${Math.floor(d/86400)}d ago`;
 }
 
-/* ─── Tag badge ─── */
-function Tag({ label, color }) {
-  const styles = {
-    green: { background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" },
-    gray:  { background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" },
-    blue:  { background: "#dbeafe", color: "#1e40af", border: "1px solid #bfdbfe" },
-  }[color] ?? { background: "#f1f5f9", color: "#64748b" };
-
+/* ── Sidebar nav button with tooltip ── */
+function NavBtn({ item, active, badge, onClick }) {
+  const [hover, setHover] = useState(false);
   return (
-    <span style={{
-      fontSize: "11px", fontWeight: "700",
-      padding: "3px 10px", borderRadius: "99px",
-      ...styles,
-    }}>
-      {label}
-    </span>
-  );
-}
+    <div style={{ position: "relative" }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <button
+        onClick={onClick}
+        style={{
+          width: 48, height: 48,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          borderRadius: active ? "var(--r-md)" : "var(--r-full)",
+          background: active ? "var(--sidebar-active)" : hover ? "var(--sidebar-hover)" : "transparent",
+          color: active ? "var(--sidebar-active-text)" : hover ? "#fff" : "var(--sidebar-text)",
+          border: "none", cursor: "pointer",
+          transition: "all 0.18s cubic-bezier(0.4,0,0.2,1)",
+          position: "relative",
+        }}
+      >
+        {item.icon}
+        {badge > 0 && (
+          <span style={{
+            position: "absolute", top: 6, right: 6,
+            minWidth: 16, height: 16, borderRadius: 99,
+            background: "#ef4444", color: "#fff",
+            fontSize: 9, fontWeight: 800,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "2px solid var(--sidebar-bg)",
+            padding: "0 3px",
+          }}>{badge > 99 ? "99+" : badge}</span>
+        )}
+      </button>
 
-/* ─── Language switcher ─── */
-function LangSwitcher() {
-  const { lang, setLang } = useLang();
-  const LANGS = [
-    { code: "he", label: "עב" },
-    { code: "en", label: "EN" },
-    { code: "ar", label: "عر" },
-  ];
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "2px",
-      background: "rgba(255,255,255,0.1)",
-      borderRadius: "10px", padding: "3px",
-    }}>
-      {LANGS.map(({ code, label }) => (
-        <button
-          key={code}
-          className={`lang-btn ${lang === code ? "lang-btn-active" : ""}`}
-          onClick={() => setLang(code)}
-          style={{
-            background: lang === code ? "rgba(255,255,255,0.25)" : "transparent",
-            color: lang === code ? "#fff" : "rgba(255,255,255,0.6)",
-            border: "none", borderRadius: "7px",
-            padding: "5px 10px", fontSize: "12px",
-            fontWeight: lang === code ? "700" : "400",
-            cursor: "pointer", transition: "all 0.15s",
-          }}
-        >
-          {label}
-        </button>
-      ))}
+      {/* Tooltip */}
+      {hover && (
+        <div style={{
+          position: "absolute", left: "calc(100% + 10px)", top: "50%",
+          transform: "translateY(-50%)",
+          background: "#1e293b", color: "#fff",
+          fontSize: 12, fontWeight: 600,
+          padding: "5px 10px", borderRadius: "var(--r-sm)",
+          whiteSpace: "nowrap", pointerEvents: "none",
+          zIndex: 100,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          animation: "slideRight 0.15s ease",
+        }}>
+          {item.label}
+        </div>
+      )}
     </div>
   );
 }
 
-/* ─── Theme toggle button ─── */
-function ThemeToggle() {
-  const { dark, toggleTheme } = useTheme();
+/* ── Quick card icons ── */
+const QIcon = {
+  community: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  chat: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  members: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  ),
+  profile: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  ),
+};
+
+/* ── Home overview page ── */
+function HomePage({ profile, onNavigate }) {
+  const initials = profile
+    ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
+    : "?";
+
+  const quickCards = [
+    {
+      icon: QIcon.community, title: "Community Feed",
+      desc: "See what's happening in your network. Share updates, achievements, and ideas.",
+      action: "community", cta: "Open Feed", color: "#3b82f6",
+    },
+    {
+      icon: QIcon.chat, title: "Direct Messages",
+      desc: "Connect privately with fellow members. Start a real-time conversation.",
+      action: "chat", cta: "Open Messages", color: "#8b5cf6",
+    },
+    {
+      icon: QIcon.members, title: "Find Members",
+      desc: "Search graduates by profession, city, or institution. Expand your network.",
+      action: "members", cta: "Search Members", color: "#0ea5e9",
+    },
+    {
+      icon: QIcon.profile, title: "My Profile",
+      desc: "Update your professional info, bio, and profile photo.",
+      action: "profile", cta: "Edit Profile", color: "#10b981",
+    },
+  ];
+
   return (
-    <button
-      title={dark ? "Switch to light mode" : "Switch to dark mode"}
-      onClick={toggleTheme}
-      style={{
-        background: "rgba(255,255,255,0.12)",
-        border: "1px solid rgba(255,255,255,0.25)",
-        borderRadius: "9px", padding: "7px 10px",
-        cursor: "pointer", fontSize: "16px",
-        lineHeight: 1, transition: "background 0.2s",
-        display: "flex", alignItems: "center",
-      }}
-    >
-      {dark ? "☀️" : "🌙"}
-    </button>
-  );
-}
+    <div style={{ flex: 1, overflow: "auto", padding: "2rem 2.5rem" }}>
+      {/* Welcome banner */}
+      <div style={{
+        background: "linear-gradient(135deg, #1a3c5e 0%, #1d4ed8 55%, #3b82f6 100%)",
+        borderRadius: "var(--r-xl)",
+        padding: "2rem 2.5rem",
+        marginBottom: "2rem",
+        display: "flex", alignItems: "center", gap: "1.5rem",
+        boxShadow: "0 8px 32px rgba(29,78,216,0.3)",
+      }}>
+        {/* Avatar */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          {profile?.avatarUrl ? (
+            <img src={profile.avatarUrl} style={{
+              width: 64, height: 64, borderRadius: "50%", objectFit: "cover",
+              border: "3px solid rgba(255,255,255,0.4)",
+            }} alt="" />
+          ) : (
+            <div style={{
+              width: 64, height: 64, borderRadius: "50%",
+              background: "rgba(255,255,255,0.2)",
+              border: "3px solid rgba(255,255,255,0.35)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 22, fontWeight: 800, color: "#fff",
+            }}>{initials}</div>
+          )}
+          <span style={{
+            position: "absolute", bottom: 2, right: 2,
+            width: 14, height: 14, borderRadius: "50%",
+            background: "#22c55e", border: "2.5px solid #1d4ed8",
+          }} />
+        </div>
 
-/* ─── Mini member avatar ─── */
-function MiniAvatar({ u, size = 44 }) {
-  const initials =
-    u.firstName && u.lastName
-      ? `${u.firstName[0]}${u.lastName[0]}`.toUpperCase()
-      : (u.email?.[0] ?? "?").toUpperCase();
-  const base = {
-    width: size, height: size, borderRadius: "50%",
-    background: "linear-gradient(135deg,#1a3c5e,#0ea5e9)",
-    color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: size * 0.33, fontWeight: "700", flexShrink: 0, overflow: "hidden",
-  };
-  if (u.photoURL) {
-    return (
-      <div style={base}>
-        <img src={u.photoURL} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 4 }}>
+            Welcome back, {profile?.firstName || "Member"}
+          </p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.72)", margin: 0 }}>
+            {profile?.profession ? `${profile.profession} · ` : ""}
+            {profile?.city || "Manhigut Shava"} · Kehila 2026
+          </p>
+        </div>
+
+        <div style={{
+          background: "rgba(255,255,255,0.15)",
+          border: "1px solid rgba(255,255,255,0.25)",
+          borderRadius: "var(--r-full)",
+          padding: "6px 18px",
+          fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.9)",
+          letterSpacing: "0.06em", textTransform: "uppercase",
+          flexShrink: 0,
+        }}>Member</div>
       </div>
-    );
-  }
-  return <div style={base}>{initials}</div>;
+
+      {/* Section label */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "1rem" }}>
+        Quick Access
+      </p>
+
+      {/* Quick-access cards */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gap: "1rem",
+      }}>
+        {quickCards.map((card, i) => (
+          <div
+            key={card.action}
+            className={`card card-hover slide-up stagger-${i + 1}`}
+            style={{ padding: "1.5rem", cursor: "pointer", borderLeft: `4px solid ${card.color}` }}
+            onClick={() => onNavigate(card.action)}
+          >
+            <div style={{
+          width: 44, height: 44, borderRadius: "var(--r-md)",
+          background: `${card.color}14`,
+          color: card.color,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          marginBottom: "0.85rem", flexShrink: 0,
+        }}>{card.icon}</div>
+            <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.4rem" }}>{card.title}</p>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "1rem" }}>{card.desc}</p>
+            <span style={{ fontSize: 12, fontWeight: 700, color: card.color }}>{card.cta} →</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-/* ─── Base nav keys ─── */
-const BASE_NAV_KEYS = ["Profile", "Home", "Community", "Support"];
-
-/* ══════════════════════════════════════════════════════
-   MAIN DASHBOARD
-═══════════════════════════════════════════════════════ */
+/* ── Main dashboard shell ── */
 export default function DashboardPage() {
-  const { user, logout, profile } = useAuth();
-  const { t, isRTL, lang } = useLang();
-  const { dark, T } = useTheme();
+  const { user, profile, logout } = useAuth();
+  const [section, setSection]   = useState(() => localStorage.getItem("section") || "home");
+  const [unreadDMs, setUnreadDMs] = useState(0);
 
-  /* Persist active tab */
-  const [activeNav, setActiveNav] = useState(
-    () => localStorage.getItem("activeNav") || "Home"
-  );
-  const navigate = (tab) => {
-    localStorage.setItem("activeNav", tab);
-    setActiveNav(tab);
-  };
+  const navigate = useCallback((s) => {
+    localStorage.setItem("section", s);
+    setSection(s);
+  }, []);
 
-  /* Suggested members for homepage strip */
-  const [suggestedMembers, setSuggestedMembers] = useState([]);
+  /* Set online status on mount / unmount */
   useEffect(() => {
     if (!user) return;
-    getDocs(collection(db, "users")).then((snap) => {
-      const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const filtered = all
-        .filter((m) => m.id !== user.uid && m.profession)
-        .sort((a, b) => ((b.createdAt ?? "") > (a.createdAt ?? "") ? 1 : -1))
-        .slice(0, 4);
-      setSuggestedMembers(filtered);
-    });
+    const ref = doc(db, "users", user.uid);
+    updateDoc(ref, { isOnline: true, lastSeen: new Date().toISOString() }).catch(() => {});
+    const offline = () => updateDoc(ref, { isOnline: false, lastSeen: new Date().toISOString() }).catch(() => {});
+    window.addEventListener("beforeunload", offline);
+    return () => {
+      window.removeEventListener("beforeunload", offline);
+      offline();
+    };
   }, [user]);
 
-  /* Admin tab */
-  const NAV_KEYS = profile?.isAdmin ? [...BASE_NAV_KEYS, "Admin"] : BASE_NAV_KEYS;
+  const initials = profile
+    ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
+    : (user?.email?.[0] || "?").toUpperCase();
 
-  const NAV_LABELS = {
-    Profile:   t.nav.profile,
-    Home:      t.nav.home,
-    Community: t.nav.community,
-    Support:   t.nav.support,
-    Admin:     "Admin",
-  };
-
-  /* Display helpers */
-  const displayName =
-    profile?.firstName && profile?.lastName
-      ? `${profile.firstName} ${profile.lastName}`
-      : user?.email ?? "";
-
-  const initials =
-    profile?.firstName && profile?.lastName
-      ? `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase()
-      : (user?.email?.[0] ?? "?").toUpperCase();
-
-  const photoURL = profile?.photoURL ?? null;
-
-  /* Overview cards */
-  const CARDS = [
-    {
-      tag:       t.dash.active,
-      tagColor:  "green",
-      title:     t.dash.communityUpdates,
-      body:      t.dash.communityUpdatesBody,
-      accent:    "#38bdf8",
-      nav:       "Community",
-    },
-    {
-      tag:       t.dash.active,
-      tagColor:  "green",
-      title:     t.dash.myProfile,
-      body:      t.dash.myProfileBody,
-      accent:    "#a78bfa",
-      nav:       "Profile",
-    },
+  const navItems = [
+    ...NAV,
+    ...(profile?.isAdmin ? [{ id: "admin", label: "Admin", icon: Icon.admin }] : []),
   ];
 
-  /* Quick action buttons */
-  const QUICK_ACTIONS = [
-    {
-      label:  t.dash.goToCommunity,
-      nav:    "Community",
-      accent: "#38bdf8",
-      bg:     "linear-gradient(135deg,#e0f9ff,#dbeafe)",
-      color:  "#1e40af",
-    },
-    {
-      label:  t.dash.goToSupport,
-      nav:    "Support",
-      accent: "#22c55e",
-      bg:     "linear-gradient(135deg,#f0fdf4,#dcfce7)",
-      color:  "#166534",
-    },
-    {
-      label:  t.dash.goToProfile,
-      nav:    "Profile",
-      accent: "#a78bfa",
-      bg:     "linear-gradient(135deg,#faf5ff,#ede9fe)",
-      color:  "#7c3aed",
-    },
-  ];
-
-  /* ══ Styles ══ */
-  const S = {
-    page: {
-      minHeight: "100vh",
-      background: dark
-        ? "linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #0f172a 100%)"
-        : "linear-gradient(160deg, #f0f7ff 0%, #f5f7fa 60%, #eef2ff 100%)",
-      display: "flex", flexDirection: "column",
-      direction: isRTL ? "rtl" : "ltr",
-      transition: "background 0.3s",
-    },
-    header: {
-      background: "linear-gradient(135deg, #0f1f3d 0%, #1a3c5e 50%, #0ea5e9 100%)",
-      color: "#fff", padding: "0 2.5rem", height: "58px",
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      position: "sticky", top: 0, zIndex: 20,
-      boxShadow: "0 2px 16px rgba(15,23,42,0.14)",
-    },
-    headerLeft:  { display: "flex", alignItems: "center", gap: "1.5rem" },
-    logo:        { fontSize: "16px", fontWeight: "700", letterSpacing: "-0.3px", color: "#fff", whiteSpace: "nowrap" },
-    headerNav:   { display: "flex", gap: "2px" },
-    headerRight: { display: "flex", alignItems: "center", gap: "10px" },
-    navBtn: (active) => ({
-      background: active ? "rgba(255,255,255,0.18)" : "transparent",
-      color:      active ? "#fff" : "rgba(255,255,255,0.62)",
-      border: "none", borderRadius: "9px", padding: "7px 13px",
-      fontSize: "13px", fontWeight: active ? "700" : "400",
-      cursor: "pointer", transition: "all 0.15s",
-    }),
-    logoutBtn: {
-      background: "rgba(255,255,255,0.12)", color: "#fff",
-      border: "1px solid rgba(255,255,255,0.28)", borderRadius: "9px",
-      padding: "7px 16px", fontSize: "13px", fontWeight: "600",
-      cursor: "pointer", transition: "background 0.2s",
-    },
-    main:      { flex: 1, width: "100%" },
-    homeInner: { padding: "2rem 2.5rem", width: "100%", boxSizing: "border-box", maxWidth: "1200px", margin: "0 auto" },
-
-    /* Welcome card */
-    welcomeCard: {
-      background: "linear-gradient(135deg, #1a3c5e 0%, #0f4c81 100%)",
-      borderRadius: "20px", padding: "1.75rem 2rem", marginBottom: "1.5rem",
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      color: "#fff", cursor: "pointer", transition: "opacity 0.2s",
-      boxShadow: "0 4px 20px rgba(15,23,42,0.15)",
-      animation: "fadeSlideUp 0.4s 0.05s ease both",
-    },
-    welcomeLeft:  { display: "flex", alignItems: "center", gap: "1.25rem" },
-    avatarRing: {
-      width: "52px", height: "52px", borderRadius: "50%",
-      background: "linear-gradient(135deg, #38bdf8, #1a3c5e)",
-      padding: "2.5px", boxShadow: "0 2px 8px rgba(15,23,42,0.1)", flexShrink: 0,
-    },
-    avatarInner: {
-      width: "100%", height: "100%", borderRadius: "50%",
-      background: "rgba(255,255,255,0.18)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: "18px", fontWeight: "700", color: "#fff", overflow: "hidden",
-    },
-    welcomeName:  { fontSize: "18px", fontWeight: "700", margin: "0 0 3px" },
-    welcomeSub:   { fontSize: "12px", color: "rgba(255,255,255,0.62)", margin: 0 },
-    welcomeBadge: {
-      background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.25)",
-      borderRadius: "99px", padding: "5px 16px", fontSize: "11px",
-      fontWeight: "700", color: "rgba(255,255,255,0.9)",
-      letterSpacing: "0.06em", textTransform: "uppercase",
-    },
-
-    /* Section label */
-    sectionLabel: {
-      fontSize: "11px", fontWeight: "700", color: T.muted,
-      letterSpacing: "0.1em", textTransform: "uppercase",
-      margin: "0 0 1rem",
-    },
-    sectionHeader: {
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      marginBottom: "1rem",
-    },
-    viewAllBtn: {
-      fontSize: "12px", fontWeight: "700", color: "#0ea5e9",
-      background: "none", border: "none", cursor: "pointer", padding: 0,
-    },
-
-    /* Quick actions */
-    quickRow:   { display: "flex", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" },
-    quickCard: {
-      flex: 1, minWidth: "120px", borderRadius: "16px", padding: "1.25rem",
-      display: "flex", flexDirection: "column", gap: "6px",
-      border: "1.5px solid transparent", cursor: "pointer",
-      transition: "transform 0.18s, box-shadow 0.18s",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.06)",
-    },
-    quickLabel: { fontSize: "14px", fontWeight: "700", margin: 0 },
-    quickArrow: { fontSize: "18px", fontWeight: "300", marginTop: "auto" },
-
-    /* Support preview strip */
-    memberScroll: {
-      display: "flex", gap: "1rem",
-      overflowX: "auto", paddingBottom: "8px",
-      scrollbarWidth: "none", marginBottom: "2rem",
-    },
-    memberCard: {
-      background: T.card, borderRadius: "16px", padding: "1.25rem",
-      minWidth: "160px", maxWidth: "180px",
-      border: `1.5px solid ${T.cardBorder}`, borderTop: "3px solid #38bdf8",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
-      display: "flex", flexDirection: "column", alignItems: "center",
-      gap: "0.5rem", cursor: "pointer",
-      transition: "transform 0.18s, box-shadow 0.18s", flexShrink: 0,
-    },
-    memberName: { fontSize: "13px", fontWeight: "700", color: T.text, margin: 0, textAlign: "center" },
-    memberProf: { fontSize: "11px", color: T.sub, margin: 0, textAlign: "center" },
-    memberCity: {
-      fontSize: "11px", color: T.muted,
-      background: T.tagBg, border: `1px solid ${T.inputBorder}`,
-      borderRadius: "99px", padding: "2px 8px",
-    },
-
-    /* Overview grid */
-    grid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-      gap: "1.25rem", marginBottom: "2rem",
-    },
-    card: {
-      background: T.card, borderRadius: "18px", padding: "1.5rem",
-      border: `1.5px solid ${T.cardBorder}`, borderLeft: "4px solid #e2e8f0",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.05)", cursor: "pointer",
-      transition: "transform 0.18s, box-shadow 0.18s",
-      display: "flex", flexDirection: "column", gap: "0.6rem",
-    },
-    cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2px" },
-    cardTitle:  { fontSize: "15px", fontWeight: "700", color: T.text, margin: 0 },
-    cardBody:   { fontSize: "13px", color: T.sub, lineHeight: "1.65", margin: 0, flex: 1 },
-    cardLink:   { fontSize: "12px", fontWeight: "700", color: "#0ea5e9", marginTop: "auto" },
-  };
+  const sidebarW = 64;
 
   return (
-    <div style={S.page}>
-      {/* ── Header ── */}
-      <header style={S.header}>
-        <div style={S.headerLeft}>
-          <span style={S.logo}>🌐 BogrotNet</span>
-          <nav style={S.headerNav}>
-            {NAV_KEYS.map((key) => (
-              <button
-                key={key}
-                className="nav-btn"
-                style={S.navBtn(activeNav === key)}
-                onClick={() => navigate(key)}
-              >
-                {NAV_LABELS[key]}
-              </button>
-            ))}
-          </nav>
-        </div>
-        <div style={S.headerRight}>
-          <ThemeToggle />
-          <LangSwitcher />
-          <button className="logout-btn" style={S.logoutBtn} onClick={logout}>
-            {t.nav.logout}
-          </button>
-        </div>
-      </header>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "var(--font)" }}>
 
-      <main style={S.main}>
-        {activeNav === "Support"   && <SupportPage />}
-        {activeNav === "Community" && <CommunityPage />}
-        {activeNav === "Profile"   && <ProfilePage />}
-        {activeNav === "Admin"     && <AdminPage />}
+      {/* ── Left sidebar ── */}
+      <aside style={{
+        width: sidebarW, minWidth: sidebarW,
+        background: "var(--sidebar-bg)",
+        display: "flex", flexDirection: "column", alignItems: "center",
+        paddingTop: "0.75rem", paddingBottom: "0.75rem",
+        gap: "4px",
+        zIndex: 30,
+        boxShadow: "2px 0 12px rgba(0,0,0,0.15)",
+      }}>
+        {/* Logo */}
+        <div style={{
+          width: 40, height: 40, borderRadius: "var(--r-md)",
+          background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 16, fontWeight: 900, color: "#fff",
+          marginBottom: "0.75rem", flexShrink: 0,
+          boxShadow: "0 4px 12px rgba(37,99,235,0.4)",
+          letterSpacing: "-0.5px",
+        }}>MS</div>
 
-        {activeNav === "Home" && (
-          <div style={S.homeInner}>
+        {/* Divider */}
+        <div style={{ width: 32, height: 1, background: "rgba(255,255,255,0.1)", marginBottom: "0.5rem" }} />
 
-            {/* ── Welcome card ── */}
-            <div
-              className="welcome-card"
-              style={S.welcomeCard}
-              onClick={() => navigate("Profile")}
-            >
-              <div style={S.welcomeLeft}>
-                <div style={S.avatarRing}>
-                  <div style={S.avatarInner}>
-                    {photoURL
-                      ? <img src={photoURL} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} alt="avatar" />
-                      : initials}
-                  </div>
-                </div>
-                <div>
-                  <p style={S.welcomeName}>{t.dash.welcomeBack} {displayName}</p>
-                  <p style={S.welcomeSub}>{t.dash.org}</p>
-                </div>
-              </div>
-              <span style={S.welcomeBadge}>{t.dash.member}</span>
-            </div>
+        {/* Nav items */}
+        <nav style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+          {navItems.map((item) => (
+            <NavBtn
+              key={item.id}
+              item={item}
+              active={section === item.id}
+              badge={item.id === "chat" ? unreadDMs : 0}
+              onClick={() => navigate(item.id)}
+            />
+          ))}
+        </nav>
 
-            {/* ── Quick Actions ── */}
-            <p style={S.sectionLabel}>{t.dash.quickActions}</p>
-            <div style={S.quickRow}>
-              {QUICK_ACTIONS.map((qa) => (
-                <div
-                  key={qa.nav}
-                  className="quick-action"
-                  style={{ ...S.quickCard, background: qa.bg, borderColor: "transparent" }}
-                  onClick={() => navigate(qa.nav)}
-                >
-                  <p style={{ ...S.quickLabel, color: qa.color }}>{qa.label}</p>
-                  <p style={{ ...S.quickArrow, color: qa.color }}>→</p>
-                </div>
-              ))}
-            </div>
+        {/* Bottom: logout + avatar */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+          {/* Logout */}
+          <NavBtn
+            item={{ id: "logout", label: "Sign Out", icon: Icon.logout }}
+            active={false}
+            badge={0}
+            onClick={logout}
+          />
 
-            {/* ── Support preview strip ── */}
-            {suggestedMembers.length > 0 && (
-              <div style={{ marginBottom: "2rem" }}>
-                <div style={S.sectionHeader}>
-                  <p style={{ ...S.sectionLabel, margin: 0 }}>{t.dash.suggestedMembers}</p>
-                  <button
-                    style={S.viewAllBtn}
-                    onClick={() => navigate("Support")}
-                  >
-                    {t.dash.viewAll} →
-                  </button>
-                </div>
-                <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 1rem" }}>
-                  {t.dash.suggestedMembersSub}
-                </p>
-                <div style={S.memberScroll}>
-                  {suggestedMembers.map((m) => (
-                    <div
-                      key={m.id}
-                      className="member-preview-card"
-                      style={S.memberCard}
-                      onClick={() => navigate("Support")}
-                    >
-                      <MiniAvatar u={m} size={48} />
-                      <p style={S.memberName}>
-                        {m.firstName && m.lastName
-                          ? `${m.firstName} ${m.lastName}`
-                          : m.email}
-                      </p>
-                      <p style={S.memberProf}>{m.profession}</p>
-                      {m.city && <span style={S.memberCity}>{m.city}</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {/* User avatar */}
+          <div
+            style={{ position: "relative", cursor: "pointer" }}
+            onClick={() => navigate("profile")}
+            title="My Profile"
+          >
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} style={{
+                width: 36, height: 36, borderRadius: "50%", objectFit: "cover",
+                border: "2px solid rgba(255,255,255,0.2)",
+              }} alt="" />
+            ) : (
+              <div style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 12, fontWeight: 700, color: "#fff",
+                border: "2px solid rgba(255,255,255,0.15)",
+              }}>{initials}</div>
             )}
-
-            {/* ── Overview cards ── */}
-            <p style={S.sectionLabel}>{t.dash.overview}</p>
-            <div style={S.grid}>
-              {CARDS.map((card) => (
-                <div
-                  key={card.title}
-                  className="dash-card"
-                  style={{ ...S.card, borderLeftColor: card.accent }}
-                  onClick={() => navigate(card.nav)}
-                >
-                  <div style={S.cardHeader}>
-                    <p style={S.cardTitle}>{card.title}</p>
-                    <Tag label={card.tag} color={card.tagColor} />
-                  </div>
-                  <p style={S.cardBody}>{card.body}</p>
-                  <span style={S.cardLink}>{t.dash.viewDetails}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* ── About Us ── */}
-            <div style={{
-              marginTop: "1rem", marginBottom: "3rem",
-              borderRadius: "24px", overflow: "hidden",
-              boxShadow: "0 8px 40px rgba(15,23,42,0.12)",
-            }}>
-              {/* About header banner */}
-              <div style={{
-                background: "linear-gradient(135deg, #1a3c5e 0%, #0ea5e9 50%, #7dd3fc 100%)",
-                padding: "3rem 2.5rem 2.5rem",
-                textAlign: isRTL ? "right" : "left",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "0.75rem" }}>
-                  <span style={{ fontSize: "32px" }}>🌐</span>
-                  <h2 style={{ fontSize: "28px", fontWeight: "800", color: "#fff", margin: 0, letterSpacing: "-0.5px" }}>
-                    BogrotNet
-                  </h2>
-                </div>
-                <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.85)", margin: "0 0 0.5rem", lineHeight: "1.6" }}>
-                  {lang === "en"
-                    ? "The graduate network of Manhigut Shava — connecting leaders who are building an equal future"
-                    : lang === "ar"
-                    ? "شبكة خريجات مانهيجوت شافا — تربط القيادات اللواتي يبنين مستقبلاً متساوياً"
-                    : "רשת הבוגרות של מנהיגות שווה — מחברת מנהיגות שבונות עתיד שוויוני"}
-                </p>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "1rem" }}>
-                  {[
-                    { emoji: "🤝", label: lang === "en" ? "Mutual Help" : lang === "ar" ? "مساعدة متبادلة" : "עזרה הדדית" },
-                    { emoji: "🌱", label: lang === "en" ? "Leadership Dev" : lang === "ar" ? "تطوير القيادة" : "פיתוח מנהיגות" },
-                    { emoji: "💬", label: lang === "en" ? "Active Community" : lang === "ar" ? "مجتمع نشط" : "קהילה פעילה" },
-                    { emoji: "🔗", label: lang === "en" ? "Professional Network" : lang === "ar" ? "شبكة مهنية" : "רשת קשרים" },
-                  ].map((tag) => (
-                    <span key={tag.label} style={{
-                      background: "rgba(255,255,255,0.18)",
-                      border: "1px solid rgba(255,255,255,0.3)",
-                      borderRadius: "99px", padding: "5px 14px",
-                      fontSize: "12px", fontWeight: "600", color: "#fff",
-                    }}>
-                      {tag.emoji} {tag.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* About body */}
-              <div style={{
-                background: dark ? "#1e293b" : "#fff",
-                padding: "2.5rem",
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "1.5rem",
-              }}>
-                {[
-                  {
-                    emoji: "🎯",
-                    gradient: "linear-gradient(135deg, #eff6ff, #dbeafe)",
-                    borderColor: "#bfdbfe",
-                    titleColor: "#1e40af",
-                    title: lang === "en" ? "Our Mission" : lang === "ar" ? "مهمتنا" : "המשימה שלנו",
-                    text: lang === "en"
-                      ? "Manhigut Shava advances gender equality in public life. BogrotNet is the digital home connecting our program graduates."
-                      : lang === "ar"
-                      ? "مانهيجوت شافا تعزز المساواة بين الجنسين في الحياة العامة. BogrotNet هو البيت الرقمي الذي يربط خريجات البرنامج."
-                      : "מנהיגות שווה היא תנועה לקידום שוויון מגדרי במרחב הציבורי. BogrotNet היא הרשת הדיגיטלית של בוגרות התוכנית.",
-                  },
-                  {
-                    emoji: "💡",
-                    gradient: "linear-gradient(135deg, #fdf4ff, #ede9fe)",
-                    borderColor: "#d8b4fe",
-                    titleColor: "#7c3aed",
-                    title: lang === "en" ? "What Can You Do?" : lang === "ar" ? "ماذا يمكنك أن تفعلي؟" : "מה אפשר לעשות כאן?",
-                    text: lang === "en"
-                      ? "Post updates, find members who can help professionally, request advice, and build meaningful connections."
-                      : lang === "ar"
-                      ? "انشري التحديثات، وابحثي عن أعضاء يمكنهم المساعدة مهنياً، واطلبي المشورة، وابني علاقات مهنية."
-                      : "פרסמי פוסטים, מצאי חברות שיכולות לעזור במקצוע, בקשי ייעוץ, הצטרפי לרשת ותיצרי קשרים חדשים.",
-                  },
-                  {
-                    emoji: "🌟",
-                    gradient: "linear-gradient(135deg, #fff7ed, #fef3c7)",
-                    borderColor: "#fcd34d",
-                    titleColor: "#92400e",
-                    title: lang === "en" ? "Community Values" : lang === "ar" ? "قيم المجتمع" : "ערכי הקהילה",
-                    text: lang === "en"
-                      ? "Equality, mutual respect, collaboration, and empowerment. We are leaders who believe in the power of community."
-                      : lang === "ar"
-                      ? "المساواة، الاحترام المتبادل، التعاون، والتمكين. نحن قائدات نؤمن بقوة المجتمع الداعم."
-                      : "שוויון, כבוד הדדי, שיתוף פעולה, והעצמה. אנחנו מנהיגות שמאמינות בכוח של קהילה תומכת.",
-                  },
-                  {
-                    emoji: "📈",
-                    gradient: "linear-gradient(135deg, #f0fdf4, #dcfce7)",
-                    borderColor: "#86efac",
-                    titleColor: "#166534",
-                    title: lang === "en" ? "Growing Together" : lang === "ar" ? "نمو مشترك" : "צמיחה משותפת",
-                    text: lang === "en"
-                      ? "Hundreds of graduates across law, medicine, tech, education and more — working together to create change."
-                      : lang === "ar"
-                      ? "مئات الخريجات من مجالات القانون والطب والتكنولوجيا والتعليم وغيرها — يعملن معاً لإحداث التغيير."
-                      : "מאות בוגרות ממגוון תחומים — משפטים, רפואה, טכנולוגיה, חינוך ועוד — פועלות יחד כדי ליצור שינוי.",
-                  },
-                ].map((item) => (
-                  <div key={item.title} style={{
-                    background: dark
-                      ? "rgba(255,255,255,0.05)"
-                      : item.gradient,
-                    borderRadius: "16px", padding: "1.5rem",
-                    border: dark ? `1px solid rgba(255,255,255,0.08)` : `1.5px solid ${item.borderColor}`,
-                    display: "flex", flexDirection: "column", gap: "0.75rem",
-                  }}>
-                    <span style={{ fontSize: "28px" }}>{item.emoji}</span>
-                    <h3 style={{
-                      fontSize: "14px", fontWeight: "800",
-                      color: dark ? "#f1f5f9" : item.titleColor,
-                      margin: 0, textTransform: "uppercase", letterSpacing: "0.05em",
-                    }}>
-                      {item.title}
-                    </h3>
-                    <p style={{
-                      fontSize: "13px", lineHeight: "1.65",
-                      color: dark ? "#94a3b8" : "#374151",
-                      margin: 0,
-                    }}>
-                      {item.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer strip */}
-              <div style={{
-                background: dark
-                  ? "linear-gradient(135deg, #0f172a, #1e293b)"
-                  : "linear-gradient(135deg, #f8fafc, #eff6ff)",
-                padding: "1.25rem 2.5rem",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                flexWrap: "wrap", gap: "12px",
-                borderTop: dark ? "1px solid #334155" : "1px solid #e2e8f0",
-              }}>
-                <p style={{ fontSize: "13px", color: dark ? "#64748b" : "#94a3b8", margin: 0 }}>
-                  {lang === "en"
-                    ? "© 2026 Manhigut Shava — BogrotNet"
-                    : lang === "ar"
-                    ? "© 2026 مانهيجوت شافا — BogrotNet"
-                    : "© 2026 מנהיגות שווה — BogrotNet"}
-                </p>
-                <a
-                  href="https://ywp-online.my.canva.site/manhigot2026"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontSize: "12px", fontWeight: "700", color: "#0ea5e9",
-                    textDecoration: "none",
-                  }}
-                >
-                  {lang === "en" ? "Organization Website ↗" : lang === "ar" ? "موقع المنظمة ↗" : "אתר הארגון ↗"}
-                </a>
-              </div>
-            </div>
-
+            <span style={{
+              position: "absolute", bottom: 0, right: 0,
+              width: 11, height: 11, borderRadius: "50%",
+              background: "var(--online)",
+              border: "2px solid var(--sidebar-bg)",
+            }} />
           </div>
-        )}
+        </div>
+      </aside>
+
+      {/* ── Main content ── */}
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)" }}>
+
+        {/* Content panel with page header */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+          {/* Top bar (for non-chat sections) */}
+          {section !== "chat" && (
+            <header style={{
+              height: 52, minHeight: 52,
+              background: "var(--bg-primary)",
+              borderBottom: "1px solid var(--border)",
+              display: "flex", alignItems: "center",
+              padding: "0 1.5rem",
+              gap: "0.75rem",
+              zIndex: 10,
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
+                {navItems.find(n => n.id === section)?.label || "Home"}
+              </span>
+              <div style={{ flex: 1 }} />
+
+              {/* Online status pill */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "4px 10px", borderRadius: "var(--r-full)",
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border)",
+                fontSize: 11, fontWeight: 600, color: "var(--text-secondary)",
+              }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--online)", flexShrink: 0 }} />
+                Online
+              </div>
+
+              {/* User chip */}
+              <div
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "4px 10px 4px 6px", borderRadius: "var(--r-full)",
+                  background: "var(--bg-secondary)", border: "1px solid var(--border)",
+                  cursor: "pointer", transition: "background var(--t-fast)",
+                }}
+                onClick={() => navigate("profile")}
+              >
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover" }} alt="" />
+                ) : (
+                  <div style={{
+                    width: 24, height: 24, borderRadius: "50%",
+                    background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, fontWeight: 700, color: "#fff",
+                  }}>{initials}</div>
+                )}
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+                  {profile?.firstName || "Profile"}
+                </span>
+              </div>
+            </header>
+          )}
+
+          {/* Page content */}
+          <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+            {section === "home"      && <HomePage profile={profile} onNavigate={navigate} />}
+            {section === "community" && <CommunityPage />}
+            {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} />}
+            {section === "members"   && <SupportPage />}
+            {section === "profile"   && <ProfilePage />}
+            {section === "admin"     && <AdminPage />}
+          </div>
+        </div>
       </main>
     </div>
   );
