@@ -159,7 +159,7 @@ function HomePage({ user, profile, onNavigate }) {
   ];
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: "2rem 2.5rem" }}>
+    <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "2rem 2.5rem" }}>
       {/* Welcome banner */}
       <div style={{
         background: "linear-gradient(135deg, #1a3c5e 0%, #1d4ed8 55%, #3b82f6 100%)",
@@ -498,7 +498,7 @@ export default function DashboardPage() {
           )}
 
           {/* Page content */}
-          <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
             {section === "home"      && <HomePage user={user} profile={profile} onNavigate={navigate} />}
             {section === "community" && <CommunityPage />}
             {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} />}
