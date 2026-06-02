@@ -119,6 +119,7 @@ const translations = {
       firstName: "שם פרטי",
       lastName: "שם משפחה",
       phone: "טלפון",
+      birthDate: "תאריך לידה",
       city: "עיר",
       professionJob: "מקצוע / עבודה",
       bio: "ביוגרפיה",
@@ -276,6 +277,7 @@ const translations = {
       firstName: "First Name",
       lastName: "Last Name",
       phone: "Phone",
+      birthDate: "Birth Date",
       city: "City",
       professionJob: "Profession / Job",
       bio: "Bio",
@@ -433,6 +435,7 @@ const translations = {
       firstName: "الاسم الأول",
       lastName: "اسم العائلة",
       phone: "الهاتف",
+      birthDate: "تاريخ الميلاد",
       city: "المدينة",
       professionJob: "المهنة / العمل",
       bio: "نبذة",
@@ -484,7 +487,7 @@ const LanguageContext = createContext(null);
 export function LanguageProvider({ children }) {
   /* Persist language selection; fall back to Hebrew on first visit */
   const [lang, setLangState] = useState(
-    () => localStorage.getItem("lang") ?? "he"
+    () => localStorage.getItem("lang") ?? "en"   // default English for new users
   );
 
   const setLang = (code) => {

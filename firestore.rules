@@ -31,7 +31,7 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read:   if isAuth();
         allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
-        allow update: if isAuth() && resource.data.authorId == request.auth.uid;
+        allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
         allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
       }
     }
@@ -129,6 +129,12 @@ service cloud.firestore {
       allow read:   if isAuth();
       allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
       allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    /* ── Activity logs ── */
+    match /activityLogs/{logId} {
+      allow create: if isAuth();
+      allow read:   if isAdmin();
     }
 
     /* ── Default: deny all ── */

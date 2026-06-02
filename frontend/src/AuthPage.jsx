@@ -341,7 +341,7 @@ function SignUpForm({ onSwitchTab }) {
 }
 
 /* ─── MAIN ─── */
-export default function AuthPage() {
+export default function AuthPage({ onBack }) {
   const [tab, setTab] = useState("login");
 
   return (
@@ -381,6 +381,23 @@ export default function AuthPage() {
             <div style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.8)", letterSpacing: "0.07em", textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>רשת בוגרות</div>
           </div>
         </div>
+        {onBack && (
+          <button onClick={onBack} style={{
+            background: "rgba(255,255,255,0.15)",
+            border: "1px solid rgba(255,255,255,0.35)",
+            color: "#fff", borderRadius: 9,
+            padding: "7px 16px", fontSize: "0.83rem",
+            fontWeight: 600, cursor: "pointer",
+            backdropFilter: "blur(8px)",
+            fontFamily: "'Heebo', system-ui, sans-serif",
+            transition: "background 0.2s",
+          }}
+            onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.25)"}
+            onMouseOut={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+          >
+            ← חזרה לדף הבית
+          </button>
+        )}
       </div>
 
       {/* Card */}

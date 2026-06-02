@@ -40,12 +40,16 @@ function LoadingScreen() {
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
 
   /* Still checking auth / profile */
   if (loading) return <LoadingScreen />;
 
-  /* Not logged in */
-  if (!user) return <AuthPage />;
+  /* Not logged in — show landing first, then auth when they click login */
+  if (!user) {
+    if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
+    return <LandingPage onLogin={() => setShowAuth(true)} />;
+  }
 
   /* Logged in but no Firestore profile (Google / Phone first-time user) */
   if (profile === null) return <CompleteProfilePage />;
