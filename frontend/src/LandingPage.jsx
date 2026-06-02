@@ -789,6 +789,21 @@ function Footer() {
 
 /* ─── ROOT EXPORT ─── */
 export default function LandingPage({ onLogin }) {
+  useEffect(() => {
+    // index.css locks body/root to 100vh for the dashboard — override for landing page
+    document.body.style.overflow = "auto";
+    document.body.style.height   = "auto";
+    document.documentElement.style.overflow = "auto";
+    const root = document.getElementById("root");
+    if (root) { root.style.height = "auto"; root.style.overflow = "visible"; }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.height   = "";
+      document.documentElement.style.overflow = "";
+      if (root) { root.style.height = ""; root.style.overflow = ""; }
+    };
+  }, []);
+
   return (
     <div style={{ direction: "rtl" }}>
       <Nav onLogin={onLogin} />
