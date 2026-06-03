@@ -72,8 +72,16 @@ const getInitials = (u) => {
 const getFullName = (u) =>
   u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email ?? "Unknown";
 const avatarUrl = (u) => u?.photoURL || u?.avatarUrl || null;
-const isActuallyOnline = (u) =>
-  u?.lastSeen && Date.now() - new Date(u.lastSeen) < 5 * 60 * 1000;
+const parseLastSeen = (value) => {
+  if (!value) return NaN;
+  if (typeof value === "number") return value;
+  if (value?.seconds && typeof value.seconds === "number") return value.seconds * 1000;
+  return new Date(value).getTime();
+};
+const isActuallyOnline = (u) => {
+  const lastSeenMs = parseLastSeen(u?.lastSeen);
+  return !Number.isNaN(lastSeenMs) && Date.now() - lastSeenMs < 5 * 60 * 1000;
+};
 
 /* ─── StatusPill ─── */
 function StatusPill({ status }) {
