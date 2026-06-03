@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   collection, query, where, orderBy,
   onSnapshot, addDoc, updateDoc, doc,
-  getDocs, arrayUnion, serverTimestamp,
+  getDocs, arrayUnion, serverTimestamp, increment,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase";
@@ -53,7 +53,7 @@ export function useMessages(conversationId) {
 }
 
 /* ── Send a message ── */
-export async function sendMessage(conversationId, senderId, text, replyTo = null, imageUrl = null) {
+export async function sendMessage(conversationId, senderId, text, replyTo = null, imageUrl = null, recipientIds = []) {
   const now = new Date().toISOString();
   const msgData = {
     senderId,
@@ -67,14 +67,18 @@ export async function sendMessage(conversationId, senderId, text, replyTo = null
     deleted: false,
   };
   await addDoc(collection(db, "conversations", conversationId, "messages"), msgData);
-  await updateDoc(doc(db, "conversations", conversationId), {
+  const updateData = {
     lastMessage: {
       text: imageUrl ? "Photo" : (text || "").trim(),
       type: imageUrl ? "image" : "text",
       senderId, createdAt: now,
     },
     updatedAt: now,
+  };
+  recipientIds.forEach((id) => {
+    updateData[`unreadCounts.${id}`] = increment(1);
   });
+  await updateDoc(doc(db, "conversations", conversationId), updateData);
 }
 
 /* ── Upload chat image to Firebase Storage ── */

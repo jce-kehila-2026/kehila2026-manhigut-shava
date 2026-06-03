@@ -131,7 +131,7 @@ function PlainInput(props) {
   );
 }
 
-export default function ProfilePage() {
+export default function ProfilePage({ viewUserId, onMessage }) {
   const { user, refreshProfile } = useAuth();
   const { t, isRTL } = useLang();
   const fileRef = useRef();
@@ -143,6 +143,7 @@ export default function ProfilePage() {
   const [saving,   setSaving]   = useState(false);
   const [saved,    setSaved]    = useState(false);
   const [error,    setError]    = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
 
   const [networksCount, setNetworksCount] = useState(0);
 
@@ -158,8 +159,9 @@ export default function ProfilePage() {
 
   /* ── Load profile + network count ── */
   useEffect(() => {
-    if (!user) return;
-    getDoc(doc(db, "users", user.uid)).then((snap) => {
+    const targetId = viewUserId || user?.uid;
+    if (!targetId) return;
+    getDoc(doc(db, "users", targetId)).then((snap) => {
       if (snap.exists()) {
         const d = snap.data();
         setForm({
@@ -173,32 +175,63 @@ export default function ProfilePage() {
         });
         setPhotoURL(d.photoURL ?? d.avatarUrl ?? null);
         setNetworksCount(d.networksCount ?? 0);
+        setProfileEmail(d.email ?? "");
+      } else {
+        setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"" });
+        setPhotoURL(null);
+        setNetworksCount(0);
+        setProfileEmail("");
       }
+    }).catch(() => {
+      setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"" });
+      setPhotoURL(null);
+      setNetworksCount(0);
+      setProfileEmail("");
     });
-  }, [user]);
+  }, [user, viewUserId]);
 
-  /* ── Load my posts ── */
+  /* ── Load profile posts ── */
   useEffect(() => {
-    if (!user) return;
+    const targetId = viewUserId || user?.uid;
+    if (!targetId) return;
     setPostsLoading(true);
-    getDocs(query(collection(db, "posts"), where("authorId", "==", user.uid)))
+    getDocs(query(collection(db, "posts"), where("authorId", "==", targetId)))
       .then((snap) => {
         const posts = snap.docs
           .map((d) => ({ id: d.id, ...d.data() }))
           .sort((a, b) => ((b.createdAt ?? "") > (a.createdAt ?? "") ? 1 : -1));
         setMyPosts(posts);
       })
-      .catch((err) => console.error("Failed to load my posts:", err))
+      .catch((err) => console.error("Failed to load profile posts:", err))
       .finally(() => setPostsLoading(false));
-  }, [user]);
+  }, [user, viewUserId]);
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const fields = [form.firstName, form.lastName, form.phone, form.city, form.profession, form.bio, form.birthDate];
   const pct    = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  const isOwner = !viewUserId || viewUserId === user?.uid;
+  const isReadOnly = !isOwner;
+  const profileHeading = isOwner
+    ? (form.firstName ? t.profile.greeting(form.firstName) : t.profile.myProfile)
+    : (form.firstName ? `${form.firstName} ${form.lastName}`.trim() : t.profile.memberProfile);
+  const postsTitle = isOwner ? t.profile.myPosts : t.profile.posts;
+  const noPostsMessage = isOwner ? t.profile.noMyPosts : t.profile.noPosts;
+
+  const getPostMedia = (post) => {
+    if (Array.isArray(post.media)) return post.media;
+    if (Array.isArray(post.imageURLs)) return post.imageURLs.map((url) => ({ url, type: "image" }));
+    return [];
+  };
+
+  const handleMessageClick = () => {
+    if (!onMessage || !viewUserId) return;
+    onMessage(viewUserId);
+  };
 
   /* ── Photo upload ── */
   const handlePhotoUpload = async (e) => {
+    if (!isOwner || !user) return;
     const file = e.target.files[0];
     if (!file) return;
     const storageRef = ref(storage, `avatars/${user.uid}`);
@@ -211,6 +244,7 @@ export default function ProfilePage() {
 
   /* ── Save ── */
   const handleSave = async () => {
+    if (!isOwner || !user) return;
     setSaving(true); setError("");
     try {
       await updateDoc(doc(db, "users", user.uid), { ...form });
@@ -226,6 +260,7 @@ export default function ProfilePage() {
 
   /* ── Email change ── */
   const handleEmailChange = async () => {
+    if (!isOwner || !user) return;
     setEmailError(""); setEmailSuccess("");
     try {
       const cred = EmailAuthProvider.credential(user.email, password);
@@ -348,22 +383,24 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-        <div style={S.uploadPill}>
-          <button className="upload-btn" style={S.uploadBtn} onClick={() => fileRef.current.click()}>
-            {t.profile.uploadPhoto}
-          </button>
-          <p style={S.avatarHint}>{t.profile.photoHint}</p>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handlePhotoUpload} />
-        </div>
+        {isOwner && (
+          <div style={S.uploadPill}>
+            <button className="upload-btn" style={S.uploadBtn} onClick={() => fileRef.current.click()}>
+              {t.profile.uploadPhoto}
+            </button>
+            <p style={S.avatarHint}>{t.profile.photoHint}</p>
+            <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handlePhotoUpload} />
+          </div>
+        )}
       </div>
 
       {/* Body */}
       <div style={S.body}>
         <div style={{ marginBottom:"1.5rem" }}>
           <p style={S.greeting}>
-            {form.firstName ? t.profile.greeting(form.firstName) : t.profile.myProfile}
+            {profileHeading}
           </p>
-          <p style={S.greetingSub}>{t.profile.subtitle}</p>
+          <p style={S.greetingSub}>{isReadOnly ? "Viewing public profile" : t.profile.subtitle}</p>
           {networksCount > 0 && (
             <div style={{ marginBottom:"1rem" }}>
               <span style={{
@@ -375,34 +412,35 @@ export default function ProfilePage() {
               </span>
             </div>
           )}
-          <CompletenessBadge pct={pct} />
+          {!isReadOnly && <CompletenessBadge pct={pct} />}
         </div>
 
-        <div style={S.twoCol}>
-          {/* Left — Personal Info */}
-          <div className="profile-card" style={{ ...S.card, marginBottom:0 }}>
-            <SectionTitle label={t.profile.personalInfo} />
-            {error && <div style={S.errorMsg}>{error}</div>}
+        {!isReadOnly ? (
+          <div style={S.twoCol}>
+            {/* Left — Personal Info */}
+            <div className="profile-card" style={{ ...S.card, marginBottom:0 }}>
+              <SectionTitle label={t.profile.personalInfo} />
+              {error && <div style={S.errorMsg}>{error}</div>}
 
             <div style={S.row}>
               <div style={S.group}>
                 <label style={S.label}>{t.profile.firstName}</label>
-                <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} />
+                <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} disabled={isReadOnly} />
               </div>
               <div style={S.group}>
                 <label style={S.label}>{t.profile.lastName}</label>
-                <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} />
+                <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} disabled={isReadOnly} />
               </div>
             </div>
 
             <div style={S.row}>
               <div style={S.group}>
                 <label style={S.label}>{t.profile.phone}</label>
-                <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} />
+                <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} disabled={isReadOnly} />
               </div>
               <div style={S.group}>
                 <label style={S.label}>{t.profile.city}</label>
-                <PlainInput name="city" value={form.city} onChange={handleChange} placeholder={t.profile.cityPlaceholder} />
+                <PlainInput name="city" value={form.city} onChange={handleChange} placeholder={t.profile.cityPlaceholder} disabled={isReadOnly} />
               </div>
             </div>
 
@@ -413,25 +451,30 @@ export default function ProfilePage() {
                 name="birthDate"
                 value={form.birthDate}
                 onChange={handleChange}
+                disabled={isReadOnly}
               />
             </div>
 
             <div style={{ ...S.group, marginBottom:"1rem" }}>
               <label style={S.label}>{t.profile.professionJob}</label>
-              <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} />
+              <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} disabled={isReadOnly} />
             </div>
 
             <div style={S.actionRow}>
-              <button
-                style={S.saveBtn}
-                className={saving ? "save-btn-shimmer" : ""}
-                onClick={handleSave}
-                disabled={saving}
-                onMouseOver={(e) => { if (!saving && !saved) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                {saved ? <><CheckMark /> {t.profile.saved}</> : saving ? t.profile.saving : t.profile.saveChanges}
-              </button>
+              {isOwner ? (
+                <button
+                  style={S.saveBtn}
+                  className={saving ? "save-btn-shimmer" : ""}
+                  onClick={handleSave}
+                  disabled={saving}
+                  onMouseOver={(e) => { if (!saving && !saved) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  {saved ? <><CheckMark /> {t.profile.saved}</> : saving ? t.profile.saving : t.profile.saveChanges}
+                </button>
+              ) : (
+                <span style={{ color: "#64748b", fontSize: "13px" }}>Viewing public profile</span>
+              )}
             </div>
           </div>
 
@@ -442,18 +485,21 @@ export default function ProfilePage() {
               <div style={S.bioWrap}>
                 <textarea
                   className="profile-textarea"
-                  style={{ ...S.textarea, minHeight:"148px" }}
+                  style={{ ...S.textarea, minHeight:"148px", background: isReadOnly ? "#f1f5f9" : "#f8fafc", color: isReadOnly ? "#64748b" : "#1a2e42" }}
                   name="bio"
                   value={form.bio}
-                  onChange={(e) => { if (e.target.value.length <= BIO_LIMIT) handleChange(e); }}
+                  onChange={(e) => { if (!isReadOnly && e.target.value.length <= BIO_LIMIT) handleChange(e); }}
                   placeholder={t.profile.bioPlaceholder}
+                  disabled={isReadOnly}
                 />
-                <span style={{
-                  ...S.charCount,
-                  color: form.bio.length > BIO_LIMIT * 0.9 ? "#f59e0b" : "#cbd5e1",
-                }}>
-                  {form.bio.length}/{BIO_LIMIT}
-                </span>
+                {!isReadOnly && (
+                  <span style={{
+                    ...S.charCount,
+                    color: form.bio.length > BIO_LIMIT * 0.9 ? "#f59e0b" : "#cbd5e1",
+                  }}>
+                    {form.bio.length}/{BIO_LIMIT}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -463,23 +509,86 @@ export default function ProfilePage() {
               <div style={S.emailRow}>
                 <div style={{ ...S.group, flex:1, marginBottom:0 }}>
                   <label style={S.label}>{t.profile.currentEmail}</label>
-                  <input style={S.inputDisabled} value={user?.email ?? ""} disabled />
+                  <input style={S.inputDisabled} value={profileEmail || user?.email || ""} disabled />
                 </div>
-                <button className="change-btn" style={S.changeBtn} onClick={() => setShowEmailModal(true)}>
-                  {t.profile.change}
-                </button>
+                {isOwner && (
+                  <button className="change-btn" style={S.changeBtn} onClick={() => setShowEmailModal(true)}>
+                    {t.profile.change}
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
+        ) : (
+          <div style={{ display:"grid", gap:"1rem" }}>
+            <div className="profile-card" style={S.card}>
+              <SectionTitle label="About" />
+              <div style={S.row}>
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.firstName}</p>
+                  <div style={S.inputDisabled}>{form.firstName || "—"}</div>
+                </div>
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.lastName}</p>
+                  <div style={S.inputDisabled}>{form.lastName || "—"}</div>
+                </div>
+              </div>
+              <div style={S.row}>
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.professionJob}</p>
+                  <div style={S.inputDisabled}>{form.profession || "—"}</div>
+                </div>
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.city}</p>
+                  <div style={S.inputDisabled}>{form.city || "—"}</div>
+                </div>
+              </div>
+              <div style={S.group}>
+                <p style={S.label}>{t.profile.phone}</p>
+                <div style={S.inputDisabled}>{form.phone || "—"}</div>
+              </div>
+            </div>
 
+            <div className="profile-card" style={S.card}>
+              <SectionTitle label={t.profile.bio} />
+              <div style={{ ...S.inputDisabled, minHeight:"120px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
+                {form.bio || "—"}
+              </div>
+            </div>
+
+            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+              <button
+                onClick={handleMessageClick}
+                style={{
+                  padding:"12px 20px", borderRadius:"14px",
+                  background:"#1d4ed8", color:"#fff", border:"none",
+                  fontSize:"14px", fontWeight:700, cursor: onMessage ? "pointer" : "not-allowed",
+                }}
+                disabled={!onMessage}
+              >
+                Message {form.firstName || "this user"}
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                style={{
+                  padding:"12px 20px", borderRadius:"14px",
+                  background:"#f8fafc", color:"#1d4ed8", border:"1px solid #bfdbfe",
+                  fontSize:"14px", fontWeight:700, cursor:"pointer",
+                }}
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        )}
         {/* ── My Posts ── */}
         <div style={{ marginTop: "2rem" }}>
           <p style={{
             fontSize: "11px", fontWeight: "700", color: "#1a3c5e",
             textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 1.25rem",
           }}>
-            {t.profile.myPosts}
+            {postsTitle}
           </p>
 
           {postsLoading && (
@@ -492,7 +601,7 @@ export default function ProfilePage() {
               background: "#f8fafc", borderRadius: "16px",
               border: "1.5px dashed #e2e8f0", color: "#94a3b8", fontSize: "14px",
             }}>
-              {t.profile.noMyPosts}
+              {noPostsMessage}
             </div>
           )}
 
@@ -533,31 +642,49 @@ export default function ProfilePage() {
                   )}
 
                   {/* Images thumbnail strip */}
-                  {Array.isArray(post.imageURLs) && post.imageURLs.length > 0 && (
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                      {post.imageURLs.slice(0, 3).map((url, i) => (
-                        <img
-                          key={i}
-                          src={url}
-                          alt=""
-                          style={{
-                            width: "72px", height: "72px", objectFit: "cover",
-                            borderRadius: "8px", border: "1px solid #e2e8f0",
-                          }}
-                        />
-                      ))}
-                      {post.imageURLs.length > 3 && (
-                        <div style={{
-                          width: "72px", height: "72px", borderRadius: "8px",
-                          background: "#f1f5f9", border: "1px solid #e2e8f0",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "14px", fontWeight: "700", color: "#64748b",
-                        }}>
-                          +{post.imageURLs.length - 3}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    const postMedia = getPostMedia(post);
+                    if (!postMedia.length) return null;
+                    return (
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: postMedia.length === 1 ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                        gap: 6,
+                      }}>
+                        {postMedia.slice(0, 4).map((media, i) => (
+                          media.type === "image" ? (
+                            <img
+                              key={i}
+                              src={media.url}
+                              alt=""
+                              style={{
+                                width: "100%", height: 120,
+                                objectFit: "cover", borderRadius: "12px",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => window.open(media.url, "_blank")}
+                            />
+                          ) : (
+                            <video
+                              key={i}
+                              src={media.url}
+                              controls
+                              style={{ width: "100%", height: 120, borderRadius: "12px", objectFit: "cover" }}
+                            />
+                          )
+                        ))}
+                        {postMedia.length > 4 && (
+                          <div style={{
+                            display: "grid", placeItems: "center",
+                            borderRadius: "12px", background: "#f1f5f9",
+                            color: "#64748b", fontSize: "13px", fontWeight: 700,
+                          }}>
+                            +{postMedia.length - 4}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Stats + date */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
@@ -587,7 +714,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Email Change Modal */}
-      {showEmailModal && (
+      {showEmailModal && isOwner && (
         <div style={S.modal} onClick={() => setShowEmailModal(false)}>
           <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
             <p style={S.modalTitle}>{t.profile.changeEmail}</p>

@@ -114,7 +114,7 @@ function LangSwitcher({ lang, setLang }) {
 }
 
 /* ── Home page (overview) ── */
-function HomePage({ user, profile, onNavigate }) {
+function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [helpRequests, setHelpRequests] = useState([]);
   const [suggested, setSuggested]       = useState([]);
   const { t } = useLang();
@@ -228,7 +228,7 @@ function HomePage({ user, profile, onNavigate }) {
               const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
               const online = isActuallyOnline(u);
               return (
-                <div key={u.id} className="card card-hover" style={{ padding: "1rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.75rem" }} onClick={() => onNavigate("members")}>
+                <div key={u.id} className="card card-hover" style={{ padding: "1rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.75rem" }} onClick={() => onViewProfile ? onViewProfile(u.id) : onNavigate("members")}>
                   <div style={{ position: "relative", flexShrink: 0 }}>
                     {avatarUrl(u) ? (
                       <img src={avatarUrl(u)} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} alt="" />
@@ -310,10 +310,22 @@ export default function DashboardPage() {
   const [section,    setSection]    = useState(() => localStorage.getItem("section") || "home");
   const [navHistory, setNavHistory] = useState(() => [localStorage.getItem("section") || "home"]);
   const [unreadDMs,  setUnreadDMs]  = useState(0);
+  const [profileTarget, setProfileTarget] = useState(null);
+  const [chatTarget, setChatTarget] = useState(null);
 
-  const navigate = useCallback((s) => {
+  const navigate = useCallback((s, options = {}) => {
     localStorage.setItem("section", s);
     setSection(s);
+    if (s === "profile") {
+      setProfileTarget(options.userId || null);
+      setChatTarget(null);
+    } else if (s === "chat") {
+      setChatTarget(options.userId || null);
+      setProfileTarget(null);
+    } else {
+      setProfileTarget(null);
+      setChatTarget(null);
+    }
     setNavHistory((prev) => {
       if (prev[prev.length - 1] === s) return prev;
       return [...prev, s];
@@ -499,11 +511,11 @@ export default function DashboardPage() {
 
           {/* Page content */}
           <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
-            {section === "home"      && <HomePage user={user} profile={profile} onNavigate={navigate} />}
-            {section === "community" && <CommunityPage />}
-            {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} />}
-            {section === "members"   && <SupportPage />}
-            {section === "profile"   && <ProfilePage />}
+            {section === "home"      && <HomePage user={user} profile={profile} onNavigate={navigate} onViewProfile={(userId) => navigate("profile", { userId })} />}
+            {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
+            {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
+            {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
+            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} />}
             {section === "admin"     && <AdminPage />}
           </div>
         </div>

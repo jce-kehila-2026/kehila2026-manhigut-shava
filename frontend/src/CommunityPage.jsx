@@ -128,7 +128,7 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
 }
 
 /* ── Post card ── */
-function PostCard({ post, currentUser, isAdmin, onDelete, onRepost }) {
+function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfile, onMessage }) {
   const [liked,    setLiked]    = useState((post.likedBy || []).includes(currentUser?.uid));
   const [likes,    setLikes]    = useState(post.likesCount || (post.likedBy?.length || 0));
   const [comments, setComments] = useState([]);
@@ -376,6 +376,26 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost }) {
         {/* Repost */}
         {currentUser && post.authorId !== currentUser.uid && (
           <button
+            onClick={() => onMessage?.(post.authorId)}
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "6px 12px", borderRadius: "var(--r-sm)",
+              background: "var(--bg-tertiary)", color: "var(--text-muted)",
+              border: "none", fontSize: 13, fontWeight: 500, cursor: onMessage ? "pointer" : "not-allowed",
+              transition: "all var(--t-fast)",
+            }}
+            onMouseEnter={(e) => { if (onMessage) e.currentTarget.style.background = "#e2e8f0"; }}
+            onMouseLeave={(e) => { if (onMessage) e.currentTarget.style.background = "var(--bg-tertiary)"; }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16v12H5.5L4 17.5V4z"/>
+              <path d="M22 6l-6 4-6-4"/>
+            </svg>
+            <span>Message</span>
+          </button>
+        )}
+        {currentUser && post.authorId !== currentUser.uid && (
+          <button
             onClick={() => setShowRepostModal(true)}
             style={{
               display: "flex", alignItems: "center", gap: 5,
@@ -614,7 +634,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
 }
 
 /* ── Main CommunityPage ── */
-export default function CommunityPage() {
+export default function CommunityPage({ onViewProfile, onMessage }) {
   const { user, profile: authProfile } = useAuth();
   const [posts, setPosts]           = useState([]);
   const [birthdays, setBirthdays]   = useState([]);
@@ -752,7 +772,10 @@ export default function CommunityPage() {
               <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "0.5rem 0" }}>No upcoming birthdays.</p>
             )}
             {birthdays.map((u) => (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--bg-tertiary)" }}>
+              <div key={u.id}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--bg-tertiary)", cursor: onViewProfile ? "pointer" : "default" }}
+                onClick={() => onViewProfile?.(u.id)}
+              >
                 <Avatar url={u.photoURL || u.avatarUrl} name={`${u.firstName} ${u.lastName}`} size={32} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -786,7 +809,10 @@ export default function CommunityPage() {
           ))}
 
           {pinnedPosts.map((p) => (
-            <PostCard key={p.id} post={p} currentUser={user} isAdmin={authProfile?.isAdmin} onDelete={handleDeletePost} onRepost={handleRepost} />
+            <PostCard key={p.id} post={p} currentUser={user} isAdmin={authProfile?.isAdmin}
+              onDelete={handleDeletePost} onRepost={handleRepost}
+              onViewProfile={onViewProfile} onMessage={onMessage}
+            />
           ))}
 
           {!loading && regularPosts.length === 0 && pinnedPosts.length === 0 && (
@@ -797,7 +823,10 @@ export default function CommunityPage() {
             </div>
           )}
           {regularPosts.map((p) => (
-            <PostCard key={p.id} post={p} currentUser={user} isAdmin={authProfile?.isAdmin} onDelete={handleDeletePost} onRepost={handleRepost} />
+            <PostCard key={p.id} post={p} currentUser={user} isAdmin={authProfile?.isAdmin}
+              onDelete={handleDeletePost} onRepost={handleRepost}
+              onViewProfile={onViewProfile} onMessage={onMessage}
+            />
           ))}
         </div>
       </div>
