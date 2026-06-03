@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLang } from "./LanguageContext";
 
 /* ─── Design tokens ─── */
 const C = {
@@ -81,7 +82,34 @@ function Counter({ target, suffix = "", visible }) {
 }
 
 /* ─── NAV ─── */
+function LangSwitcher({ lang, setLang }) {
+  const langs = [
+    { code: "he", label: "HE" },
+    { code: "en", label: "EN" },
+    { code: "ar", label: "AR" },
+  ];
+  return (
+    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      {langs.map(({ code, label }) => (
+        <button key={code} onClick={() => setLang(code)} style={{
+          padding: "6px 10px",
+          borderRadius: 8,
+          border: "1px solid rgba(255,255,255,0.18)",
+          background: lang === code ? "rgba(255,255,255,0.18)" : "transparent",
+          color: "#fff",
+          fontSize: 11,
+          fontWeight: 700,
+          cursor: "pointer",
+        }}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Nav({ onLogin }) {
+  const { t, isRTL, lang, setLang } = useLang();
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 40);
@@ -98,7 +126,7 @@ function Nav({ onLogin }) {
       backdropFilter: scrolled ? "blur(18px)" : "none",
       borderBottom: scrolled ? "1px solid rgba(255,255,255,0.07)" : "none",
       transition: "background 0.35s, backdrop-filter 0.35s",
-      direction: "rtl",
+      direction: isRTL ? "rtl" : "ltr",
       fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
@@ -111,13 +139,13 @@ function Nav({ onLogin }) {
           <Icon.female />
         </div>
         <div>
-          <div style={{ fontSize: "1rem", fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>מנהיגות שווה</div>
-          <div style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em" }}>רשת הבוגרות</div>
+          <div style={{ fontSize: "1rem", fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>{t.landing.footer.brand}</div>
+          <div style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em" }}>{t.landing.footer.tagline}</div>
         </div>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
-        {[["#about","אודות"], ["#features","תכונות"], ["#how","איך זה עובד"]].map(([href, label]) => (
+        {[["#about", t.landing.nav.about], ["#features", t.landing.nav.features], ["#how", t.landing.nav.how]].map(([href, label]) => (
           <a key={href} href={href} style={{
             color: "rgba(255,255,255,0.6)", textDecoration: "none",
             fontSize: "0.86rem", fontWeight: 500, padding: "6px 12px", borderRadius: 8,
@@ -127,8 +155,9 @@ function Nav({ onLogin }) {
             onMouseOut={e => { e.target.style.color = "rgba(255,255,255,0.6)"; e.target.style.background = "transparent"; }}
           >{label}</a>
         ))}
+        <LangSwitcher lang={lang} setLang={setLang} />
         <button onClick={onLogin} style={{
-          marginRight: "0.5rem",
+          marginLeft: "0.5rem",
           background: "linear-gradient(135deg, #2563eb, #38bdf8)",
           color: "#fff", padding: "8px 20px", borderRadius: 9, border: "none",
           fontWeight: 700, fontSize: "0.86rem", cursor: "pointer",
@@ -138,7 +167,7 @@ function Nav({ onLogin }) {
         }}
           onMouseOver={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 22px rgba(37,99,235,0.5)"; }}
           onMouseOut={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 16px rgba(37,99,235,0.4)"; }}
-        >כניסה / הרשמה</button>
+        >{t.landing.nav.register}</button>
       </div>
     </nav>
   );
@@ -178,6 +207,7 @@ function MeshDots() {
 
 /* ─── HERO ─── */
 function Hero({ onLogin }) {
+  const { t, isRTL } = useLang();
   const [statsRef, statsVisible] = useReveal(0.3);
 
   return (
@@ -192,7 +222,7 @@ function Hero({ onLogin }) {
       alignItems: "center", justifyContent: "center",
       textAlign: "center", padding: "10rem 2rem 7rem",
       position: "relative", overflow: "hidden",
-      direction: "rtl", fontFamily: "'DM Sans', system-ui, sans-serif",
+      direction: isRTL ? "rtl" : "ltr", fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <MeshDots />
 
@@ -227,7 +257,7 @@ function Hero({ onLogin }) {
         animation: "heroFadeUp 0.7s ease both",
       }}>
         <span style={{ width: 6, height: 6, background: "#38bdf8", borderRadius: "50%", display: "inline-block", boxShadow: "0 0 8px #38bdf8", animation: "pulseDot 2s ease infinite" }} />
-        פלטפורמה פנימית מאובטחת &nbsp;·&nbsp; בוגרות בלבד
+        {t.landing.hero.badge}
       </div>
 
       {/* Headline */}
@@ -236,14 +266,14 @@ function Hero({ onLogin }) {
         color: "#fff", lineHeight: 1.03, marginBottom: "1.8rem",
         position: "relative", zIndex: 1,
         letterSpacing: "-0.03em",
-        animation: "heroFadeUp 0.75s 0.1s ease both",
+        animation: "heroFadeUp 0.1s 0.1s ease both",
       }}>
-        רשת נשים.<br />
+        {t.landing.hero.headline1}<br />
         <span style={{
           background: "linear-gradient(100deg, #60a5fa 0%, #38bdf8 50%, #a78bfa 100%)",
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
         }}>
-          כוח אמיתי.
+          {t.landing.hero.headline2}
         </span>
       </h1>
 
@@ -254,9 +284,7 @@ function Hero({ onLogin }) {
         marginBottom: "3.2rem", position: "relative", zIndex: 1,
         animation: "heroFadeUp 0.75s 0.2s ease both",
       }}>
-        רשת פרטית לבוגרות התנועה למנהיגות שווה.
-        מצאי מומחיות, שלחי בקשות עזרה ובני קשרים מקצועיים
-        עם הגנת פרטיות מלאה.
+        {t.landing.hero.subline}
       </p>
 
       {/* CTAs */}
@@ -276,7 +304,7 @@ function Hero({ onLogin }) {
           onMouseOver={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 40px rgba(37,99,235,0.55)"; }}
           onMouseOut={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 6px 30px rgba(37,99,235,0.45)"; }}
         >
-          הצטרפי עכשיו &nbsp;→
+          {t.landing.hero.primaryCta} &nbsp;→
         </button>
         <button onClick={onLogin} style={{
           background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.88)",
@@ -288,7 +316,7 @@ function Hero({ onLogin }) {
           onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)"; }}
           onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; }}
         >
-          כניסה לחשבון
+          {t.landing.hero.secondaryCta}
         </button>
         <a
           href="https://ywp-online.my.canva.site/manhigot2026"
@@ -307,7 +335,7 @@ function Hero({ onLogin }) {
           onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = "rgba(191,219,254,0.2)"; e.currentTarget.style.color = "rgba(191,219,254,0.8)"; }}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          אתר התנועה
+          {t.landing.nav.movementSite}
         </a>
       </div>
 
@@ -321,11 +349,7 @@ function Hero({ onLogin }) {
         border: "1px solid rgba(255,255,255,0.08)",
         borderRadius: 16, overflow: "hidden",
       }}>
-        {[
-          { target: "500+", label: "בוגרות" },
-          { target: "10+",  label: "שנות פעילות" },
-          { target: "100%", label: "פרטי ומאובטח" },
-        ].map(({ target, label }, i) => (
+        {t.landing.stats.map(({ target, label }, i) => (
           <div key={i} style={{
             textAlign: "center", padding: "1.5rem 3rem",
             borderRight: i < 2 ? "1px solid rgba(255,255,255,0.08)" : "none",
@@ -361,13 +385,14 @@ function Wave({ to }) {
 
 /* ─── ABOUT ─── */
 function About() {
+  const { t, isRTL } = useLang();
   const [leftRef, leftVis] = useReveal();
   const [rightRef, rightVis] = useReveal(0.12);
 
   return (
     <section id="about" style={{
       background: C.white, padding: "8rem 3rem",
-      direction: "rtl", fontFamily: "'DM Sans', system-ui, sans-serif",
+      direction: isRTL ? "rtl" : "ltr", fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5rem", alignItems: "center" }}>
@@ -375,19 +400,19 @@ function About() {
           {/* Text */}
           <div ref={leftRef} style={reveal(leftVis, 0, "right")}>
             <div style={{ fontSize: "0.7rem", fontWeight: 800, color: C.blue, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "0.9rem" }}>
-              אודות הפלטפורמה
+              {t.landing.about.label}
             </div>
             <h2 style={{ fontSize: "clamp(2rem,4vw,2.8rem)", fontWeight: 900, color: C.navy, marginBottom: "1.3rem", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-              הקשר שלא<br />ידעת שאת צריכה
+              {t.landing.about.title}
             </h2>
             <p style={{ color: C.muted, fontSize: "0.98rem", lineHeight: 1.82, marginBottom: "1.4rem" }}>
-              מנהיגות שווה היא תנועה בת עשור שמשתפת נשים מוכשרות ממגוון תחומים לקדם מנהיגות מגדרית שוויונית בישראל.
+              {t.landing.about.lead}
             </p>
             <p style={{ color: C.muted, fontSize: "0.98rem", lineHeight: 1.82, marginBottom: "2.2rem" }}>
-              הפלטפורמה הזו נבנתה כדי לחבר את הבוגרות — מקום אחד למצוא עזרה מקצועית, לשתף עדכונים, ולצמוח יחד.
+              {t.landing.about.body}
             </p>
             <div style={{ display: "flex", gap: "0.7rem", flexWrap: "wrap" }}>
-              {["קהילה", "פרטיות", "מקצועיות"].map(label => (
+              {t.landing.about.tags.map(label => (
                 <span key={label} style={{
                   background: "rgba(37,99,235,0.07)", border: "1px solid rgba(37,99,235,0.18)",
                   color: C.blue, padding: "7px 18px", borderRadius: 99,
@@ -416,7 +441,7 @@ function About() {
                 border: "1px solid rgba(37,99,235,0.09)",
               }}>
                 <div style={{ fontSize: "0.68rem", fontWeight: 700, color: C.blue, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "1.2rem" }}>
-                  חברת קהילה
+                  {t.landing.about.memberCard.role}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
                   <div style={{
@@ -424,22 +449,22 @@ function About() {
                     background: "linear-gradient(135deg, #2563eb, #38bdf8)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: "1.2rem", fontWeight: 900, color: "#fff", flexShrink: 0,
-                  }}>מ</div>
+                  }}>{t.landing.about.memberCard.name[0]}</div>
                   <div>
-                    <div style={{ fontWeight: 700, color: C.navy, fontSize: "0.95rem", marginBottom: 2 }}>מיכל לוי</div>
-                    <div style={{ fontSize: "0.78rem", color: C.muted }}>עורכת דין · תל אביב</div>
+                    <div style={{ fontWeight: 700, color: C.navy, fontSize: "0.95rem", marginBottom: 2 }}>{t.landing.about.memberCard.name}</div>
+                    <div style={{ fontSize: "0.78rem", color: C.muted }}>{t.landing.about.memberCard.profession}</div>
                   </div>
                   <span style={{
                     marginRight: "auto", background: "#dcfce7", border: "1px solid #bbf7d0",
                     color: "#166534", fontSize: "0.67rem", fontWeight: 700,
                     padding: "3px 10px", borderRadius: 99,
-                  }}>פעילה</span>
+                  }}>{t.landing.about.memberCard.status}</span>
                 </div>
                 <p style={{ fontSize: "0.84rem", color: C.muted, lineHeight: 1.68, marginBottom: "1.3rem" }}>
-                  "מצאתי שותפה עסקית ממחזור 3 תוך 24 שעות דרך הפלטפורמה. פשוט ממש."
+                  "{t.landing.about.memberCard.quote}"
                 </p>
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                  {["משפט", "יזמות", "ליטיגציה"].map(s => (
+                  {t.landing.about.memberCard.badges.map(s => (
                     <span key={s} style={{
                       background: "rgba(37,99,235,0.07)", border: "1px solid rgba(37,99,235,0.15)",
                       color: C.blue, fontSize: "0.7rem", fontWeight: 600,
@@ -455,7 +480,7 @@ function About() {
                   fontSize: "0.78rem", color: C.blue, fontWeight: 600,
                 }}>
                   <Icon.check />
-                  12 קשרים פעילים ברשת
+                  {t.landing.about.memberCard.connections}
                 </div>
               </div>
             </div>
@@ -467,24 +492,27 @@ function About() {
 }
 
 /* ─── FEATURES ─── */
-const FEATURES = [
-  { Icon: Icon.search,  title: "חיפוש חכם",        desc: "חפשי לפי שם, מקצוע, עיר, או קטגוריה. תוצאות מיידיות עם פילטרים מדויקים." },
-  { Icon: Icon.send,    title: "בקשות עזרה",        desc: "שלחי פנייה ישירה לבוגרת. פרטי קשר נחשפים רק לאחר אישור." },
-  { Icon: Icon.feed,    title: "פיד קהילתי",        desc: "שתפי עדכונים, הצלחות והזדמנויות. כל הקהילה בזרם אחד חי." },
-  { Icon: Icon.chart,   title: "לוח מנהל",          desc: "ניהול חברות, סטטיסטיקות, יומן פעילות מלא — הכול במקום אחד." },
-  { Icon: Icon.shield,  title: "פרטיות מלאה",       desc: "מידע קשר מוסתר כברירת מחדל. Firebase Auth, בקרת גישה מפורטת." },
-  { Icon: Icon.mobile,  title: "כל מכשיר",          desc: "נייד, טאבלט, מחשב — חוויה חלקה בכל רזולוציה ובכל שפה." },
-];
-
 function Features() {
+  const { t, isRTL } = useLang();
   const [hRef, hVis] = useReveal();
   const [gRef, gVis] = useReveal(0.06);
+  const features = t.landing.features.map((feature, index) => ({
+    ...feature,
+    Icon: feature.Icon ?? [
+      Icon.search,
+      Icon.shield,
+      Icon.feed,
+      Icon.chart,
+      Icon.lock,
+      Icon.mobile,
+    ][index] ?? Icon.check,
+  }));
 
   return (
     <section id="features" style={{
       background: `linear-gradient(168deg, #06080f 0%, #0c1a35 55%, #14265a 100%)`,
       padding: "8rem 3rem", position: "relative", overflow: "hidden",
-      direction: "rtl", fontFamily: "'DM Sans', system-ui, sans-serif",
+      direction: isRTL ? "rtl" : "ltr", fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none",
@@ -495,20 +523,20 @@ function Features() {
       <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div ref={hRef} style={reveal(hVis)}>
           <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#7dd3fc", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "0.9rem" }}>
-            תכונות הפלטפורמה
+            {t.landing.featuresSection.label}
           </div>
           <h2 style={{ fontSize: "clamp(2rem,4vw,2.9rem)", fontWeight: 900, color: "#fff", marginBottom: "0.9rem", letterSpacing: "-0.02em" }}>
-            בנוי לחיבורים אמיתיים
+            {t.landing.featuresSection.title}
           </h2>
           <p style={{ color: "rgba(191,219,254,0.65)", fontSize: "0.97rem", lineHeight: 1.78, maxWidth: 500, marginBottom: "3.5rem" }}>
-            כל תכונה תוכננה סביב אמון, פרטיות ושיתוף פעולה משמעותי.
+            {t.landing.featuresSection.subtitle}
           </p>
         </div>
 
         <div ref={gRef} style={{
           display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(285px, 1fr))", gap: "1rem",
         }}>
-          {FEATURES.map(({ Icon: Ic, title, desc }, i) => (
+          {features.map(({ Icon: Ic, title, desc }, i) => (
             <FeatureCard key={i} Icon={Ic} title={title} desc={desc} visible={gVis} delay={i * 0.08} />
           ))}
         </div>
@@ -548,37 +576,40 @@ function FeatureCard({ Icon: Ic, title, desc, visible, delay }) {
 }
 
 /* ─── HOW IT WORKS ─── */
-const STEPS = [
-  { n: "01", Icon: Icon.users,  title: "הרשמה מהירה",  desc: "מלאי את הפרטים שלך — שם, תחום, עיר, ביוגרפיה קצרה. לוקח 3 דקות." },
-  { n: "02", Icon: Icon.search, title: "חפשי בוגרות",  desc: "חפשי לפי מקצוע, מיקום, או שם. פילטרים מדויקים לתוצאות טובות יותר." },
-  { n: "03", Icon: Icon.send,   title: "שלחי בקשה",    desc: "פני לבוגרת שיכולה לעזור. הפנייה שלך מגיעה אליה ישירות ובפרטיות." },
-  { n: "04", Icon: Icon.lock,   title: "התחברי בביטחון", desc: "אחרי שהבוגרת אישרה — פרטי קשר משותפים. שיתוף הפעולה מתחיל." },
-];
-
 function HowItWorks() {
+  const { t, isRTL } = useLang();
   const [hRef, hVis] = useReveal();
   const [gRef, gVis] = useReveal(0.07);
+  const steps = t.landing.steps.map((step, index) => ({
+    ...step,
+    Icon: step.Icon ?? [
+      Icon.search,
+      Icon.users,
+      Icon.send,
+      Icon.check,
+    ][index] ?? Icon.check,
+  }));
 
   return (
     <section id="how" style={{
       background: C.white, padding: "8rem 3rem",
-      direction: "rtl", fontFamily: "'DM Sans', system-ui, sans-serif",
+      direction: isRTL ? "rtl" : "ltr", fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div ref={hRef} style={reveal(hVis)}>
           <div style={{ fontSize: "0.7rem", fontWeight: 800, color: C.blue, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "0.9rem" }}>
-            איך זה עובד
+            {t.landing.howSection.label}
           </div>
           <h2 style={{ fontSize: "clamp(2rem,4vw,2.8rem)", fontWeight: 900, color: C.navy, marginBottom: "0.9rem", letterSpacing: "-0.02em" }}>
-            מהרשמה לחיבור — בדקות
+            {t.landing.howSection.title}
           </h2>
           <p style={{ color: C.muted, fontSize: "0.97rem", lineHeight: 1.78, maxWidth: 460, marginBottom: "3.5rem" }}>
-            תוכנן שכל בוגרת תשלים את ההצטרפות בקלות, ללא הדרכה.
+            {t.landing.howSection.subtitle}
           </p>
         </div>
 
         <div ref={gRef} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "1.2rem" }}>
-          {STEPS.map(({ n, Icon: Ic, title, desc }, i) => (
+          {steps.map(({ n, Icon: Ic, title, desc }, i) => (
             <StepCard key={i} n={n} Icon={Ic} title={title} desc={desc} visible={gVis} delay={i * 0.1} />
           ))}
         </div>
@@ -624,20 +655,16 @@ function StepCard({ n, Icon: Ic, title, desc, visible, delay }) {
 }
 
 /* ─── TESTIMONIALS ─── */
-const QUOTES = [
-  { name: "דנה מ.", role: "מהנדסת · מחזור 7",   text: "תוך שבוע מצאתי מנטורית שעזרה לי לקדם שינוי בחברה שלי. הפלטפורמה שינתה לי את הראש." },
-  { name: "רונית ש.", role: "רופאה · מחזור 4",    text: "סוף סוף מקום שמבין מה זה להיות אישה בכוח. הקהילה כאן חמה ומקצועית בו זמנית." },
-  { name: "יעל ב.", role: "יזמית · מחזור 9",     text: "שלושת השותפים שלי לעסק הגיעו מהפלטפורמה. לא צריך חיפוש אחר — הכל כאן." },
-];
-
 function Testimonials() {
+  const { t, isRTL } = useLang();
   const [ref, visible] = useReveal(0.08);
+  const quotes = t.landing.testimonials;
 
   return (
     <section style={{
       background: `linear-gradient(155deg, #06080f 0%, #0c1a35 60%, #1a3a8f 100%)`,
       padding: "8rem 3rem", position: "relative", overflow: "hidden",
-      direction: "rtl", fontFamily: "'DM Sans', system-ui, sans-serif",
+      direction: isRTL ? "rtl" : "ltr", fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <div style={{
         position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
@@ -648,15 +675,15 @@ function Testimonials() {
       <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
           <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#7dd3fc", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "0.9rem" }}>
-            מה הבוגרות אומרות
+            {t.landing.testimonialsSection.label}
           </div>
           <h2 style={{ fontSize: "clamp(2rem,4vw,2.7rem)", fontWeight: 900, color: "#fff", letterSpacing: "-0.02em" }}>
-            קול הקהילה
+            {t.landing.testimonialsSection.title}
           </h2>
         </div>
 
         <div ref={ref} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.1rem" }}>
-          {QUOTES.map((q, i) => (
+          {quotes.map((q, i) => (
             <div key={i} style={reveal(visible, i * 0.12)}>
               <div style={{
                 background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)",
@@ -664,7 +691,7 @@ function Testimonials() {
                 height: "100%", boxSizing: "border-box",
               }}>
                 <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "rgba(56,189,248,0.5)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "1rem" }}>
-                  חוות דעת
+                  {t.landing.testimonialsSection.quoteLabel}
                 </div>
                 <p style={{ color: "rgba(191,219,254,0.82)", fontSize: "0.94rem", lineHeight: 1.75, marginBottom: "1.8rem" }}>
                   "{q.text}"
@@ -692,12 +719,13 @@ function Testimonials() {
 
 /* ─── CTA ─── */
 function CTA({ onLogin }) {
+  const { t, isRTL } = useLang();
   const [ref, visible] = useReveal(0.2);
 
   return (
     <section style={{
       background: C.white, padding: "8rem 2rem",
-      direction: "rtl", fontFamily: "'DM Sans', system-ui, sans-serif",
+      direction: isRTL ? "rtl" : "ltr", fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <div ref={ref} style={{ ...reveal(visible), maxWidth: 660, margin: "0 auto", textAlign: "center" }}>
         <div style={{
@@ -715,10 +743,10 @@ function CTA({ onLogin }) {
             <Icon.users />
           </div>
           <h2 style={{ fontSize: "clamp(2rem,4vw,2.7rem)", fontWeight: 900, color: C.navy, marginBottom: "1rem", letterSpacing: "-0.02em", lineHeight: 1.14 }}>
-            מוכנה להצטרף?
+            {t.landing.cta.title}
           </h2>
           <p style={{ color: C.muted, fontSize: "0.98rem", lineHeight: 1.78, marginBottom: "2.5rem" }}>
-            הצטרפי לרשת הבוגרות ותוכלי להתחבר עם מאות נשים מוכשרות שמקדמות ומקודמות.
+            {t.landing.cta.subtitle}
           </p>
           <div style={{ display: "flex", gap: "0.85rem", justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={onLogin} style={{
@@ -730,7 +758,7 @@ function CTA({ onLogin }) {
             }}
               onMouseOver={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 38px rgba(37,99,235,0.42)"; }}
               onMouseOut={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 6px 30px rgba(37,99,235,0.32)"; }}
-            >הצטרפי לרשת &nbsp;→</button>
+            >{t.landing.cta.primary} &nbsp;→</button>
             <button onClick={onLogin} style={{
               background: "transparent", color: C.blue,
               padding: "15px 28px", borderRadius: 12,
@@ -740,7 +768,7 @@ function CTA({ onLogin }) {
             }}
               onMouseOver={e => { e.currentTarget.style.background = "rgba(37,99,235,0.05)"; e.currentTarget.style.borderColor = "rgba(37,99,235,0.5)"; }}
               onMouseOut={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(37,99,235,0.28)"; }}
-            >יש לי כבר חשבון</button>
+            >{t.landing.cta.secondary}</button>
           </div>
         </div>
       </div>
@@ -750,10 +778,11 @@ function CTA({ onLogin }) {
 
 /* ─── FOOTER ─── */
 function Footer() {
+  const { t, isRTL } = useLang();
   return (
     <footer style={{
       background: "#06080f", padding: "2.5rem 3rem",
-      direction: "rtl", fontFamily: "'DM Sans', system-ui, sans-serif",
+      direction: isRTL ? "rtl" : "ltr", fontFamily: "'DM Sans', system-ui, sans-serif",
       borderTop: "1px solid rgba(255,255,255,0.05)",
     }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
@@ -767,7 +796,7 @@ function Footer() {
             <Icon.female />
           </div>
           <span style={{ color: "rgba(191,219,254,0.6)", fontSize: "0.87rem", fontWeight: 600 }}>
-            מנהיגות שווה · רשת הבוגרות
+            {t.landing.footer.brand}
           </span>
         </div>
         <a
@@ -777,10 +806,10 @@ function Footer() {
           onMouseOver={e => e.currentTarget.style.color = "#7dd3fc"}
           onMouseOut={e => e.currentTarget.style.color = "rgba(191,219,254,0.5)"}
         >
-          אתר התנועה
+          {t.landing.footer.movementSite}
         </a>
         <div style={{ color: "rgba(191,219,254,0.28)", fontSize: "0.74rem" }}>
-          © 2026 · פלטפורמה פנימית מאובטחת
+          {t.landing.footer.copyright}
         </div>
       </div>
     </footer>
@@ -804,8 +833,10 @@ export default function LandingPage({ onLogin }) {
     };
   }, []);
 
+  const { t, isRTL } = useLang();
+
   return (
-    <div style={{ direction: "rtl" }}>
+    <div style={{ direction: isRTL ? "rtl" : "ltr" }}>
       <Nav onLogin={onLogin} />
       <Hero onLogin={onLogin} />
       <Wave to={C.white} />

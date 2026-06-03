@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useLang } from "./LanguageContext";
 import {
   collection, addDoc, query, orderBy, onSnapshot,
   doc, updateDoc, deleteDoc, arrayUnion, arrayRemove,
@@ -10,13 +11,13 @@ import { useAuth } from "./AuthContext";
 import { logActivity } from "./activityLogger";
 
 /* ── Helpers ── */
-function timeAgo(ts) {
+function timeAgo(ts, t) {
   if (!ts) return "";
   const s = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (s < 60)    return "just now";
-  if (s < 3600)  return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  if (s < 604800) return `${Math.floor(s / 86400)}d ago`;
+  if (s < 60)    return t.common.justNow;
+  if (s < 3600)  return t.common.minutesAgo(Math.floor(s / 60));
+  if (s < 86400) return t.common.hoursAgo(Math.floor(s / 3600));
+  if (s < 604800) return t.common.daysAgo(Math.floor(s / 86400));
   return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 function getInitials(name) {
@@ -54,6 +55,7 @@ function Avatar({ url, name, size = 40, style: extraStyle }) {
 
 /* ── Comment item with edit support ── */
 function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
+  const { t } = useLang();
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
 
@@ -78,11 +80,11 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
             <button
               onClick={() => { setEditing(false); setEditText(comment.text); }}
               style={{ padding: "4px 10px", fontSize: 11, cursor: "pointer", background: "none", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--text-secondary)" }}
-            >Cancel</button>
+            >{t.common.cancel}</button>
             <button
               onClick={() => { onEdit(comment.id, editText.trim()); setEditing(false); }}
               style={{ padding: "4px 10px", fontSize: 11, cursor: "pointer", background: "var(--brand)", border: "none", borderRadius: "var(--r-sm)", color: "#fff", fontWeight: 700 }}
-            >Save</button>
+            >{t.common.save}</button>
           </div>
         </div>
       </div>
@@ -104,14 +106,14 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 3, paddingLeft: 4 }}>
-          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{timeAgo(comment.createdAt)}</span>
+          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{timeAgo(comment.createdAt, t)}</span>
           {currentUid === comment.authorId && (
             <button onClick={() => setEditing(true)} style={{
               fontSize: 10, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0,
             }}
               onMouseEnter={(e) => e.target.style.color = "var(--brand)"}
               onMouseLeave={(e) => e.target.style.color = "var(--text-muted)"}
-            >Edit</button>
+            >{t.common.edit}</button>
           )}
           {(currentUid === comment.authorId || isAdmin) && (
             <button onClick={() => onDelete(comment.id)} style={{
@@ -119,7 +121,7 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
             }}
               onMouseEnter={(e) => e.target.style.color = "var(--danger)"}
               onMouseLeave={(e) => e.target.style.color = "var(--text-muted)"}
-            >Delete</button>
+            >{t.community.delete}</button>
           )}
         </div>
       </div>
@@ -129,6 +131,7 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
 
 /* ── Post card ── */
 function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfile, onMessage }) {
+  const { t } = useLang();
   const [liked,    setLiked]    = useState((post.likedBy || []).includes(currentUser?.uid));
   const [likes,    setLikes]    = useState(post.likesCount || (post.likedBy?.length || 0));
   const [comments, setComments] = useState([]);
@@ -233,8 +236,8 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
             )}
           </div>
           <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-            {timeAgo(post.createdAt)}
-            {post.editedAt && <span style={{ marginLeft: 4 }}>(edited)</span>}
+            {timeAgo(post.createdAt, t)}
+            {post.editedAt && <span style={{ marginLeft: 4 }}>{t.common.edited}</span>}
           </p>
         </div>
 
@@ -349,7 +352,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
             )}
           </span>
           <span>{likes || ""}</span>
-          <span>Like</span>
+          <span>{liked ? t.community.liked : t.community.like}</span>
         </button>
 
         {/* Comment */}
@@ -370,7 +373,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
           <span>{commentCount > 0 ? commentCount : ""}</span>
-          <span>Comment</span>
+          <span>{t.community.comment}</span>
         </button>
 
         {/* Repost */}
@@ -391,7 +394,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
               <path d="M4 4h16v12H5.5L4 17.5V4z"/>
               <path d="M22 6l-6 4-6-4"/>
             </svg>
-            <span>Message</span>
+            <span>{t.community.message}</span>
           </button>
         )}
         {currentUser && post.authorId !== currentUser.uid && (
@@ -411,7 +414,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
               <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
               <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
             </svg>
-            <span>Repost</span>
+            <span>{t.community.repost}</span>
           </button>
         )}
       </div>
@@ -422,20 +425,20 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
           onClick={() => setShowRepostModal(false)}>
           <div style={{ background: "var(--bg-primary)", borderRadius: "var(--r-xl)", padding: "1.5rem", width: "100%", maxWidth: 480, boxShadow: "0 16px 48px rgba(15,23,42,0.2)", display: "flex", flexDirection: "column", gap: "1rem" }}
             onClick={(e) => e.stopPropagation()}>
-            <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>Repost</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{t.community.repost}</p>
 
             {/* Original post preview */}
             <div style={{ background: "var(--bg-secondary)", borderRadius: "var(--r-md)", padding: "0.85rem 1rem", border: "1px solid var(--border)", borderLeft: "3px solid var(--brand)" }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>{post.authorName}</p>
               <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, wordBreak: "break-word" }}>
-                {post.text ? (post.text.length > 200 ? post.text.slice(0, 200) + "…" : post.text) : "(media post)"}
+                {post.text ? (post.text.length > 200 ? post.text.slice(0, 200) + "…" : post.text) : t.community.mediaPost}
               </p>
             </div>
 
             <textarea
               value={repostThoughts}
               onChange={(e) => setRepostThoughts(e.target.value)}
-              placeholder="Add your thoughts… (optional)"
+              placeholder={t.community.addThoughtsPlaceholder}
               rows={3}
               style={{ width: "100%", padding: "10px 12px", fontSize: 14, border: "1.5px solid var(--border)", borderRadius: "var(--r-md)", resize: "none", fontFamily: "var(--font)", background: "var(--bg-secondary)", color: "var(--text-primary)", outline: "none" }}
               onFocus={(e) => e.target.style.borderColor = "var(--brand)"}
@@ -443,11 +446,11 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
             />
 
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => setShowRepostModal(false)} style={{ padding: "8px 18px", borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "none", fontSize: 13, cursor: "pointer", color: "var(--text-secondary)" }}>Cancel</button>
+              <button onClick={() => setShowRepostModal(false)} style={{ padding: "8px 18px", borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "none", fontSize: 13, cursor: "pointer", color: "var(--text-secondary)" }}>{t.common.cancel}</button>
               <button
                 onClick={() => { onRepost(post, repostThoughts.trim()); setShowRepostModal(false); setRepostThoughts(""); }}
                 style={{ padding: "8px 18px", borderRadius: "var(--r-sm)", background: "var(--brand)", color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-              >Repost</button>
+              >{t.community.repost}</button>
             </div>
           </div>
         </div>
@@ -456,7 +459,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
       {/* Comments section */}
       {showComments && (
         <div style={{ padding: "0.75rem 1.25rem 1rem", borderTop: "1px solid var(--bg-tertiary)" }}>
-          {loadingComments && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "1rem 0" }}>Loading…</p>}
+          {loadingComments && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "1rem 0" }}>{t.common.loading}</p>}
 
           {comments.map((c) => (
             <CommentItem
@@ -476,7 +479,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleComment(); } }}
-                  placeholder="Write a comment…"
+                  placeholder={t.community.commentPlaceholder}
                   style={{
                     width: "100%", padding: "8px 12px",
                     border: "1.5px solid var(--border)", borderRadius: "var(--r-full)",
@@ -514,6 +517,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
 
 /* ── Compose box ── */
 function ComposeBox({ currentUser, profile, onPost }) {
+  const { t } = useLang();
   const [text, setText]       = useState("");
   const [files, setFiles]     = useState([]);
   const [posting, setPosting] = useState(false);
@@ -562,7 +566,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Share something with the community…"
+            placeholder={t.community.sharePrompt}
             rows={text ? 3 : 1}
             style={{
               width: "100%", border: "none", outline: "none", resize: "none",
@@ -605,7 +609,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
               onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-              Attach
+              {t.community.attachFile}
             </button>
             <input ref={fileRef} type="file" accept="image/*,video/*" multiple style={{ display: "none" }}
               onChange={(e) => setFiles((p) => [...p, ...Array.from(e.target.files)])} />
@@ -624,7 +628,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
                 transition: "all var(--t-fast)",
               }}
             >
-              {posting ? "Posting…" : "Post"}
+              {posting ? t.community.posting : t.community.post}
             </button>
           </div>
         </div>
@@ -683,7 +687,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   }, [user]);
 
   const handleDeletePost = async (postId) => {
-    if (!window.confirm("Delete this post?")) return;
+    if (!window.confirm(t.community.confirmDelete)) return;
     await deleteDoc(doc(db, "posts", postId));
   };
 
