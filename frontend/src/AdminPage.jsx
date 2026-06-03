@@ -473,8 +473,18 @@ export default function AdminPage() {
   }
 
   /* ── Computed stats (overview) ── */
+  const parseLastSeen = (value) => {
+    if (!value) return NaN;
+    if (typeof value === "number") return value;
+    if (value?.seconds && typeof value.seconds === "number") return value.seconds * 1000;
+    return new Date(value).getTime();
+  };
+  const isActuallyOnline = (u) => {
+    const lastSeenMs = parseLastSeen(u?.lastSeen);
+    return !Number.isNaN(lastSeenMs) && Date.now() - lastSeenMs < 5 * 60 * 1000;
+  };
   const now          = Date.now();
-  const onlineNow    = users.filter(u => u.isOnline).length;
+  const onlineNow    = users.filter(isActuallyOnline).length;
   const verifiedN    = users.filter(u => u.emailVerified).length;
   const adminsN      = users.filter(u => u.isAdmin).length;
   const newThisWeek  = users.filter(u => u.createdAt && (now - new Date(u.createdAt)) < 7*86400*1000).length;
@@ -769,7 +779,7 @@ export default function AdminPage() {
                           {u.emailVerified ? "Verified" : "Pending"}
                         </span>
                         {u.isAdmin && <span className="badge badge-purple">Admin</span>}
-                        {u.isOnline && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● Online</span>}
+                        {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● Online</span>}
                       </div>
                     </td>
                     <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#94a3b8)",whiteSpace:"nowrap" }}>

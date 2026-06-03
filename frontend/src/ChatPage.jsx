@@ -33,6 +33,17 @@ function timeAgoShort(ts) {
   return `${Math.floor(s / 86400)}d`;
 }
 
+const parseLastSeen = (value) => {
+  if (!value) return NaN;
+  if (typeof value === "number") return value;
+  if (value?.seconds && typeof value.seconds === "number") return value.seconds * 1000;
+  return new Date(value).getTime();
+};
+const isActuallyOnline = (u) => {
+  const lastSeenMs = parseLastSeen(u?.lastSeen);
+  return !Number.isNaN(lastSeenMs) && Date.now() - lastSeenMs < 5 * 60 * 1000;
+};
+
 /* ── Avatar ── */
 function Avatar({ url, name, size = 40, online = false, ring = false }) {
   const colors = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#dc2626", "#d97706", "#db2777"];
@@ -74,7 +85,7 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
   const otherName = conv.participantNames?.[otherId] || "Unknown";
   const otherAvatar = conv.participantAvatars?.[otherId] || null;
   const otherUser = allUsers.find((u) => u.id === otherId);
-  const isOnline = otherUser?.isOnline || false;
+  const isOnline = isActuallyOnline(otherUser);
   const unread = conv.unreadCounts?.[currentUid] || 0;
   const lastMsg = conv.lastMessage;
 
@@ -783,7 +794,7 @@ export default function ChatPage({ onUnreadChange }) {
                 onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
               >
-                <Avatar url={u.avatarUrl} name={`${u.firstName} ${u.lastName}`} size={36} online={u.isOnline} />
+                <Avatar url={u.avatarUrl} name={`${u.firstName} ${u.lastName}`} size={36} online={isActuallyOnline(u)} />
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{u.firstName} {u.lastName}</p>
                   <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.profession || u.city || ""}</p>
@@ -825,11 +836,11 @@ export default function ChatPage({ onUnreadChange }) {
             background: "var(--bg-primary)",
             flexShrink: 0,
           }}>
-            <Avatar url={otherAvatar} name={otherName} size={40} online={otherUser?.isOnline} />
+            <Avatar url={otherAvatar} name={otherName} size={40} online={isActuallyOnline(otherUser)} />
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", lineHeight: 1.2 }}>{otherName || "…"}</p>
-              <p style={{ fontSize: 11, color: otherUser?.isOnline ? "#22c55e" : "var(--text-muted)", marginTop: 1 }}>
-                {otherUser?.isOnline ? "Active now" : otherUser?.profession || "Offline"}
+              <p style={{ fontSize: 11, color: isActuallyOnline(otherUser) ? "#22c55e" : "var(--text-muted)", marginTop: 1 }}>
+                {isActuallyOnline(otherUser) ? "Active now" : otherUser?.profession || "Offline"}
               </p>
             </div>
             <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 6, borderRadius: "50%", display: "flex" }}
