@@ -145,7 +145,9 @@ const translations = {
       confirm: "אשר",
       errorGeneral: "משהו השתבש. נסה/י שוב.",
       myPosts: "הפוסטים שלי",
+      posts: "פוסטים",
       noMyPosts: "עדיין לא פרסמת פוסטים. לך לקהילה ושתף/י משהו!",
+      noPosts: "עוד לא פרסמה פוסטים.",
     },
     network: {
       joinNetwork: "הצטרף לרשת",
@@ -303,7 +305,9 @@ const translations = {
       confirm: "Confirm",
       errorGeneral: "Something went wrong. Please try again.",
       myPosts: "My Posts",
+      posts: "Posts",
       noMyPosts: "You haven't posted anything yet. Go to Community and share something!",
+      noPosts: "This member hasn't posted anything yet.",
     },
     network: {
       joinNetwork: "Join Network",
@@ -461,7 +465,9 @@ const translations = {
       confirm: "تأكيد",
       errorGeneral: "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
       myPosts: "منشوراتي",
+      posts: "المنشورات",
       noMyPosts: "لم تنشر أي شيء بعد. اذهب إلى المجتمع وشارك شيئاً!",
+      noPosts: "لم ينشر هذا العضو أي شيء بعد.",
     },
     network: {
       joinNetwork: "انضم للشبكة",

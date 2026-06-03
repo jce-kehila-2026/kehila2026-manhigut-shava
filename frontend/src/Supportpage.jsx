@@ -146,7 +146,7 @@ if (!document.head.querySelector("#support-styles")) {
   document.head.appendChild(styleTag);
 }
 
-export default function SupportPage() {
+export default function SupportPage({ onViewProfile, onMessage }) {
   const { user } = useAuth();
 
   /* Search state */
@@ -470,8 +470,8 @@ export default function SupportPage() {
             {recommended.map((u) => (
               <div
                 key={u.id}
-                style={S.recCard}
-                onClick={() => setSelectedUser(u)}
+                style={{ ...S.recCard, cursor: onViewProfile ? "pointer" : "default" }}
+                onClick={() => onViewProfile ? onViewProfile(u.id) : setSelectedUser(u)}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(15,23,42,0.10)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 8px rgba(15,23,42,0.05)"; }}
               >
@@ -661,7 +661,7 @@ export default function SupportPage() {
               </div>
               {u.city && <span style={S.cityTag}>{u.city}</span>}
               <div style={S.cardActions}>
-                <button className="view-btn" style={S.viewBtn} onClick={() => setSelectedUser(u)}>
+                <button className="view-btn" style={S.viewBtn} onClick={() => onViewProfile ? onViewProfile(u.id) : setSelectedUser(u)}>
                   View Profile
                 </button>
                 <button
@@ -770,14 +770,24 @@ export default function SupportPage() {
                 </div>
               )}
             </div>
-            <button
-              style={requested[selectedUser.id] ? S.modalReqDoneBtn : S.modalReqBtn}
-              onClick={() => handleRequest(selectedUser)}
-              onMouseOver={(e) => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#122d47"; }}
-              onMouseOut={(e)  => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#1a3c5e"; }}
-            >
-              {requested[selectedUser.id] ? "Request Sent" : "Send Request"}
-            </button>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              {onMessage && selectedUser.id !== user?.uid && (
+                <button
+                  style={{ ...S.modalReqBtn, flex: 1 }}
+                  onClick={() => onMessage(selectedUser.id)}
+                >
+                  Message
+                </button>
+              )}
+              <button
+                style={requested[selectedUser.id] ? S.modalReqDoneBtn : S.modalReqBtn}
+                onClick={() => handleRequest(selectedUser)}
+                onMouseOver={(e) => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#122d47"; }}
+                onMouseOut={(e)  => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#1a3c5e"; }}
+              >
+                {requested[selectedUser.id] ? "Request Sent" : "Send Request"}
+              </button>
+            </div>
           </div>
         </div>
       )}

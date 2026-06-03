@@ -5,7 +5,7 @@ import { useAuth } from "./AuthContext";
 import {
   useConversations, useMessages,
   sendMessage, getOrCreateConversation, markRead, setTyping, uploadChatImage,
-  editMessage, deleteMessage,
+  toggleReaction, editMessage, deleteMessage,
 } from "./hooks/useMessages";
 
 /* ── Helpers ── */
@@ -45,11 +45,11 @@ const isActuallyOnline = (u) => {
 };
 
 /* ── Avatar ── */
-function Avatar({ url, name, size = 40, online = false, ring = false }) {
+function Avatar({ url, name, size = 40, online = false, ring = false, onClick }) {
   const colors = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#dc2626", "#d97706", "#db2777"];
   const bg = colors[(name?.charCodeAt(0) || 0) % colors.length];
   return (
-    <div style={{ position: "relative", flexShrink: 0 }}>
+    <div style={{ position: "relative", flexShrink: 0, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
       <div style={{
         width: size, height: size, borderRadius: "50%",
         padding: ring ? 2 : 0,
@@ -135,7 +135,7 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
 }
 
 /* ── Message bubble with swipe-to-reply + long-press context menu ── */
-function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup, onReply, onViewImage, conversationId }) {
+function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup, onReply, onViewImage, conversationId, currentUserId }) {
   const EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🎉"];
   const [hovering, setHovering] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
@@ -328,7 +328,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
         {/* Avatar at bottom of their group */}
         {!isMe && (
           <div style={{ width: 28, flexShrink: 0, alignSelf: "flex-end" }}>
-            {showAvatar && <Avatar url={senderAvatar} name={senderName} size={28} />}
+            {showAvatar && <Avatar url={senderAvatar} name={senderName} size={28} onClick={() => onViewProfile?.(msg.senderId)} />}
           </div>
         )}
 
@@ -430,6 +430,10 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                   }}
                     onMouseEnter={(ev) => ev.currentTarget.style.transform = "scale(1.4)"}
                     onMouseLeave={(ev) => ev.currentTarget.style.transform = "scale(1)"}
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (conversationId && currentUserId) toggleReaction(conversationId, msg.id, e, currentUserId);
+                    }}
                   >{e}</button>
                 ))}
               </div>
@@ -502,8 +506,14 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                 <span key={emoji} style={{
                   background: "#fff", border: "1px solid #e5eaf2",
                   borderRadius: 99, padding: "1px 6px",
-                  fontSize: 12, display: "flex", alignItems: "center", gap: 3, cursor: "pointer",
-                }}>
+                  fontSize: 12, display: "flex", alignItems: "center", gap: 3, cursor: currentUserId ? "pointer" : "default",
+                }}
+                  onClick={(ev) => {
+                    if (!currentUserId || !conversationId) return;
+                    ev.stopPropagation();
+                    toggleReaction(conversationId, msg.id, emoji, currentUserId);
+                  }}
+                >
                   {emoji}
                   <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>{users.length}</span>
                 </span>
@@ -545,7 +555,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
 }
 
 /* ── Main ChatPage ── */
-export default function ChatPage({ onUnreadChange }) {
+export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUserId }) {
   const { user, profile } = useAuth();
   const { conversations } = useConversations(user?.uid);
   const [activeConvId, setActiveConvId] = useState(null);
@@ -605,6 +615,7 @@ export default function ChatPage({ onUnreadChange }) {
     e.target.value = "";
   };
 
+  const recipientIds = activeConv?.participants?.filter((p) => p !== user?.uid) ?? [];
   const handleSend = async () => {
     if (!activeConvId || sending) return;
     if (!text.trim() && !imgFile) return;
@@ -614,12 +625,20 @@ export default function ChatPage({ onUnreadChange }) {
     try {
       if (f) {
         const url = await uploadChatImage(f, activeConvId);
-        await sendMessage(activeConvId, user.uid, t, r, url);
+        await sendMessage(activeConvId, user.uid, t, r, url, recipientIds);
       } else {
-        await sendMessage(activeConvId, user.uid, t, r);
+        await sendMessage(activeConvId, user.uid, t, r, null, recipientIds);
       }
     } finally { setSending(false); }
     inputRef.current?.focus();
+  };
+  const handleHeart = async () => {
+    if (!activeConvId || sending) return;
+    setSending(true);
+    setReplyTo(null);
+    try {
+      await sendMessage(activeConvId, user.uid, "❤️", null, null, recipientIds);
+    } finally { setSending(false); }
   };
 
   const handleKeyDown = (e) => {
@@ -651,6 +670,14 @@ export default function ChatPage({ onUnreadChange }) {
       console.error("Failed to open conversation:", e);
     }
   };
+
+  useEffect(() => {
+    if (!openChatWithUserId || activeConvId || allUsers.length === 0) return;
+    const targetUser = allUsers.find((u) => u.id === openChatWithUserId);
+    if (targetUser) {
+      handleNewConversation(targetUser);
+    }
+  }, [openChatWithUserId, allUsers, activeConvId]);
 
   const getDateLabel = (msg, prev) => {
     if (!prev) return formatDateLabel(msg.createdAt);
@@ -836,7 +863,7 @@ export default function ChatPage({ onUnreadChange }) {
             background: "var(--bg-primary)",
             flexShrink: 0,
           }}>
-            <Avatar url={otherAvatar} name={otherName} size={40} online={isActuallyOnline(otherUser)} />
+            <Avatar url={otherAvatar} name={otherName} size={40} online={isActuallyOnline(otherUser)} onClick={() => onViewProfile?.(otherId)} />
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", lineHeight: 1.2 }}>{otherName || "…"}</p>
               <p style={{ fontSize: 11, color: isActuallyOnline(otherUser) ? "#22c55e" : "var(--text-muted)", marginTop: 1 }}>
@@ -901,6 +928,7 @@ export default function ChatPage({ onUnreadChange }) {
                     onReply={(r) => setReplyTo(r)}
                     onViewImage={(url) => setLightbox(url)}
                     conversationId={activeConvId}
+                    currentUserId={user?.uid}
                   />
 
                   {/* Seen indicator — below last sent message the other person has read */}
@@ -1062,7 +1090,7 @@ export default function ChatPage({ onUnreadChange }) {
                 )}
               </button>
             ) : (
-              <button style={{
+              <button onClick={handleHeart} style={{
                 width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
                 background: "none", border: "none", cursor: "pointer",
                 color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center",
