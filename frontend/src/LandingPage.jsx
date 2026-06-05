@@ -11,6 +11,40 @@ const C = {
   border:   "rgba(184, 97, 122, 0.16)",
 };
 
+/* ─── Minimal SVG Icons ─── */
+const Icons = {
+  Search: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  ),
+  Send: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  ),
+  Feed: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 11a9 9 0 0 1 9 9" />
+      <path d="M4 4a16 16 0 0 1 16 16" />
+      <circle cx="5" cy="19" r="1" />
+    </svg>
+  ),
+  Mobile: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </svg>
+  ),
+  Chat: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  )
+};
+
 /* ─── Language switcher ─── */
 function LangSwitcher({ lang, setLang }) {
   const langs = [
@@ -54,8 +88,7 @@ function Bloom({ style }) {
         borderRadius: "50%",
         filter: "blur(80px)",
         pointerEvents: "none",
-        ...style,
-      }}
+        ...style}}
     />
   );
 }
@@ -63,6 +96,34 @@ function Bloom({ style }) {
 /* ─── Landing ─── */
 export default function LandingPage({ onLogin }) {
   const { t, isRTL, lang, setLang } = useLang();
+
+  const FEATURES = [
+    { 
+      Icon: Icons.Search, 
+      title: "Smart Search", 
+      desc: "Search by name, profession, city, or category. Instant results with precise filters." 
+    },
+    { 
+      Icon: Icons.Send, 
+      title: "Help Requests", 
+      desc: "Send a direct request to a graduate." 
+    },
+    { 
+      Icon: Icons.Chat, 
+      title: "Direct Chatting", 
+      desc: "Connect seamlessly through secure, real-time messaging directly within the platform." 
+    },
+    { 
+      Icon: Icons.Feed, 
+      title: "Community Feed", 
+      desc: "Share updates, successes, and opportunities. The entire community in one live stream." 
+    },
+    { 
+      Icon: Icons.Mobile, 
+      title: "Any Device", 
+      desc: "Mobile, tablet, desktop — a seamless experience in any resolution and language." 
+    },
+  ];
 
   return (
     <div
@@ -73,7 +134,9 @@ export default function LandingPage({ onLogin }) {
         fontFamily: "'Figtree', 'Heebo', system-ui, sans-serif",
         direction: isRTL ? "rtl" : "ltr",
         position: "relative",
-        overflow: "hidden",
+        // Changed overflow from 'hidden' to 'x' to allow vertical scrolling safely
+        overflowX: "hidden", 
+        overflowY: "auto",
       }}
     >
       {/* Soft background blooms */}
@@ -156,7 +219,7 @@ export default function LandingPage({ onLogin }) {
         </div>
       </header>
 
-      {/* Hero — centered, minimal */}
+      {/* Hero — minimal wrapper */}
       <main
         style={{
           position: "relative",
@@ -166,10 +229,9 @@ export default function LandingPage({ onLogin }) {
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
-          padding: "clamp(3rem, 10vh, 7rem) 1.5rem 5rem",
+          padding: "clamp(2rem, 6vh, 4rem) 1.5rem 2rem",
           maxWidth: 760,
           margin: "0 auto",
-          minHeight: "calc(100vh - 110px)",
         }}
       >
         {/* Tagline pill */}
@@ -278,22 +340,105 @@ export default function LandingPage({ onLogin }) {
             {t.landing.hero.primaryCta}
           </button>
         </div>
+      </main>
 
-        {/* Quiet meta line */}
+      {/* ─── Features Section ─── */}
+      <section
+        style={{
+          position: "relative",
+          zIndex: 2,
+          maxWidth: 1100,
+          margin: "3rem auto 6rem",
+          padding: "0 2rem",
+          animation: "fadeUp 0.8s 0.3s ease both",
+        }}
+      >
         <div
           style={{
-            marginTop: "4rem",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 24,
+          }}
+        >
+          {FEATURES.map(({ Icon, title, desc }, idx) => (
+            <div
+              key={idx}
+              style={{
+                background: "rgba(255, 255, 255, 0.45)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: `1px solid ${C.border}`,
+                borderRadius: 24,
+                padding: "2.2rem 2rem",
+                textAlign: isRTL ? "right" : "left",
+                transition: "transform 0.3s, background 0.3s, box-shadow 0.3s",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.75)";
+                e.currentTarget.style.boxShadow = "0 12px 32px rgba(184, 97, 122, 0.06)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "";
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.45)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  background: "rgba(184, 97, 122, 0.08)",
+                  color: C.roseDark,
+                  marginBottom: "1.4rem",
+                }}
+              >
+                <Icon />
+              </div>
+              <h3
+                style={{
+                  fontFamily: "'Outfit', 'Heebo', sans-serif",
+                  fontSize: 18,
+                  fontWeight: 600,
+                  color: C.plum,
+                  margin: "0 0 0.6rem 0",
+                }}
+              >
+                {title}
+              </h3>
+              <p
+                style={{
+                  fontSize: 13.5,
+                  lineHeight: 1.6,
+                  color: C.muted,
+                  margin: 0,
+                }}
+              >
+                {desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ position: "relative", zIndex: 2, textAlign: "center", paddingBottom: "5rem" }}>
+        <div
+          style={{
             fontSize: 12,
             color: C.muted,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             opacity: 0.7,
-            animation: "fadeUp 0.7s 0.32s ease both",
           }}
         >
           {t.landing.footer.brand} · {t.landing.footer.tagline}
         </div>
-      </main>
+      </footer>
 
       <style>{`
         @keyframes fadeUp {

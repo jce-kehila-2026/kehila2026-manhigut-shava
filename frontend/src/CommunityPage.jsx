@@ -731,10 +731,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
           overflow: "hidden",
         }}
       >
-        <span style={{ position: "absolute", top: 8, right: 14, fontSize: 14, opacity: 0.85 }}>✨</span>
-        <span style={{ position: "absolute", top: 26, right: 38, fontSize: 10, opacity: 0.7 }}>🎊</span>
-        <span style={{ position: "absolute", bottom: 10, right: 22, fontSize: 12, opacity: 0.7 }}>🎈</span>
-
+        
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div
             style={{
@@ -777,7 +774,6 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
                 overflow: "hidden",
               }}
             >
-              <span style={{ position: "absolute", top: 6, right: 8, fontSize: 14 }}>🎉</span>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div
                   onClick={() => onViewProfile?.(u.id)}
@@ -815,7 +811,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
                     marginTop: 3,
                     letterSpacing: "0.08em",
                     boxShadow: "0 4px 12px var(--brand-glow)",
-                  }}>TODAY 🎉</span>
+                  }}>TODAY</span>
                 </div>
               </div>
               {canSend && (
@@ -836,7 +832,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
                     letterSpacing: "0.03em",
                   }}
                 >
-                  Send wishes 💌
+                  Send wishes 
                 </button>
               )}
             </div>
