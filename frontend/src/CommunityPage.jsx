@@ -24,7 +24,7 @@ function getInitials(name) {
   return name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
 }
 function avatarColor(name) {
-  const colors = ["#2563eb","#7c3aed","#0891b2","#059669","#dc2626","#d97706","#db2777"];
+  const colors = ["#b8617a","#8d3f5c","#8d3f5c","#7ba87a","#c25c5c","#b8895a","#b8617a"];
   return colors[(name?.charCodeAt(0) || 0) % colors.length];
 }
 function isBirthdaySoon(birthdate) {
@@ -230,7 +230,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
               </span>
             )}
             {post.isPinned && (
-              <span style={{ fontSize: 10, fontWeight: 700, background: "#fef9c3", color: "#854d0e", border: "1px solid #fde047", borderRadius: "var(--r-full)", padding: "1px 7px" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, background: "#faedd6", color: "#7a5a2e", border: "1px solid #e8c992", borderRadius: "var(--r-full)", padding: "1px 7px" }}>
                 Pinned
               </span>
             )}
@@ -256,7 +256,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
               <button
                 onClick={() => onDelete(post.id)}
                 style={{ padding: "4px 10px", borderRadius: "var(--r-sm)", fontSize: 11, fontWeight: 600, background: "none", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#fee2e2"; e.currentTarget.style.color = "var(--danger)"; e.currentTarget.style.borderColor = "#fca5a5"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#f5dada"; e.currentTarget.style.color = "var(--danger)"; e.currentTarget.style.borderColor = "#d99090"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "var(--border)"; }}
               >Remove</button>
             )}
@@ -387,7 +387,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
               border: "none", fontSize: 13, fontWeight: 500, cursor: onMessage ? "pointer" : "not-allowed",
               transition: "all var(--t-fast)",
             }}
-            onMouseEnter={(e) => { if (onMessage) e.currentTarget.style.background = "#e2e8f0"; }}
+            onMouseEnter={(e) => { if (onMessage) e.currentTarget.style.background = "#f0dce0"; }}
             onMouseLeave={(e) => { if (onMessage) e.currentTarget.style.background = "var(--bg-tertiary)"; }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -421,9 +421,9 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
 
       {/* Repost modal */}
       {showRepostModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "1rem", backdropFilter: "blur(4px)" }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(74, 31, 61,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "1rem", backdropFilter: "blur(4px)" }}
           onClick={() => setShowRepostModal(false)}>
-          <div style={{ background: "var(--bg-primary)", borderRadius: "var(--r-xl)", padding: "1.5rem", width: "100%", maxWidth: 480, boxShadow: "0 16px 48px rgba(15,23,42,0.2)", display: "flex", flexDirection: "column", gap: "1rem" }}
+          <div style={{ background: "var(--bg-primary)", borderRadius: "var(--r-xl)", padding: "1.5rem", width: "100%", maxWidth: 480, boxShadow: "0 16px 48px rgba(74, 31, 61,0.2)", display: "flex", flexDirection: "column", gap: "1rem" }}
             onClick={(e) => e.stopPropagation()}>
             <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{t.community.repost}</p>
 
@@ -748,12 +748,12 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
                 <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>{r.fromUserProfession}</p>
                 {!r.status && (
                   <div style={{ display: "flex", gap: 4 }}>
-                    <button onClick={() => handleRequest(r.id, "accepted")} style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: 700, background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", borderRadius: "var(--r-sm)", cursor: "pointer" }}>Accept</button>
-                    <button onClick={() => handleRequest(r.id, "declined")} style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#b91c1c", border: "1px solid #fca5a5", borderRadius: "var(--r-sm)", cursor: "pointer" }}>Decline</button>
+                    <button onClick={() => handleRequest(r.id, "accepted")} style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: 700, background: "#f0fdf4", color: "#3f6a3e", border: "1px solid #cfe4ce", borderRadius: "var(--r-sm)", cursor: "pointer" }}>Accept</button>
+                    <button onClick={() => handleRequest(r.id, "declined")} style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#9a4545", border: "1px solid #d99090", borderRadius: "var(--r-sm)", cursor: "pointer" }}>Decline</button>
                   </div>
                 )}
                 {r.status && (
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-full)", background: r.status === "accepted" ? "#dcfce7" : "#fee2e2", color: r.status === "accepted" ? "#166534" : "#991b1b", border: `1px solid ${r.status === "accepted" ? "#bbf7d0" : "#fecaca"}` }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-full)", background: r.status === "accepted" ? "#e2efe1" : "#f5dada", color: r.status === "accepted" ? "#3f6a3e" : "#991b1b", border: `1px solid ${r.status === "accepted" ? "#cfe4ce" : "#eec3c3"}` }}>
                     {r.status === "accepted" ? "Accepted" : "Declined"}
                   </span>
                 )}

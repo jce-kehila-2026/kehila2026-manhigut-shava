@@ -86,9 +86,9 @@ const isActuallyOnline = (u) => {
 /* ─── StatusPill ─── */
 function StatusPill({ status }) {
   const map = {
-    accepted: { bg: "#f0fdf4", color: "#166534", border: "#bbf7d0", label: "Accepted" },
-    declined: { bg: "#fff0f0", color: "#b91c1c", border: "#fca5a5", label: "Declined" },
-    null:     { bg: "#f1f5f9", color: "#64748b", border: "#e2e8f0", label: "Pending"  },
+    accepted: { bg: "#f0fdf4", color: "#3f6a3e", border: "#cfe4ce", label: "Accepted" },
+    declined: { bg: "#fff0f0", color: "#9a4545", border: "#d99090", label: "Declined" },
+    null:     { bg: "#f7ecec", color: "#7a5868", border: "#f0dce0", label: "Pending"  },
   };
   const s = map[status] ?? map["null"];
   return (
@@ -105,7 +105,7 @@ function MemberAvatar({ user, size = 46, fontSize = 15 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%", flexShrink: 0,
-      background: url ? "transparent" : "linear-gradient(135deg,#1a3c5e,#0ea5e9)",
+      background: url ? "transparent" : "linear-gradient(135deg,#4a1f3d,#8d3f5c)",
       display: "flex", alignItems: "center", justifyContent: "center",
       overflow: "hidden", position: "relative",
     }}>
@@ -121,19 +121,19 @@ function MemberAvatar({ user, size = 46, fontSize = 15 }) {
 const styleTag = document.createElement("style");
 styleTag.textContent = `
   .support-input:focus {
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 0 3px rgba(56,189,248,0.15) !important;
+    border-color: #b8617a !important;
+    box-shadow: 0 0 0 3px rgba(184, 97, 122,0.15) !important;
     background: #fff !important;
     outline: none;
   }
   .result-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(15,23,42,0.10) !important;
+    box-shadow: 0 8px 24px rgba(74, 31, 61,0.10) !important;
   }
   .prof-pill { transition: all 0.14s ease; cursor: pointer; }
   .prof-pill:hover { transform: translateY(-1px); }
   .search-btn:hover    { background: #122d47 !important; }
-  .view-btn:hover      { background: #f1f5f9 !important; border-color: #cbd5e1 !important; }
+  .view-btn:hover      { background: #f7ecec !important; border-color: #d9c8ce !important; }
   .req-btn:hover       { background: #dbeafe !important; }
   .suggest-item:hover  { background: #f0f7ff !important; }
   @keyframes fadeSlideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
@@ -300,8 +300,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     recCard: {
       background: "var(--bg-primary)", borderRadius: "16px",
       padding: "1.25rem 1rem", border: "1.5px solid var(--border)",
-      borderTop: "3px solid #38bdf8",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+      borderTop: "3px solid #b8617a",
+      boxShadow: "0 2px 8px rgba(74, 31, 61,0.05)",
       display: "flex", flexDirection: "column", alignItems: "center",
       gap: "0.5rem", textAlign: "center", cursor: "pointer",
       transition: "transform 0.18s, box-shadow 0.18s",
@@ -311,8 +311,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     searchCard: {
       background: "var(--bg-primary)", borderRadius: "18px",
       padding: "1.5rem", border: "1.5px solid var(--border)",
-      borderLeft: "4px solid #38bdf8",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+      borderLeft: "4px solid #b8617a",
+      boxShadow: "0 2px 8px rgba(74, 31, 61,0.05)",
       marginBottom: "2rem",
     },
     group: { display: "flex", flexDirection: "column", gap: "6px", marginBottom: "1rem" },
@@ -325,8 +325,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     pillRow: { display: "flex", flexWrap: "wrap", gap: "6px" },
     pill: (active) => ({
       padding: "6px 14px", borderRadius: "99px", fontSize: "12px", fontWeight: "600",
-      border: `1.5px solid ${active ? "#0ea5e9" : "var(--border)"}`,
-      background: active ? "#e0f2fe" : "var(--bg-secondary)",
+      border: `1.5px solid ${active ? "#8d3f5c" : "var(--border)"}`,
+      background: active ? "#faeef0" : "var(--bg-secondary)",
       color: active ? "#0369a1" : "var(--text-secondary)",
       cursor: "pointer", userSelect: "none",
     }),
@@ -339,7 +339,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       width: "100%", boxSizing: "border-box",
     },
     searchBtn: {
-      padding: "11px 32px", background: "#1a3c5e", color: "#fff",
+      padding: "11px 32px", background: "#4a1f3d", color: "#fff",
       border: "none", borderRadius: "13px", fontSize: "14px", fontWeight: "700",
       cursor: "pointer", transition: "background 0.2s", height: "44px",
       marginTop: "1rem", alignSelf: "flex-start",
@@ -354,7 +354,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     card: {
       background: "var(--bg-primary)", borderRadius: "18px", padding: "1.5rem",
       border: "1.5px solid var(--border)", borderLeft: "4px solid var(--border)",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+      boxShadow: "0 2px 8px rgba(74, 31, 61,0.05)",
       display: "flex", flexDirection: "column", gap: "0.75rem",
       transition: "transform 0.18s, box-shadow 0.18s",
     },
@@ -371,31 +371,31 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     viewBtn: {
       flex: 1, padding: "9px 0", background: "var(--bg-secondary)",
       color: "var(--text-primary)", border: "1.5px solid var(--border)",
-      borderRadius: "10px", fontSize: "13px", fontWeight: "600",
+      borderRadius: "12px", fontSize: "13px", fontWeight: "600",
       cursor: "pointer", transition: "background 0.15s, border-color 0.15s",
     },
     reqBtn: {
-      flex: 1, padding: "9px 0", background: "#eff6ff", color: "#1d4ed8",
-      border: "1.5px solid #bfdbfe", borderRadius: "10px",
+      flex: 1, padding: "9px 0", background: "#eff6ff", color: "#8d3f5c",
+      border: "1.5px solid #bfdbfe", borderRadius: "12px",
       fontSize: "13px", fontWeight: "600", cursor: "pointer",
     },
     reqDoneBtn: {
-      flex: 1, padding: "9px 0", background: "#f0fdf4", color: "#166534",
-      border: "1.5px solid #bbf7d0", borderRadius: "10px",
+      flex: 1, padding: "9px 0", background: "#f0fdf4", color: "#3f6a3e",
+      border: "1.5px solid #cfe4ce", borderRadius: "12px",
       fontSize: "13px", fontWeight: "600", cursor: "default",
     },
     emptyBox: { textAlign: "center", padding: "3rem 2rem", color: "var(--text-muted)", fontSize: "14px" },
 
     /* modal */
     overlay: {
-      position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)",
+      position: "fixed", inset: 0, background: "rgba(74, 31, 61,0.4)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 100, padding: "1rem", backdropFilter: "blur(4px)",
     },
     modal: {
       background: "var(--bg-primary)", borderRadius: "22px", padding: "2rem",
       width: "100%", maxWidth: "420px",
-      boxShadow: "0 16px 48px rgba(15,23,42,0.18)",
+      boxShadow: "0 16px 48px rgba(74, 31, 61,0.18)",
       display: "flex", flexDirection: "column", gap: "1.25rem",
       animation: "modalPop 0.26s cubic-bezier(.34,1.56,.64,1) both",
     },
@@ -415,13 +415,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     infoLabel: { fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 },
     infoValue: { fontSize: "13px", color: "var(--text-primary)", margin: 0 },
     modalReqBtn: {
-      width: "100%", padding: "12px", background: "#1a3c5e", color: "#fff",
+      width: "100%", padding: "12px", background: "#4a1f3d", color: "#fff",
       border: "none", borderRadius: "12px", fontSize: "14px",
       fontWeight: "700", cursor: "pointer", transition: "background 0.2s",
     },
     modalReqDoneBtn: {
-      width: "100%", padding: "12px", background: "#f0fdf4", color: "#166534",
-      border: "1.5px solid #bbf7d0", borderRadius: "12px",
+      width: "100%", padding: "12px", background: "#f0fdf4", color: "#3f6a3e",
+      border: "1.5px solid #cfe4ce", borderRadius: "12px",
       fontSize: "14px", fontWeight: "700", cursor: "default",
     },
 
@@ -433,26 +433,26 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     myReqCard: {
       background: "var(--bg-primary)", borderRadius: "16px", padding: "1.25rem",
       border: "1.5px solid var(--border)", borderLeft: "4px solid #a78bfa",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+      boxShadow: "0 2px 8px rgba(74, 31, 61,0.05)",
       display: "flex", flexDirection: "column", gap: "6px",
     },
     myReqName: { fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
     myReqProf: { fontSize: "12px", color: "var(--text-secondary)", margin: 0 },
     receivedReqCard: {
       background: "var(--bg-primary)", borderRadius: "16px", padding: "1.25rem",
-      border: "1.5px solid var(--border)", borderLeft: "4px solid #f59e0b",
-      boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+      border: "1.5px solid var(--border)", borderLeft: "4px solid #d4a574",
+      boxShadow: "0 2px 8px rgba(74, 31, 61,0.05)",
       display: "flex", flexDirection: "column", gap: "6px",
     },
     receivedReqActions: { display: "flex", gap: "8px", marginTop: "6px" },
     acceptBtn: {
-      flex: 1, padding: "7px 0", background: "#f0fdf4", color: "#166534",
-      border: "1.5px solid #bbf7d0", borderRadius: "9px",
+      flex: 1, padding: "7px 0", background: "#f0fdf4", color: "#3f6a3e",
+      border: "1.5px solid #cfe4ce", borderRadius: "9px",
       fontSize: "12px", fontWeight: "700", cursor: "pointer",
     },
     declineBtn: {
-      flex: 1, padding: "7px 0", background: "#fff0f0", color: "#b91c1c",
-      border: "1.5px solid #fca5a5", borderRadius: "9px",
+      flex: 1, padding: "7px 0", background: "#fff0f0", color: "#9a4545",
+      border: "1.5px solid #d99090", borderRadius: "9px",
       fontSize: "12px", fontWeight: "700", cursor: "pointer",
     },
   };
@@ -472,8 +472,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 key={u.id}
                 style={{ ...S.recCard, cursor: onViewProfile ? "pointer" : "default" }}
                 onClick={() => onViewProfile ? onViewProfile(u.id) : setSelectedUser(u)}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(15,23,42,0.10)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 8px rgba(15,23,42,0.05)"; }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(74, 31, 61,0.10)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 8px rgba(74, 31, 61,0.05)"; }}
               >
                 <div style={{ position: "relative" }}>
                   <MemberAvatar user={u} size={48} />
@@ -481,7 +481,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     <span style={{
                       position: "absolute", bottom: 1, right: 1,
                       width: 10, height: 10, borderRadius: "50%",
-                      background: "#22c55e", border: "2px solid var(--bg-primary)",
+                      background: "#7ba87a", border: "2px solid var(--bg-primary)",
                     }} />
                   )}
                 </div>
@@ -492,7 +492,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.profession}</p>
                 )}
                 {u.city && (
-                  <span style={{ fontSize: "11px", color: "#0369a1", background: "#e0f2fe", borderRadius: "99px", padding: "2px 9px" }}>
+                  <span style={{ fontSize: "11px", color: "#0369a1", background: "#faeef0", borderRadius: "99px", padding: "2px 9px" }}>
                     {u.city}
                   </span>
                 )}
@@ -534,7 +534,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               position: "fixed", top: dropPos.top, left: dropPos.left,
               width: dropPos.width, background: "var(--bg-primary)",
               borderRadius: "13px", border: "1.5px solid var(--border)",
-              boxShadow: "0 8px 28px rgba(15,23,42,0.14)",
+              boxShadow: "0 8px 28px rgba(74, 31, 61,0.14)",
               overflow: "hidden", zIndex: 9999, animation: "dropIn 0.16s ease",
               minWidth: 220,
             }}>
@@ -650,7 +650,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     <span style={{
                       position: "absolute", bottom: 1, right: 1,
                       width: 10, height: 10, borderRadius: "50%",
-                      background: "#22c55e", border: "2px solid var(--bg-primary)",
+                      background: "#7ba87a", border: "2px solid var(--bg-primary)",
                     }} />
                   )}
                 </div>
@@ -783,7 +783,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 style={requested[selectedUser.id] ? S.modalReqDoneBtn : S.modalReqBtn}
                 onClick={() => handleRequest(selectedUser)}
                 onMouseOver={(e) => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#122d47"; }}
-                onMouseOut={(e)  => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#1a3c5e"; }}
+                onMouseOut={(e)  => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#4a1f3d"; }}
               >
                 {requested[selectedUser.id] ? "Request Sent" : "Send Request"}
               </button>

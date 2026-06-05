@@ -15,8 +15,8 @@ const storage = getStorage();
 /* ─── Inject keyframe animations once ─── */
 const styleTag = document.createElement("style");
 styleTag.textContent = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
-  * { font-family: 'DM Sans', sans-serif; }
+  @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+  * { font-family: 'Figtree', 'Heebo', system-ui, sans-serif; }
 
   @keyframes fadeSlideUp {
     from { opacity: 0; transform: translateY(18px); }
@@ -45,22 +45,22 @@ styleTag.textContent = `
   .profile-card:nth-child(3) { animation-delay: 0.12s; }
 
   .profile-input:focus {
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.18) !important;
+    border-color: #b8617a !important;
+    box-shadow: 0 0 0 3.5px rgba(184, 97, 122, 0.18) !important;
     background: #fff !important;
     outline: none;
   }
   .profile-textarea:focus {
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.18) !important;
+    border-color: #b8617a !important;
+    box-shadow: 0 0 0 3.5px rgba(184, 97, 122, 0.18) !important;
     background: #fff !important;
     outline: none;
   }
   .upload-btn:hover  { background: rgba(255,255,255,1) !important; border-color: rgba(255,255,255,0.9) !important; }
-  .change-btn:hover  { background: #e0f2fe !important; border-color: #7dd3fc !important; }
-  .cancel-btn:hover  { background: #e2e8f0 !important; }
+  .change-btn:hover  { background: #faeef0 !important; border-color: #e8c5c5 !important; }
+  .cancel-btn:hover  { background: #f0dce0 !important; }
   .save-btn-shimmer {
-    background: linear-gradient(90deg, #1a3c5e 0%, #1e5080 40%, #1a3c5e 60%, #1a3c5e 100%);
+    background: linear-gradient(90deg, #4a1f3d 0%, #6d3358 40%, #4a1f3d 60%, #4a1f3d 100%);
     background-size: 400px 100%;
     animation: shimmer 1.6s infinite linear;
   }
@@ -81,12 +81,12 @@ function CheckMark() {
 }
 
 function CompletenessBadge({ pct }) {
-  const color  = pct >= 80 ? "#16a34a" : pct >= 50 ? "#d97706" : "#dc2626";
+  const color  = pct >= 80 ? "#7ba87a" : pct >= 50 ? "#b8895a" : "#c25c5c";
   const bg     = pct >= 80 ? "#f0fdf4" : pct >= 50 ? "#fffbeb" : "#fff5f5";
-  const border = pct >= 80 ? "#bbf7d0" : pct >= 50 ? "#fde68a" : "#fca5a5";
+  const border = pct >= 80 ? "#cfe4ce" : pct >= 50 ? "#fde68a" : "#d99090";
   return (
     <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"1.75rem" }}>
-      <div style={{ flex:1, height:"6px", background:"#e2e8f0", borderRadius:"99px", overflow:"hidden" }}>
+      <div style={{ flex:1, height:"6px", background:"#f0dce0", borderRadius:"99px", overflow:"hidden" }}>
         <div style={{
           width:`${pct}%`, height:"100%",
           background:`linear-gradient(90deg, ${color}, ${color}bb)`,
@@ -107,7 +107,7 @@ function CompletenessBadge({ pct }) {
 function SectionTitle({ label }) {
   return (
     <p style={{
-      fontSize:"11px", fontWeight:"700", color:"#1a3c5e",
+      fontSize:"11px", fontWeight:"700", color:"#4a1f3d",
       textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 1.25rem",
     }}>
       {label}
@@ -122,8 +122,8 @@ function PlainInput(props) {
       style={{
         width:"100%", boxSizing:"border-box",
         padding:"12px 14px", fontSize:"14px",
-        border:"1.5px solid #e2e8f0", borderRadius:"13px",
-        color:"#1a2e42", background:"#f8fafc", fontFamily:"inherit",
+        border:"1.5px solid #f0dce0", borderRadius:"13px",
+        color:"#1a2e42", background:"#fdf8f6", fontFamily:"inherit",
         transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
       }}
       {...props}
@@ -304,16 +304,16 @@ export default function ProfilePage({ viewUserId, onMessage }) {
     },
     banner: {
       width:"100%", height:"130px", borderRadius:"0 0 28px 28px",
-      background:"linear-gradient(135deg, #1a3c5e 0%, #0ea5e9 55%, #7dd3fc 100%)",
+      background:"linear-gradient(135deg, #4a1f3d 0%, #8d3f5c 55%, #e8c5c5 100%)",
       position:"relative", marginBottom:"58px", flexShrink:0,
     },
     avatarWrap:  { position:"absolute", bottom:"-46px", ...(isRTL ? { right:"2rem" } : { left:"2rem" }) },
-    avatarRing:  { width:"92px", height:"92px", borderRadius:"50%", background:"linear-gradient(135deg, #38bdf8, #1a3c5e)", padding:"3px", boxShadow:"0 2px 8px rgba(15,23,42,0.12)" },
-    avatarInner: { width:"100%", height:"100%", borderRadius:"50%", background:"#1a3c5e", color:"#ffffff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", fontWeight:"700", overflow:"hidden" },
+    avatarRing:  { width:"92px", height:"92px", borderRadius:"50%", background:"linear-gradient(135deg, #b8617a, #4a1f3d)", padding:"3px", boxShadow:"0 2px 8px rgba(74, 31, 61,0.12)" },
+    avatarInner: { width:"100%", height:"100%", borderRadius:"50%", background:"#4a1f3d", color:"#ffffff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", fontWeight:"700", overflow:"hidden" },
     avatarImg:   { width:"100%", height:"100%", objectFit:"cover" },
     uploadPill:  { position:"absolute", bottom:"-46px", ...(isRTL ? { left:"2rem" } : { right:"2rem" }), display:"flex", flexDirection:"column", alignItems: isRTL ? "flex-start" : "flex-end", gap:"4px" },
     uploadBtn: {
-      padding:"9px 16px", background:"rgba(255,255,255,0.88)", color:"#1a3c5e",
+      padding:"9px 16px", background:"rgba(255,255,255,0.88)", color:"#4a1f3d",
       border:"1.5px solid rgba(255,255,255,0.6)", borderRadius:"11px",
       fontSize:"12px", fontWeight:"700", cursor:"pointer",
       backdropFilter:"blur(6px)", boxShadow:"0 2px 8px rgba(0,0,0,0.1)", transition:"background 0.2s",
@@ -321,24 +321,24 @@ export default function ProfilePage({ viewUserId, onMessage }) {
     avatarHint: { fontSize:"10px", color:"rgba(255,255,255,0.75)", margin:0, textAlign: isRTL ? "left" : "right" },
     body: { padding:"0 2rem" },
     twoCol: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", alignItems:"start" },
-    greeting:    { fontSize:"23px", fontWeight:"700", color:"#1a3c5e", margin:"0 0 4px" },
-    greetingSub: { fontSize:"13px", color:"#94a3b8", margin:"0 0 1rem" },
+    greeting:    { fontSize:"23px", fontWeight:"700", color:"#4a1f3d", margin:"0 0 4px" },
+    greetingSub: { fontSize:"13px", color:"#b09aa3", margin:"0 0 1rem" },
     card: {
       background:"#fff", borderRadius:"20px",
-      border:"1.5px solid #f1f5f9",
-      boxShadow:"0 4px 24px rgba(15,23,42,0.06)",
+      border:"1.5px solid #f7ecec",
+      boxShadow:"0 4px 24px rgba(74, 31, 61,0.06)",
       padding:"1.75rem", marginBottom:"1.25rem",
-      borderLeft:"4px solid #38bdf8",
+      borderLeft:"4px solid #b8617a",
     },
     row:   { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:"1rem", marginBottom:"1rem" },
     group: { display:"flex", flexDirection:"column", gap:"7px" },
-    label: { fontSize:"11px", fontWeight:"700", color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.08em" },
+    label: { fontSize:"11px", fontWeight:"700", color:"#b09aa3", textTransform:"uppercase", letterSpacing:"0.08em" },
     bioWrap: { position:"relative" },
     textarea: {
       width:"100%", boxSizing:"border-box",
       padding:"12px 14px", fontSize:"14px",
-      border:"1.5px solid #e2e8f0", borderRadius:"13px",
-      color:"#1a2e42", background:"#f8fafc",
+      border:"1.5px solid #f0dce0", borderRadius:"13px",
+      color:"#1a2e42", background:"#fdf8f6",
       fontFamily:"inherit", resize:"vertical", minHeight:"100px",
       transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
     },
@@ -346,28 +346,28 @@ export default function ProfilePage({ viewUserId, onMessage }) {
     actionRow: { display:"flex", alignItems:"center", gap:"12px", marginTop:"0.25rem" },
     saveBtn: {
       padding:"11px 28px",
-      background: saved ? "linear-gradient(135deg,#16a34a,#22c55e)" : "#1a3c5e",
+      background: saved ? "linear-gradient(135deg,#7ba87a,#7ba87a)" : "#4a1f3d",
       color:"#fff", border:"none", borderRadius:"13px",
       fontSize:"14px", fontWeight:"700",
       cursor: saving ? "not-allowed" : "pointer",
       transition:"background 0.3s, transform 0.15s, box-shadow 0.2s",
-      boxShadow:"0 2px 8px rgba(15,23,42,0.1)",
+      boxShadow:"0 2px 8px rgba(74, 31, 61,0.1)",
       display:"flex", alignItems:"center", gap:"7px",
       opacity: saving ? 0.7 : 1,
     },
-    errorMsg:       { fontSize:"13px", color:"#b91c1c", background:"#fff0f0", border:"1px solid #fca5a5", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
+    errorMsg:       { fontSize:"13px", color:"#9a4545", background:"#fff0f0", border:"1px solid #d99090", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
     emailRow:       { display:"flex", gap:"10px", alignItems:"flex-end" },
-    inputDisabled:  { padding:"12px 14px", fontSize:"14px", border:"1.5px solid #e2e8f0", borderRadius:"13px", color:"#94a3b8", background:"#f1f5f9", width:"100%", boxSizing:"border-box", fontFamily:"inherit" },
-    changeBtn:      { padding:"10px 16px", background:"#eff6ff", color:"#1d4ed8", border:"1.5px solid #bfdbfe", borderRadius:"10px", fontSize:"13px", fontWeight:"600", cursor:"pointer", whiteSpace:"nowrap", transition:"background 0.2s, border-color 0.2s" },
-    emailSuccessMsg:{ fontSize:"13px", color:"#166534", background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
-    modal:    { position:"fixed", inset:0, background:"rgba(15,23,42,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"1.25rem", backdropFilter:"blur(4px)" },
-    modalBox: { background:"#fff", borderRadius:"22px", padding:"2rem", width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"1rem", boxShadow:"0 32px 70px rgba(15,23,42,0.18)", animation:"modalPop 0.28s cubic-bezier(.34,1.56,.64,1) both" },
-    modalTitle:   { fontSize:"17px", fontWeight:"700", color:"#1a3c5e", margin:0 },
-    modalSub:     { fontSize:"13px", color:"#64748b", margin:0 },
-    modalInput:   { width:"100%", boxSizing:"border-box", padding:"11px 14px", fontSize:"14px", border:"1.5px solid #e2e8f0", borderRadius:"12px", color:"#1a2e42", background:"#f8fafc", fontFamily:"inherit" },
+    inputDisabled:  { padding:"12px 14px", fontSize:"14px", border:"1.5px solid #f0dce0", borderRadius:"13px", color:"#b09aa3", background:"#f7ecec", width:"100%", boxSizing:"border-box", fontFamily:"inherit" },
+    changeBtn:      { padding:"10px 16px", background:"#eff6ff", color:"#8d3f5c", border:"1.5px solid #bfdbfe", borderRadius: "12px", fontSize:"13px", fontWeight:"600", cursor:"pointer", whiteSpace:"nowrap", transition:"background 0.2s, border-color 0.2s" },
+    emailSuccessMsg:{ fontSize:"13px", color:"#3f6a3e", background:"#f0fdf4", border:"1px solid #cfe4ce", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
+    modal:    { position:"fixed", inset:0, background:"rgba(74, 31, 61,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"1.25rem", backdropFilter:"blur(4px)" },
+    modalBox: { background:"#fff", borderRadius:"22px", padding:"2rem", width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"1rem", boxShadow:"0 32px 70px rgba(74, 31, 61,0.18)", animation:"modalPop 0.28s cubic-bezier(.34,1.56,.64,1) both" },
+    modalTitle:   { fontSize:"17px", fontWeight:"700", color:"#4a1f3d", margin:0 },
+    modalSub:     { fontSize:"13px", color:"#7a5868", margin:0 },
+    modalInput:   { width:"100%", boxSizing:"border-box", padding:"11px 14px", fontSize:"14px", border:"1.5px solid #f0dce0", borderRadius:"12px", color:"#1a2e42", background:"#fdf8f6", fontFamily:"inherit" },
     modalActions: { display:"flex", gap:"8px", marginTop:"0.25rem" },
-    confirmBtn:   { flex:1, padding:"11px", background:"#1a3c5e", color:"#fff", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"700", cursor:"pointer" },
-    cancelBtn:    { flex:1, padding:"11px", background:"#f1f5f9", color:"#64748b", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"600", cursor:"pointer", transition:"background 0.2s" },
+    confirmBtn:   { flex:1, padding:"11px", background:"#4a1f3d", color:"#fff", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"700", cursor:"pointer" },
+    cancelBtn:    { flex:1, padding:"11px", background:"#f7ecec", color:"#7a5868", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"600", cursor:"pointer", transition:"background 0.2s" },
   };
 
   return (
@@ -404,7 +404,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
           {networksCount > 0 && (
             <div style={{ marginBottom:"1rem" }}>
               <span style={{
-                fontSize:"13px", fontWeight:"700", color:"#1d4ed8",
+                fontSize:"13px", fontWeight:"700", color:"#8d3f5c",
                 background:"#eff6ff", border:"1px solid #bfdbfe",
                 borderRadius:"99px", padding:"5px 16px", display:"inline-block",
               }}>
@@ -473,7 +473,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                   {saved ? <><CheckMark /> {t.profile.saved}</> : saving ? t.profile.saving : t.profile.saveChanges}
                 </button>
               ) : (
-                <span style={{ color: "#64748b", fontSize: "13px" }}>Viewing public profile</span>
+                <span style={{ color: "#7a5868", fontSize: "13px" }}>Viewing public profile</span>
               )}
             </div>
           </div>
@@ -485,7 +485,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
               <div style={S.bioWrap}>
                 <textarea
                   className="profile-textarea"
-                  style={{ ...S.textarea, minHeight:"148px", background: isReadOnly ? "#f1f5f9" : "#f8fafc", color: isReadOnly ? "#64748b" : "#1a2e42" }}
+                  style={{ ...S.textarea, minHeight:"148px", background: isReadOnly ? "#f7ecec" : "#fdf8f6", color: isReadOnly ? "#7a5868" : "#1a2e42" }}
                   name="bio"
                   value={form.bio}
                   onChange={(e) => { if (!isReadOnly && e.target.value.length <= BIO_LIMIT) handleChange(e); }}
@@ -495,7 +495,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                 {!isReadOnly && (
                   <span style={{
                     ...S.charCount,
-                    color: form.bio.length > BIO_LIMIT * 0.9 ? "#f59e0b" : "#cbd5e1",
+                    color: form.bio.length > BIO_LIMIT * 0.9 ? "#d4a574" : "#d9c8ce",
                   }}>
                     {form.bio.length}/{BIO_LIMIT}
                   </span>
@@ -562,7 +562,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                 onClick={handleMessageClick}
                 style={{
                   padding:"12px 20px", borderRadius:"14px",
-                  background:"#1d4ed8", color:"#fff", border:"none",
+                  background:"#8d3f5c", color:"#fff", border:"none",
                   fontSize:"14px", fontWeight:700, cursor: onMessage ? "pointer" : "not-allowed",
                 }}
                 disabled={!onMessage}
@@ -573,7 +573,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                 onClick={() => window.history.back()}
                 style={{
                   padding:"12px 20px", borderRadius:"14px",
-                  background:"#f8fafc", color:"#1d4ed8", border:"1px solid #bfdbfe",
+                  background:"#fdf8f6", color:"#8d3f5c", border:"1px solid #bfdbfe",
                   fontSize:"14px", fontWeight:700, cursor:"pointer",
                 }}
               >
@@ -585,21 +585,21 @@ export default function ProfilePage({ viewUserId, onMessage }) {
         {/* ── My Posts ── */}
         <div style={{ marginTop: "2rem" }}>
           <p style={{
-            fontSize: "11px", fontWeight: "700", color: "#1a3c5e",
+            fontSize: "11px", fontWeight: "700", color: "#4a1f3d",
             textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 1.25rem",
           }}>
             {postsTitle}
           </p>
 
           {postsLoading && (
-            <p style={{ color: "#94a3b8", fontSize: "14px" }}>…</p>
+            <p style={{ color: "#b09aa3", fontSize: "14px" }}>…</p>
           )}
 
           {!postsLoading && myPosts.length === 0 && (
             <div style={{
               textAlign: "center", padding: "2.5rem",
-              background: "#f8fafc", borderRadius: "16px",
-              border: "1.5px dashed #e2e8f0", color: "#94a3b8", fontSize: "14px",
+              background: "#fdf8f6", borderRadius: "16px",
+              border: "1.5px dashed #f0dce0", color: "#b09aa3", fontSize: "14px",
             }}>
               {noPostsMessage}
             </div>
@@ -614,8 +614,8 @@ export default function ProfilePage({ viewUserId, onMessage }) {
               {myPosts.map((post) => (
                 <div key={post.id} className="profile-card" style={{
                   background: "#fff", borderRadius: "18px",
-                  border: "1.5px solid #f1f5f9", borderLeft: "4px solid #38bdf8",
-                  boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+                  border: "1.5px solid #f7ecec", borderLeft: "4px solid #b8617a",
+                  boxShadow: "0 2px 8px rgba(74, 31, 61,0.05)",
                   padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem",
                 }}>
                   {/* Post text */}
@@ -633,8 +633,8 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                   {/* Repost badge */}
                   {post.repostOf && (
                     <span style={{
-                      fontSize: "11px", color: "#64748b",
-                      background: "#f1f5f9", borderRadius: "6px",
+                      fontSize: "11px", color: "#7a5868",
+                      background: "#f7ecec", borderRadius: "6px",
                       padding: "3px 8px", display: "inline-block", alignSelf: "flex-start",
                     }}>
                       ↺ {t.community.repostedBy} {post.repostOf.authorName ?? ""}
@@ -676,8 +676,8 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                         {postMedia.length > 4 && (
                           <div style={{
                             display: "grid", placeItems: "center",
-                            borderRadius: "12px", background: "#f1f5f9",
-                            color: "#64748b", fontSize: "13px", fontWeight: 700,
+                            borderRadius: "12px", background: "#f7ecec",
+                            color: "#7a5868", fontSize: "13px", fontWeight: 700,
                           }}>
                             +{postMedia.length - 4}
                           </div>
@@ -690,19 +690,19 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
                     <div style={{ display: "flex", gap: "12px" }}>
                       {(post.likes?.length ?? post.likesCount ?? 0) > 0 && (
-                        <span style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
+                        <span style={{ fontSize: "12px", color: "#7a5868", display: "flex", alignItems: "center", gap: 3 }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                           {post.likes?.length ?? post.likesCount}
                         </span>
                       )}
                       {(post.commentsCount ?? 0) > 0 && (
-                        <span style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
+                        <span style={{ fontSize: "12px", color: "#7a5868", display: "flex", alignItems: "center", gap: 3 }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                           {post.commentsCount}
                         </span>
                       )}
                     </div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                    <span style={{ fontSize: "11px", color: "#b09aa3" }}>
                       {relativeTime(post.createdAt)}
                     </span>
                   </div>
