@@ -46,7 +46,7 @@ const isActuallyOnline = (u) => {
 
 /* ── Avatar ── */
 function Avatar({ url, name, size = 40, online = false, ring = false, onClick }) {
-  const colors = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#dc2626", "#d97706", "#db2777"];
+  const colors = ["#b8617a", "#8d3f5c", "#8d3f5c", "#7ba87a", "#c25c5c", "#b8895a", "#b8617a"];
   const bg = colors[(name?.charCodeAt(0) || 0) % colors.length];
   return (
     <div style={{ position: "relative", flexShrink: 0, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
@@ -72,7 +72,7 @@ function Avatar({ url, name, size = 40, online = false, ring = false, onClick })
         <span style={{
           position: "absolute", bottom: ring ? 3 : 1, right: ring ? 3 : 1,
           width: size * 0.27, height: size * 0.27, borderRadius: "50%",
-          background: "#22c55e", border: "2px solid var(--bg-primary)",
+          background: "#7ba87a", border: "2px solid var(--bg-primary)",
         }} />
       )}
     </div>
@@ -93,12 +93,12 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
     <button onClick={onClick} style={{
       width: "100%", display: "flex", alignItems: "center", gap: 12,
       padding: "10px 16px",
-      background: active ? "rgba(37,99,235,0.06)" : "transparent",
+      background: active ? "rgba(184, 97, 122,0.06)" : "transparent",
       border: "none", cursor: "pointer", textAlign: "left",
       transition: "background 0.15s",
     }}
       onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.03)"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = active ? "rgba(37,99,235,0.06)" : "transparent"; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = active ? "rgba(184, 97, 122,0.06)" : "transparent"; }}
     >
       <Avatar url={otherAvatar} name={otherName} size={52} online={isOnline} />
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -255,15 +255,15 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
     : { transform: "scale(1) translateY(0)", transition: "transform 0.18s ease, box-shadow 0.18s ease" };
 
   const myBubble = {
-    background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+    background: "linear-gradient(135deg, #b8617a, #8d3f5c)",
     color: "#fff",
     borderRadius: "22px 22px 6px 22px",
     padding: "10px 15px",
     fontSize: 14, lineHeight: 1.5,
     wordBreak: "break-word", maxWidth: "100%",
     boxShadow: hovering && !editing
-      ? "0 6px 20px rgba(37,99,235,0.42)"
-      : "0 2px 8px rgba(37,99,235,0.25)",
+      ? "0 6px 20px rgba(184, 97, 122,0.42)"
+      : "0 2px 8px rgba(184, 97, 122,0.25)",
     ...hoverLift,
   };
 
@@ -301,8 +301,8 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
         transform: `translateY(-50%) scale(${iconScale})`,
         opacity: iconOpacity,
         width: 32, height: 32, borderRadius: "50%",
-        background: iconTriggered ? "rgba(37,99,235,0.15)" : "rgba(0,0,0,0.07)",
-        color: iconTriggered ? "#2563eb" : "var(--text-muted)",
+        background: iconTriggered ? "rgba(184, 97, 122,0.15)" : "rgba(0,0,0,0.07)",
+        color: iconTriggered ? "#b8617a" : "var(--text-muted)",
         display: "flex", alignItems: "center", justifyContent: "center",
         pointerEvents: "none",
         transition: swipeDragging.current ? "color 0.1s, background 0.1s" : "all 0.32s cubic-bezier(0.34,1.56,0.64,1)",
@@ -339,7 +339,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
             <div style={{
               background: isMe ? "rgba(255,255,255,0.12)" : "#f0f4fa",
               borderLeft: `3px solid ${isMe ? "rgba(255,255,255,0.5)" : "var(--brand)"}`,
-              borderRadius: 8, padding: "4px 10px", marginBottom: 2,
+              borderRadius: 10, padding: "4px 10px", marginBottom: 2,
               fontSize: 11, maxWidth: "100%", overflow: "hidden",
             }}>
               <p style={{ fontWeight: 700, fontSize: 10, marginBottom: 1, color: isMe ? "rgba(255,255,255,0.85)" : "var(--brand)" }}>
@@ -447,7 +447,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                   position: "fixed",
                   top: menuPos.top, left: menuPos.left,
                   zIndex: 9998,
-                  background: "#1e293b",
+                  background: "#4a1f3d",
                   borderRadius: 14,
                   padding: "5px",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
@@ -462,11 +462,11 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                     width: "100%", display: "flex", alignItems: "center", gap: 10,
                     padding: "9px 14px", background: "none", border: "none",
                     cursor: "pointer", borderRadius: 10,
-                    color: "#e2e8f0", fontSize: 14, fontWeight: 500,
+                    color: "#f0dce0", fontSize: 14, fontWeight: 500,
                     fontFamily: "var(--font)", textAlign: "left",
                     transition: "background 0.12s",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.85)"}
                   onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -866,7 +866,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             <Avatar url={otherAvatar} name={otherName} size={40} online={isActuallyOnline(otherUser)} onClick={() => onViewProfile?.(otherId)} />
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", lineHeight: 1.2 }}>{otherName || "…"}</p>
-              <p style={{ fontSize: 11, color: isActuallyOnline(otherUser) ? "#22c55e" : "var(--text-muted)", marginTop: 1 }}>
+              <p style={{ fontSize: 11, color: isActuallyOnline(otherUser) ? "#7ba87a" : "var(--text-muted)", marginTop: 1 }}>
                 {isActuallyOnline(otherUser) ? "Active now" : otherUser?.profession || "Offline"}
               </p>
             </div>
@@ -971,7 +971,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
               margin: "0 0.75rem 4px",
               background: "#f0f4fa",
               borderLeft: "3px solid var(--brand)",
-              borderRadius: 8, padding: "6px 12px",
+              borderRadius: 10, padding: "6px 12px",
               display: "flex", justifyContent: "space-between", alignItems: "center",
               animation: "slideUp 0.15s ease",
             }}>
@@ -993,7 +993,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                   style={{
                     position: "absolute", top: -6, right: -6,
                     width: 20, height: 20, borderRadius: "50%",
-                    background: "#ef4444", color: "#fff", border: "2px solid #fff",
+                    background: "#c25c5c", color: "#fff", border: "2px solid #fff",
                     cursor: "pointer", fontSize: 13, fontWeight: 700,
                     display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
                   }}
@@ -1069,11 +1069,11 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             {(text.trim() || imgFile) ? (
               <button onClick={handleSend} disabled={sending} style={{
                 width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-                background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+                background: "linear-gradient(135deg, #b8617a, #8d3f5c)",
                 color: "#fff", border: "none", cursor: sending ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "transform 0.15s, opacity 0.15s",
-                boxShadow: "0 2px 10px rgba(37,99,235,0.35)",
+                boxShadow: "0 2px 10px rgba(184, 97, 122,0.35)",
                 opacity: sending ? 0.7 : 1,
               }}
                 onMouseEnter={(e) => { if (!sending) e.currentTarget.style.transform = "scale(1.07)"; }}
@@ -1096,7 +1096,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                 color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "color 0.15s",
               }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"}
+                onMouseEnter={(e) => e.currentTarget.style.color = "#c25c5c"}
                 onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1125,9 +1125,9 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           </p>
           <button onClick={() => setShowNewChat(true)} style={{
             marginTop: 4, padding: "9px 22px", borderRadius: 99,
-            background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+            background: "linear-gradient(135deg, #b8617a, #8d3f5c)",
             color: "#fff", border: "none", fontSize: 13, fontWeight: 700,
-            cursor: "pointer", boxShadow: "0 2px 12px rgba(37,99,235,0.3)",
+            cursor: "pointer", boxShadow: "0 2px 12px rgba(184, 97, 122,0.3)",
             transition: "transform 0.15s",
           }}
             onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}

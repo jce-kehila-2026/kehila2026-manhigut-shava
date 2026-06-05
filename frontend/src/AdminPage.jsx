@@ -10,62 +10,62 @@ import { logActivity } from "./activityLogger";
 
 /* ─── Styles (our S object — used by EditUsers, Logs, EditUserModal) ─── */
 const S = {
-  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)", flex: 1, overflow: "auto" },
-  denied: { textAlign: "center", padding: "4rem", color: "#dc2626", fontSize: "1.1rem", fontWeight: 700 },
+  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)", flex: 1, overflow: "auto" },
+  denied: { textAlign: "center", padding: "4rem", color: "#c25c5c", fontSize: "1.1rem", fontWeight: 700 },
 
   header: { marginBottom: "1.75rem" },
-  title: { fontSize: "22px", fontWeight: 800, color: "var(--text-primary,#1a3c5e)", margin: "0 0 3px" },
-  sub: { fontSize: "13px", color: "var(--text-muted,#94a3b8)", margin: 0 },
+  title: { fontSize: "22px", fontWeight: 800, color: "var(--text-primary,#4a1f3d)", margin: "0 0 3px" },
+  sub: { fontSize: "13px", color: "var(--text-muted,#b09aa3)", margin: 0 },
 
-  tabs: { display: "flex", gap: "4px", marginBottom: "1.5rem", flexWrap: "wrap", background: "var(--bg-tertiary,#f1f5f9)", borderRadius: "var(--r-md,10px)", padding: "4px", width: "fit-content" },
+  tabs: { display: "flex", gap: "4px", marginBottom: "1.5rem", flexWrap: "wrap", background: "var(--bg-tertiary,#f7ecec)", borderRadius: "var(--r-md,10px)", padding: "4px", width: "fit-content" },
   tab: (active) => ({
     padding: "7px 16px", borderRadius: "var(--r-sm,8px)", border: "none", cursor: "pointer",
-    fontSize: "13px", fontWeight: active ? 700 : 500, fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+    fontSize: "13px", fontWeight: active ? 700 : 500, fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
     background: active ? "var(--bg-primary,#fff)" : "transparent",
-    color: active ? "var(--text-primary,#1a3c5e)" : "var(--text-muted,#64748b)",
-    boxShadow: active ? "var(--shadow-xs,0 1px 4px rgba(15,23,42,0.07))" : "none",
+    color: active ? "var(--text-primary,#4a1f3d)" : "var(--text-muted,#7a5868)",
+    boxShadow: active ? "var(--shadow-xs,0 1px 4px rgba(74, 31, 61,0.07))" : "none",
     transition: "all 0.15s",
   }),
 
   table: { width: "100%", borderCollapse: "collapse" },
   th: {
     textAlign: "left", padding: "10px 14px",
-    fontSize: "11px", fontWeight: 700, color: "var(--text-muted,#94a3b8)",
+    fontSize: "11px", fontWeight: 700, color: "var(--text-muted,#b09aa3)",
     textTransform: "uppercase", letterSpacing: "0.08em",
-    borderBottom: "1px solid var(--border,#f1f5f9)", background: "var(--bg-secondary,#f8fafc)",
+    borderBottom: "1px solid var(--border,#f7ecec)", background: "var(--bg-secondary,#fdf8f6)",
   },
   td: {
-    padding: "12px 14px", fontSize: "13px", color: "var(--text-secondary,#374151)",
-    borderBottom: "1px solid var(--bg-tertiary,#f1f5f9)", verticalAlign: "middle",
+    padding: "12px 14px", fontSize: "13px", color: "var(--text-secondary,#7a5868)",
+    borderBottom: "1px solid var(--bg-tertiary,#f7ecec)", verticalAlign: "middle",
   },
   row: { background: "var(--bg-primary,#fff)", transition: "background 0.12s" },
 
-  name: { fontWeight: 700, color: "var(--text-primary,#1a3c5e)", margin: 0 },
-  meta: { fontSize: "11px", color: "var(--text-muted,#94a3b8)", margin: 0 },
+  name: { fontWeight: 700, color: "var(--text-primary,#4a1f3d)", margin: 0 },
+  meta: { fontSize: "11px", color: "var(--text-muted,#b09aa3)", margin: 0 },
 
   badge: (verified) => ({
     fontSize: "10px", fontWeight: 700, padding: "2px 9px", borderRadius: "99px",
-    background: verified ? "#dcfce7" : "#fef9c3",
-    color: verified ? "#166534" : "#854d0e",
-    border: verified ? "1px solid #bbf7d0" : "1px solid #fde047",
+    background: verified ? "#e2efe1" : "#faedd6",
+    color: verified ? "#3f6a3e" : "#7a5a2e",
+    border: verified ? "1px solid #cfe4ce" : "1px solid #e8c992",
   }),
 
   delBtn: {
-    background: "none", border: "1px solid #fca5a5", color: "#dc2626",
+    background: "none", border: "1px solid #d99090", color: "#c25c5c",
     borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
-    cursor: "pointer", fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+    cursor: "pointer", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
     transition: "background 0.15s",
   },
   adminBtn: {
-    background: "none", border: "1px solid #a78bfa", color: "#7c3aed",
+    background: "none", border: "1px solid #a78bfa", color: "#8d3f5c",
     borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
-    cursor: "pointer", fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+    cursor: "pointer", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
     transition: "background 0.15s", marginLeft: "6px",
   },
   editBtn: {
-    background: "none", border: "1px solid #93c5fd", color: "#1d4ed8",
+    background: "none", border: "1px solid #93c5fd", color: "#8d3f5c",
     borderRadius: "7px", padding: "5px 12px", fontSize: "11px", fontWeight: 700,
-    cursor: "pointer", fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+    cursor: "pointer", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
     transition: "background 0.15s", marginLeft: "6px",
   },
   adminBadge: {
@@ -73,75 +73,75 @@ const S = {
     background: "#ede9fe", color: "#6d28d9", border: "1px solid #c4b5fd",
   },
 
-  empty: { textAlign: "center", padding: "3rem", color: "#cbd5e1", fontSize: "14px" },
+  empty: { textAlign: "center", padding: "3rem", color: "#d9c8ce", fontSize: "14px" },
   tableWrap: {
     background: "var(--bg-primary,#fff)", borderRadius: "16px",
-    border: "1.5px solid var(--border,#f1f5f9)", overflow: "hidden",
-    boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+    border: "1.5px solid var(--border,#f7ecec)", overflow: "hidden",
+    boxShadow: "0 2px 8px rgba(74, 31, 61,0.05)",
   },
 
   searchInput: {
     padding: "9px 14px", fontSize: "13px",
-    border: "1.5px solid var(--border,#e2e8f0)", borderRadius: "10px",
-    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#f8fafc)",
+    border: "1.5px solid var(--border,#f0dce0)", borderRadius: "12px",
+    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#fdf8f6)",
     width: "260px", marginBottom: "1rem",
-    fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+    fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
   },
 
   /* Modal overlay */
   overlay: {
-    position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)",
+    position: "fixed", inset: 0, background: "rgba(74, 31, 61,0.45)",
     display: "flex", alignItems: "center", justifyContent: "center",
     zIndex: 200, padding: "1rem", backdropFilter: "blur(4px)",
   },
   modalBox: {
     background: "var(--bg-primary,#fff)", borderRadius: "22px", padding: "2rem",
     width: "100%", maxWidth: "480px",
-    boxShadow: "0 16px 48px rgba(15,23,42,0.18)",
+    boxShadow: "0 16px 48px rgba(74, 31, 61,0.18)",
     display: "flex", flexDirection: "column", gap: "1rem",
     maxHeight: "90vh", overflowY: "auto",
   },
-  modalTitle: { fontSize: "17px", fontWeight: 700, color: "var(--text-primary,#1a3c5e)", margin: 0 },
-  modalLabel: { fontSize: "11px", fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" },
+  modalTitle: { fontSize: "17px", fontWeight: 700, color: "var(--text-primary,#4a1f3d)", margin: 0 },
+  modalLabel: { fontSize: "11px", fontWeight: 700, color: "var(--text-muted,#b09aa3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" },
   modalInput: {
     width: "100%", boxSizing: "border-box",
     padding: "10px 13px", fontSize: "13px",
-    border: "1.5px solid var(--border,#e2e8f0)", borderRadius: "10px",
-    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#f8fafc)",
-    fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+    border: "1.5px solid var(--border,#f0dce0)", borderRadius: "12px",
+    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#fdf8f6)",
+    fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
   },
   modalActions: { display: "flex", gap: "8px", marginTop: "0.5rem" },
   saveModalBtn: {
     flex: 1, padding: "11px",
-    background: "var(--brand,#1a3c5e)", color: "#fff",
+    background: "var(--brand,#4a1f3d)", color: "#fff",
     border: "none", borderRadius: "11px",
     fontSize: "14px", fontWeight: 700, cursor: "pointer",
   },
   cancelModalBtn: {
     flex: 1, padding: "11px",
-    background: "var(--bg-tertiary,#f1f5f9)", color: "var(--text-muted,#64748b)",
+    background: "var(--bg-tertiary,#f7ecec)", color: "var(--text-muted,#7a5868)",
     border: "none", borderRadius: "11px",
     fontSize: "14px", fontWeight: 600, cursor: "pointer",
   },
 
   /* Comments section per post */
   commentsWrap: {
-    background: "var(--bg-secondary,#f8fafc)", borderRadius: "10px",
+    background: "var(--bg-secondary,#fdf8f6)", borderRadius: "12px",
     padding: "0.75rem 1rem", marginTop: "4px",
-    border: "1px solid var(--border,#f1f5f9)",
+    border: "1px solid var(--border,#f7ecec)",
     display: "flex", flexDirection: "column", gap: "6px",
   },
   commentRow: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "6px 0", borderBottom: "1px solid var(--bg-tertiary,#f1f5f9)",
-    fontSize: "12px", color: "var(--text-secondary,#374151)",
+    padding: "6px 0", borderBottom: "1px solid var(--bg-tertiary,#f7ecec)",
+    fontSize: "12px", color: "var(--text-secondary,#7a5868)",
   },
 
   /* Logs tab */
   logPanel: {
-    background: "var(--bg-secondary,#f8fafc)", borderRadius: "16px",
-    border: "1.5px solid var(--border,#f1f5f9)",
-    boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
+    background: "var(--bg-secondary,#fdf8f6)", borderRadius: "16px",
+    border: "1.5px solid var(--border,#f7ecec)",
+    boxShadow: "0 2px 8px rgba(74, 31, 61,0.05)",
     overflow: "hidden",
   },
   logList: { padding: "0.5rem 0" },
@@ -149,7 +149,7 @@ const S = {
     display: "flex", alignItems: "flex-start", gap: "12px",
     padding: "10px 1.25rem",
     borderLeft: `3px solid ${typeColor}`,
-    borderBottom: "1px solid var(--border,#f1f5f9)",
+    borderBottom: "1px solid var(--border,#f7ecec)",
     background: "var(--bg-primary,#fff)",
     transition: "background 0.12s",
     marginBottom: "2px",
@@ -161,22 +161,22 @@ const S = {
     border: `1px solid ${color}22`,
     letterSpacing: "0.04em",
   }),
-  logTimestamp: { fontSize: "11px", color: "var(--text-muted,#94a3b8)", whiteSpace: "nowrap", flexShrink: 0 },
-  logActor: { fontSize: "13px", fontWeight: 700, color: "var(--text-primary,#1a3c5e)" },
-  logDesc:  { fontSize: "12px", color: "var(--text-secondary,#64748b)" },
-  logDetails: { fontSize: "11px", color: "var(--text-muted,#94a3b8)", fontStyle: "italic" },
+  logTimestamp: { fontSize: "11px", color: "var(--text-muted,#b09aa3)", whiteSpace: "nowrap", flexShrink: 0 },
+  logActor: { fontSize: "13px", fontWeight: 700, color: "var(--text-primary,#4a1f3d)" },
+  logDesc:  { fontSize: "12px", color: "var(--text-secondary,#7a5868)" },
+  logDetails: { fontSize: "11px", color: "var(--text-muted,#b09aa3)", fontStyle: "italic" },
 
   refreshBtn: {
-    padding: "7px 16px", background: "#eff6ff", color: "#1d4ed8",
+    padding: "7px 16px", background: "#eff6ff", color: "#8d3f5c",
     border: "1.5px solid #bfdbfe", borderRadius: "9px",
     fontSize: "12px", fontWeight: 700, cursor: "pointer",
     transition: "background 0.15s",
   },
   logFilterInput: {
     padding: "7px 12px", fontSize: "12px",
-    border: "1.5px solid var(--border,#e2e8f0)", borderRadius: "9px",
-    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#f8fafc)",
-    fontFamily: "var(--font,'DM Sans',system-ui,sans-serif)",
+    border: "1.5px solid var(--border,#f0dce0)", borderRadius: "9px",
+    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#fdf8f6)",
+    fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
   },
 };
 
@@ -193,7 +193,7 @@ function getInitials(name) {
   return name ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0,2) : "?";
 }
 function avatarColor(name) {
-  const c = ["#2563eb","#7c3aed","#0891b2","#059669","#dc2626","#d97706"];
+  const c = ["#b8617a","#8d3f5c","#8d3f5c","#7ba87a","#c25c5c","#b8895a"];
   return c[(name?.charCodeAt(0)||0) % c.length];
 }
 
@@ -212,8 +212,8 @@ function StatCard({ label, value, sub, color, icon }) {
         color, flexShrink: 0,
       }}>{icon}</div>
       <div>
-        <p style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary,#1a3c5e)", lineHeight: 1 }}>{value}</p>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted,#94a3b8)", marginTop: 3 }}>{label}</p>
+        <p style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary,#4a1f3d)", lineHeight: 1 }}>{value}</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted,#b09aa3)", marginTop: 3 }}>{label}</p>
         {sub && <p style={{ fontSize: 11, color: color, marginTop: 1 }}>{sub}</p>}
       </div>
     </div>
@@ -225,9 +225,9 @@ function SectionHeader({ title, count, action }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", marginTop: "1.75rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary,#1a3c5e)" }}>{title}</h2>
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary,#4a1f3d)" }}>{title}</h2>
         {count !== undefined && (
-          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-full,99px)", background: "var(--bg-tertiary,#f1f5f9)", color: "var(--text-secondary,#64748b)" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--r-full,99px)", background: "var(--bg-tertiary,#f7ecec)", color: "var(--text-secondary,#7a5868)" }}>
             {count}
           </span>
         )}
@@ -239,25 +239,25 @@ function SectionHeader({ title, count, action }) {
 
 /* ─── Log type config ─── */
 const LOG_TYPES = {
-  signup:               { label: "SIGNUP",         bg: "#dcfce7", color: "#166534", borderColor: "#22c55e" },
+  signup:               { label: "SIGNUP",         bg: "#e2efe1", color: "#3f6a3e", borderColor: "#7ba87a" },
   login:                { label: "LOGIN",           bg: "#ccfbf1", color: "#0f766e", borderColor: "#14b8a6" },
-  post:                 { label: "POST",            bg: "#dbeafe", color: "#1e40af", borderColor: "#3b82f6" },
-  post_edit:            { label: "POST EDIT",       bg: "#fef3c7", color: "#92400e", borderColor: "#f59e0b" },
-  post_delete:          { label: "POST DELETE",     bg: "#fee2e2", color: "#b91c1c", borderColor: "#ef4444" },
+  post:                 { label: "POST",            bg: "#dbeafe", color: "#1e40af", borderColor: "#b8617a" },
+  post_edit:            { label: "POST EDIT",       bg: "#fef3c7", color: "#92400e", borderColor: "#d4a574" },
+  post_delete:          { label: "POST DELETE",     bg: "#f5dada", color: "#9a4545", borderColor: "#c25c5c" },
   comment:              { label: "COMMENT",         bg: "#e0e7ff", color: "#3730a3", borderColor: "#6366f1" },
-  comment_edit:         { label: "COMMENT EDIT",    bg: "#fef3c7", color: "#92400e", borderColor: "#f59e0b" },
-  comment_delete:       { label: "CMNT DELETE",     bg: "#fee2e2", color: "#b91c1c", borderColor: "#ef4444" },
-  request_sent:         { label: "REQUEST SENT",    bg: "#f3e8ff", color: "#7c3aed", borderColor: "#a855f7" },
-  request_accepted:     { label: "REQ ACCEPTED",    bg: "#dcfce7", color: "#166534", borderColor: "#22c55e" },
-  request_declined:     { label: "REQ DECLINED",    bg: "#fee2e2", color: "#b91c1c", borderColor: "#ef4444" },
-  profile_update:       { label: "PROFILE UPD",     bg: "#e0f2fe", color: "#0369a1", borderColor: "#38bdf8" },
-  admin_edit_profile:   { label: "ADMIN EDIT",      bg: "#fee2e2", color: "#b91c1c", borderColor: "#ef4444" },
-  admin_delete_post:    { label: "ADMIN DEL POST",  bg: "#fee2e2", color: "#b91c1c", borderColor: "#ef4444" },
-  admin_delete_comment: { label: "ADMIN DEL CMNT",  bg: "#fee2e2", color: "#b91c1c", borderColor: "#ef4444" },
+  comment_edit:         { label: "COMMENT EDIT",    bg: "#fef3c7", color: "#92400e", borderColor: "#d4a574" },
+  comment_delete:       { label: "CMNT DELETE",     bg: "#f5dada", color: "#9a4545", borderColor: "#c25c5c" },
+  request_sent:         { label: "REQUEST SENT",    bg: "#f3e8ff", color: "#8d3f5c", borderColor: "#a855f7" },
+  request_accepted:     { label: "REQ ACCEPTED",    bg: "#e2efe1", color: "#3f6a3e", borderColor: "#7ba87a" },
+  request_declined:     { label: "REQ DECLINED",    bg: "#f5dada", color: "#9a4545", borderColor: "#c25c5c" },
+  profile_update:       { label: "PROFILE UPD",     bg: "#faeef0", color: "#0369a1", borderColor: "#b8617a" },
+  admin_edit_profile:   { label: "ADMIN EDIT",      bg: "#f5dada", color: "#9a4545", borderColor: "#c25c5c" },
+  admin_delete_post:    { label: "ADMIN DEL POST",  bg: "#f5dada", color: "#9a4545", borderColor: "#c25c5c" },
+  admin_delete_comment: { label: "ADMIN DEL CMNT",  bg: "#f5dada", color: "#9a4545", borderColor: "#c25c5c" },
 };
 
 function getLogTypeConfig(type) {
-  return LOG_TYPES[type] ?? { label: type?.toUpperCase() ?? "?", bg: "#f1f5f9", color: "#64748b", borderColor: "#94a3b8" };
+  return LOG_TYPES[type] ?? { label: type?.toUpperCase() ?? "?", bg: "#f7ecec", color: "#7a5868", borderColor: "#b09aa3" };
 }
 
 function humanDescription(log) {
@@ -379,7 +379,7 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved }) {
             onChange={handleChange}
             style={{ width: "16px", height: "16px", cursor: "pointer" }}
           />
-          <label htmlFor="isAdminCheck" style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary,#1a3c5e)", cursor: "pointer" }}>
+          <label htmlFor="isAdminCheck" style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary,#4a1f3d)", cursor: "pointer" }}>
             Admin privileges
           </label>
         </div>
@@ -464,7 +464,7 @@ export default function AdminPage() {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted,#94a3b8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted,#b09aa3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <h3>Access Denied</h3>
           <p>This area is restricted to administrators only.</p>
         </div>
@@ -633,33 +633,33 @@ export default function AdminPage() {
       {!loading && tab === "overview" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-            <StatCard label="Total Members"  value={users.length}   color="#2563eb" sub={`+${newThisWeek} this week`}
+            <StatCard label="Total Members"  value={users.length}   color="#b8617a" sub={`+${newThisWeek} this week`}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
-            <StatCard label="Online Now"     value={onlineNow}      color="#22c55e" sub="Active members"
+            <StatCard label="Online Now"     value={onlineNow}      color="#7ba87a" sub="Active members"
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>} />
-            <StatCard label="Verified"       value={verifiedN}      color="#0891b2" sub={`${Math.round(verifiedN/Math.max(users.length,1)*100)}% verified`}
+            <StatCard label="Verified"       value={verifiedN}      color="#8d3f5c" sub={`${Math.round(verifiedN/Math.max(users.length,1)*100)}% verified`}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>} />
             <StatCard label="Total Posts"    value={posts.length}   color="#8b5cf6" sub={`${totalLikes} likes · ${totalComments} comments`}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>} />
-            <StatCard label="Conversations"  value={convs.length}   color="#f59e0b"
+            <StatCard label="Conversations"  value={convs.length}   color="#d4a574"
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} />
-            <StatCard label="Admins"         value={adminsN}        color="#dc2626"
+            <StatCard label="Admins"         value={adminsN}        color="#c25c5c"
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
             {/* Profession distribution */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Professions</p>
-              {topProfessions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#94a3b8)" }}>No data yet</p>}
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#b09aa3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Professions</p>
+              {topProfessions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#b09aa3)" }}>No data yet</p>}
               {topProfessions.map(([prof, count]) => (
                 <div key={prof} style={{ marginBottom: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#374151)" }}>{prof}</span>
-                    <span style={{ fontSize: 11, color: "var(--text-muted,#94a3b8)", fontWeight: 600 }}>{count}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{prof}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted,#b09aa3)", fontWeight: 600 }}>{count}</span>
                   </div>
-                  <div style={{ height: 6, background: "var(--bg-tertiary,#f1f5f9)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "var(--brand,#1a3c5e)", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
+                  <div style={{ height: 6, background: "var(--bg-tertiary,#f7ecec)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "var(--brand,#4a1f3d)", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
                   </div>
                 </div>
               ))}
@@ -667,15 +667,15 @@ export default function AdminPage() {
 
             {/* City distribution */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Cities</p>
-              {topCities.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#94a3b8)" }}>No data yet</p>}
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#b09aa3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Cities</p>
+              {topCities.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#b09aa3)" }}>No data yet</p>}
               {topCities.map(([city, count]) => (
                 <div key={city} style={{ marginBottom: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#374151)" }}>{city}</span>
-                    <span style={{ fontSize: 11, color: "var(--text-muted,#94a3b8)", fontWeight: 600 }}>{count}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{city}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted,#b09aa3)", fontWeight: 600 }}>{count}</span>
                   </div>
-                  <div style={{ height: 6, background: "var(--bg-tertiary,#f1f5f9)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
+                  <div style={{ height: 6, background: "var(--bg-tertiary,#f7ecec)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "#8b5cf6", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
                   </div>
                 </div>
@@ -684,15 +684,15 @@ export default function AdminPage() {
 
             {/* Recent signups */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Recent Members</p>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#b09aa3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Recent Members</p>
               {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5).map(u => (
                 <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <div style={{ width:28,height:28,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>
                     {getInitials(`${u.firstName} ${u.lastName}`)}
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
-                    <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#1a3c5e)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{u.firstName} {u.lastName}</p>
-                    <p style={{ fontSize:10,color:"var(--text-muted,#94a3b8)" }}>{timeAgo(u.createdAt)}</p>
+                    <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#4a1f3d)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{u.firstName} {u.lastName}</p>
+                    <p style={{ fontSize:10,color:"var(--text-muted,#b09aa3)" }}>{timeAgo(u.createdAt)}</p>
                   </div>
                   {u.emailVerified && <span className="badge badge-green">✓</span>}
                 </div>
@@ -701,26 +701,26 @@ export default function AdminPage() {
 
             {/* Top posts */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#94a3b8)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Posts</p>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#b09aa3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Posts</p>
               {posts.slice().sort((a,b)=>(b.likesCount||0)-(a.likesCount||0)).slice(0,4).map(p => (
-                <div key={p.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid var(--bg-tertiary,#f1f5f9)" }}>
-                  <p style={{ fontSize:12,color:"var(--text-primary,#1a3c5e)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2 }}>
+                <div key={p.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid var(--bg-tertiary,#f7ecec)" }}>
+                  <p style={{ fontSize:12,color:"var(--text-primary,#4a1f3d)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2 }}>
                     {p.text || "(media post)"}
                   </p>
                   <div style={{ display:"flex", gap:10 }}>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#94a3b8)",display:"flex",alignItems:"center",gap:2 }}>
+                    <span style={{ fontSize:10,color:"var(--text-muted,#b09aa3)",display:"flex",alignItems:"center",gap:2 }}>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                       {p.likesCount||0}
                     </span>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#94a3b8)",display:"flex",alignItems:"center",gap:2 }}>
+                    <span style={{ fontSize:10,color:"var(--text-muted,#b09aa3)",display:"flex",alignItems:"center",gap:2 }}>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                       {p.commentCount||0}
                     </span>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#94a3b8)" }}>by {p.authorName}</span>
+                    <span style={{ fontSize:10,color:"var(--text-muted,#b09aa3)" }}>by {p.authorName}</span>
                   </div>
                 </div>
               ))}
-              {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted,#94a3b8)"}}>No posts yet</p>}
+              {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted,#b09aa3)"}}>No posts yet</p>}
             </div>
           </div>
         </>
@@ -745,17 +745,17 @@ export default function AdminPage() {
           <div className="card" style={{ overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "var(--bg-secondary,#f8fafc)" }}>
+                <tr style={{ background: "var(--bg-secondary,#fdf8f6)" }}>
                   {["Member","Email","Profession","City","Status","Joined","Actions"].map(h => (
-                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#94a3b8)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#f1f5f9)",whiteSpace:"nowrap" }}>{h}</th>
+                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#b09aa3)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#f7ecec)",whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredBySearch.map((u) => (
                   <tr key={u.id}
-                    style={{ borderBottom:"1px solid var(--bg-tertiary,#f1f5f9)",transition:"background 0.12s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f8fafc)"}
+                    style={{ borderBottom:"1px solid var(--bg-tertiary,#f7ecec)",transition:"background 0.12s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#fdf8f6)"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
                     <td style={{ padding:"11px 14px" }}>
@@ -765,14 +765,14 @@ export default function AdminPage() {
                           : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
                         }
                         <div>
-                          <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#1a3c5e)" }}>{u.firstName} {u.lastName}</p>
-                          <p style={{ fontSize:10,color:"var(--text-muted,#94a3b8)" }}>{u.phone||""}</p>
+                          <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#4a1f3d)" }}>{u.firstName} {u.lastName}</p>
+                          <p style={{ fontSize:10,color:"var(--text-muted,#b09aa3)" }}>{u.phone||""}</p>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#374151)" }}>{u.email||"—"}</td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#374151)" }}>{u.profession||"—"}</td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#374151)" }}>{u.city||"—"}</td>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.email||"—"}</td>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.profession||"—"}</td>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.city||"—"}</td>
                     <td style={{ padding:"11px 14px" }}>
                       <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
                         <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
@@ -782,7 +782,7 @@ export default function AdminPage() {
                         {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● Online</span>}
                       </div>
                     </td>
-                    <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#94a3b8)",whiteSpace:"nowrap" }}>
+                    <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#b09aa3)",whiteSpace:"nowrap" }}>
                       {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
                     </td>
                     <td style={{ padding:"11px 14px" }}>
@@ -794,7 +794,7 @@ export default function AdminPage() {
                           >{u.isAdmin ? "Revoke" : "Make Admin"}</button>
                           <button
                             onClick={() => deleteUser(u.id)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #fca5a5",background:"#fee2e2",color:"#dc2626",cursor:"pointer" }}
+                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}
                           >Delete</button>
                         </div>
                       )}
@@ -839,7 +839,7 @@ export default function AdminPage() {
                 <tbody>
                   {filteredBySearch.map(u => (
                     <tr key={u.id} style={S.row}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                      onMouseEnter={e => e.currentTarget.style.background = "#fdf8f6"}
                       onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
                     >
                       <td style={S.td}>
@@ -850,7 +850,7 @@ export default function AdminPage() {
                       <td style={S.td}>{u.profession || "—"}</td>
                       <td style={S.td}>{u.city || "—"}</td>
                       <td style={S.td}>
-                        {u.isAdmin ? <span style={S.adminBadge}>Admin</span> : <span style={{ color: "#cbd5e1" }}>—</span>}
+                        {u.isAdmin ? <span style={S.adminBadge}>Admin</span> : <span style={{ color: "#d9c8ce" }}>—</span>}
                       </td>
                       <td style={S.td}>
                         <button
@@ -878,9 +878,9 @@ export default function AdminPage() {
           <div className="card" style={{ overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "var(--bg-secondary,#f8fafc)" }}>
+                <tr style={{ background: "var(--bg-secondary,#fdf8f6)" }}>
                   {["Author","Content","Media","Comments","Posted","Actions"].map(h => (
-                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#94a3b8)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#f1f5f9)" }}>{h}</th>
+                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#b09aa3)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#f7ecec)" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -888,8 +888,8 @@ export default function AdminPage() {
                 {posts.map(p => (
                   <>
                     <tr key={p.id}
-                      style={{ borderBottom:"1px solid var(--bg-tertiary,#f1f5f9)",transition:"background 0.12s" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f8fafc)"}
+                      style={{ borderBottom:"1px solid var(--bg-tertiary,#f7ecec)",transition:"background 0.12s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#fdf8f6)"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
                       <td style={{ padding:"11px 14px" }}>
@@ -897,63 +897,63 @@ export default function AdminPage() {
                           <div style={{ width:28,height:28,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff" }}>
                             {getInitials(p.authorName)}
                           </div>
-                          <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#1a3c5e)" }}>{p.authorName}</p>
+                          <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#4a1f3d)" }}>{p.authorName}</p>
                         </div>
                       </td>
                       <td style={{ padding:"11px 14px",maxWidth:280 }}>
-                        <p style={{ fontSize:12,color:"var(--text-secondary,#374151)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:260 }}>
-                          {p.text || <em style={{color:"var(--text-muted,#94a3b8)"}}>Media post</em>}
+                        <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:260 }}>
+                          {p.text || <em style={{color:"var(--text-muted,#b09aa3)"}}>Media post</em>}
                         </p>
                       </td>
                       <td style={{ padding:"11px 14px" }}>
                         {p.media?.length > 0
                           ? <span style={{ fontSize:"11px",background:"#dbeafe",color:"#1e40af",borderRadius:"99px",padding:"2px 9px",fontWeight:700 }}>{p.media.length} file{p.media.length>1?"s":""}</span>
-                          : <span style={{ color:"#cbd5e1" }}>—</span>
+                          : <span style={{ color:"#d9c8ce" }}>—</span>
                         }
                       </td>
                       <td style={{ padding:"11px 14px" }}>
                         <button
-                          style={{ background:"none",border:"1px solid var(--border,#e2e8f0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#64748b)" }}
+                          style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}
                           onClick={() => togglePostComments(p.id)}
                         >
                           {expandedPostComments[p.id] ? "Hide" : `Show (${p.commentsCount ?? 0})`}
                         </button>
                       </td>
-                      <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#94a3b8)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
+                      <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#b09aa3)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
                       <td style={{ padding:"11px 14px" }}>
                         <div style={{ display:"flex",gap:4 }}>
                           <button
                             onClick={() => pinPost(p.id, p.isPinned)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #fde047",background:"#fef9c3",color:"#854d0e",cursor:"pointer" }}
+                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}
                           >{p.isPinned ? "Unpin" : "Pin"}</button>
                           <button
                             onClick={() => deletePost(p.id)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #fca5a5",background:"#fee2e2",color:"#dc2626",cursor:"pointer" }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#fecaca"}
-                            onMouseLeave={e => e.currentTarget.style.background = "#fee2e2"}
+                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#eec3c3"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#f5dada"}
                           >Delete</button>
                         </div>
                       </td>
                     </tr>
                     {expandedPostComments[p.id] && (
                       <tr key={`${p.id}-comments`}>
-                        <td colSpan={6} style={{ padding:"0 14px 12px 46px",background:"var(--bg-secondary,#f8fafc)" }}>
+                        <td colSpan={6} style={{ padding:"0 14px 12px 46px",background:"var(--bg-secondary,#fdf8f6)" }}>
                           <div style={S.commentsWrap}>
                             {!postCommentsList[p.id] ? (
-                              <p style={{ fontSize:"12px",color:"var(--text-muted,#94a3b8)",margin:0 }}>Loading comments…</p>
+                              <p style={{ fontSize:"12px",color:"var(--text-muted,#b09aa3)",margin:0 }}>Loading comments…</p>
                             ) : postCommentsList[p.id].length === 0 ? (
-                              <p style={{ fontSize:"12px",color:"var(--text-muted,#94a3b8)",margin:0 }}>No comments yet.</p>
+                              <p style={{ fontSize:"12px",color:"var(--text-muted,#b09aa3)",margin:0 }}>No comments yet.</p>
                             ) : (
                               postCommentsList[p.id].map(c => (
                                 <div key={c.id} style={S.commentRow}>
                                   <div style={{ flex:1 }}>
-                                    <span style={{ fontWeight:700,color:"var(--text-primary,#1a3c5e)",marginRight:"8px" }}>{c.authorName}</span>
-                                    <span style={{ color:"var(--text-secondary,#374151)" }}>{c.text}</span>
-                                    <span style={{ color:"var(--text-muted,#94a3b8)",fontSize:"10px",marginLeft:"8px" }}>{timeAgo(c.createdAt)}</span>
+                                    <span style={{ fontWeight:700,color:"var(--text-primary,#4a1f3d)",marginRight:"8px" }}>{c.authorName}</span>
+                                    <span style={{ color:"var(--text-secondary,#7a5868)" }}>{c.text}</span>
+                                    <span style={{ color:"var(--text-muted,#b09aa3)",fontSize:"10px",marginLeft:"8px" }}>{timeAgo(c.createdAt)}</span>
                                   </div>
                                   <button
                                     style={{ ...S.delBtn,padding:"3px 9px",fontSize:"10px" }}
-                                    onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
+                                    onMouseEnter={e => e.currentTarget.style.background = "#f5dada"}
                                     onMouseLeave={e => e.currentTarget.style.background = "none"}
                                     onClick={() => deleteComment(p.id, c)}
                                   >
@@ -985,7 +985,7 @@ export default function AdminPage() {
           } />
 
           {/* Filter card */}
-          <div style={{ background:"var(--bg-primary,#fff)",borderRadius:"16px",padding:"1.25rem",border:"1.5px solid var(--border,#f1f5f9)",marginBottom:"1rem",boxShadow:"0 2px 8px rgba(15,23,42,0.05)",display:"flex",flexDirection:"column",gap:"0.75rem" }}>
+          <div style={{ background:"var(--bg-primary,#fff)",borderRadius:"16px",padding:"1.25rem",border:"1.5px solid var(--border,#f7ecec)",marginBottom:"1rem",boxShadow:"0 2px 8px rgba(74, 31, 61,0.05)",display:"flex",flexDirection:"column",gap:"0.75rem" }}>
 
             {/* Type filter pills */}
             {allLogTypes.length > 0 && (
@@ -996,15 +996,15 @@ export default function AdminPage() {
                   return (
                     <button key={type} onClick={() => toggleLogType(type)} style={{
                       padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",
-                      border:`1.5px solid ${active ? cfg.borderColor : "var(--border,#e2e8f0)"}`,
-                      background: active ? cfg.bg : "var(--bg-secondary,#f8fafc)",
-                      color: active ? cfg.color : "var(--text-muted,#64748b)",
+                      border:`1.5px solid ${active ? cfg.borderColor : "var(--border,#f0dce0)"}`,
+                      background: active ? cfg.bg : "var(--bg-secondary,#fdf8f6)",
+                      color: active ? cfg.color : "var(--text-muted,#7a5868)",
                       transition:"all 0.15s",
                     }}>{cfg.label}</button>
                   );
                 })}
                 {logTypeFilter.length > 0 && (
-                  <button onClick={() => setLogTypeFilter([])} style={{ padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",border:"1.5px solid var(--border,#e2e8f0)",background:"var(--bg-tertiary,#f1f5f9)",color:"var(--text-muted,#64748b)" }}>
+                  <button onClick={() => setLogTypeFilter([])} style={{ padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",border:"1.5px solid var(--border,#f0dce0)",background:"var(--bg-tertiary,#f7ecec)",color:"var(--text-muted,#7a5868)" }}>
                     Clear filter
                   </button>
                 )}
@@ -1027,7 +1027,7 @@ export default function AdminPage() {
               </div>
               {(logActorFilter || logDateFrom || logDateTo) && (
                 <button onClick={() => { setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
-                  style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f1f5f9)",color:"var(--text-muted,#64748b)",border:"1.5px solid var(--border,#e2e8f0)",marginTop:"18px" }}>
+                  style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f7ecec)",color:"var(--text-muted,#7a5868)",border:"1.5px solid var(--border,#f0dce0)",marginTop:"18px" }}>
                   Clear
                 </button>
               )}
@@ -1042,8 +1042,8 @@ export default function AdminPage() {
             )}
             {!logsLoading && filteredLogs.length > 0 && (
               <div style={S.logList}>
-                <div style={{ padding:"10px 1.25rem 6px",background:"var(--bg-primary,#fff)",borderBottom:"1px solid var(--border,#f1f5f9)" }}>
-                  <p style={{ fontSize:"12px",color:"var(--text-muted,#94a3b8)",margin:0 }}>
+                <div style={{ padding:"10px 1.25rem 6px",background:"var(--bg-primary,#fff)",borderBottom:"1px solid var(--border,#f7ecec)" }}>
+                  <p style={{ fontSize:"12px",color:"var(--text-muted,#b09aa3)",margin:0 }}>
                     Showing {filteredLogs.length} of {logs.length} entries
                   </p>
                 </div>
@@ -1055,7 +1055,7 @@ export default function AdminPage() {
                   const hasDetails = log.details && Object.keys(log.details).length > 0;
                   return (
                     <div key={log.id} style={S.logRow(cfg.borderColor)}
-                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f8fafc)"}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#fdf8f6)"}
                       onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
                     >
                       <span style={S.logBadge(cfg.bg, cfg.color)}>{cfg.label}</span>

@@ -8,13 +8,21 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
 
-/* ─── colours ─── */
+/* ─── Rose & Plum palette ─── */
 const C = {
-  blue: "#1a3a8f", bright: "#2f5fd4", light: "#4a7ae8",
-  sky: "#38bdf8", pale: "#c8ddfb", deep: "#0b1f52", deeper: "#071440",
+  brand: "#b8617a",      // dusty rose (primary)
+  brandSoft: "#d48aa0",  // lighter rose hover
+  plum: "#4a1f3d",       // deep plum (text / accent)
+  plumDeep: "#2e1428",   // darkest plum
+  cream: "#fdf8f6",      // page bg
+  blush: "#f7ecec",      // surface tint
+  blushDeep: "#e8c5c5",  // borders / dividers
+  ink: "#3a2230",        // body text
+  mute: "#8a6b76",       // muted text
+  line: "#ecd8de",       // hairline
 };
 
-/* ─── helpers ─── */
+/* ─── helpers (unchanged) ─── */
 function normalizePhone(raw) {
   let s = raw.replace(/[\s\-().]/g, "");
   if (s.startsWith("0")) s = "+972" + s.slice(1);
@@ -33,7 +41,6 @@ function firebaseMsg(code) {
     "auth/invalid-email": "כתובת אימייל לא תקינה.",
     "auth/too-many-requests": "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
     "auth/popup-closed-by-user": "הכניסה בוטלה.",
-
   };
   return m[code] || `שגיאה (${code || "unknown"}). נסי שוב.`;
 }
@@ -49,46 +56,53 @@ function GoogleIcon() {
   );
 }
 
-/* ─── shared input style ─── */
+/* ─── shared field styles ─── */
+const fontStack = "'Figtree','Outfit',system-ui,-apple-system,sans-serif";
+
 const inp = {
-  width: "100%", padding: "0.78rem 1rem", boxSizing: "border-box",
-  background: "#f8fafc", border: "1.5px solid #e2e8f0",
-  borderRadius: 9, color: "#1e293b", fontSize: "0.9rem",
-  fontFamily: "'Heebo', system-ui, sans-serif",
-  outline: "none", transition: "border-color 0.2s, background 0.2s",
+  width: "100%", padding: "0.85rem 1rem", boxSizing: "border-box",
+  background: "#fff", border: `1px solid ${C.line}`,
+  borderRadius: 12, color: C.ink, fontSize: "0.92rem",
+  fontFamily: fontStack, fontWeight: 500,
+  outline: "none",
+  transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
 };
 const lbl = {
-  display: "block", color: "#64748b",
-  fontSize: "0.76rem", fontWeight: 700, marginBottom: "0.38rem", letterSpacing: "0.04em",
+  display: "block", color: C.mute,
+  fontSize: "0.74rem", fontWeight: 600, marginBottom: "0.45rem",
+  letterSpacing: "0.02em",
 };
 const primaryBtn = {
-  width: "100%", padding: "0.85rem",
-  background: `linear-gradient(135deg,${C.bright},${C.light})`,
-  color: "#fff", border: "none", borderRadius: 9,
-  fontSize: "0.95rem", fontWeight: 800, cursor: "pointer",
-  fontFamily: "'Heebo', system-ui, sans-serif",
-  boxShadow: "0 4px 18px rgba(47,95,212,0.28)",
-  transition: "transform 0.2s, box-shadow 0.2s",
+  width: "100%", padding: "0.9rem",
+  background: C.brand, color: "#fff",
+  border: "none", borderRadius: 12,
+  fontSize: "0.94rem", fontWeight: 600, cursor: "pointer",
+  fontFamily: fontStack, letterSpacing: "0.01em",
+  boxShadow: `0 6px 20px ${C.brand}38`,
+  transition: "transform 0.2s, box-shadow 0.2s, background 0.2s",
   marginBottom: "0.9rem",
 };
 const ghostBtn = {
   width: "100%", padding: "0.85rem",
-  background: "#f8fafc", color: "#475569",
-  border: "1px solid #e2e8f0", borderRadius: 9,
-  fontSize: "0.88rem", fontWeight: 600, cursor: "pointer",
-  fontFamily: "'Heebo', system-ui, sans-serif",
-  transition: "background 0.2s", marginBottom: "0.9rem",
+  background: "#fff", color: C.ink,
+  border: `1px solid ${C.line}`, borderRadius: 12,
+  fontSize: "0.88rem", fontWeight: 500, cursor: "pointer",
+  fontFamily: fontStack,
+  transition: "background 0.2s, border-color 0.2s", marginBottom: "0.9rem",
 };
 const errBox = {
-  background: "rgba(220,60,60,0.08)", border: "1px solid rgba(220,60,60,0.25)",
-  borderRadius: 8, padding: "0.65rem 0.9rem", marginBottom: "1rem",
-  fontSize: "0.82rem", color: "#dc2626",
+  background: "#fbeaea", border: "1px solid #e9c4c4",
+  borderRadius: 10, padding: "0.7rem 0.95rem", marginBottom: "1rem",
+  fontSize: "0.82rem", color: "#9b2c3a", fontWeight: 500,
 };
 const okBox = {
-  background: "rgba(46,204,113,0.08)", border: "1px solid rgba(46,204,113,0.25)",
-  borderRadius: 8, padding: "0.65rem 0.9rem", marginBottom: "1rem",
-  fontSize: "0.82rem", color: "#16a34a",
+  background: "#eaf5ee", border: "1px solid #c5dfcd",
+  borderRadius: 10, padding: "0.7rem 0.95rem", marginBottom: "1rem",
+  fontSize: "0.82rem", color: "#2f6b48", fontWeight: 500,
 };
+
+function focusOn(e)  { e.target.style.borderColor = C.brand; e.target.style.boxShadow = `0 0 0 3px ${C.brand}1f`; }
+function focusOff(e) { e.target.style.borderColor = C.line;  e.target.style.boxShadow = "none"; }
 
 function Fld({ label, children }) {
   return (
@@ -116,8 +130,8 @@ function GoogleButton({ label }) {
         ...ghostBtn, display: "flex", alignItems: "center",
         justifyContent: "center", gap: 10,
       }}
-        onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
-        onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}
+        onMouseOver={e => { e.currentTarget.style.background = C.blush; e.currentTarget.style.borderColor = C.blushDeep; }}
+        onMouseOut={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = C.line; }}
       >
         <GoogleIcon /> {loading ? "מתחבר..." : label}
       </button>
@@ -148,31 +162,37 @@ function LoginForm({ onSwitchTab }) {
 
   return (
     <form onSubmit={submit} style={{ direction: "rtl" }} autoComplete="off">
-      <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>ברוכה הבאה!</div>
-      <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.6rem" }}>היכנסי לרשת הבוגרות שלך</p>
+      <h1 style={{
+        fontFamily: "'Outfit',system-ui,sans-serif",
+        fontSize: "1.7rem", fontWeight: 600, color: C.plum,
+        marginBottom: "0.35rem", letterSpacing: "-0.01em",
+      }}>ברוכה הבאה</h1>
+      <p style={{ color: C.mute, fontSize: "0.86rem", marginBottom: "1.6rem", fontWeight: 400 }}>
+        היכנסי לרשת הבוגרות שלך
+      </p>
       {error && <div style={errBox}>{error}</div>}
       {resetSent && <div style={okBox}>נשלח אימייל לאיפוס סיסמה ✓</div>}
       <Fld label="אימייל">
         <input style={inp} type="email" name="email" placeholder="your@email.com" dir="ltr" value={form.email} onChange={set} required autoComplete="off"
-          onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+          onFocus={focusOn} onBlur={focusOff} />
       </Fld>
       <Fld label="סיסמה">
         <input style={inp} type="password" name="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={set} required autoComplete="new-password"
-          onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+          onFocus={focusOn} onBlur={focusOff} />
       </Fld>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.4rem" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: "0.45rem", color: "#64748b", fontSize: "0.78rem", cursor: "pointer" }}>
-          <input type="checkbox" style={{ accentColor: C.sky }} /> זכרי אותי
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: C.mute, fontSize: "0.8rem", cursor: "pointer" }}>
+          <input type="checkbox" style={{ accentColor: C.brand }} /> זכרי אותי
         </label>
-        <button type="button" onClick={forgot} style={{ background: "none", border: "none", color: C.bright, fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}>שכחתי סיסמה</button>
+        <button type="button" onClick={forgot} style={{ background: "none", border: "none", color: C.brand, fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}>שכחתי סיסמה</button>
       </div>
       <button type="submit" disabled={loading} style={primaryBtn}
-        onMouseOver={e => e.target.style.transform = "translateY(-1px)"}
-        onMouseOut={e => e.target.style.transform = ""}
+        onMouseOver={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.background = C.brandSoft; }}
+        onMouseOut={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.background = C.brand; }}
       >{loading ? "מתחברת..." : "כניסה לחשבון →"}</button>
-      <p style={{ textAlign: "center", color: "#94a3b8", fontSize: "0.78rem", margin: 0 }}>
+      <p style={{ textAlign: "center", color: C.mute, fontSize: "0.8rem", margin: 0 }}>
         עוד לא רשומה?{" "}
-        <button type="button" onClick={() => onSwitchTab("signup")} style={{ background: "none", border: "none", color: C.bright, fontWeight: 700, cursor: "pointer", fontSize: "0.78rem" }}>הרשמי עכשיו</button>
+        <button type="button" onClick={() => onSwitchTab("signup")} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: "0.8rem" }}>הרשמי עכשיו</button>
       </p>
     </form>
   );
@@ -208,11 +228,11 @@ function SignUpForm({ onSwitchTab }) {
   };
 
   const progressBar = (
-    <div style={{ display: "flex", gap: "0.35rem", marginBottom: "1.7rem" }}>
+    <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1.8rem" }}>
       {[1, 2, 3].map(n => (
         <div key={n} style={{
-          flex: 1, height: 3, borderRadius: 2,
-          background: n < step ? C.light : n === step ? C.sky : "#e2e8f0",
+          flex: 1, height: 3, borderRadius: 99,
+          background: n <= step ? C.brand : C.line,
           transition: "background 0.3s",
         }} />
       ))}
@@ -224,66 +244,62 @@ function SignUpForm({ onSwitchTab }) {
     ...(["email", "phone", "password", "confirmPassword"].includes(name) ? { direction: "ltr", textAlign: "left" } : {}),
   });
 
+  const heading = { fontFamily: "'Outfit',system-ui,sans-serif", fontSize: "1.65rem", fontWeight: 600, color: C.plum, marginBottom: "0.35rem", letterSpacing: "-0.01em" };
+  const sub     = { color: C.mute, fontSize: "0.85rem", marginBottom: "1.6rem", fontWeight: 400 };
+
   return (
     <div style={{ direction: "rtl" }}>
       {progressBar}
       {step === 1 && (
         <>
-          <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>הרשמה לרשת</div>
-          <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.6rem" }}>מלאי את הפרטים האישיים שלך</p>
+          <h2 style={heading}>הרשמה לרשת</h2>
+          <p style={sub}>מלאי את הפרטים האישיים שלך</p>
           {error && <div style={errBox}>{error}</div>}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem" }}>
             <Fld label="שם פרטי *">
-              <input style={inputStyle("firstName")} name="firstName" value={form.firstName} onChange={set} placeholder="שם" required
-                onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+              <input style={inputStyle("firstName")} name="firstName" value={form.firstName} onChange={set} placeholder="שם" required onFocus={focusOn} onBlur={focusOff} />
             </Fld>
             <Fld label="שם משפחה *">
-              <input style={inputStyle("lastName")} name="lastName" value={form.lastName} onChange={set} placeholder="משפחה" required
-                onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+              <input style={inputStyle("lastName")} name="lastName" value={form.lastName} onChange={set} placeholder="משפחה" required onFocus={focusOn} onBlur={focusOff} />
             </Fld>
           </div>
           <Fld label="אימייל *">
-            <input style={inputStyle("email")} type="email" name="email" value={form.email} onChange={set} placeholder="your@email.com" required
-              onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+            <input style={inputStyle("email")} type="email" name="email" value={form.email} onChange={set} placeholder="your@email.com" required onFocus={focusOn} onBlur={focusOff} />
           </Fld>
           <Fld label="טלפון *">
-            <input style={inputStyle("phone")} type="tel" name="phone" value={form.phone} onChange={set} placeholder="05X-XXXXXXX" required
-              onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+            <input style={inputStyle("phone")} type="tel" name="phone" value={form.phone} onChange={set} placeholder="05X-XXXXXXX" required onFocus={focusOn} onBlur={focusOff} />
           </Fld>
           <button style={primaryBtn} onClick={() => {
             if (!form.firstName || !form.lastName || !form.email || !form.phone) { setError("מלאי את כל השדות הנדרשים."); return; }
             setError(""); setStep(2);
           }}>המשך →</button>
-          <p style={{ textAlign: "center", color: "#94a3b8", fontSize: "0.78rem", margin: 0 }}>
+          <p style={{ textAlign: "center", color: C.mute, fontSize: "0.8rem", margin: 0 }}>
             כבר יש לך חשבון?{" "}
-            <button type="button" onClick={() => onSwitchTab("login")} style={{ background: "none", border: "none", color: C.bright, fontWeight: 700, cursor: "pointer", fontSize: "0.78rem" }}>כניסה</button>
+            <button type="button" onClick={() => onSwitchTab("login")} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: "0.8rem" }}>כניסה</button>
           </p>
         </>
       )}
 
       {step === 2 && (
         <>
-          <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>פרטים מקצועיים</div>
-          <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.6rem" }}>ספרי לנו עליך</p>
+          <h2 style={heading}>פרטים מקצועיים</h2>
+          <p style={sub}>ספרי לנו עליך</p>
           {error && <div style={errBox}>{error}</div>}
           <Fld label="מוסד לימודים">
-            <select style={{ ...inp, color: form.institution ? "#1e293b" : "#94a3b8" }} name="institution" value={form.institution} onChange={set}
-              onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"}>
-              <option value="" style={{ background: "#fff" }}>בחרי מוסד...</option>
+            <select style={{ ...inp, color: form.institution ? C.ink : C.mute }} name="institution" value={form.institution} onChange={set} onFocus={focusOn} onBlur={focusOff}>
+              <option value="">בחרי מוסד...</option>
               {["אוניברסיטת תל-אביב", "האוניברסיטה העברית בירושלים", "אוניברסיטת חיפה", "בר אילן", "אוניברסיטת בן-גוריון", "מכללות ירושלים", "אחר"].map(o => (
-                <option key={o} value={o} style={{ background: "#fff" }}>{o}</option>
+                <option key={o} value={o}>{o}</option>
               ))}
             </select>
           </Fld>
           <Fld label="מקצוע / תפקיד">
-            <input style={inputStyle("profession")} name="profession" value={form.profession} onChange={set} placeholder="רופאה, עורכת דין, מהנדסת..."
-              onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+            <input style={inputStyle("profession")} name="profession" value={form.profession} onChange={set} placeholder="רופאה, עורכת דין, מהנדסת..." onFocus={focusOn} onBlur={focusOff} />
           </Fld>
           <Fld label="עיר מגורים">
-            <input style={inputStyle("city")} name="city" value={form.city} onChange={set} placeholder="תל אביב, ירושלים..."
-              onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+            <input style={inputStyle("city")} name="city" value={form.city} onChange={set} placeholder="תל אביב, ירושלים..." onFocus={focusOn} onBlur={focusOff} />
           </Fld>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.55rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.6rem" }}>
             <button style={{ ...ghostBtn, margin: 0 }} onClick={() => setStep(1)}>← חזרה</button>
             <button style={{ ...primaryBtn, margin: 0 }} onClick={() => { setError(""); setStep(3); }}>המשך →</button>
           </div>
@@ -292,43 +308,41 @@ function SignUpForm({ onSwitchTab }) {
 
       {step === 3 && (
         <>
-          <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "#1a3c5e", marginBottom: "0.3rem" }}>הגדרת סיסמה</div>
-          <p style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: "1.6rem" }}>כמעט סיימנו!</p>
+          <h2 style={heading}>הגדרת סיסמה</h2>
+          <p style={sub}>כמעט סיימנו</p>
           {error && <div style={errBox}>{error}</div>}
           <Fld label="סיסמה *">
-            <input style={inputStyle("password")} type="password" name="password" value={form.password} onChange={set} placeholder="לפחות 6 תווים" required
-              onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+            <input style={inputStyle("password")} type="password" name="password" value={form.password} onChange={set} placeholder="לפחות 6 תווים" required onFocus={focusOn} onBlur={focusOff} />
           </Fld>
           <Fld label="אימות סיסמה *">
-            <input style={inputStyle("confirmPassword")} type="password" name="confirmPassword" value={form.confirmPassword} onChange={set} placeholder="חזרי על הסיסמה" required
-              onFocus={e => e.target.style.borderColor = C.sky} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+            <input style={inputStyle("confirmPassword")} type="password" name="confirmPassword" value={form.confirmPassword} onChange={set} placeholder="חזרי על הסיסמה" required onFocus={focusOn} onBlur={focusOff} />
           </Fld>
           <div style={{
-            display: "flex", gap: "0.7rem", alignItems: "flex-start",
-            background: "#f8fafc", border: "1px solid #e2e8f0",
-            borderRadius: 9, padding: "0.85rem", marginBottom: "1.1rem",
+            display: "flex", gap: "0.75rem", alignItems: "flex-start",
+            background: C.blush, border: `1px solid ${C.line}`,
+            borderRadius: 12, padding: "0.95rem", marginBottom: "1.1rem",
           }}>
             <div
               onClick={() => setAgreed(!agreed)}
               style={{
-                width: 36, height: 19, flexShrink: 0,
-                background: agreed ? C.light : "#cbd5e1",
-                borderRadius: 10, position: "relative", cursor: "pointer",
+                width: 36, height: 20, flexShrink: 0,
+                background: agreed ? C.brand : "#d9c4cb",
+                borderRadius: 99, position: "relative", cursor: "pointer",
                 transition: "background 0.2s", marginTop: 2,
               }}>
               <div style={{
-                position: "absolute", width: 13, height: 13, background: "#fff",
+                position: "absolute", width: 14, height: 14, background: "#fff",
                 borderRadius: "50%", top: 3,
                 right: agreed ? 3 : "auto", left: agreed ? "auto" : 3,
-                transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
               }} />
             </div>
-            <div style={{ color: "#64748b", fontSize: "0.75rem", lineHeight: 1.55 }}>
-              <strong style={{ color: "#1a3c5e" }}>מסכימה לשיתוף פרטים בתוך הרשת</strong><br />
-              שם, מייל ומומחיות יהיו גלויים לבוגרות אחרות. פרטי קשר — רק לאחר אישורך.
+            <div style={{ color: C.ink, fontSize: "0.78rem", lineHeight: 1.6 }}>
+              <strong style={{ color: C.plum, fontWeight: 600 }}>מסכימה לשיתוף פרטים בתוך הרשת</strong><br />
+              <span style={{ color: C.mute }}>שם, מייל ומומחיות יהיו גלויים לבוגרות אחרות. פרטי קשר — רק לאחר אישורך.</span>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.55rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.6rem" }}>
             <button style={{ ...ghostBtn, margin: 0 }} onClick={() => setStep(2)}>← חזרה</button>
             <button style={{ ...primaryBtn, margin: 0 }} disabled={loading} onClick={submit}>
               {loading ? "יוצרת חשבון..." : "הרשמה →"}
@@ -347,53 +361,57 @@ export default function AuthPage({ onBack }) {
   return (
     <div style={{
       minHeight: "100vh", position: "relative",
-      fontFamily: "'Heebo', system-ui, sans-serif",
+      fontFamily: fontStack,
+      background: C.cream,
       overflow: "hidden",
     }}>
-      {/* Background photo */}
+      {/* Soft floral bloom backdrop — pure CSS, no photo */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 0,
-        backgroundImage: "url(/background.jpg)",
-        backgroundSize: "cover", backgroundPosition: "center",
-        filter: "brightness(0.88)",
-      }} />
-      {/* Light overlay */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 1,
-        background: "linear-gradient(135deg,rgba(255,255,255,0.18) 0%,rgba(200,221,251,0.22) 100%)",
+        background: `
+          radial-gradient(800px circle at 12% 18%, ${C.blush} 0%, transparent 55%),
+          radial-gradient(700px circle at 88% 82%, #f3dde2 0%, transparent 55%),
+          radial-gradient(500px circle at 70% 12%, #faeef0 0%, transparent 60%),
+          ${C.cream}
+        `,
       }} />
 
       {/* Top bar */}
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 10,
-        padding: "1.2rem 2.5rem", display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "1.3rem 2.5rem", display: "flex",
+        alignItems: "center", justifyContent: "space-between",
         direction: "rtl",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <div style={{
-            width: 40, height: 40, background: "rgba(255,255,255,0.85)",
-            border: "1.5px solid rgba(255,255,255,0.9)", borderRadius: 12,
+            width: 40, height: 40, background: "#fff",
+            border: `1px solid ${C.line}`, borderRadius: 14,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "1.2rem", backdropFilter: "blur(8px)",
+            fontSize: "1.2rem", color: C.brand,
+            boxShadow: `0 4px 14px ${C.brand}1f`,
           }}>♀</div>
           <div>
-            <div style={{ fontSize: "1rem", fontWeight: 800, color: "#fff", lineHeight: 1.15, textShadow: "0 1px 4px rgba(0,0,0,0.3)" }}>מנהיגות שווה</div>
-            <div style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.8)", letterSpacing: "0.07em", textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>רשת בוגרות</div>
+            <div style={{
+              fontFamily: "'Outfit',system-ui,sans-serif",
+              fontSize: "1.02rem", fontWeight: 600, color: C.plum, lineHeight: 1.15,
+              letterSpacing: "-0.005em",
+            }}>מנהיגות שווה</div>
+            <div style={{ fontSize: "0.66rem", color: C.mute, letterSpacing: "0.08em", fontWeight: 500 }}>רשת בוגרות</div>
           </div>
         </div>
         {onBack && (
           <button onClick={onBack} style={{
-            background: "rgba(255,255,255,0.15)",
-            border: "1px solid rgba(255,255,255,0.35)",
-            color: "#fff", borderRadius: 9,
-            padding: "7px 16px", fontSize: "0.83rem",
-            fontWeight: 600, cursor: "pointer",
-            backdropFilter: "blur(8px)",
-            fontFamily: "'Heebo', system-ui, sans-serif",
-            transition: "background 0.2s",
+            background: "#fff",
+            border: `1px solid ${C.line}`,
+            color: C.ink, borderRadius: 99,
+            padding: "8px 18px", fontSize: "0.82rem",
+            fontWeight: 500, cursor: "pointer",
+            fontFamily: fontStack,
+            transition: "background 0.2s, border-color 0.2s",
           }}
-            onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.25)"}
-            onMouseOut={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+            onMouseOver={e => { e.currentTarget.style.background = C.blush; e.currentTarget.style.borderColor = C.blushDeep; }}
+            onMouseOut={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = C.line; }}
           >
             ← חזרה לדף הבית
           </button>
@@ -407,67 +425,61 @@ export default function AuthPage({ onBack }) {
         padding: "6rem 1rem 5rem",
       }}>
         <div style={{
-          width: "100%", maxWidth: 410,
-          background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(22px)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          borderRadius: 22, padding: "2.4rem",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.18)",
+          width: "100%", maxWidth: 420,
+          background: "#fff",
+          border: `1px solid ${C.line}`,
+          borderRadius: 24, padding: "2.5rem",
+          boxShadow: "0 20px 60px rgba(74,31,61,0.10), 0 4px 16px rgba(74,31,61,0.05)",
           animation: "cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
         }}>
-          <>
-              {/* Tabs */}
-              <div style={{
-                display: "flex", background: "#f1f5f9",
-                borderRadius: 10, padding: 3, marginBottom: "1.8rem",
-                direction: "rtl",
-              }}>
-                {[["login", "כניסה"], ["signup", "הרשמה"]].map(([key, label]) => (
-                  <button key={key} onClick={() => setTab(key)} style={{
-                    flex: 1, padding: "0.52rem", borderRadius: 8, border: "none",
-                    background: tab === key ? "#1a3c5e" : "transparent",
-                    color: tab === key ? "#fff" : "#64748b",
-                    fontFamily: "'Heebo', system-ui, sans-serif",
-                    fontSize: "0.87rem", fontWeight: 700, cursor: "pointer",
-                    boxShadow: tab === key ? "0 2px 8px rgba(26,60,94,0.2)" : "none",
-                    transition: "all 0.2s",
-                  }}>{label}</button>
-                ))}
-              </div>
+          {/* Tabs */}
+          <div style={{
+            display: "flex", background: C.blush,
+            borderRadius: 99, padding: 4, marginBottom: "1.8rem",
+            direction: "rtl",
+          }}>
+            {[["login", "כניסה"], ["signup", "הרשמה"]].map(([key, label]) => (
+              <button key={key} onClick={() => setTab(key)} style={{
+                flex: 1, padding: "0.55rem", borderRadius: 99, border: "none",
+                background: tab === key ? "#fff" : "transparent",
+                color: tab === key ? C.plum : C.mute,
+                fontFamily: fontStack,
+                fontSize: "0.86rem", fontWeight: 600, cursor: "pointer",
+                boxShadow: tab === key ? "0 2px 8px rgba(74,31,61,0.08)" : "none",
+                transition: "all 0.2s",
+              }}>{label}</button>
+            ))}
+          </div>
 
-              {tab === "login" ? (
-                <>
-                  <GoogleButton label="המשכי עם Google" />
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "1.25rem 0" }}>
-                    <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-                    <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 500 }}>או המשכי עם אימייל</span>
-                    <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-                  </div>
-                  <LoginForm onSwitchTab={setTab} />
-                </>
-              ) : (
-                <>
-                  <GoogleButton label="הרשמי עם Google" />
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "1.25rem 0" }}>
-                    <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-                    <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 500 }}>או הרשמי עם אימייל</span>
-                    <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-                  </div>
-                  <SignUpForm onSwitchTab={setTab} />
-                </>
-              )}
+          {tab === "login" ? (
+            <>
+              <GoogleButton label="המשכי עם Google" />
+              <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "1.3rem 0" }}>
+                <div style={{ flex: 1, height: 1, background: C.line }} />
+                <span style={{ fontSize: "0.74rem", color: C.mute, fontWeight: 500 }}>או המשכי עם אימייל</span>
+                <div style={{ flex: 1, height: 1, background: C.line }} />
+              </div>
+              <LoginForm onSwitchTab={setTab} />
             </>
+          ) : (
+            <>
+              <GoogleButton label="הרשמי עם Google" />
+              <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "1.3rem 0" }}>
+                <div style={{ flex: 1, height: 1, background: C.line }} />
+                <span style={{ fontSize: "0.74rem", color: C.mute, fontWeight: 500 }}>או הרשמי עם אימייל</span>
+                <div style={{ flex: 1, height: 1, background: C.line }} />
+              </div>
+              <SignUpForm onSwitchTab={setTab} />
+            </>
+          )}
         </div>
       </div>
 
-<style>{`
-        @keyframes cardUp { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
-        input::placeholder { color: #94a3b8 !important; }
+      <style>{`
+        @keyframes cardUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+        input::placeholder { color: ${C.mute} !important; opacity: 0.7; }
         select option { background: #fff; }
       `}</style>
     </div>
   );
 }
-
-
-

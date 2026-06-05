@@ -4,35 +4,35 @@ import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 
 const C = {
-  blue: "#1a3a8f", bright: "#2f5fd4", light: "#4a7ae8",
-  sky: "#7aaef5", pale: "#c8ddfb", deep: "#0b1f52", deeper: "#071440",
+  blue: "#4a1f3d", bright: "#b8617a", light: "#d48aa0",
+  sky: "#d48aa0", pale: "#f5e3e8", deep: "#2e1428", deeper: "#1f0d1c",
 };
 
 const inp = {
   width: "100%", padding: "0.78rem 1rem", boxSizing: "border-box",
-  background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.13)",
-  borderRadius: 9, color: "#fff", fontSize: "0.9rem",
-  fontFamily: "'Segoe UI', system-ui, sans-serif",
+  background: "rgba(255,255,255,0.85)", border: "1.5px solid rgba(184,97,122,0.25)",
+  borderRadius: 12, color: "#fff", fontSize: "0.9rem",
+  fontFamily: "'Figtree', 'Heebo', system-ui, sans-serif",
   outline: "none", transition: "border-color 0.2s, background 0.2s",
 };
 const lbl = {
-  display: "block", color: "rgba(200,221,251,0.7)",
+  display: "block", color: "rgba(122,88,104,0.85)",
   fontSize: "0.76rem", fontWeight: 700, marginBottom: "0.38rem", letterSpacing: "0.04em",
 };
 const primaryBtn = {
   width: "100%", padding: "0.85rem",
   background: `linear-gradient(135deg,${C.bright},${C.light})`,
-  color: "#fff", border: "none", borderRadius: 9,
+  color: "#fff", border: "none", borderRadius: 12,
   fontSize: "0.95rem", fontWeight: 800, cursor: "pointer",
-  fontFamily: "'Segoe UI', system-ui, sans-serif",
-  boxShadow: "0 4px 18px rgba(47,95,212,0.38)",
+  fontFamily: "'Figtree', 'Heebo', system-ui, sans-serif",
+  boxShadow: "0 4px 18px rgba(184, 97, 122,0.38)",
   transition: "transform 0.2s, box-shadow 0.2s",
   marginBottom: "0.9rem",
 };
 const errBox = {
-  background: "rgba(220,60,60,0.15)", border: "1px solid rgba(220,60,60,0.3)",
-  borderRadius: 8, padding: "0.65rem 0.9rem", marginBottom: "1rem",
-  fontSize: "0.82rem", color: "#fca5a5",
+  background: "rgba(194, 92, 92,0.15)", border: "1px solid rgba(194, 92, 92,0.3)",
+  borderRadius: 10, padding: "0.65rem 0.9rem", marginBottom: "1rem",
+  fontSize: "0.82rem", color: "#d99090",
 };
 
 function normalizePhone(raw) {
@@ -94,10 +94,10 @@ export default function CompleteProfilePage() {
   const initials = (form.firstName?.[0] || "") + (form.lastName?.[0] || "") || user?.email?.[0]?.toUpperCase() || "?";
 
   const focusIn  = (e) => { e.target.style.borderColor = C.sky; e.target.style.background = "rgba(255,255,255,0.11)"; };
-  const focusOut = (e) => { e.target.style.borderColor = "rgba(255,255,255,0.13)"; e.target.style.background = "rgba(255,255,255,0.08)"; };
+  const focusOut = (e) => { e.target.style.borderColor = "rgba(184,97,122,0.25)"; e.target.style.background = "rgba(255,255,255,0.85)"; };
 
   return (
-    <div style={{ minHeight: "100vh", position: "relative", fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", position: "relative", fontFamily: "'Figtree', 'Heebo', system-ui, sans-serif", overflow: "hidden" }}>
       {/* Background */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, backgroundImage: "url(/background.jpg)", backgroundSize: "cover", backgroundPosition: "center", filter: "brightness(0.75)" }} />
       <div style={{ position: "fixed", inset: 0, zIndex: 1, background: "linear-gradient(135deg,rgba(7,20,64,0.55) 0%,rgba(26,58,143,0.40) 100%)" }} />
@@ -124,7 +124,7 @@ export default function CompleteProfilePage() {
           animation: "cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
         }}>
           {/* Avatar */}
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg,${C.bright},${C.light})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem", fontWeight: 800, color: "#fff", margin: "0 auto 1rem", boxShadow: "0 4px 16px rgba(47,95,212,0.4)" }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg,${C.bright},${C.light})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem", fontWeight: 800, color: "#fff", margin: "0 auto 1rem", boxShadow: "0 4px 16px rgba(184, 97, 122,0.4)" }}>
             {initials.toUpperCase()}
           </div>
 
@@ -164,7 +164,7 @@ export default function CompleteProfilePage() {
             </Fld>
 
             {/* Privacy toggle */}
-            <div style={{ display: "flex", gap: "0.7rem", alignItems: "flex-start", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 9, padding: "0.85rem", marginBottom: "1.1rem" }}>
+            <div style={{ display: "flex", gap: "0.7rem", alignItems: "flex-start", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 12, padding: "0.85rem", marginBottom: "1.1rem" }}>
               <div onClick={() => setAgreed(!agreed)} style={{ width: 36, height: 19, flexShrink: 0, background: agreed ? C.light : "rgba(255,255,255,0.18)", borderRadius: 10, position: "relative", cursor: "pointer", transition: "background 0.2s", marginTop: 2 }}>
                 <div style={{ position: "absolute", width: 13, height: 13, background: "#fff", borderRadius: "50%", top: 3, right: agreed ? 3 : "auto", left: agreed ? "auto" : 3, transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
               </div>
@@ -181,7 +181,7 @@ export default function CompleteProfilePage() {
             </button>
           </form>
 
-          <button onClick={logout} style={{ background: "none", border: "none", color: "rgba(200,221,251,0.4)", fontSize: "0.78rem", cursor: "pointer", display: "block", margin: "0 auto", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+          <button onClick={logout} style={{ background: "none", border: "none", color: "rgba(200,221,251,0.4)", fontSize: "0.78rem", cursor: "pointer", display: "block", margin: "0 auto", fontFamily: "'Figtree', 'Heebo', system-ui, sans-serif" }}>
             התנתקי והשתמשי בחשבון אחר
           </button>
         </div>
