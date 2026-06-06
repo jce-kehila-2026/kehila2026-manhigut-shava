@@ -202,7 +202,7 @@ const translations = {
         { title: "חיפוש חכם", desc: "חפשי לפי שם, מקצוע, עיר, או קטגוריה. תוצאות מיידיות עם פילטרים מדויקים." },
         { title: "בקשות עזרה", desc: "שלחי פנייה ישירה לבוגרת ." },
         { title: "פיד קהילתי", desc: "שתפי עדכונים, הצלחות והזדמנויות. כל הקהילה בזרם אחד חי." },
-        { title: "פרטיות מלאה", desc: "Firebase Auth, בקרת גישה מפורטת." },
+        { title: "פרטיות מלאה", desc: "Firebase Auth, בקרת גישה מפורטת — הנתונים שלך מוגנים" },
         { title: "כל מכשיר", desc: "נייד, טאבלט, מחשב — חוויה חלקה בכל רזולוציה ובכל שפה." },
       ],
       howSection: {
@@ -473,7 +473,7 @@ const translations = {
         { title: "Smart search", desc: "Search by name, profession, city, or category. Instant results with precise filters." },
         { title: "Help requests", desc: "Send a direct request to an alumna." },
         { title: "Community feed", desc: "Share updates, wins, and opportunities. Keep the whole community in one live stream." },
-        { title: "Full privacy", desc: "Firebase Auth and fine-grained access control." },
+        { title: "Full privacy", desc: "Firebase Auth and fine-grained access control keep your data safe" },
         { title: "Any device", desc: "Mobile, tablet, desktop — smooth experience in every resolution and language." },
       ],
       howSection: {
@@ -744,7 +744,7 @@ const translations = {
         { title: "بحث ذكي", desc: "ابحثي بالاسم أو المهنة أو المدينة أو الفئة. نتائج فورية مع مرشحات دقيقة." },
         { title: "طلبات مساعدة", desc: "أرسلي طلبًا مباشرًا لخريجة." },
         { title: "موجز المجتمع", desc: "شاركي التحديثات والنجاحات والفرص. احتفظي بالمجتمع كله في تدفق واحد مباشر." },
-        { title: "خصوصية كاملة", desc:  "Firebase Auth وتحكم وصول مفصل." },
+        { title: "خصوصية كاملة", desc:  "Firebase Auth, בקרת גישה מפורטת — הנתונים שלך מוגנים" },
         { title: "أي جهاز", desc: "هاتف محمول، جهاز لوحي، كمبيوتر — تجربة سلسة في كل دقة وكل لغة." },
       ],
       howSection: {
