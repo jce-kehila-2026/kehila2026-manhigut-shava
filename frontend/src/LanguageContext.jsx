@@ -163,7 +163,7 @@ const translations = {
     },
     lang: { switcher: "שפה", he: "עברית", en: "English", ar: "العربية" },
     landing: {
-      nav: { about: "אודות", features: "תכונות", how: "איך זה עובד", register: "הצטרפי עכשיו", signIn: "כניסה לחשבון", movementSite: "אתר התנועה" },
+      nav: { about: "אודות", features: "תכונות", how: "איך זה עובד", register: "הצטרפי עכשיו", signIn: "כניסה לחשבון", movementSite: "אתר התנועה" , preview: "תצוגה" },
       hero: {
         badge: "פלטפורמה פנימית מאובטחת · בוגרות בלבד",
         headline1: "רשת נשים.",
@@ -200,10 +200,9 @@ const translations = {
       },
       features: [
         { title: "חיפוש חכם", desc: "חפשי לפי שם, מקצוע, עיר, או קטגוריה. תוצאות מיידיות עם פילטרים מדויקים." },
-        { title: "בקשות עזרה", desc: "שלחי פנייה ישירה לבוגרת. פרטי קשר נחשפים רק לאחר אישור." },
+        { title: "בקשות עזרה", desc: "שלחי פנייה ישירה לבוגרת ." },
         { title: "פיד קהילתי", desc: "שתפי עדכונים, הצלחות והזדמנויות. כל הקהילה בזרם אחד חי." },
-        { title: "לוח מנהל", desc: "ניהול חברות, סטטיסטיקות, יומן פעילות מלא — הכול במקום אחד." },
-        { title: "פרטיות מלאה", desc: "מידע קשר מוסתר כברירת מחדל. Firebase Auth, בקרת גישה מפורטת." },
+        { title: "פרטיות מלאה", desc: "Firebase Auth, בקרת גישה מפורטת — הנתונים שלך מוגנים" },
         { title: "כל מכשיר", desc: "נייד, טאבלט, מחשב — חוויה חלקה בכל רזולוציה ובכל שפה." },
       ],
       howSection: {
@@ -229,6 +228,32 @@ const translations = {
         primary: "הצטרפי לרשת",
         secondary: "יש לי כבר חשבון",
       },
+      previewSection: {
+  eyebrow: "הצצה לפנים",
+  title: "חיבורים אמיתיים,",
+  titleItalic: "תמיכה אמיתית",
+  feedTitle: "פיד הקהילה",
+  live: "חי",
+  posts: [
+    { name: "מאיה ל.", role: "מוצר · תל אביב", text: "סגרנו עכשיו סבב A 🎉 תודה ענקית לנשים כאן שחיברו אותי למשקיעה המובילה שלי." },
+    { name: "נועה ר.", role: "משפטים · חיפה", text: "מעבירה סדנה חינמית בשבוע הבא על משא ומתן בחוזים — פתוחה לכל הבוגרות." },
+  ],
+  searchTitle: "מצאי תמיכה",
+  searchSub: "חפשי בוגרות לפי מקצוע, עיר או שם.",
+  professionLabel: "מקצוע",
+  professions: ["טכנולוגיה", "משפטים", "רפואה"],
+  cityLabel: "עיר",
+  cityPlaceholder: "כל עיר…",
+  nameLabel: "שם",
+  namePlaceholder: "חיפוש לפי שם…",
+  searchBtn: "חיפוש",
+  resultName: "שירה כ.",
+  resultProfession: "מעצבת UX",
+  resultCity: "תל אביב",
+  viewProfile: "הצגת פרופיל",
+  requestHelp: "בקשת עזרה",
+},
+
       footer: {
         brand: "מנהיגות שווה · רשת הבוגרות",
         tagline: "רשת בוגרות לשיתוף מקצועי",
@@ -409,7 +434,7 @@ const translations = {
     },
     lang: { switcher: "Language", he: "עברית", en: "English", ar: "العربية" },
     landing: {
-      nav: { about: "About", features: "Features", how: "How it works", register: "Join now", signIn: "Sign in", movementSite: "Movement site" },
+      nav: { about: "About", preview: "Preview", features: "Features", how: "How it works", register: "Join now", signIn: "Sign in", movementSite: "Movement site" },
       hero: {
         badge: "Secure internal platform · alumnae only",
         headline1: "A women-led network.",
@@ -446,10 +471,9 @@ const translations = {
       },
       features: [
         { title: "Smart search", desc: "Search by name, profession, city, or category. Instant results with precise filters." },
-        { title: "Help requests", desc: "Send a direct request to an alumna. Contact details only share after approval." },
+        { title: "Help requests", desc: "Send a direct request to an alumna." },
         { title: "Community feed", desc: "Share updates, wins, and opportunities. Keep the whole community in one live stream." },
-        { title: "Admin dashboard", desc: "Manage members, statistics, and activity logs — all in one place." },
-        { title: "Full privacy", desc: "Contact details are hidden by default. Firebase Auth and fine-grained access control." },
+        { title: "Full privacy", desc: "Firebase Auth and fine-grained access control keep your data safe" },
         { title: "Any device", desc: "Mobile, tablet, desktop — smooth experience in every resolution and language." },
       ],
       howSection: {
@@ -475,6 +499,32 @@ const translations = {
         primary: "Join the network",
         secondary: "I already have an account",
       },
+      previewSection: {
+  eyebrow: "A peek inside",
+  title: "Real connections,",
+  titleItalic: "real support",
+  feedTitle: "Community Feed",
+  live: "LIVE",
+  posts: [
+    { name: "Maya L.", role: "Product · Tel Aviv", text: "Just closed our Series A 🎉 huge thanks to the women here who introduced me to my lead investor." },
+    { name: "Noa R.", role: "Legal · Haifa", text: "Hosting a free workshop next week on contract negotiation — open to all alumnae." },
+  ],
+  searchTitle: "Find support",
+  searchSub: "Search alumnae by profession, city, or name.",
+  professionLabel: "Profession",
+  professions: ["Technology", "Law", "Medicine"],
+  cityLabel: "City",
+  cityPlaceholder: "Any city…",
+  nameLabel: "Name",
+  namePlaceholder: "Search by name…",
+  searchBtn: "Search",
+  resultName: "Shira K.",
+  resultProfession: "UX Designer",
+  resultCity: "Tel Aviv",
+  viewProfile: "View profile",
+  requestHelp: "Request help",
+},
+
       footer: {
         brand: "BogrotNet — Alumnae Network",
         tagline: "A trusted network for alumnae",
@@ -655,7 +705,7 @@ const translations = {
     },
     lang: { switcher: "اللغة", he: "עברית", en: "English", ar: "العربية" },
     landing: {
-      nav: { about: "حول", features: "الميزات", how: "كيف يعمل", register: "انضمي الآن", signIn: "تسجيل الدخول", movementSite: "موقع الحركة" },
+      nav: { about: "حول", preview: "معاينة", features: "الميزات", how: "كيف يعمل", register: "انضمي الآن", signIn: "تسجيل الدخول", movementSite: "موقع الحركة" },
       hero: {
         badge: "منصة داخلية آمنة · للخرِيجات فقط",
         headline1: "شبكة نسائية.",
@@ -692,10 +742,9 @@ const translations = {
       },
       features: [
         { title: "بحث ذكي", desc: "ابحثي بالاسم أو المهنة أو المدينة أو الفئة. نتائج فورية مع مرشحات دقيقة." },
-        { title: "طلبات مساعدة", desc: "أرسلي طلبًا مباشرًا لخريجة. يتم مشاركة البيانات بعد الموافقة فقط." },
+        { title: "طلبات مساعدة", desc: "أرسلي طلبًا مباشرًا لخريجة." },
         { title: "موجز المجتمع", desc: "شاركي التحديثات والنجاحات والفرص. احتفظي بالمجتمع كله في تدفق واحد مباشر." },
-        { title: "لوحة تحكم", desc: "إدارة الأعضاء والإحصائيات وسجلات النشاط — كلها في مكان واحد." },
-        { title: "خصوصية كاملة", desc: "يتم إخفاء تفاصيل الاتصال افتراضيًا. Firebase Auth وتحكم وصول مفصل." },
+        { title: "خصوصية كاملة", desc:  "Firebase Auth, בקרת גישה מפורטת — הנתונים שלך מוגנים" },
         { title: "أي جهاز", desc: "هاتف محمول، جهاز لوحي، كمبيوتر — تجربة سلسة في كل دقة وكل لغة." },
       ],
       howSection: {
@@ -721,6 +770,32 @@ const translations = {
         primary: "انضمي إلى الشبكة",
         secondary: "لدي حساب بالفعل",
       },
+      previewSection: {
+  eyebrow: "نظرة من الداخل",
+  title: "روابط حقيقية،",
+  titleItalic: "دعم حقيقي",
+  feedTitle: "موجز المجتمع",
+  live: "مباشر",
+  posts: [
+    { name: "مايا ل.", role: "منتج · تل أبيب", text: "أغلقنا جولة Series A 🎉 شكرًا كبيرًا للنساء هنا اللواتي عرّفنني على المستثمرة الرئيسية." },
+    { name: "نوعا ر.", role: "قانون · حيفا", text: "أستضيف ورشة مجانية الأسبوع القادم حول التفاوض على العقود — مفتوحة لكل الخريجات." },
+  ],
+  searchTitle: "ابحثي عن دعم",
+  searchSub: "ابحثي عن الخريجات حسب المهنة أو المدينة أو الاسم.",
+  professionLabel: "المهنة",
+  professions: ["تكنولوجيا", "قانون", "طب"],
+  cityLabel: "المدينة",
+  cityPlaceholder: "أي مدينة…",
+  nameLabel: "الاسم",
+  namePlaceholder: "ابحثي بالاسم…",
+  searchBtn: "بحث",
+  resultName: "شيرا ك.",
+  resultProfession: "مصممة UX",
+  resultCity: "تل أبيب",
+  viewProfile: "عرض الملف",
+  requestHelp: "طلب مساعدة",
+},
+
       footer: {
         brand: "BogrotNet — شبكة الخريجات",
         tagline: "شبكة موثوقة للخريجات",
