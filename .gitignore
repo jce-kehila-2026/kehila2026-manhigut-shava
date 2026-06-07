@@ -23,7 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 backend/privateKey.json
-.env*
+.env
+.env.*
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
 # Firebase
 .firebase/
