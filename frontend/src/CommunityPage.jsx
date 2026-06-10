@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLang } from "./LanguageContext";
+import { useIsMobile } from "./hooks/useIsMobile";
 import {
   collection, addDoc, query, orderBy, onSnapshot,
   doc, updateDoc, deleteDoc, arrayUnion, arrayRemove,
@@ -899,6 +900,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
 export default function CommunityPage({ onViewProfile, onMessage }) {
   const { t } = useLang();
   const { user, profile: authProfile } = useAuth();
+  const isMobile = useIsMobile();
   const [posts, setPosts]           = useState([]);
   const [birthdays, setBirthdays]   = useState([]);
   const [requests, setRequests]     = useState([]);
@@ -1029,9 +1031,9 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
 
       <div style={{
         maxWidth: 1040, width: "100%", margin: "0 auto",
-        padding: "1rem 1.5rem 2rem",
+        padding: isMobile ? "1rem 0.75rem 2rem" : "1rem 1.5rem 2rem",
         display: "grid",
-        gridTemplateColumns: "1fr 280px",
+        gridTemplateColumns: isMobile ? "1fr" : "1fr 280px",
         gap: "1.5rem",
         position: "relative", zIndex: 1,
         alignItems: "start",
@@ -1092,9 +1094,9 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
           ))}
         </div>
 
-        {/* Right sidebar */}
+        {/* Right sidebar — hidden on mobile */}
         <aside style={{
-          display: "flex", flexDirection: "column", gap: "1rem",
+          display: isMobile ? "none" : "flex", flexDirection: "column", gap: "1rem",
           position: "sticky", top: "1.5rem",
           maxHeight: "calc(100vh - 120px)", overflowY: "auto",
           order: 2,

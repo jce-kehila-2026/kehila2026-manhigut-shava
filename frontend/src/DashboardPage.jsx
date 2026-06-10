@@ -4,6 +4,7 @@ import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { useTheme } from "./ThemeContext";
+import { useIsMobile } from "./hooks/useIsMobile";
 import SupportPage   from "./SupportPage";
 import CommunityPage from "./CommunityPage";
 import ProfilePage   from "./ProfilePage";
@@ -479,6 +480,7 @@ export default function DashboardPage() {
   ];
 
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const isMobile = useIsMobile();
   const sidebarW = sidebarExpanded ? 220 : 68;
   const pageTitle = navItems.find((n) => n.id === section)?.label || t.nav.home;
   const dir = isRTL ? "rtl" : "ltr";
@@ -489,11 +491,12 @@ export default function DashboardPage() {
       fontFamily: "'Figtree','Outfit',system-ui,-apple-system,sans-serif",
       direction: dir,
     }}>
-      {/* ── Sidebar — expandable ── */}
+      {/* ── Sidebar — expandable (hidden on mobile) ── */}
       <aside style={{
-        width: sidebarW, minWidth: sidebarW,
+        width: isMobile ? 0 : sidebarW,
+        minWidth: isMobile ? 0 : sidebarW,
         background: "linear-gradient(180deg, #1a2f5e 0%, #162548 100%)",
-        display: "flex", flexDirection: "column",
+        display: isMobile ? "none" : "flex", flexDirection: "column",
         alignItems: sidebarExpanded ? "stretch" : "center",
         paddingTop: "1rem", paddingBottom: "1rem",
         gap: "6px", zIndex: 30,
@@ -599,7 +602,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* ── Main ── */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative" }}>
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative", paddingBottom: isMobile ? 60 : 0 }}>
         {/* Floating water blob background */}
         <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
           {/* Blob 1 — large blue, top-right */}
@@ -678,7 +681,7 @@ export default function DashboardPage() {
               background: "var(--bg-primary)",
               borderBottom: "1px solid var(--border)",
               display: "flex", alignItems: "center",
-              padding: "0 1.75rem", gap: "0.85rem", zIndex: 10,
+              padding: isMobile ? "0 1rem" : "0 1.75rem", gap: "0.85rem", zIndex: 10,
             }}>
               {canGoBack && (
                 <button
@@ -704,7 +707,7 @@ export default function DashboardPage() {
               }}>{pageTitle}</span>
               <div style={{ flex: 1 }} />
 
-              <LangSwitcher lang={lang} setLang={setLang} />
+              {!isMobile && <LangSwitcher lang={lang} setLang={setLang} />}
 
               <button
                 onClick={toggleTheme}
@@ -722,27 +725,29 @@ export default function DashboardPage() {
                 {dark ? Icon.sun : Icon.moon}
               </button>
 
-              {/* User chip */}
-              <div
-                style={{
-                  display: "flex", alignItems: "center", gap: 9,
-                  padding: "4px 12px 4px 5px", borderRadius: 99,
-                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
-                  cursor: "pointer", transition: "border-color 0.2s",
-                }}
-                onClick={() => navigate("profile")}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--brand)"}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
-              >
-                {avatarUrl(profile) ? (
-                  <img src={avatarUrl(profile)} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} alt="" />
-                ) : (
-                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #4472b8, #6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
-                )}
-                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-                  {profile?.firstName || t.nav.profile}
-                </span>
-              </div>
+              {/* User chip — hidden on mobile */}
+              {!isMobile && (
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", gap: 9,
+                    padding: "4px 12px 4px 5px", borderRadius: 99,
+                    background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                    cursor: "pointer", transition: "border-color 0.2s",
+                  }}
+                  onClick={() => navigate("profile")}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--brand)"}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
+                >
+                  {avatarUrl(profile) ? (
+                    <img src={avatarUrl(profile)} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} alt="" />
+                  ) : (
+                    <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #4472b8, #6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
+                  )}
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+                    {profile?.firstName || t.nav.profile}
+                  </span>
+                </div>
+              )}
             </header>
           )}
 
@@ -757,6 +762,63 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* ── Mobile bottom navigation bar ── */}
+      {isMobile && (
+        <nav style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
+          background: "var(--sidebar-bg)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          display: "flex", alignItems: "stretch",
+          height: 60,
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}>
+          {navItems.map((item) => {
+            const isActive = section === item.id;
+            const hasBadge = item.id === "chat" && unreadDMs > 0;
+            return (
+              <button
+                key={item.id}
+                onClick={() => navigate(item.id)}
+                style={{
+                  flex: 1, display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 3,
+                  background: "transparent", border: "none", cursor: "pointer",
+                  color: isActive ? "#daeaf8" : "rgba(218,234,248,0.45)",
+                  position: "relative",
+                  transition: "color 0.18s ease",
+                }}
+              >
+                {isActive && (
+                  <span style={{
+                    position: "absolute", top: 0, left: "20%", right: "20%",
+                    height: 2, borderRadius: 99,
+                    background: "linear-gradient(90deg, #4472b8, #6da3d4)",
+                  }} />
+                )}
+                <span style={{ position: "relative", flexShrink: 0 }}>
+                  {item.icon}
+                  {hasBadge && (
+                    <span style={{
+                      position: "absolute", top: -4, right: -6,
+                      minWidth: 16, height: 16, borderRadius: 99,
+                      background: "#e8735a", color: "#fff",
+                      fontSize: 9, fontWeight: 700,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      padding: "0 3px",
+                    }}>
+                      {unreadDMs > 9 ? "9+" : unreadDMs}
+                    </span>
+                  )}
+                </span>
+                <span style={{ fontSize: 9.5, fontWeight: isActive ? 600 : 400, letterSpacing: "0.01em" }}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }

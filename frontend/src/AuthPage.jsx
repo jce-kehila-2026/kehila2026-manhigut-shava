@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLang } from "./LanguageContext";
+import { useIsMobile } from "./hooks/useIsMobile";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -485,7 +486,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
                 placeholder={Tr?.cityOtherPh||"כתבי את עירך"} onFocus={focusOn} onBlur={focusOff}/>
             )}
           </Fld>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:"0.6rem" }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr", gap:"0.6rem" }}>
             <button style={{ ...ghostBtn, margin:0 }} onClick={()=>setStep(1)}>{Tr?.backBtn||"← חזרה"}</button>
             <button style={{ ...primaryBtn, margin:0 }} onClick={()=>{ setError(""); setStep(3); }}>{Tr?.nextBtn||"המשך →"}</button>
           </div>
@@ -528,7 +529,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
               <span style={{ color:C.mute }}>{Tr?.agreeSub||"שם, מייל ומומחיות יהיו גלויים לבוגרות אחרות. פרטי קשר — רק לאחר אישורך."}</span>
             </div>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:"0.6rem" }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr", gap:"0.6rem" }}>
             <button style={{ ...ghostBtn, margin:0 }} onClick={()=>setStep(2)}>{Tr?.backBtn||"← חזרה"}</button>
             <button style={{ ...primaryBtn, margin:0 }} disabled={loading} onClick={submit}>
               {loading ? (Tr?.submitting||"יוצרת חשבון...") : (Tr?.submitBtn||"הרשמה →")}
@@ -546,6 +547,7 @@ export default function AuthPage({ onBack }) {
   const { lang, isRTL, setLang } = useLang();
   const Tr = AUTH_T[lang] || AUTH_T.he;
   const dir = isRTL ? "rtl" : "ltr";
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.body.style.overflow = "auto";
@@ -650,7 +652,7 @@ export default function AuthPage({ onBack }) {
           width:"100%", maxWidth:420,
           background:"rgba(255,255,255,0.97)",
           border:"1px solid rgba(218,234,248,0.6)",
-          borderRadius:24, padding:"2.5rem",
+          borderRadius:24, padding: isMobile ? "1.5rem 1.25rem" : "2.5rem",
           boxShadow:"0 32px 80px rgba(29,72,150,0.28),0 4px 16px rgba(0,0,0,0.08)",
           animation:"cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
         }}>

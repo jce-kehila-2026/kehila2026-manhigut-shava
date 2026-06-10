@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { collection, getDocs, doc, updateDoc, addDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { useIsMobile } from "./hooks/useIsMobile";
 import {
   useConversations, useMessages,
   sendMessage, getOrCreateConversation, markRead, setTyping, uploadChatImage,
@@ -564,6 +565,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
 /* ── Main ChatPage ── */
 export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUserId }) {
   const { user, profile } = useAuth();
+  const isMobile = useIsMobile();
   const { conversations } = useConversations(user?.uid);
   const [activeConvId, setActiveConvId] = useState(null);
   const { messages } = useMessages(activeConvId);
@@ -825,10 +827,13 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
         </div>
       )}
 
-      {/* ── Left sidebar ── */}
+      {/* ── Left sidebar — full-screen on mobile when no chat open ── */}
       <aside style={{
-        width: sidebarWidth, minWidth: 200, flexShrink: 0,
-        display: "flex", flexDirection: "column",
+        width: isMobile ? "100%" : sidebarWidth,
+        minWidth: isMobile ? 0 : 200,
+        flexShrink: 0,
+        display: isMobile && activeConvId ? "none" : "flex",
+        flexDirection: "column",
         background: "var(--bg-primary)",
         overflow: "hidden",
         position: "relative",
@@ -943,28 +948,30 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           ))}
         </div>
 
-        {/* Resize handle */}
-        <div
-          style={{
-            position: "absolute", right: 0, top: 0, bottom: 0, width: 5,
-            cursor: "col-resize", zIndex: 10,
-            background: "transparent", transition: "background 0.15s",
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(68,114,184,0.35)"}
-          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-          onMouseDown={(e) => {
-            sidebarResizing.current = true;
-            sidebarStartX.current = e.clientX;
-            sidebarStartW.current = sidebarWidth;
-            document.body.style.cursor = "col-resize";
-            document.body.style.userSelect = "none";
-          }}
-        />
+        {/* Resize handle — desktop only */}
+        {!isMobile && (
+          <div
+            style={{
+              position: "absolute", right: 0, top: 0, bottom: 0, width: 5,
+              cursor: "col-resize", zIndex: 10,
+              background: "transparent", transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(68,114,184,0.35)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            onMouseDown={(e) => {
+              sidebarResizing.current = true;
+              sidebarStartX.current = e.clientX;
+              sidebarStartW.current = sidebarWidth;
+              document.body.style.cursor = "col-resize";
+              document.body.style.userSelect = "none";
+            }}
+          />
+        )}
       </aside>
 
       {/* ── Right: chat area ── */}
       {activeConvId ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: isMobile && !activeConvId ? "none" : "flex", flexDirection: "column", overflow: "hidden" }}>
 
           {/* Chat header */}
           <div style={{
@@ -974,6 +981,19 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             background: "var(--bg-primary)",
             flexShrink: 0,
           }}>
+            {/* Back button on mobile */}
+            {isMobile && (
+              <button
+                onClick={() => setActiveConvId(null)}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "var(--text-secondary)", display: "flex", alignItems: "center",
+                  padding: "4px 2px", borderRadius: 8, flexShrink: 0,
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
+              </button>
+            )}
             <Avatar url={otherAvatar} name={otherName} size={40} online={isActuallyOnline(otherUser)} onClick={() => onViewProfile?.(otherId)} />
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", lineHeight: 1.2 }}>{otherName || "…"}</p>

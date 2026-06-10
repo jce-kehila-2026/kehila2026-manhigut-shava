@@ -4,6 +4,7 @@ import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
+import { useIsMobile } from "./hooks/useIsMobile";
 
 /* ─── Translation ─── */
 const T = {
@@ -276,6 +277,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const { user } = useAuth();
   const { lang, isRTL } = useLang();
   const Tr = T[lang] || T.he;
+  const isMobile = useIsMobile();
 
   const [memberName,     setMemberName]     = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
@@ -422,7 +424,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const dir = isRTL ? "rtl" : "ltr";
   const S = {
     page: {
-      padding: "2rem 2.5rem 4rem",
+      padding: isMobile ? "1.25rem 0.75rem 4rem" : "2rem 2.5rem 4rem",
       width: "100%", height: "100%",
       overflowY: "auto", overflowX: "hidden",
       boxSizing: "border-box",

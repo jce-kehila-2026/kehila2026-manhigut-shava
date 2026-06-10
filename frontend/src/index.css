@@ -250,8 +250,39 @@ html.dark-mode .badge-purple { background: #22203a; color: #9899d4; border-color
 html.dark-mode .badge-red    { background: #2e1818; color: #d4a0a0; border-color: #6a3030; }
 html.dark-mode .badge-blue   { background: #1a2236; color: #7aaecc; border-color: #2a3850; }
 
-/* ── Mobile ── */
+/* ── Responsive utilities ── */
+.hide-mobile  { display: none !important; }
+.hide-desktop { display: none !important; }
+@media (min-width: 769px) { .hide-desktop { display: none !important; } .hide-mobile { display: revert !important; } }
+
+/* ── Mobile (≤768px) ── */
 @media (max-width: 768px) {
   body { overflow: auto; height: auto; }
   #root { height: auto; min-height: 100vh; }
+
+  .hide-mobile  { display: none !important; }
+  .hide-desktop { display: revert !important; }
+
+  /* Cards get tighter padding */
+  .card { border-radius: var(--r-lg) !important; }
+
+  /* Tables: horizontal scroll wrapper */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Inputs fill width */
+  .input { font-size: 16px; } /* 16px prevents iOS auto-zoom */
+
+  /* Modals */
+  .modal-sheet {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    border-radius: var(--r-xl) var(--r-xl) 0 0 !important;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+}
+
+/* ── Tablet (769px – 1024px) ── */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .tablet-stack { flex-direction: column !important; }
 }

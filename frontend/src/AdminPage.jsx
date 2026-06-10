@@ -252,8 +252,9 @@ const S = {
   empty: { textAlign: "center", padding: "3rem", color: "#d9c8ce", fontSize: "14px" },
   tableWrap: {
     background: "var(--bg-primary,#fff)", borderRadius: "16px",
-    border: "1.5px solid var(--border,#daeaf8)", overflow: "hidden",
+    border: "1.5px solid var(--border,#daeaf8)", overflowX: "auto",
     boxShadow: "0 2px 8px rgba(29, 72, 150,0.05)",
+    WebkitOverflowScrolling: "touch",
   },
 
   searchInput: {
@@ -594,7 +595,7 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
       <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
         <p style={S.modalTitle}>{Tr?.editUser} — {u.firstName} {u.lastName}</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "0.75rem" }}>
           <div style={groupStyle}>
             <label style={labelStyle}>{Tr?.firstName}</label>
             <input name="firstName" style={S.modalInput} value={fields.firstName} onChange={handleChange} />
@@ -940,7 +941,7 @@ export default function AdminPage() {
       </div>
 
       {loading && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: "1rem" }}>
           {Array.from({length:4}).map((_,i) => <div key={i} className="skeleton card" style={{height:88}} />)}
         </div>
       )}
@@ -963,7 +964,7 @@ export default function AdminPage() {
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "1.25rem" }}>
             {/* Profession distribution */}
             <div className="card" style={{ padding: "1.25rem" }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topProfessions}</p>
@@ -1058,8 +1059,8 @@ export default function AdminPage() {
               />
             }
           />
-          <div className="card" style={{ overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
               <thead>
                 <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
                   {["Member","Email","Profession","City","Status","Joined","Actions"].map(h => (
@@ -1229,12 +1230,12 @@ export default function AdminPage() {
       {!loading && tab === "posts" && (
         <>
           <SectionHeader title="All Posts" count={posts.length} />
-          <div className="card" style={{ overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
               <thead>
                 <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
                   {["Author","Content","Media","Comments","Posted","Actions"].map(h => (
-                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)" }}>{h}</th>
+                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1419,11 +1420,11 @@ export default function AdminPage() {
           </div>
 
           {/* Recent members table */}
-          <div className="card" style={{ overflow:"hidden" }}>
+          <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
             <div style={{ padding:"1rem 1.25rem", borderBottom:"1px solid var(--border,#daeaf8)" }}>
               <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:0 }}>{Tr.recentMembers}</p>
             </div>
-            <table style={S.table}>
+            <table style={{ ...S.table, minWidth: 480 }}>
               <thead>
                 <tr>
                   {["Name","Email","Profession","City","Joined"].map(h => (
@@ -1472,12 +1473,12 @@ export default function AdminPage() {
           ) : reports.length === 0 ? (
             <div className="empty-state"><p>{Tr.noReports}</p></div>
           ) : (
-            <div className="card" style={{ overflow:"hidden" }}>
-              <table style={S.table}>
+            <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+              <table style={{ ...S.table, minWidth: 560 }}>
                 <thead>
                   <tr>
                     {[Tr.reportFrom, Tr.reportedUser, Tr.reportReason, Tr.reportDate, Tr.reportStatus, ""].map(h => (
-                      <th key={h} style={S.th}>{h}</th>
+                      <th key={h} style={{ ...S.th, whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
