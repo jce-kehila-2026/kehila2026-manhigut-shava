@@ -587,75 +587,93 @@ export default function AuthPage({ onBack }) {
       {/* Top bar */}
       <div style={{
         position:"fixed", top:0, left:0, right:0, zIndex:10,
-        padding:"1.3rem 2.5rem", display:"flex",
-        alignItems:"center", justifyContent:"space-between",
+        padding: isMobile ? "0.7rem 1rem" : "1.3rem 2.5rem",
+        display:"flex", alignItems:"center", justifyContent:"space-between",
         direction:"rtl",
         background:"rgba(29,72,150,0.35)",
         backdropFilter:"blur(12px)",
         borderBottom:"1px solid rgba(255,255,255,0.1)",
       }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
+        {/* Brand */}
+        <div style={{ display:"flex", alignItems:"center", gap:"0.6rem" }}>
           <img src="/NewLogoNGO.png"
             onError={e=>{ e.target.style.display="none"; }}
             alt="BogrotNet"
-            style={{ width:38, height:38, objectFit:"contain", borderRadius:"50%",
-              background:"rgba(255,255,255,0.12)", padding:4,
-              border:"2px solid rgba(255,255,255,0.4)" }}
+            style={{ width: isMobile?30:38, height: isMobile?30:38,
+              objectFit:"contain", borderRadius:"50%",
+              background:"rgba(255,255,255,0.12)", padding:3,
+              border:"2px solid rgba(255,255,255,0.4)", flexShrink:0 }}
           />
           <div>
             <div style={{
               fontFamily:"'Outfit',system-ui,sans-serif",
-              fontSize:"1.1rem", fontWeight:800, color:"#ffffff",
-              letterSpacing:"-0.01em",
+              fontSize: isMobile ? "0.95rem" : "1.1rem",
+              fontWeight:800, color:"#ffffff", letterSpacing:"-0.01em",
             }}>BogrotNet</div>
-            <div style={{ fontSize:"0.65rem", color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>
-              רשת בוגרות · מנהיגות שווה
-            </div>
+            {!isMobile && (
+              <div style={{ fontSize:"0.65rem", color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>
+                רשת בוגרות · מנהיגות שווה
+              </div>
+            )}
           </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
+
+        {/* Actions */}
+        <div style={{display:"flex",alignItems:"center",gap: isMobile ? 5 : 8}}>
           {/* Theme toggle */}
           <button onClick={toggleTheme} title={dark?"Switch to light":"Switch to dark"} style={{
-            width:32,height:32,borderRadius:"50%",
+            width: isMobile?28:32, height: isMobile?28:32, borderRadius:"50%",
             background:"rgba(255,255,255,0.15)",
             border:"1px solid rgba(255,255,255,0.3)",
-            color:"#fff",cursor:"pointer",
-            display:"flex",alignItems:"center",justifyContent:"center",
-            flexShrink:0,transition:"all 0.18s",
+            color:"#fff", cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            flexShrink:0, transition:"all 0.18s",
           }}>
             {dark
-              ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              : <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              : <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             }
           </button>
+
           {/* Language switcher */}
-          <div style={{display:"flex",gap:4}}>
+          <div style={{display:"flex",gap: isMobile ? 2 : 4}}>
             {["he","en","ar"].map(code=>(
               <button key={code} onClick={()=>setLang(code)} style={{
-                padding:"4px 10px",borderRadius:999,border:"none",
+                padding: isMobile ? "3px 7px" : "4px 10px",
+                borderRadius:999, border:"none",
                 background:lang===code?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.15)",
                 color:lang===code?"#1d4896":"#fff",
-                fontSize:11,fontWeight:700,cursor:"pointer",
-                transition:"all 0.18s",textTransform:"uppercase",
-                letterSpacing:"0.05em",
+                fontSize: isMobile ? 10 : 11,
+                fontWeight:700, cursor:"pointer",
+                transition:"all 0.18s", textTransform:"uppercase",
+                letterSpacing:"0.04em",
               }}>{code}</button>
             ))}
           </div>
+
+          {/* Back to home — icon-only on mobile, text on desktop */}
           {onBack && (
             <button onClick={onBack} style={{
               background:"rgba(255,255,255,0.15)",
               border:"1px solid rgba(255,255,255,0.35)",
-              color:"#fff", borderRadius:99,
-              padding:"8px 18px", fontSize:"0.82rem",
-              fontWeight:500, cursor:"pointer",
-              fontFamily:fontStack,
-              backdropFilter:"blur(8px)",
+              color:"#fff",
+              borderRadius: isMobile ? "50%" : 99,
+              width: isMobile ? 28 : "auto",
+              height: isMobile ? 28 : "auto",
+              padding: isMobile ? 0 : "7px 16px",
+              fontSize:"0.82rem", fontWeight:500, cursor:"pointer",
+              fontFamily:fontStack, backdropFilter:"blur(8px)",
               transition:"background 0.2s",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              flexShrink:0,
             }}
               onMouseOver={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.28)"; }}
               onMouseOut={e =>{ e.currentTarget.style.background="rgba(255,255,255,0.15)"; }}
             >
-              {Tr.backHome}
+              {isMobile
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                : Tr.backHome
+              }
             </button>
           )}
         </div>
