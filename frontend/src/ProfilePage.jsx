@@ -9,6 +9,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
+import { useIsMobile } from "./hooks/useIsMobile";
 
 const storage = getStorage();
 
@@ -183,8 +184,9 @@ function PlainInput(props) {
 }
 
 export default function ProfilePage({ viewUserId, onMessage }) {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, logout } = useAuth();
   const { t, isRTL } = useLang();
+  const isMobile = useIsMobile();
   const fileRef = useRef();
 
   const [form, setForm] = useState({
@@ -361,7 +363,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
   const S = {
     page: {
       display:"flex", flexDirection:"column",
-      width:"100%", height:"100%", overflow:"auto",
+      width:"100%", height:"100%", overflowY:"auto", overflowX:"hidden",
       padding:"0 0 3rem",
       boxSizing:"border-box",
       direction: isRTL ? "rtl" : "ltr",
@@ -383,8 +385,8 @@ export default function ProfilePage({ viewUserId, onMessage }) {
       backdropFilter:"blur(6px)", boxShadow:"0 2px 8px rgba(0,0,0,0.1)", transition:"background 0.2s",
     },
     avatarHint: { fontSize:"10px", color:"rgba(255,255,255,0.75)", margin:0, textAlign: isRTL ? "left" : "right" },
-    body: { padding:"0 2rem" },
-    twoCol: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", alignItems:"start" },
+    body: { padding: isMobile ? "0 1rem" : "0 2rem" },
+    twoCol: { display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"1.25rem", alignItems:"start" },
     greeting:    { fontSize:"23px", fontWeight:"700", color:"#111827", margin:"0 0 4px" },
     greetingSub: { fontSize:"13px", color:"#6b7280", margin:"0 0 1rem" },
     card: {
@@ -852,6 +854,33 @@ export default function ProfilePage({ viewUserId, onMessage }) {
           )}
         </div>
       </div>
+
+      {/* Logout button — own profile only, prominent on mobile */}
+      {isOwner && (
+        <div style={{ padding: isMobile ? "1.5rem 1rem 2rem" : "1.5rem 2rem 2rem", display: "flex", justifyContent: "center" }}>
+          <button
+            onClick={logout}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "11px 28px", borderRadius: 99,
+              background: "#fff0f0", color: "#c25c5c",
+              border: "1.5px solid #e8b8b8",
+              fontSize: 14, fontWeight: 700, cursor: "pointer",
+              transition: "all 0.15s",
+              fontFamily: "var(--font)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#c25c5c"; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#fff0f0"; e.currentTarget.style.color = "#c25c5c"; }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16,17 21,12 16,7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            {t.nav?.logout || "Logout"}
+          </button>
+        </div>
+      )}
 
       {/* Email Change Modal */}
       {showEmailModal && isOwner && (

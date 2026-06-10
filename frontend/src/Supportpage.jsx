@@ -350,10 +350,10 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       }).slice(0, 8)
     : [];
 
-  const handleSearch = () => {
+  const runSearch = (overrideArea, overrideRegion) => {
     setLoading(true); setSearched(true);
-    const regionQ = effectiveRegion.trim();
-    const areaQ   = effectiveArea.trim();
+    const regionQ = (overrideRegion !== undefined ? overrideRegion : effectiveRegion).trim();
+    const areaQ   = (overrideArea   !== undefined ? overrideArea   : effectiveArea).trim();
     const filtered = allUsers.filter((u) => {
       const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
       const matchName   = memberName ? fullName.includes(memberName.toLowerCase()) : true;
@@ -614,38 +614,78 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       <p style={S.pageTitle}>{Tr.title}</p>
       <p style={S.pageSub}>{Tr.sub}</p>
 
-      {/* ── Section shortcuts ── */}
+      {/* ── Quick-action shortcuts ── */}
       <div style={{
         display: "flex", gap: 8, overflowX: "auto", flexWrap: "nowrap",
         marginBottom: "1.25rem", paddingBottom: 4,
         scrollbarWidth: "none", msOverflowStyle: "none",
-        WebkitScrollbar: "none",
       }}>
+        {/* Help-area quick filters — click to pre-select area & run search */}
         {[
-          { label: lang === "he" ? "🔍 חיפוש" : "🔍 Search",       ref: searchRef      },
-          ...(sentRequests.length > 0     ? [{ label: lang === "he" ? "📤 הבקשות שלי"    : "📤 My Requests",      ref: myReqRef     }] : []),
-          ...(receivedRequests.length > 0 ? [{ label: lang === "he" ? "📥 בקשות שהתקבלו" : "📥 Received",         ref: receivedRef  }] : []),
-          ...(recommended.length > 0      ? [{ label: lang === "he" ? "⭐ מומלצות"        : "⭐ Recommended",      ref: recommendedRef }] : []),
-        ].map(({ label, ref }) => (
-          <button
-            key={label}
-            onClick={() => scrollTo(ref)}
-            style={{
-              flexShrink: 0,
-              padding: "7px 16px", borderRadius: 99,
-              background: "var(--bg-primary)",
-              border: "1.5px solid var(--border)",
-              color: "var(--text-secondary)",
-              fontSize: 13, fontWeight: 600,
-              cursor: "pointer", whiteSpace: "nowrap",
-              transition: "border-color 0.15s, color 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand)"; e.currentTarget.style.color = "var(--brand)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-          >
-            {label}
-          </button>
-        ))}
+          { emoji: "💼", labelHe: "קריירה",     labelEn: "Career",     labelAr: "المهنة",    key: AREAS_KEYS[0] },
+          { emoji: "👑", labelHe: "מנהיגות",    labelEn: "Leadership", labelAr: "القيادة",   key: AREAS_KEYS[1] },
+          { emoji: "🤝", labelHe: "מנטורינג",   labelEn: "Mentoring",  labelAr: "الإرشاد",  key: AREAS_KEYS[10] },
+          { emoji: "🏛️", labelHe: "מגזר ציבורי", labelEn: "Public sector", labelAr: "القطاع العام", key: AREAS_KEYS[3] },
+          { emoji: "💡", labelHe: "יזמות",      labelEn: "Entrepreneurship", labelAr: "ريادة الأعمال", key: AREAS_KEYS[6] },
+        ].map(({ emoji, labelHe, labelEn, labelAr, key }) => {
+          const label = lang === "he" ? labelHe : lang === "ar" ? labelAr : labelEn;
+          const isActive = selectedArea === key;
+          return (
+            <button
+              key={key}
+              onClick={() => {
+                setSelectedArea(key);
+                setOtherArea("");
+                runSearch(key);
+                scrollTo(searchRef);
+              }}
+              style={{
+                flexShrink: 0,
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 16px", borderRadius: 99,
+                background: isActive ? "var(--brand)" : "var(--bg-primary)",
+                border: `1.5px solid ${isActive ? "var(--brand)" : "var(--border)"}`,
+                color: isActive ? "#fff" : "var(--text-secondary)",
+                fontSize: 13, fontWeight: 600,
+                cursor: "pointer", whiteSpace: "nowrap",
+                boxShadow: isActive ? "0 2px 8px var(--brand-glow)" : "none",
+                transition: "all 0.15s",
+              }}
+            >
+              <span>{emoji}</span>
+              <span>{label}</span>
+            </button>
+          );
+        })}
+
+        {/* Section jumps — conditional, scroll only */}
+        {[
+          ...(sentRequests.length > 0     ? [{ emoji: "📤", labelHe: "הבקשות שלי",     labelEn: "My Requests", labelAr: "طلباتي",          ref: myReqRef     }] : []),
+          ...(receivedRequests.length > 0 ? [{ emoji: "📥", labelHe: "בקשות שהתקבלו",  labelEn: "Received",    labelAr: "الطلبات الواردة", ref: receivedRef  }] : []),
+          ...(recommended.length > 0      ? [{ emoji: "⭐", labelHe: "מומלצות",         labelEn: "Recommended", labelAr: "الموصى بهن",      ref: recommendedRef }] : []),
+        ].map(({ emoji, labelHe, labelEn, labelAr, ref }) => {
+          const label = lang === "he" ? labelHe : lang === "ar" ? labelAr : labelEn;
+          return (
+            <button
+              key={label}
+              onClick={() => scrollTo(ref)}
+              style={{
+                flexShrink: 0,
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 16px", borderRadius: 99,
+                background: "var(--bg-tertiary)",
+                border: "1.5px solid var(--border)",
+                color: "var(--text-muted)",
+                fontSize: 13, fontWeight: 600,
+                cursor: "pointer", whiteSpace: "nowrap",
+                transition: "all 0.15s",
+              }}
+            >
+              <span>{emoji}</span>
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Search Card — help area → region → member name ── */}
@@ -708,7 +748,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               onChange={(e) => { setMemberName(e.target.value); openSuggest(); }}
               onFocus={openSuggest}
               onBlur={() => setTimeout(() => setShowSuggest(false), 160)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && runSearch()}
               autoComplete="off"
             />
           </div>
@@ -750,7 +790,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         </div>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <button className="search-btn" style={S.searchBtn} onClick={handleSearch}>
+          <button className="search-btn" style={S.searchBtn} onClick={() => runSearch()}>
             {loading ? Tr.searching : Tr.searchBtn}
           </button>
           {/* Layout toggle */}

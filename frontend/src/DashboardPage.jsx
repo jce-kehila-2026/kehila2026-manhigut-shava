@@ -230,7 +230,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   ];
 
   return (
-    <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: isMobile ? "1.25rem 1rem 1.5rem" : "2.25rem 2.75rem" }}>
+    <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", maxWidth: "100%", padding: isMobile ? "1.25rem 1rem 1.5rem" : "2.25rem 2.75rem" }}>
       {/* Welcome banner — redesigned */}
       {(() => {
         const hr = new Date().getHours();
@@ -732,6 +732,26 @@ export default function DashboardPage() {
               <div style={{ flex: 1 }} />
 
               {!isMobile && <LangSwitcher lang={lang} setLang={setLang} />}
+
+              {/* Logout — mobile only (desktop has it in sidebar) */}
+              {isMobile && (
+                <button
+                  onClick={logout}
+                  title={t.nav.logout}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "6px 11px", borderRadius: 99,
+                    background: "transparent", border: "1px solid var(--border)",
+                    color: "var(--danger)", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                    transition: "all var(--t-fast)",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#fff0f0"; e.currentTarget.style.borderColor = "var(--danger)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; }}
+                >
+                  {Icon.logout}
+                  <span>{t.nav.logout}</span>
+                </button>
+              )}
 
               <button
                 onClick={toggleTheme}

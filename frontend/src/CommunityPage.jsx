@@ -981,7 +981,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   const regularPosts = visiblePosts.filter((p) => !p.isPinned);
 
   return (
-    <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", background: "var(--bg-secondary)", position: "relative" }}>
+    <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", background: "var(--bg-secondary)", position: "relative", maxWidth: "100%" }}>
       {/* Floating bubble background */}
       <style>{`
         @keyframes comm-blob-1{0%,100%{border-radius:62% 38% 52% 48%/44% 56% 44% 56%;transform:translate(0,0) scale(1);}33%{border-radius:40% 60% 65% 35%/58% 42% 62% 38%;transform:translate(-18px,-30px) scale(1.04);}66%{border-radius:55% 45% 38% 62%/36% 60% 40% 64%;transform:translate(14px,22px) scale(0.97);}}
