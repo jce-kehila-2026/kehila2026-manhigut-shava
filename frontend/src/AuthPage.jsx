@@ -327,6 +327,7 @@ function validPhone(raw) {
 }
 
 function SignUpForm({ onSwitchTab, Tr, dir }) {
+  const isMobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     firstName:"", lastName:"", email:"", phone:"",
@@ -644,12 +645,13 @@ export default function AuthPage({ onBack }) {
         </div>
       </div>
 
-      {/* Card — this div is the scroll container */}
+      {/* Card — fixed-height scroll container so overflowY:auto actually triggers */}
       <div style={{
         position:"relative", zIndex:5,
-        minHeight:"100dvh", display:"flex", alignItems:"flex-start", justifyContent:"center",
+        height:"100dvh", display:"flex", alignItems:"flex-start", justifyContent:"center",
         padding:"6rem 1rem 5rem",
         overflowY:"auto", overflowX:"hidden",
+        WebkitOverflowScrolling:"touch",
       }}>
         <div style={{
           width:"100%", maxWidth:420,
