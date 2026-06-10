@@ -25,13 +25,16 @@ const Icon = {
   moon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
 };
 
-function timeAgo(ts) {
-  if (!ts) return "";
-  const d = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (d < 60)    return "just now";
-  if (d < 3600)  return `${Math.floor(d/60)}m ago`;
-  if (d < 86400) return `${Math.floor(d/3600)}h ago`;
-  return `${Math.floor(d/86400)}d ago`;
+function useTimeAgo() {
+  const { t } = useLang();
+  return (ts) => {
+    if (!ts) return "";
+    const d = Math.floor((Date.now() - new Date(ts)) / 1000);
+    if (d < 60)    return t.common.justNow;
+    if (d < 3600)  return t.common.minutesAgo(Math.floor(d / 60));
+    if (d < 86400) return t.common.hoursAgo(Math.floor(d / 3600));
+    return t.common.daysAgo(Math.floor(d / 86400));
+  };
 }
 
 const avatarUrl = (u) => u?.photoURL || u?.avatarUrl || null;
@@ -40,58 +43,67 @@ const isActuallyOnline = (u) => {
   return Date.now() - new Date(u.lastSeen) < 5 * 60 * 1000;
 };
 
-/* ── Sidebar nav button with tooltip ── */
-function NavBtn({ item, active, badge, onClick }) {
+/* ── Sidebar nav button with optional expanded label ── */
+function NavBtn({ item, active, badge, onClick, expanded }) {
   const [hover, setHover] = useState(false);
   return (
-    <div style={{ position: "relative" }}
+    <div style={{ position: "relative", width: expanded ? "100%" : "auto" }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
       <button
         onClick={onClick}
         style={{
-          width: 46, height: 46,
-          display: "flex", alignItems: "center", justifyContent: "center",
+          width: expanded ? "100%" : 46, height: 46,
+          display: "flex", alignItems: "center",
+          justifyContent: expanded ? "flex-start" : "center",
+          gap: expanded ? 12 : 0,
+          paddingLeft: expanded ? 12 : 0,
           borderRadius: 14,
           background: active
-            ? "rgba(232,197,197,0.18)"
+            ? "rgba(68,114,184,0.18)"
             : hover ? "rgba(255,255,255,0.06)" : "transparent",
-          color: active ? "#f5dde3" : hover ? "#fff" : "rgba(245,221,227,0.55)",
+          color: active ? "#daeaf8" : hover ? "#fff" : "rgba(218,234,248,0.55)",
           border: "none", cursor: "pointer",
           transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
           position: "relative",
         }}
       >
-        {/* active indicator bar */}
         {active && (
           <span style={{
-            position: "absolute", left: -10, top: 10, bottom: 10,
-            width: 3, borderRadius: 99, background: "#f5dde3",
+            position: "absolute", left: expanded ? 0 : -10, top: 10, bottom: 10,
+            width: 3, borderRadius: 99, background: "#daeaf8",
           }} />
         )}
-        {item.icon}
+        <span style={{ flexShrink: 0 }}>{item.icon}</span>
+        {expanded && (
+          <span style={{ fontSize: 13, fontWeight: active ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {item.label}
+          </span>
+        )}
         {badge > 0 && (
           <span style={{
-            position: "absolute", top: 6, right: 6,
+            position: expanded ? "static" : "absolute",
+            marginLeft: expanded ? "auto" : undefined,
+            top: expanded ? undefined : 6, right: expanded ? undefined : 6,
             minWidth: 16, height: 16, borderRadius: 99,
-            background: "#b8617a", color: "#fff",
+            background: "#e8735a", color: "#fff",
             fontSize: 9, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center",
-            border: "2px solid #2e1428",
-            padding: "0 3px",
+            border: "2px solid #1a2f5e",
+            padding: "0 3px", flexShrink: 0,
           }}>{badge > 99 ? "99+" : badge}</span>
         )}
       </button>
-      {hover && (
+      {hover && !expanded && (
         <div style={{
           position: "absolute", left: "calc(100% + 12px)", top: "50%",
           transform: "translateY(-50%)",
-          background: "#2e1428", color: "#fff",
+          background: "#1a2f5e", color: "#fff",
           fontSize: 12, fontWeight: 500,
           padding: "6px 11px", borderRadius: 8,
           whiteSpace: "nowrap", pointerEvents: "none",
-          zIndex: 100, boxShadow: "0 8px 22px rgba(46,20,40,0.35)",
+          zIndex: 100, boxShadow: "0 8px 22px rgba(29,72,150,0.35)",
           animation: "slideRight 0.15s ease",
           fontFamily: "'Figtree',system-ui,sans-serif",
         }}>
@@ -130,6 +142,51 @@ const eyebrow = {
   fontFamily: "'Figtree',system-ui,sans-serif",
 };
 
+/* ── Quick-access floating circle ── */
+function QuickCircle({ icon, title, desc, coral, floatIdx, onClick }) {
+  const [hov, setHov] = useState(false);
+  const color = coral ? "#e8735a" : "#4472b8";
+  const floatAnim = `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, cursor:"pointer",
+      animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ position:"relative", animation: floatAnim }}>
+        {[1,2].map(r => (
+          <div key={r} style={{
+            position:"absolute", borderRadius:"50%",
+            inset: -(r * 18),
+            border:`1.5px solid ${coral ? `rgba(232,115,90,${0.22 - r*0.08})` : `rgba(68,114,184,${0.18 - r*0.07})`}`,
+            animation:`qc-ring ${2.8 + r * 0.6}s ${r * 0.55}s ease-out infinite`,
+            pointerEvents:"none",
+          }}/>
+        ))}
+        <div style={{
+          width:160, height:160, borderRadius:"50%",
+          background: hov ? color : (coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)"),
+          border:`2.5px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          color: hov ? "#fff" : color,
+          transition:"background 0.26s cubic-bezier(0.2,0.8,0.2,1), border-color 0.26s, color 0.26s, box-shadow 0.26s",
+          transform: hov ? "scale(1.08)" : "scale(1)",
+          boxShadow: hov ? `0 20px 48px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 4px 20px rgba(0,0,0,0.05)",
+          position:"relative", zIndex:1,
+        }}>
+          <div style={{ transform:"scale(1.5)" }}>{icon}</div>
+        </div>
+      </div>
+      <p style={{ fontSize:13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth:110 }}>{title}</p>
+      {/* Reserve fixed space — opacity prevents layout shift on hover */}
+      <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
+        lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
+        opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
+    </div>
+  );
+}
+
 /* ── Home page (overview) ── */
 function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [helpRequests, setHelpRequests] = useState([]);
@@ -160,74 +217,127 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   const pendingRequests = helpRequests.filter((r) => !r.status);
 
-  const quickCards = [
-    { icon: Icon.community, title: t.dash.goToCommunity, desc: "Share updates, achievements, and ideas with your network.", action: "community", cta: "Open Feed" },
-    { icon: Icon.chat,      title: "Direct Messages",     desc: "Connect privately with fellow members in real time.",       action: "chat",      cta: "Open Messages" },
-    { icon: Icon.members,   title: t.dash.goToSupport,    desc: "Search graduates by profession or city. Expand your network.", action: "members",   cta: "Find Help" },
-    { icon: Icon.profile,   title: t.dash.goToProfile,    desc: "Update your professional info, bio, and profile photo.",   action: "profile",   cta: "Edit Profile" },
+  const quickCircles = [
+    { icon: Icon.members,   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
+    { icon: Icon.community, title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
+    { icon: Icon.chat,      title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: true  },
+    { icon: Icon.profile,   title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
   ];
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "2.25rem 2.75rem" }}>
-      {/* Welcome banner — soft rose with plum text */}
-      <div style={{
-        background: "linear-gradient(135deg, #fdf8f6 0%, #f7ecec 55%, #f3dde2 100%)",
-        border: "1px solid var(--border)",
-        borderRadius: 20, padding: "2rem 2.25rem",
-        marginBottom: "2.25rem", display: "flex", alignItems: "center", gap: "1.5rem",
-        boxShadow: "0 4px 24px rgba(184,97,122,0.08)",
-        position: "relative", overflow: "hidden",
-      }}>
-        {/* decorative bloom */}
-        <div style={{
-          position: "absolute", right: -60, top: -60, width: 200, height: 200,
-          borderRadius: "50%", background: "radial-gradient(circle, rgba(184,97,122,0.18) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-        <div style={{ position: "relative", flexShrink: 0, zIndex: 1 }}>
-          {avatarUrl(profile) ? (
-            <img src={avatarUrl(profile)} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "3px solid #fff", boxShadow: "0 4px 14px rgba(74,31,61,0.15)" }} alt="" />
-          ) : (
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #b8617a, #d48aa0)", border: "3px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif", boxShadow: "0 4px 14px rgba(184,97,122,0.3)" }}>{initials}</div>
-          )}
-          <span style={{ position: "absolute", bottom: 2, right: 2, width: 14, height: 14, borderRadius: "50%", background: "#7cb88f", border: "2.5px solid #fff" }} />
-        </div>
-        <div style={{ flex: 1, position: "relative", zIndex: 1 }}>
-          <p style={{ fontSize: 22, fontWeight: 600, color: "#4a1f3d", marginBottom: 4, fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em" }}>
-            {t.dash.welcomeBack} {profile?.firstName || "Member"}
-          </p>
-          <p style={{ fontSize: 13, color: "#8a6b76", margin: 0, fontWeight: 400 }}>
-            {profile?.profession ? `${profile.profession} · ` : ""}
-            {profile?.city || "Manhigut Shava"} · Kehila 2026
-          </p>
-        </div>
-        <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 99, padding: "6px 16px", fontSize: 10, fontWeight: 600, color: "#b8617a", letterSpacing: "0.1em", textTransform: "uppercase", flexShrink: 0, position: "relative", zIndex: 1 }}>{t.dash.member}</div>
-      </div>
+      {/* Welcome banner — redesigned */}
+      {(() => {
+        const hr = new Date().getHours();
+        const greetKey = hr < 12 ? "goodMorning" : hr < 18 ? "goodAfternoon" : "goodEvening";
+        const greeting = t.dash[greetKey] || t.dash.welcomeBack;
+        return (
+          <div style={{
+            marginBottom:"2rem", borderRadius:20, padding:"1.5rem 1.75rem",
+            background:"var(--bg-primary,#fff)",
+            position:"relative", overflow:"hidden",
+            boxShadow:"0 2px 18px rgba(29,72,150,0.08), 0 0 0 1px rgba(29,72,150,0.07)",
+            display:"flex", alignItems:"center", gap:18,
+          }}>
+            {/* Left gradient accent */}
+            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:4,
+              background:"linear-gradient(to bottom,#4472b8 0%,#e8735a 100%)",
+              borderRadius:"99px 0 0 99px", pointerEvents:"none" }} />
+
+            {/* Avatar */}
+            <div style={{ flexShrink:0, marginLeft:10, position:"relative" }}>
+              <div style={{
+                width:60, height:60, borderRadius:"50%",
+                background:"linear-gradient(135deg,#4472b8 0%,#e8735a 100%)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                overflow:"hidden",
+                boxShadow:"0 4px 16px rgba(68,114,184,0.22)",
+              }}>
+                {profile?.photoURL
+                  ? <img src={profile.photoURL} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : <span style={{ color:"#fff", fontSize:19, fontWeight:800, fontFamily:"'Outfit',sans-serif" }}>{initials}</span>
+                }
+              </div>
+              <div style={{
+                position:"absolute", bottom:1, right:1,
+                width:14, height:14, borderRadius:"50%",
+                background:"#4ade80", border:"2.5px solid var(--bg-primary,#fff)",
+              }} />
+            </div>
+
+            {/* Text */}
+            <div style={{ flex:1, minWidth:0 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"var(--brand,#4472b8)", margin:"0 0 2px",
+                textTransform:"uppercase", letterSpacing:"0.08em" }}>
+                {greeting}
+              </p>
+              <h2 style={{ fontSize:21, fontWeight:800, color:"var(--text-primary,#111827)", margin:"0 0 4px",
+                lineHeight:1.2, fontFamily:"'Outfit',sans-serif" }}>
+                {profile?.firstName || ""}
+              </h2>
+              {(profile?.profession || profile?.city) && (
+                <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", margin:0, fontWeight:400 }}>
+                  {[profile?.profession, profile?.city].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </div>
+
+            {/* Online badge */}
+            <div style={{
+              flexShrink:0, display:"flex", alignItems:"center", gap:6,
+              padding:"5px 13px", borderRadius:99,
+              background:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.28)",
+            }}>
+              <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80",
+                boxShadow:"0 0 0 2px rgba(74,222,128,0.25)" }} />
+              <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>
+                {t.common?.online || "Online"}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Help Requests */}
       {pendingRequests.length > 0 && (
         <div style={{ marginBottom: "2.25rem" }}>
-          <p style={eyebrow}>Pending Help Requests ({pendingRequests.length})</p>
+          <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {pendingRequests.slice(0, 3).map((r) => (
-              <div key={r.id} className="card" style={{ padding: "0.95rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem", borderLeft: "3px solid #d4a373", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 12 }}>
+              <div key={r.id} className="card" style={{ padding: "0.95rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem", borderLeft: "3px solid #e8735a", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{r.fromUserName}</p>
                   <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>
                 </div>
                 <button onClick={() => onNavigate("members")} style={{ padding: "6px 16px", borderRadius: 99, background: "var(--brand)", color: "#fff", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  View
+                  {t.dash.viewReq}
                 </button>
               </div>
             ))}
             {pendingRequests.length > 3 && (
               <button onClick={() => onNavigate("members")} style={{ fontSize: 12, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontWeight: 600, padding: "4px 0" }}>
-                + {pendingRequests.length - 3} more requests →
+                {t.dash.moreReqs(pendingRequests.length - 3)}
               </button>
             )}
           </div>
         </div>
       )}
+
+      {/* Quick-access circles — floating with sonar rings */}
+      <p style={eyebrow}>{t.dash.quickActions}</p>
+      <style>{`
+        @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        @keyframes qc-float-1{0%,100%{transform:translateY(-5px)}50%{transform:translateY(8px)}}
+        @keyframes qc-float-2{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        @keyframes qc-float-3{0%,100%{transform:translateY(-4px)}50%{transform:translateY(9px)}}
+        @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
+        @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
+      `}</style>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1.5rem", marginBottom: "2.5rem", padding: "0.5rem 0 1.5rem" }}>
+        {quickCircles.map((circle, i) => (
+          <QuickCircle key={circle.action} {...circle} floatIdx={i} onClick={() => onNavigate(circle.action)} />
+        ))}
+      </div>
 
       {/* Suggested members */}
       {suggested.length > 0 && (
@@ -247,7 +357,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                     {avatarUrl(u) ? (
                       <img src={avatarUrl(u)} style={{ width: 42, height: 42, borderRadius: "50%", objectFit: "cover" }} alt="" />
                     ) : (
-                      <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#b8617a,#d48aa0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>
+                      <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#4472b8,#6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>
                         {name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                       </div>
                     )}
@@ -264,37 +374,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         </div>
       )}
 
-      {/* Quick-access cards — monochromatic, no rainbow colors */}
-      <p style={eyebrow}>{t.dash.quickActions}</p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1rem", marginBottom: "2.25rem" }}>
-        {quickCards.map((card, i) => (
-          <div key={card.action}
-            className={`card card-hover slide-up stagger-${i + 1}`}
-            style={{
-              padding: "1.6rem", cursor: "pointer",
-              background: "var(--bg-primary)",
-              border: "1px solid var(--border)",
-              borderRadius: 16,
-              transition: "border-color 0.25s, transform 0.25s, box-shadow 0.25s",
-            }}
-            onClick={() => onNavigate(card.action)}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(184,97,122,0.10)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
-          >
-            <div style={{
-              width: 44, height: 44, borderRadius: 12,
-              background: "var(--bg-tertiary)",
-              color: "var(--brand)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              marginBottom: "0.95rem",
-            }}>{card.icon}</div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.4rem", fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.005em" }}>{card.title}</p>
-            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "1rem", fontWeight: 400 }}>{card.desc}</p>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--brand)" }}>{card.cta} →</span>
-          </div>
-        ))}
-      </div>
-
       {/* Movement website banner — soft plum, no harsh blue */}
       <a
         href="https://ywp-online.my.canva.site/manhigot2026"
@@ -303,21 +382,21 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         style={{
           display: "flex", alignItems: "center", gap: "1rem",
           padding: "1.15rem 1.6rem",
-          background: "linear-gradient(135deg, #4a1f3d 0%, #6b2b53 60%, #b8617a 100%)",
+          background: "linear-gradient(135deg, #1a2f5e 0%, #2a4a8e 60%, #4472b8 100%)",
           borderRadius: 16,
           textDecoration: "none", cursor: "pointer",
           transition: "transform 0.2s, box-shadow 0.2s",
-          boxShadow: "0 6px 22px rgba(74,31,61,0.22)",
+          boxShadow: "0 6px 22px rgba(29,72,150,0.22)",
         }}
-        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(74,31,61,0.32)"; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 6px 22px rgba(74,31,61,0.22)"; }}
+        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(29,72,150,0.32)"; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 6px 22px rgba(29,72,150,0.22)"; }}
       >
         <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5dde3" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#daeaf8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: "0 0 2px", fontFamily: "'Outfit',sans-serif" }}>Manhigut Shava Website</p>
-          <p style={{ fontSize: 12, color: "rgba(245,221,227,0.7)", margin: 0 }}>ywp-online.my.canva.site/manhigot2026</p>
+          <p style={{ fontSize: 12, color: "rgba(218,234,248,0.7)", margin: 0 }}>ywp-online.my.canva.site/manhigot2026</p>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>
@@ -393,13 +472,14 @@ export default function DashboardPage() {
   const navItems = [
     { id: "home",      label: t.nav.home,      icon: Icon.home      },
     { id: "community", label: t.nav.community,  icon: Icon.community  },
-    { id: "chat",      label: "Messages",       icon: Icon.chat       },
+    { id: "chat",      label: t.nav.messages,   icon: Icon.chat       },
     { id: "members",   label: t.nav.support,    icon: Icon.members    },
     { id: "profile",   label: t.nav.profile,    icon: Icon.profile    },
-    ...(profile?.isAdmin ? [{ id: "admin", label: "Admin", icon: Icon.admin }] : []),
+    ...(profile?.isAdmin ? [{ id: "admin", label: t.nav.admin, icon: Icon.admin }] : []),
   ];
 
-  const sidebarW = 68;
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const sidebarW = sidebarExpanded ? 220 : 68;
   const pageTitle = navItems.find((n) => n.id === section)?.label || t.nav.home;
   const dir = isRTL ? "rtl" : "ltr";
 
@@ -409,61 +489,187 @@ export default function DashboardPage() {
       fontFamily: "'Figtree','Outfit',system-ui,-apple-system,sans-serif",
       direction: dir,
     }}>
-      {/* ── Sidebar — soft plum ── */}
+      {/* ── Sidebar — expandable ── */}
       <aside style={{
         width: sidebarW, minWidth: sidebarW,
-        background: "linear-gradient(180deg, #2e1428 0%, #3a1a32 100%)",
-        display: "flex", flexDirection: "column", alignItems: "center",
+        background: "linear-gradient(180deg, #1a2f5e 0%, #162548 100%)",
+        display: "flex", flexDirection: "column",
+        alignItems: sidebarExpanded ? "stretch" : "center",
         paddingTop: "1rem", paddingBottom: "1rem",
         gap: "6px", zIndex: 30,
-        borderRight: "1px solid rgba(245,221,227,0.08)",
+        borderRight: "1px solid rgba(218,234,248,0.08)",
+        transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
+        overflow: "hidden",
       }}>
-        {/* Logo */}
+        {/* Logo row — with BogrotNet text when expanded */}
         <div style={{
-          width: 42, height: 42, borderRadius: 14,
-          background: "linear-gradient(135deg, #b8617a, #d48aa0)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 15, fontWeight: 700, color: "#fff",
+          display: "flex", alignItems: "center", gap: 10,
+          paddingLeft: sidebarExpanded ? 12 : 0,
           marginBottom: "0.85rem", flexShrink: 0,
-          boxShadow: "0 4px 14px rgba(184,97,122,0.45)",
-          letterSpacing: "-0.5px",
-          fontFamily: "'Outfit',sans-serif",
-        }}>MS</div>
+          justifyContent: sidebarExpanded ? "flex-start" : "center",
+        }}>
+          <div style={{
+            width: 42, height: 42, borderRadius: 14, flexShrink: 0,
+            background: "rgba(255,255,255,0.92)",
+            boxShadow: "0 4px 14px rgba(68,114,184,0.35)",
+            overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <img src="/NewLogoNGO.png"
+              onError={e => { e.currentTarget.parentElement.style.background = "linear-gradient(135deg,#4472b8,#1d4896)"; e.currentTarget.style.display = "none"; }}
+              alt="BogrotNet"
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          </div>
+          {sidebarExpanded && (
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em" }}>
+              BogrotNet
+            </span>
+          )}
+        </div>
 
-        <div style={{ width: 28, height: 1, background: "rgba(245,221,227,0.12)", marginBottom: "0.6rem" }} />
+        {/* Expand/collapse toggle */}
+        <button
+          onClick={() => setSidebarExpanded(e => !e)}
+          title={sidebarExpanded ? "Collapse" : "Expand"}
+          style={{
+            width: sidebarExpanded ? "calc(100% - 24px)" : 46, height: 36,
+            margin: sidebarExpanded ? "0 12px" : "0 auto",
+            display: "flex", alignItems: "center",
+            justifyContent: sidebarExpanded ? "space-between" : "center",
+            paddingLeft: sidebarExpanded ? 10 : 0, paddingRight: sidebarExpanded ? 10 : 0,
+            borderRadius: 10, border: "none", cursor: "pointer",
+            background: "rgba(255,255,255,0.06)",
+            color: "rgba(218,234,248,0.7)",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
+        >
+          {sidebarExpanded && <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>Menu</span>}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: sidebarExpanded ? "rotate(180deg)" : "none", transition: "transform 0.22s" }}>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+
+        <div style={{ width: sidebarExpanded ? "calc(100% - 24px)" : 28, height: 1, background: "rgba(218,234,248,0.12)", margin: sidebarExpanded ? "0.4rem 12px" : "0.4rem auto" }} />
 
         {/* Nav */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, width: "100%",
+          paddingLeft: sidebarExpanded ? 8 : 0, paddingRight: sidebarExpanded ? 8 : 0,
+          alignItems: sidebarExpanded ? "stretch" : "center" }}>
           {navItems.map((item) => (
             <NavBtn
               key={item.id} item={item}
               active={section === item.id}
               badge={item.id === "chat" ? unreadDMs : 0}
               onClick={() => navigate(item.id)}
+              expanded={sidebarExpanded}
             />
           ))}
         </nav>
 
         {/* Logout + avatar */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: sidebarExpanded ? "stretch" : "center",
+          gap: "10px", paddingLeft: sidebarExpanded ? 8 : 0, paddingRight: sidebarExpanded ? 8 : 0 }}>
           <NavBtn
             item={{ id: "logout", label: t.nav.logout, icon: Icon.logout }}
-            active={false} badge={0} onClick={logout}
+            active={false} badge={0} onClick={logout} expanded={sidebarExpanded}
           />
-          <div style={{ position: "relative", cursor: "pointer" }} onClick={() => navigate("profile")} title={t.nav.profile}>
-            {avatarUrl(profile) ? (
-              <img src={avatarUrl(profile)} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(245,221,227,0.25)" }} alt="" />
-            ) : (
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #b8617a, #d48aa0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "#fff", border: "2px solid rgba(245,221,227,0.2)", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
+          <div style={{ position: "relative", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 10,
+            paddingLeft: sidebarExpanded ? 12 : 0,
+            justifyContent: sidebarExpanded ? "flex-start" : "center" }}
+            onClick={() => navigate("profile")} title={t.nav.profile}>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              {avatarUrl(profile) ? (
+                <img src={avatarUrl(profile)} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(218,234,248,0.25)" }} alt="" />
+              ) : (
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #4472b8, #6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "#fff", border: "2px solid rgba(218,234,248,0.2)", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
+              )}
+              <span style={{ position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: "50%", background: "var(--online)", border: "2px solid #1a2f5e" }} />
+            </div>
+            {sidebarExpanded && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(218,234,248,0.8)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {profile?.firstName || ""} {profile?.lastName || ""}
+              </span>
             )}
-            <span style={{ position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: "50%", background: "var(--online)", border: "2px solid #2e1428" }} />
           </div>
         </div>
       </aside>
 
       {/* ── Main ── */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)" }}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative" }}>
+        {/* Floating water blob background */}
+        <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
+          {/* Blob 1 — large blue, top-right */}
+          <div style={{ position:"absolute", width:"58%", height:"115%", top:"-18%", right:"-10%",
+            background:"radial-gradient(ellipse at center, rgba(68,114,184,0.09) 0%, transparent 68%)",
+            animation:"dash-blob-1 26s ease-in-out infinite", willChange:"border-radius, transform" }}/>
+          {/* Blob 2 — medium blue, center-left */}
+          <div style={{ position:"absolute", width:"44%", height:"78%", top:"22%", left:"-8%",
+            background:"radial-gradient(ellipse at center, rgba(68,114,184,0.07) 0%, transparent 68%)",
+            animation:"dash-blob-2 20s 5s ease-in-out infinite", willChange:"border-radius, transform" }}/>
+          {/* Blob 3 — coral, upper area */}
+          <div style={{ position:"absolute", width:"40%", height:"62%", top:"-6%", left:"20%",
+            background:"radial-gradient(ellipse at center, rgba(232,115,90,0.07) 0%, transparent 68%)",
+            animation:"dash-blob-3 30s 9s ease-in-out infinite", willChange:"border-radius, transform" }}/>
+          {/* Blob 4 — blue, lower-right */}
+          <div style={{ position:"absolute", width:"42%", height:"68%", bottom:"-20%", right:"6%",
+            background:"radial-gradient(ellipse at center, rgba(68,114,184,0.06) 0%, transparent 68%)",
+            animation:"dash-blob-4 23s 14s ease-in-out infinite", willChange:"border-radius, transform" }}/>
+
+          {/* Side bubbles — left edge */}
+          {[{s:32,t:"15%",l:-8,c:"rgba(68,114,184,0.13)",d:"21s",dl:"0s"},{s:20,t:"32%",l:6,c:"rgba(68,114,184,0.09)",d:"26s",dl:"3s"},{s:42,t:"52%",l:-10,c:"rgba(68,114,184,0.08)",d:"18s",dl:"7s"},{s:24,t:"70%",l:4,c:"rgba(68,114,184,0.11)",d:"23s",dl:"11s"},{s:16,t:"85%",l:10,c:"rgba(232,115,90,0.09)",d:"19s",dl:"5s"}].map((b,i)=>(
+            <div key={`bl${i}`} style={{
+              position:"absolute", width:b.s, height:b.s, borderRadius:"50%",
+              top:b.t, left:b.l, background:b.c,
+              border:`1px solid ${b.c.replace(/[\d.]+\)$/,"0.2)")}`,
+              animation:`side-bubble-${i} ${b.d} ${b.dl} ease-in-out infinite`,
+            }}/>
+          ))}
+          {/* Side bubbles — right edge */}
+          {[{s:28,t:"20%",r:-6,c:"rgba(232,115,90,0.11)",d:"24s",dl:"2s"},{s:38,t:"40%",r:-12,c:"rgba(68,114,184,0.08)",d:"20s",dl:"6s"},{s:22,t:"60%",r:4,c:"rgba(232,115,90,0.09)",d:"27s",dl:"9s"},{s:34,t:"78%",r:-8,c:"rgba(68,114,184,0.1)",d:"22s",dl:"13s"},{s:18,t:"90%",r:8,c:"rgba(232,115,90,0.08)",d:"17s",dl:"4s"}].map((b,i)=>(
+            <div key={`br${i}`} style={{
+              position:"absolute", width:b.s, height:b.s, borderRadius:"50%",
+              top:b.t, right:b.r, background:b.c,
+              border:`1px solid ${b.c.replace(/[\d.]+\)$/,"0.18)")}`,
+              animation:`side-bubble-${i+5} ${b.d} ${b.dl} ease-in-out infinite`,
+            }}/>
+          ))}
+        </div>
+        <style>{`
+          @keyframes dash-blob-1{
+            0%,100%{border-radius:62% 38% 52% 48%/44% 56% 44% 56%;transform:translate(0,0) scale(1);}
+            33%{border-radius:40% 60% 65% 35%/58% 42% 62% 38%;transform:translate(-18px,-30px) scale(1.04);}
+            66%{border-radius:55% 45% 38% 62%/36% 60% 40% 64%;transform:translate(14px,22px) scale(0.97);}
+          }
+          @keyframes dash-blob-2{
+            0%,100%{border-radius:52% 48% 60% 40%/44% 56% 48% 52%;transform:translate(0,0) rotate(0deg);}
+            50%{border-radius:38% 62% 44% 56%/60% 40% 56% 44%;transform:translate(24px,-20px) rotate(4deg);}
+          }
+          @keyframes dash-blob-3{
+            0%,100%{border-radius:55% 45% 50% 50%/48% 52% 44% 56%;transform:translate(0,0);}
+            40%{border-radius:45% 55% 62% 38%/56% 44% 52% 48%;transform:translate(14px,26px);}
+            80%{border-radius:62% 38% 48% 52%/40% 60% 56% 44%;transform:translate(-10px,-16px);}
+          }
+          @keyframes dash-blob-4{
+            0%,100%{border-radius:48% 52% 56% 44%/52% 48% 60% 40%;transform:translate(0,0);}
+            50%{border-radius:62% 38% 40% 60%/40% 60% 44% 56%;transform:translate(-16px,22px);}
+          }
+          @keyframes slideRight{from{opacity:0;transform:translate(-8px,-50%)}to{opacity:1;transform:translate(0,-50%)}}
+          @keyframes side-bubble-0{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-22px) scale(1.06)}}
+          @keyframes side-bubble-1{0%,100%{transform:translateY(-8px)}50%{transform:translateY(16px)}}
+          @keyframes side-bubble-2{0%,100%{transform:translateY(5px) scale(0.96)}50%{transform:translateY(-20px) scale(1.04)}}
+          @keyframes side-bubble-3{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+          @keyframes side-bubble-4{0%,100%{transform:translateY(-4px) scale(1)}50%{transform:translateY(12px) scale(1.08)}}
+          @keyframes side-bubble-5{0%,100%{transform:translateY(0) scale(1.02)}50%{transform:translateY(-18px) scale(0.97)}}
+          @keyframes side-bubble-6{0%,100%{transform:translateY(-6px)}50%{transform:translateY(20px)}}
+          @keyframes side-bubble-7{0%,100%{transform:translateY(4px) scale(1)}50%{transform:translateY(-16px) scale(1.05)}}
+          @keyframes side-bubble-8{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+          @keyframes side-bubble-9{0%,100%{transform:translateY(-10px) scale(0.98)}50%{transform:translateY(14px) scale(1.03)}}
+        `}</style>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 1 }}>
 
           {/* Top bar */}
           {section !== "chat" && (
@@ -531,7 +737,7 @@ export default function DashboardPage() {
                 {avatarUrl(profile) ? (
                   <img src={avatarUrl(profile)} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} alt="" />
                 ) : (
-                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #b8617a, #d48aa0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
+                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #4472b8, #6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
                 )}
                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
                   {profile?.firstName || t.nav.profile}

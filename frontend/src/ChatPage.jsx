@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, addDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import {
@@ -46,7 +46,7 @@ const isActuallyOnline = (u) => {
 
 /* ── Avatar ── */
 function Avatar({ url, name, size = 40, online = false, ring = false, onClick }) {
-  const colors = ["#b8617a", "#8d3f5c", "#8d3f5c", "#7ba87a", "#c25c5c", "#b8895a", "#b8617a"];
+  const colors = ["#4472b8", "#1d4896", "#1d4896", "#7ba87a", "#e8735a", "#6da3d4", "#4472b8"];
   const bg = colors[(name?.charCodeAt(0) || 0) % colors.length];
   return (
     <div style={{ position: "relative", flexShrink: 0, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
@@ -93,12 +93,13 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
     <button onClick={onClick} style={{
       width: "100%", display: "flex", alignItems: "center", gap: 12,
       padding: "10px 16px",
-      background: active ? "rgba(184, 97, 122,0.06)" : "transparent",
+      background: active ? "rgba(232,115,90,0.08)" : "transparent",
+      borderLeft: active ? "3px solid #e8735a" : "3px solid transparent",
       border: "none", cursor: "pointer", textAlign: "left",
-      transition: "background 0.15s",
+      transition: "background 0.15s, border-left 0.15s",
     }}
       onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.03)"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = active ? "rgba(184, 97, 122,0.06)" : "transparent"; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
     >
       <Avatar url={otherAvatar} name={otherName} size={52} online={isOnline} />
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -126,7 +127,7 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
             {lastMsg?.type === "image" ? "Photo" : (lastMsg?.text || "Start a conversation…")}
           </p>
           {unread > 0 && (
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", flexShrink: 0, marginLeft: 4 }} />
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#e8735a", flexShrink: 0, marginLeft: 4 }} />
           )}
         </div>
       </div>
@@ -152,6 +153,10 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
   const longPressMoved = useRef(false);
   const bubbleRef = useRef(null);
   const SWIPE_THRESHOLD = 65;
+
+  const sentMs = msg.createdAt?.toMillis?.() ?? (msg.createdAt ? new Date(msg.createdAt).getTime() : 0);
+  const canDelete = isMe && !msg.deleted;
+  const canEdit   = isMe && !msg.deleted && (Date.now() - sentMs < 5 * 60 * 1000);
 
   const reactionEntries = Object.entries(msg.reactions || {}).filter(([, u]) => u.length > 0);
   const isImage = msg.type === "image" && msg.imageUrl;
@@ -181,7 +186,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
   useEffect(() => () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }, []);
 
   const triggerMenu = () => {
-    if (!isMe || msg.deleted || !bubbleRef.current) return;
+    if (!canDelete || !bubbleRef.current) return;
     const rect = bubbleRef.current.getBoundingClientRect();
     const menuH = 98;
     const top = rect.top > menuH + 12 ? rect.top - menuH - 6 : rect.bottom + 6;
@@ -215,7 +220,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
     swipeStartX.current = cx;
     longPressStart.current = { x: cx, y: cy };
     longPressMoved.current = false;
-    if (isMe && !msg.deleted) {
+    if (canDelete) {
       longPressTimer.current = setTimeout(triggerMenu, 500);
     }
   };
@@ -255,7 +260,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
     : { transform: "scale(1) translateY(0)", transition: "transform 0.18s ease, box-shadow 0.18s ease" };
 
   const myBubble = {
-    background: "linear-gradient(135deg, #b8617a, #8d3f5c)",
+    background: "linear-gradient(135deg, #e8735a, #d15a43 50%, #c94e36)",
     color: "#fff",
     borderRadius: "22px 22px 6px 22px",
     padding: "10px 15px",
@@ -302,7 +307,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
         opacity: iconOpacity,
         width: 32, height: 32, borderRadius: "50%",
         background: iconTriggered ? "rgba(184, 97, 122,0.15)" : "rgba(0,0,0,0.07)",
-        color: iconTriggered ? "#b8617a" : "var(--text-muted)",
+        color: iconTriggered ? "#4472b8" : "var(--text-muted)",
         display: "flex", alignItems: "center", justifyContent: "center",
         pointerEvents: "none",
         transition: swipeDragging.current ? "color 0.1s, background 0.1s" : "all 0.32s cubic-bezier(0.34,1.56,0.64,1)",
@@ -337,15 +342,15 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
           {/* Reply quote */}
           {msg.replyTo && (
             <div style={{
-              background: isMe ? "rgba(255,255,255,0.12)" : "#f0f4fa",
-              borderLeft: `3px solid ${isMe ? "rgba(255,255,255,0.5)" : "var(--brand)"}`,
+              background: isMe ? "rgba(0,0,0,0.22)" : "#f0f4fa",
+              borderLeft: `3px solid ${isMe ? "rgba(255,255,255,0.7)" : "var(--brand)"}`,
               borderRadius: 10, padding: "4px 10px", marginBottom: 2,
               fontSize: 11, maxWidth: "100%", overflow: "hidden",
             }}>
-              <p style={{ fontWeight: 700, fontSize: 10, marginBottom: 1, color: isMe ? "rgba(255,255,255,0.85)" : "var(--brand)" }}>
+              <p style={{ fontWeight: 700, fontSize: 10, marginBottom: 1, color: isMe ? "rgba(255,255,255,0.9)" : "var(--brand)" }}>
                 {msg.replyTo.senderName}
               </p>
-              <p style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isMe ? "rgba(255,255,255,0.7)" : "var(--text-secondary)" }}>
+              <p style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isMe ? "rgba(255,255,255,0.88)" : "var(--text-secondary)" }}>
                 {msg.replyTo.text}
               </p>
             </div>
@@ -440,14 +445,14 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
             )}
 
             {/* Long-press context menu */}
-            {showMenu && (
+            {showMenu && canDelete && (
               <div
                 data-ctx-menu
                 style={{
                   position: "fixed",
                   top: menuPos.top, left: menuPos.left,
                   zIndex: 9998,
-                  background: "#4a1f3d",
+                  background: "#111827",
                   borderRadius: 14,
                   padding: "5px",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
@@ -456,25 +461,27 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
               >
-                <button
-                  onClick={() => { setShowMenu(false); setEditText(msg.text || ""); setEditing(true); }}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", gap: 10,
-                    padding: "9px 14px", background: "none", border: "none",
-                    cursor: "pointer", borderRadius: 10,
-                    color: "#f0dce0", fontSize: 14, fontWeight: 500,
-                    fontFamily: "var(--font)", textAlign: "left",
-                    transition: "background 0.12s",
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.85)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Edit
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={() => { setShowMenu(false); setEditText(msg.text || ""); setEditing(true); }}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: 10,
+                      padding: "9px 14px", background: "none", border: "none",
+                      cursor: "pointer", borderRadius: 10,
+                      color: "#f0dce0", fontSize: 14, fontWeight: 500,
+                      fontFamily: "var(--font)", textAlign: "left",
+                      transition: "background 0.12s",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit
+                  </button>
+                )}
                 <button
                   onClick={handleDelete}
                   style={{
@@ -573,10 +580,19 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
   const [imgFile, setImgFile] = useState(null);
   const [imgPreview, setImgPreview] = useState(null);
   const [lightbox, setLightbox] = useState(null);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [showConvMenu, setShowConvMenu] = useState(false);
+  const [reportModal, setReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [blockConfirm, setBlockConfirm] = useState(false);
+  const [myBlockedUsers, setMyBlockedUsers] = useState(() => profile?.blockedUsers || []);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const imgInputRef = useRef(null);
+  const sidebarResizing = useRef(false);
+  const sidebarStartX = useRef(0);
+  const sidebarStartW = useRef(0);
 
   useEffect(() => {
     getDocs(collection(db, "users")).then((snap) =>
@@ -597,6 +613,23 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
     onUnreadChange?.(total);
   }, [conversations]);
 
+  /* keep myBlockedUsers in sync with profile */
+  useEffect(() => { setMyBlockedUsers(profile?.blockedUsers || []); }, [profile?.blockedUsers?.join?.(",")]);
+
+  /* sidebar resize */
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!sidebarResizing.current) return;
+      const dx = e.clientX - sidebarStartX.current;
+      const next = Math.max(200, Math.min(540, sidebarStartW.current + dx));
+      setSidebarWidth(next);
+    };
+    const onUp = () => { sidebarResizing.current = false; document.body.style.cursor = ""; document.body.style.userSelect = ""; };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+  }, []);
+
   const activeConv = conversations.find((c) => c.id === activeConvId);
   const otherId = activeConv?.participants?.find((p) => p !== user?.uid) || activePeer?.id;
   const otherUser = allUsers.find((u) => u.id === otherId) || activePeer;
@@ -606,6 +639,66 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
   /* Seen: other user has read all my messages */
   const lastMyMsgIdx = messages.map((m, i) => m.senderId === user?.uid ? i : -1).filter(i => i >= 0).pop();
   const otherHasSeen = (activeConv?.unreadCounts?.[otherId] || 0) === 0 && lastMyMsgIdx !== undefined;
+
+  /* block state */
+  const iBlockedThem  = myBlockedUsers.includes(otherId);
+  const theyBlockedMe = !profile?.isAdmin && (otherUser?.blockedUsers || []).includes(user?.uid);
+
+  const blockUser = async () => {
+    if (!otherId) return;
+    await updateDoc(doc(db, "users", user.uid), { blockedUsers: arrayUnion(otherId) });
+    setMyBlockedUsers(prev => [...new Set([...prev, otherId])]);
+    setBlockConfirm(false);
+    setShowConvMenu(false);
+  };
+  const unblockUser = async () => {
+    if (!otherId) return;
+    await updateDoc(doc(db, "users", user.uid), { blockedUsers: arrayRemove(otherId) });
+    setMyBlockedUsers(prev => prev.filter(id => id !== otherId));
+  };
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportError,      setReportError]      = useState("");
+  const [reportSent,       setReportSent]        = useState(false);
+
+  const submitReport = async () => {
+    if (!otherId || !reportReason.trim()) return;
+    setReportSubmitting(true);
+    setReportError("");
+    try {
+      const myName = `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim();
+      const msgSnapshot = messages
+        .filter(m => !m.deleted)
+        .map(m => ({
+          senderId: m.senderId,
+          senderName: m.senderId === user.uid ? myName : otherName,
+          text: m.text || (m.imageUrl ? "[image]" : ""),
+          sentAt: m.createdAt || m.timestamp || null,
+        }));
+      await addDoc(collection(db, "reports"), {
+        reporterId: user.uid,
+        reporterName: myName,
+        reportedId: otherId,
+        reportedName: otherName,
+        conversationId: activeConvId,
+        reason: reportReason.trim(),
+        messages: msgSnapshot,
+        createdAt: new Date().toISOString(),
+        status: "pending",
+      });
+      setReportSent(true);
+      setTimeout(() => {
+        setReportModal(false);
+        setReportSent(false);
+        setReportReason("");
+        setShowConvMenu(false);
+      }, 1800);
+    } catch (err) {
+      console.error("Report failed:", err);
+      setReportError("Failed to submit. Please try again.");
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
 
   const handleImgSelect = (e) => {
     const file = e.target.files?.[0];
@@ -734,11 +827,11 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
 
       {/* ── Left sidebar ── */}
       <aside style={{
-        width: 320, minWidth: 320,
-        borderRight: "1px solid var(--border)",
+        width: sidebarWidth, minWidth: 200, flexShrink: 0,
         display: "flex", flexDirection: "column",
         background: "var(--bg-primary)",
         overflow: "hidden",
+        position: "relative",
       }}>
         {/* Header */}
         <div style={{ padding: "1rem 1rem 0.5rem", borderBottom: "1px solid var(--border)" }}>
@@ -849,6 +942,24 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             />
           ))}
         </div>
+
+        {/* Resize handle */}
+        <div
+          style={{
+            position: "absolute", right: 0, top: 0, bottom: 0, width: 5,
+            cursor: "col-resize", zIndex: 10,
+            background: "transparent", transition: "background 0.15s",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(68,114,184,0.35)"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          onMouseDown={(e) => {
+            sidebarResizing.current = true;
+            sidebarStartX.current = e.clientX;
+            sidebarStartW.current = sidebarWidth;
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+          }}
+        />
       </aside>
 
       {/* ── Right: chat area ── */}
@@ -870,18 +981,81 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                 {isActuallyOnline(otherUser) ? "Active now" : otherUser?.profession || "Offline"}
               </p>
             </div>
-            <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 6, borderRadius: "50%", display: "flex" }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-tertiary)"}
-              onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-            </button>
+            {/* Conversation actions menu */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setShowConvMenu(v => !v)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 6, borderRadius: "50%", display: "flex" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-tertiary)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                </svg>
+              </button>
+              {showConvMenu && (
+                <div
+                  style={{
+                    position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 200,
+                    background: "var(--bg-primary,#fff)", border: "1px solid var(--border,#e5eaf2)",
+                    borderRadius: 14, padding: 6, minWidth: 170,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
+                    animation: "popIn 0.13s ease",
+                  }}
+                  onMouseLeave={() => setShowConvMenu(false)}
+                >
+                  <button
+                    onClick={() => { setReportModal(true); setShowConvMenu(false); }}
+                    style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"9px 14px", background:"none", border:"none", cursor:"pointer", borderRadius:10, color:"var(--text-primary)", fontSize:13, fontWeight:500, textAlign:"left" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    Report
+                  </button>
+                  {iBlockedThem ? (
+                    <button
+                      onClick={() => { unblockUser(); setShowConvMenu(false); }}
+                      style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"9px 14px", background:"none", border:"none", cursor:"pointer", borderRadius:10, color:"#7ba87a", fontSize:13, fontWeight:600, textAlign:"left" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                      Unblock
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setBlockConfirm(true); setShowConvMenu(false); }}
+                      style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"9px 14px", background:"none", border:"none", cursor:"pointer", borderRadius:10, color:"#c25c5c", fontSize:13, fontWeight:600, textAlign:"left" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "rgba(194,92,92,0.07)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                      Block
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Messages feed — subtle blue-grey background */}
-          <div style={{ flex: 1, overflow: "auto", padding: "1.25rem 0 0.5rem", background: "var(--bg-chat)" }}>
+          <div style={{ flex: 1, overflow: "auto", padding: "1.25rem 0 0.5rem", background: "var(--bg-chat)", position: "relative" }}>
+            {/* Floating background bubbles */}
+            <style>{`
+              @keyframes cbf0{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-18px,22px) scale(1.04)}}
+              @keyframes cbf1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(14px,-20px) scale(0.96)}}
+              @keyframes cbf2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-10px,16px) scale(1.03)}}
+              @keyframes cbf3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(12px,-12px) scale(0.97)}}
+              @keyframes cbf4{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-8px,10px) scale(1.05)}}
+            `}</style>
+            <div aria-hidden style={{ position:"sticky", top:0, height:0, overflow:"visible", pointerEvents:"none", zIndex:0 }}>
+              <div style={{ position:"absolute", width:280, height:280, borderRadius:"50%", background:"rgba(68,114,184,0.05)", top:60, right:"6%", animation:"cbf0 11s ease-in-out infinite" }} />
+              <div style={{ position:"absolute", width:180, height:180, borderRadius:"50%", background:"rgba(232,115,90,0.04)", top:240, left:"8%", animation:"cbf1 14s ease-in-out infinite" }} />
+              <div style={{ position:"absolute", width:110, height:110, borderRadius:"50%", background:"rgba(68,114,184,0.07)", top:460, left:"20%", animation:"cbf2 9s ease-in-out infinite" }} />
+              <div style={{ position:"absolute", width:70,  height:70,  borderRadius:"50%", background:"rgba(232,115,90,0.05)", top:180, right:"28%", animation:"cbf3 12s ease-in-out infinite" }} />
+              <div style={{ position:"absolute", width:50,  height:50,  borderRadius:"50%", background:"rgba(109,163,212,0.08)", top:380, right:"15%", animation:"cbf4 8s ease-in-out infinite" }} />
+            </div>
 
             {/* Empty state */}
             {messages.length === 0 && (
@@ -970,7 +1144,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             <div style={{
               margin: "0 0.75rem 4px",
               background: "#f0f4fa",
-              borderLeft: "3px solid var(--brand)",
+              borderLeft: "3px solid #e8735a",
               borderRadius: 10, padding: "6px 12px",
               display: "flex", justifyContent: "space-between", alignItems: "center",
               animation: "slideUp 0.15s ease",
@@ -1002,8 +1176,21 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             </div>
           )}
 
+          {/* Blocked state bar — replaces input */}
+          {iBlockedThem && (
+            <div style={{ padding:"0.85rem 1rem", borderTop:"1px solid var(--border)", background:"var(--bg-secondary)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+              <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>You blocked <strong>{otherName}</strong>. They can't message you.</p>
+              <button onClick={unblockUser} style={{ fontSize:12, fontWeight:700, color:"var(--brand)", background:"none", border:"1px solid var(--brand)", borderRadius:99, padding:"5px 14px", cursor:"pointer", whiteSpace:"nowrap" }}>Unblock</button>
+            </div>
+          )}
+          {theyBlockedMe && !iBlockedThem && (
+            <div style={{ padding:"0.85rem 1rem", borderTop:"1px solid var(--border)", background:"var(--bg-secondary)", textAlign:"center" }}>
+              <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>This person is not available for messaging.</p>
+            </div>
+          )}
+
           {/* Input bar */}
-          <div style={{
+          {!iBlockedThem && !theyBlockedMe && <div style={{
             padding: "0.6rem 0.75rem 0.75rem",
             borderTop: "1px solid var(--border)",
             display: "flex", alignItems: "flex-end", gap: 8,
@@ -1069,11 +1256,11 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             {(text.trim() || imgFile) ? (
               <button onClick={handleSend} disabled={sending} style={{
                 width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-                background: "linear-gradient(135deg, #b8617a, #8d3f5c)",
+                background: "linear-gradient(135deg, #e8735a, #d15a43)",
                 color: "#fff", border: "none", cursor: sending ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "transform 0.15s, opacity 0.15s",
-                boxShadow: "0 2px 10px rgba(184, 97, 122,0.35)",
+                boxShadow: "0 2px 10px rgba(232,115,90,0.38)",
                 opacity: sending ? 0.7 : 1,
               }}
                 onMouseEnter={(e) => { if (!sending) e.currentTarget.style.transform = "scale(1.07)"; }}
@@ -1092,19 +1279,19 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             ) : (
               <button onClick={handleHeart} style={{
                 width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-                background: "none", border: "none", cursor: "pointer",
-                color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "color 0.15s",
+                background: "rgba(194,92,92,0.08)", border: "none", cursor: "pointer",
+                color: "#c25c5c", display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "background 0.15s, transform 0.15s",
               }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "#c25c5c"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(194,92,92,0.18)"; e.currentTarget.style.transform = "scale(1.1)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(194,92,92,0.08)"; e.currentTarget.style.transform = "scale(1)"; }}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
               </button>
             )}
-          </div>
+          </div>}
         </div>
       ) : (
         /* No conversation selected */
@@ -1125,7 +1312,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           </p>
           <button onClick={() => setShowNewChat(true)} style={{
             marginTop: 4, padding: "9px 22px", borderRadius: 99,
-            background: "linear-gradient(135deg, #b8617a, #8d3f5c)",
+            background: "linear-gradient(135deg, #4472b8, #1d4896)",
             color: "#fff", border: "none", fontSize: 13, fontWeight: 700,
             cursor: "pointer", boxShadow: "0 2px 12px rgba(184, 97, 122,0.3)",
             transition: "transform 0.15s",
@@ -1135,6 +1322,63 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           >
             Send Message
           </button>
+        </div>
+      )}
+
+      {/* ── Report modal ── */}
+      {reportModal && (
+        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center" }}
+          onClick={() => { if (!reportSubmitting) setReportModal(false); }}>
+          <div style={{ background:"var(--bg-primary,#fff)", borderRadius:20, padding:"1.5rem 1.75rem", maxWidth:400, width:"90%", boxShadow:"0 8px 40px rgba(0,0,0,0.22)" }}
+            onClick={e => e.stopPropagation()}>
+            {reportSent ? (
+              <div style={{ textAlign:"center", padding:"1rem 0" }}>
+                <div style={{ fontSize:36, marginBottom:8 }}>✅</div>
+                <p style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>Report submitted</p>
+                <p style={{ fontSize:13, color:"var(--text-muted)", marginTop:4 }}>Our admins will review it soon.</p>
+              </div>
+            ) : (
+              <>
+                <p style={{ fontSize:16, fontWeight:800, color:"var(--text-primary)", margin:"0 0 4px" }}>Report {otherName}</p>
+                <p style={{ fontSize:13, color:"var(--text-muted)", margin:"0 0 1rem" }}>Tell us what's happening. Admins will review this report.</p>
+                <textarea
+                  autoFocus
+                  value={reportReason}
+                  onChange={e => { setReportReason(e.target.value); setReportError(""); }}
+                  placeholder="Describe the issue…"
+                  disabled={reportSubmitting}
+                  style={{ width:"100%", padding:"10px 14px", border:`1.5px solid ${reportError ? "#e9415b" : "var(--border)"}`, borderRadius:12, fontSize:13, fontFamily:"var(--font)", resize:"none", minHeight:90, outline:"none", boxSizing:"border-box", color:"var(--text-primary)", background:"var(--bg-secondary)", opacity: reportSubmitting ? 0.7 : 1 }}
+                  onFocus={e => e.target.style.borderColor = reportError ? "#e9415b" : "var(--brand)"}
+                  onBlur={e => e.target.style.borderColor = reportError ? "#e9415b" : "var(--border)"}
+                />
+                {reportError && <p style={{ fontSize:12, color:"#e9415b", margin:"4px 0 0", fontWeight:500 }}>{reportError}</p>}
+                <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:"1rem" }}>
+                  <button onClick={() => setReportModal(false)} disabled={reportSubmitting} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:600, background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", cursor:"pointer" }}>Cancel</button>
+                  <button onClick={submitReport} disabled={!reportReason.trim() || reportSubmitting} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:700, background:"#e9415b", color:"#fff", border:"none", cursor: (!reportReason.trim() || reportSubmitting) ? "not-allowed" : "pointer", opacity: (!reportReason.trim() || reportSubmitting) ? 0.5 : 1 }}>
+                    {reportSubmitting ? "Sending…" : "Submit Report"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Block confirm ── */}
+      {blockConfirm && (
+        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center" }}
+          onClick={() => setBlockConfirm(false)}>
+          <div style={{ background:"var(--bg-primary,#fff)", borderRadius:20, padding:"1.5rem 1.75rem", maxWidth:380, width:"90%", boxShadow:"0 8px 40px rgba(0,0,0,0.22)" }}
+            onClick={e => e.stopPropagation()}>
+            <p style={{ fontSize:16, fontWeight:800, color:"#c25c5c", margin:"0 0 8px" }}>Block {otherName}?</p>
+            <p style={{ fontSize:13, color:"var(--text-muted)", margin:"0 0 1.25rem", lineHeight:1.6 }}>
+              They won't be able to message you, see your posts, or send you help requests. Admins are not affected by blocks. You can unblock them any time.
+            </p>
+            <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+              <button onClick={() => setBlockConfirm(false)} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:600, background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", cursor:"pointer" }}>Cancel</button>
+              <button onClick={blockUser} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:700, background:"#c25c5c", color:"#fff", border:"none", cursor:"pointer" }}>Yes, Block</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

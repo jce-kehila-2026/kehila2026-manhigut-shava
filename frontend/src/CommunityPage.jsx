@@ -24,7 +24,7 @@ function getInitials(name) {
   return name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
 }
 function avatarColor(name) {
-  const colors = ["#b8617a", "#d48aa0", "#8d3f5c", "#c98aa3", "#a8607a", "#e0a4b6", "#7a3f5c"];
+  const colors = ["#4472b8", "#6da3d4", "#1d4896", "#6da3d4", "#4472b8", "#daeaf8", "#223468"];
   return colors[(name?.charCodeAt(0) || 0) % colors.length];
 }
 function isBirthdaySoon(birthdate) {
@@ -189,9 +189,10 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
     setPostingComment(true);
     const userSnap = await getDoc(doc(db, "users", currentUser.uid));
     const u = userSnap.data() || {};
+    const actorName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || currentUser.email;
     await addDoc(collection(db, "posts", post.id, "comments"), {
       authorId: currentUser.uid,
-      authorName: `${u.firstName || ""} ${u.lastName || ""}`.trim() || currentUser.email,
+      authorName: actorName,
       authorAvatar: u.avatarUrl || null,
       text: commentText.trim(),
       createdAt: new Date().toISOString(),
@@ -199,13 +200,16 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
     await updateDoc(doc(db, "posts", post.id), {
       commentCount: (post.commentCount || 0) + 1,
     });
+    logActivity({ type: "comment", actorId: currentUser.uid, actorName, targetId: post.id, targetType: "post", details: { text: commentText.trim().slice(0, 150) } });
     setCommentText("");
     setPostingComment(false);
   };
 
   const handleDeleteComment = async (commentId) => {
+    const cmt = comments.find(c => c.id === commentId);
     await deleteDoc(doc(db, "posts", post.id, "comments", commentId));
     setComments((prev) => prev.filter((c) => c.id !== commentId));
+    logActivity({ type: "comment_delete", actorId: currentUser.uid, targetId: commentId, targetType: "comment", details: { postId: post.id, text: cmt?.text?.slice(0, 100) } });
   };
 
   const handleEditComment = async (commentId, newText) => {
@@ -214,6 +218,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
       text: newText, edited: true, editedAt: new Date().toISOString(),
     });
     setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, text: newText, edited: true } : c));
+    logActivity({ type: "comment_edit", actorId: currentUser.uid, targetId: commentId, targetType: "comment", details: { postId: post.id, newText: newText.slice(0, 150) } });
   };
 
   const handleSaveEdit = async () => {
@@ -724,7 +729,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
       <div
         style={{
           background:
-            "linear-gradient(135deg, #b8617a 0%, #d48aa0 55%, #e8c5c5 100%)",
+            "linear-gradient(135deg, #4472b8 0%, #6da3d4 55%, #daeaf8 100%)",
           padding: "1.1rem 1.1rem 0.9rem",
           color: "#fff",
           position: "relative",
@@ -939,6 +944,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   const handleDeletePost = async (postId) => {
     if (!window.confirm(t?.community?.confirmDelete || "Delete this post?")) return;
     await deleteDoc(doc(db, "posts", postId));
+    logActivity({ type: "post_delete", actorId: user.uid, actorName: `${authProfile?.firstName || ""} ${authProfile?.lastName || ""}`.trim(), targetId: postId, targetType: "post" });
   };
 
   const handleRepost = async (originalPost, thoughts) => {
@@ -967,23 +973,57 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
     await updateDoc(doc(db, "helpRequests", reqId), { status, responderName });
   };
 
-  const pinnedPosts  = posts.filter((p) => p.isPinned);
-  const regularPosts = posts.filter((p) => !p.isPinned);
+  const blockedIds = authProfile?.isAdmin ? [] : (authProfile?.blockedUsers || []);
+  const visiblePosts = posts.filter(p => !blockedIds.includes(p.authorId));
+  const pinnedPosts  = visiblePosts.filter((p) => p.isPinned);
+  const regularPosts = visiblePosts.filter((p) => !p.isPinned);
 
   return (
-    <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", background: "var(--bg-secondary)" }}>
+    <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", background: "var(--bg-secondary)", position: "relative" }}>
+      {/* Floating bubble background */}
+      <style>{`
+        @keyframes comm-blob-1{0%,100%{border-radius:62% 38% 52% 48%/44% 56% 44% 56%;transform:translate(0,0) scale(1);}33%{border-radius:40% 60% 65% 35%/58% 42% 62% 38%;transform:translate(-18px,-30px) scale(1.04);}66%{border-radius:55% 45% 38% 62%/36% 60% 40% 64%;transform:translate(14px,22px) scale(0.97);}}
+        @keyframes comm-blob-2{0%,100%{border-radius:52% 48% 60% 40%/44% 56% 48% 52%;transform:translate(0,0) rotate(0deg);}50%{border-radius:38% 62% 44% 56%/60% 40% 56% 44%;transform:translate(24px,-20px) rotate(4deg);}}
+        @keyframes comm-sb-0{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-22px) scale(1.06)}}
+        @keyframes comm-sb-1{0%,100%{transform:translateY(-8px)}50%{transform:translateY(16px)}}
+        @keyframes comm-sb-2{0%,100%{transform:translateY(5px) scale(0.96)}50%{transform:translateY(-20px) scale(1.04)}}
+        @keyframes comm-sb-3{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+        @keyframes comm-sb-4{0%,100%{transform:translateY(-4px) scale(1)}50%{transform:translateY(12px) scale(1.08)}}
+        @keyframes comm-sb-5{0%,100%{transform:translateY(0) scale(1.02)}50%{transform:translateY(-18px) scale(0.97)}}
+        @keyframes comm-sb-6{0%,100%{transform:translateY(-6px)}50%{transform:translateY(20px)}}
+      `}</style>
+      <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
+        <div style={{ position:"absolute", width:"55%", height:"110%", top:"-15%", right:"-8%",
+          background:"radial-gradient(ellipse at center, rgba(68,114,184,0.08) 0%, transparent 68%)",
+          animation:"comm-blob-1 28s ease-in-out infinite", willChange:"border-radius, transform" }}/>
+        <div style={{ position:"absolute", width:"42%", height:"75%", top:"25%", left:"-6%",
+          background:"radial-gradient(ellipse at center, rgba(68,114,184,0.06) 0%, transparent 68%)",
+          animation:"comm-blob-2 22s 4s ease-in-out infinite", willChange:"border-radius, transform" }}/>
+        <div style={{ position:"absolute", width:"35%", height:"55%", top:"-4%", left:"22%",
+          background:"radial-gradient(ellipse at center, rgba(232,115,90,0.06) 0%, transparent 68%)",
+          animation:"comm-blob-1 32s 8s ease-in-out infinite", willChange:"border-radius, transform" }}/>
+        {[{s:30,t:"12%",l:-6,c:"rgba(68,114,184,0.12)",a:"comm-sb-0",d:"21s"},{s:18,t:"35%",l:8,c:"rgba(68,114,184,0.08)",a:"comm-sb-1",d:"26s"},{s:38,t:"58%",l:-8,c:"rgba(68,114,184,0.07)",a:"comm-sb-2",d:"19s"},{s:22,t:"78%",l:5,c:"rgba(232,115,90,0.08)",a:"comm-sb-3",d:"23s"}].map((b,i)=>(
+          <div key={`cl${i}`} style={{ position:"absolute", width:b.s, height:b.s, borderRadius:"50%",
+            top:b.t, left:b.l, background:b.c, animation:`${b.a} ${b.d} ${i*3}s ease-in-out infinite` }}/>
+        ))}
+        {[{s:26,t:"18%",r:-4,c:"rgba(232,115,90,0.10)",a:"comm-sb-4",d:"24s"},{s:34,t:"42%",r:-10,c:"rgba(68,114,184,0.07)",a:"comm-sb-5",d:"20s"},{s:20,t:"65%",r:6,c:"rgba(232,115,90,0.08)",a:"comm-sb-6",d:"27s"},{s:30,t:"82%",r:-6,c:"rgba(68,114,184,0.09)",a:"comm-sb-0",d:"22s"}].map((b,i)=>(
+          <div key={`cr${i}`} style={{ position:"absolute", width:b.s, height:b.s, borderRadius:"50%",
+            top:b.t, right:b.r, background:b.c, animation:`${b.a} ${b.d} ${i*4+2}s ease-in-out infinite` }}/>
+        ))}
+      </div>
       <div style={{
         maxWidth: 1040, width: "100%", margin: "0 auto",
         padding: "1.75rem 1.5rem 0.5rem",
+        position: "relative", zIndex: 1,
       }}>
         <h1 style={{
           fontFamily: "var(--font-display)",
           fontSize: 28, fontWeight: 700,
           color: "var(--text-primary)",
           letterSpacing: "-0.02em",
-        }}>Community</h1>
+        }}>{t.community.title}</h1>
         <p style={{ fontSize: 13.5, color: "var(--text-secondary)", marginTop: 4 }}>
-          Share updates, ask for support, and celebrate each other.
+          {t.community.subtitle}
         </p>
       </div>
 
@@ -993,6 +1033,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
         display: "grid",
         gridTemplateColumns: "1fr 280px",
         gap: "1.5rem",
+        position: "relative", zIndex: 1,
         alignItems: "start",
       }}>
 

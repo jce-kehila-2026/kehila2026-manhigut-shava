@@ -5,49 +5,54 @@
   --font:         'Figtree', 'Heebo', system-ui, sans-serif;
   --font-display: 'Outfit', 'Heebo', system-ui, sans-serif;
 
-  /* Brand — Rose & Plum */
-  --brand:        #b8617a;   /* dusty rose */
-  --brand-dark:   #8d3f5c;   /* deeper rose */
-  --brand-light:  #d48aa0;   /* light rose */
-  --brand-pale:   #f5e3e8;   /* whisper rose */
-  --brand-glow:   rgba(184, 97, 122, 0.18);
+  /* Brand — Professional Blue */
+  --brand:        #4472b8;   /* soft blue */
+  --brand-dark:   #1d4896;   /* deep blue */
+  --brand-light:  #6da3d4;   /* light blue */
+  --brand-pale:   #daeaf8;   /* whisper blue */
+  --brand-glow:   rgba(68, 114, 184, 0.18);
 
-  --plum:         #4a1f3d;   /* deep plum — primary text/headers */
-  --plum-soft:    #6d3358;
-  --cream:        #fdf8f6;   /* page background */
-  --blush:        #e8c5c5;   /* accent blush */
+  /* Coral accent */
+  --coral:        #e8735a;
+  --coral-dark:   #c4503a;
+  --coral-light:  #f5a08c;
+
+  --plum:         #111827;   /* primary dark text */
+  --plum-soft:    #374151;
+  --cream:        #fdf9f7;   /* page background */
+  --blush:        #daeaf8;   /* accent (blue pale) */
 
   /* Backgrounds */
   --bg-primary:   #ffffff;
-  --bg-secondary: #fdf8f6;
-  --bg-tertiary:  #f7ecec;
-  --bg-hover:     #faeef0;
+  --bg-secondary: #fdf9f7;
+  --bg-tertiary:  #f0f6fb;
+  --bg-hover:     #f0f6fb;
 
-  /* Sidebar — soft plum, not harsh navy */
-  --sidebar-bg:        #2e1428;
-  --sidebar-hover:     rgba(255,255,255,0.06);
-  --sidebar-active:    rgba(232, 197, 197, 0.18);
-  --sidebar-text:      rgba(253, 248, 246, 0.62);
-  --sidebar-active-text: #fdf8f6;
+  /* Sidebar — deep navy */
+  --sidebar-bg:         #1a2f5e;
+  --sidebar-hover:      rgba(255,255,255,0.06);
+  --sidebar-active:     rgba(218,234,248,0.18);
+  --sidebar-text:       rgba(240,246,251,0.65);
+  --sidebar-active-text:#f0f6fb;
 
   /* Text */
-  --text-primary:   #4a1f3d;
-  --text-secondary: #7a5868;
-  --text-muted:     #b09aa3;
-  --text-disabled:  #d9c8ce;
+  --text-primary:   #111827;
+  --text-secondary: #374151;
+  --text-muted:     #6b7280;
+  --text-disabled:  #9ca3af;
 
   /* Borders */
-  --border:       #f0dce0;
-  --border-focus: #b8617a;
+  --border:       #daeaf8;
+  --border-focus: #4472b8;
 
-  /* Status (softened) */
+  /* Status */
   --online:   #7ba87a;
   --away:     #d4a574;
   --danger:   #c25c5c;
   --success:  #7ba87a;
   --warning:  #d4a574;
 
-  /* Radii — softer */
+  /* Radii */
   --r-xs:   6px;
   --r-sm:   10px;
   --r-md:   14px;
@@ -56,19 +61,19 @@
   --r-2xl:  32px;
   --r-full: 9999px;
 
-  /* Shadows — warmer, softer */
-  --shadow-xs: 0 1px 2px rgba(74,31,61,0.05);
-  --shadow-sm: 0 2px 8px rgba(74,31,61,0.06);
-  --shadow-md: 0 6px 20px rgba(74,31,61,0.08);
-  --shadow-lg: 0 12px 36px rgba(74,31,61,0.10);
-  --shadow-xl: 0 20px 56px rgba(74,31,61,0.14);
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(68,114,184,0.05);
+  --shadow-sm: 0 2px 8px rgba(68,114,184,0.06);
+  --shadow-md: 0 6px 20px rgba(68,114,184,0.10);
+  --shadow-lg: 0 12px 36px rgba(68,114,184,0.13);
+  --shadow-xl: 0 20px 56px rgba(68,114,184,0.16);
 
   /* Chat */
-  --bg-chat:          #faeef0;
-  --bubble-me:        #b8617a;
+  --bg-chat:          #f0f6fb;
+  --bubble-me:        #4472b8;
   --bubble-them:      #ffffff;
   --bubble-me-text:   #ffffff;
-  --bubble-them-text: #4a1f3d;
+  --bubble-them-text: #111827;
 
   /* Transitions */
   --t-fast:   0.14s ease;
@@ -109,15 +114,15 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover { background: var(--brand); }
 
 /* ── Keyframes ── */
-@keyframes spin    { to { transform: rotate(360deg); } }
-@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-@keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin       { to { transform: rotate(360deg); } }
+@keyframes fadeIn     { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp    { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideDown  { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
 @keyframes slideRight { from { opacity:0; transform:translateX(-14px); } to { opacity:1; transform:translateX(0); } }
-@keyframes popIn  { 0%{transform:scale(0.86);opacity:0;} 70%{transform:scale(1.03);} 100%{transform:scale(1);opacity:1;} }
-@keyframes shimmer { 0%{background-position:-200% 0;} 100%{background-position:200% 0;} }
+@keyframes popIn      { 0%{transform:scale(0.86);opacity:0;} 70%{transform:scale(1.03);} 100%{transform:scale(1);opacity:1;} }
+@keyframes shimmer    { 0%{background-position:-200% 0;} 100%{background-position:200% 0;} }
 @keyframes typingBounce { 0%,80%,100%{transform:translateY(0);opacity:.4;} 40%{transform:translateY(-5px);opacity:1;} }
-@keyframes likePopIn { 0%{transform:scale(1);} 30%{transform:scale(1.45);} 60%{transform:scale(.92);} 100%{transform:scale(1);} }
+@keyframes likePopIn  { 0%{transform:scale(1);} 30%{transform:scale(1.45);} 60%{transform:scale(.92);} 100%{transform:scale(1);} }
 @keyframes bannerFlow { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
 
 /* ── Animation helpers ── */
@@ -139,7 +144,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--r-sm);
 }
 
-/* ── Typing indicator dots ── */
+/* ── Typing indicator ── */
 .typing-dot {
   display: inline-block; width: 6px; height: 6px;
   background: var(--text-muted); border-radius: 50%;
@@ -155,8 +160,8 @@ h1, h2, h3, h4, h5, h6 {
   border: 2px solid var(--bg-primary);
   background: var(--online);
 }
-.online-dot.lg    { width: 13px; height: 13px; border-width: 2.5px; }
-.online-dot.dark  { border-color: var(--sidebar-bg); }
+.online-dot.lg   { width: 13px; height: 13px; border-width: 2.5px; }
+.online-dot.dark { border-color: var(--sidebar-bg); }
 
 /* ── Like animation ── */
 .like-pop { animation: likePopIn 0.35s ease; }
@@ -179,14 +184,13 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex; align-items: center;
   font-size: 11px; font-weight: 600;
   padding: 3px 10px; border-radius: var(--r-full);
-  white-space: nowrap;
-  letter-spacing: 0.02em;
+  white-space: nowrap; letter-spacing: 0.02em;
 }
 .badge-green  { background: #e4efe0; color: #4a6741; border: 1px solid #c8dcbe; }
 .badge-yellow { background: #f7ecd6; color: #8a6224; border: 1px solid #e8d4a8; }
 .badge-purple { background: var(--brand-pale); color: var(--brand-dark); border: 1px solid var(--blush); }
 .badge-red    { background: #f7dcdc; color: #8d3a3a; border: 1px solid #e8b8b8; }
-.badge-blue   { background: #f5e3e8; color: var(--brand-dark); border: 1px solid var(--blush); }
+.badge-blue   { background: var(--brand-pale); color: var(--brand-dark); border: 1px solid var(--blush); }
 
 /* ── Empty state ── */
 .empty-state {
@@ -204,40 +208,47 @@ h1, h2, h3, h4, h5, h6 {
   border: 1.5px solid var(--border); border-radius: var(--r-md);
   background: var(--bg-primary); color: var(--text-primary);
   font-family: var(--font); width: 100%; box-sizing: border-box;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
   outline: none;
 }
-.input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-glow); background: var(--bg-primary); }
+.input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-glow); }
 
-/* ── Dark mode CSS variable overrides ── */
+/* ── Dark mode ── */
 html.dark-mode {
-  --bg-primary:   #2e1f28;
-  --bg-secondary: #1d1119;
-  --bg-tertiary:  #3a2632;
-  --bg-hover:     #3d2832;
+  --bg-primary:   #1e1e22;
+  --bg-secondary: #141416;
+  --bg-tertiary:  #26262c;
+  --bg-hover:     #2c2c34;
 
-  --sidebar-bg:    #160a12;
-  --sidebar-hover: rgba(255,255,255,0.05);
-  --sidebar-active: rgba(232, 197, 197, 0.20);
+  --sidebar-bg:    #0f0f12;
+  --sidebar-hover: rgba(255,255,255,0.06);
+  --sidebar-active:rgba(218,234,248,0.13);
 
-  --text-primary:   #fdf2f0;
-  --text-secondary: #d9b8c2;
-  --text-muted:     #9a7d89;
-  --text-disabled:  #5a4450;
+  --text-primary:   #f0edea;
+  --text-secondary: #a8a4ae;
+  --text-muted:     #6a6672;
+  --text-disabled:  #3a3840;
 
-  --border:       #4a2e3c;
-  --border-focus: #d48aa0;
+  --border:       #2e2c36;
+  --border-focus: #6da3d4;
 
-  --bg-chat:          #1d1119;
-  --bubble-them:      #2e1f28;
-  --bubble-them-text: #fdf2f0;
+  --bg-chat:          #141416;
+  --bubble-them:      #26262c;
+  --bubble-them-text: #f0edea;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.25);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.30);
+  --shadow-md: 0 6px 20px rgba(0,0,0,0.35);
+  --shadow-lg: 0 12px 36px rgba(0,0,0,0.40);
 }
-html.dark-mode h1,html.dark-mode h2,html.dark-mode h3,html.dark-mode h4,html.dark-mode h5,html.dark-mode h6 { color: #fdf2f0; }
-html.dark-mode .badge-green  { background: #2d3d27; color: #b8d4ae; border-color: #4a6741; }
-html.dark-mode .badge-yellow { background: #4a3818; color: #e8d4a8; border-color: #8a6224; }
-html.dark-mode .badge-purple { background: #4a1f3d; color: #e8c5c5; border-color: #8d3f5c; }
-html.dark-mode .badge-red    { background: #4a2020; color: #e8b8b8; border-color: #8d3a3a; }
-html.dark-mode .badge-blue   { background: #4a1f3d; color: #e8c5c5; border-color: #8d3f5c; }
+html.dark-mode h1,html.dark-mode h2,html.dark-mode h3,
+html.dark-mode h4,html.dark-mode h5,html.dark-mode h6 { color: #f0edea; }
+html.dark-mode .card { border-color: #2e2c36; }
+html.dark-mode .badge-green  { background: #1e2d1a; color: #9ecb94; border-color: #3a5a34; }
+html.dark-mode .badge-yellow { background: #2e2210; color: #d4b87a; border-color: #6a4e20; }
+html.dark-mode .badge-purple { background: #22203a; color: #9899d4; border-color: #3a3860; }
+html.dark-mode .badge-red    { background: #2e1818; color: #d4a0a0; border-color: #6a3030; }
+html.dark-mode .badge-blue   { background: #1a2236; color: #7aaecc; border-color: #2a3850; }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
