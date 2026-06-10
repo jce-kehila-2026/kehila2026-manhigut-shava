@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { doc, updateDoc, collection, getDocs, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
@@ -222,6 +222,30 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   const pendingRequests = helpRequests.filter((r) => !r.status);
 
+  const bdayStatus = useMemo(() => {
+    const bd = profile?.birthDate || profile?.birthdate;
+    if (!bd) return null;
+    const date = new Date(bd + (bd.includes("T") ? "" : "T00:00:00"));
+    const now = new Date();
+    if (date.getMonth() === now.getMonth() && date.getDate() === now.getDate()) return { type: "today" };
+    let next = new Date(now.getFullYear(), date.getMonth(), date.getDate());
+    if (next <= now) next.setFullYear(now.getFullYear() + 1);
+    const days = Math.round((next - now) / 864e5);
+    if (days <= 7) return { type: "soon", days };
+    return null;
+  }, [profile?.birthDate, profile?.birthdate]);
+
+  const confettiPieces = useMemo(() =>
+    Array.from({ length: 24 }).map((_, i) => ({
+      left: (i * 4.2 + (i % 3) * 2.5) % 97,
+      delay: (i * 0.085) % 0.85,
+      dur: 1.1 + (i % 4) * 0.18,
+      color: ["#4472b8","#e8735a","#7ba87a","#d4a574","#c084fc","#f472b6","#facc15"][i % 7],
+      circle: i % 3 !== 0,
+      size: 6 + (i % 4) * 2,
+    })), []
+  );
+
   const quickCircles = [
     { icon: Icon.members,   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
     { icon: Icon.community, title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
@@ -231,6 +255,61 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", maxWidth: "100%", padding: isMobile ? "1.25rem 1rem 1.5rem" : "2.25rem 2.75rem" }}>
+      {/* ── Birthday banner ── */}
+      {bdayStatus?.type === "today" && (
+        <div style={{
+          position:"relative", overflow:"hidden",
+          marginBottom:"1.25rem", borderRadius:20,
+          background:"linear-gradient(135deg,#4472b8 0%,#7b3fe4 50%,#e8735a 100%)",
+          backgroundSize:"200% 200%",
+          animation:"bannerFlow 5s ease infinite, bday-banner-in 0.5s ease both",
+          padding: isMobile ? "1rem 1.25rem" : "1.25rem 1.75rem",
+          display:"flex", alignItems:"center", gap:14, color:"#fff",
+          boxShadow:"0 8px 32px rgba(68,114,184,0.28)",
+        }}>
+          {confettiPieces.map((p, i) => (
+            <div key={i} style={{
+              position:"absolute", top:0, left:`${p.left}%`,
+              width:p.size, height:p.size,
+              borderRadius: p.circle ? "50%" : 3,
+              background:p.color,
+              animation:`bday-confetti ${p.dur}s ${p.delay}s ease-in infinite`,
+              pointerEvents:"none", zIndex:0,
+            }}/>
+          ))}
+          <div style={{fontSize: isMobile ? 28 : 36, zIndex:1, flexShrink:0}}>🎉</div>
+          <div style={{zIndex:1, flex:1, minWidth:0}}>
+            <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 2px",color:"rgba(255,255,255,0.75)"}}>
+              {t.dash?.happyBirthday || "Happy Birthday!"}
+            </p>
+            <h2 style={{fontSize: isMobile ? 18 : 22,fontWeight:800,margin:"0 0 3px",fontFamily:"var(--font-display)"}}>
+              {profile?.firstName ? `${profile.firstName}! 🎂` : "🎂"}
+            </h2>
+            <p style={{fontSize:12,color:"rgba(255,255,255,0.72)",margin:0}}>
+              {t.dash?.birthdayWish || "Wishing you an amazing day — you deserve it!"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {bdayStatus?.type === "soon" && (
+        <div style={{
+          marginBottom:"1rem", borderRadius:14,
+          background:"var(--brand-pale)",
+          border:"1px solid var(--blush)",
+          padding:"0.75rem 1.1rem",
+          display:"flex", alignItems:"center", gap:10,
+          animation:"bday-banner-in 0.4s ease both",
+        }}>
+          <span style={{fontSize:20, flexShrink:0}}>🎂</span>
+          <p style={{fontSize:13,color:"var(--brand-dark)",fontWeight:600,margin:0}}>
+            {t.dash?.birthdaySoon
+              ? t.dash.birthdaySoon.replace("{n}", bdayStatus.days)
+              : `Your birthday is coming in ${bdayStatus.days} day${bdayStatus.days > 1 ? "s" : ""}!`}
+          </p>
+        </div>
+      )}
+
       {/* Welcome banner — redesigned */}
       {(() => {
         const hr = new Date().getHours();

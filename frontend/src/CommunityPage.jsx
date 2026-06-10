@@ -142,7 +142,7 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
 }
 
 /* ── Post card ── */
-function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfile, onMessage }) {
+function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfile, onMessage, onPin }) {
   const { t } = useLang();
   const [liked,    setLiked]    = useState((post.likedBy || []).includes(currentUser?.uid));
   const [likes,    setLikes]    = useState(post.likesCount || (post.likedBy?.length || 0));
@@ -284,8 +284,20 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
           </p>
         </div>
 
-        {(canEdit || canDelete) && (
+        {(canEdit || canDelete || isAdmin) && (
           <div style={{ display: "flex", gap: 4 }}>
+            {isAdmin && onPin && (
+              <button
+                onClick={() => onPin(post.id, !post.isPinned)}
+                title={post.isPinned ? "Unpin post" : "Pin post"}
+                style={{ padding: "5px 10px", borderRadius: "var(--r-sm)", fontSize: 11, fontWeight: 600, background: post.isPinned ? "var(--brand-pale)" : "none", border: `1px solid ${post.isPinned ? "var(--brand-light)" : "var(--border)"}`, color: post.isPinned ? "var(--brand-dark)" : "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--brand-pale)"; e.currentTarget.style.color = "var(--brand-dark)"; e.currentTarget.style.borderColor = "var(--brand-light)"; }}
+                onMouseLeave={(e) => { if (!post.isPinned) { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "var(--border)"; } }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M14 4l6 6-4 1-3 5-2-2-5 5-1-1 5-5-2-2 5-3 1-4z"/></svg>
+                {post.isPinned ? "Pinned" : "Pin"}
+              </button>
+            )}
             {canEdit && (
               <button
                 onClick={() => { setEditingId(post.id); setEditText(post.text || ""); }}
@@ -949,6 +961,10 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
     logActivity({ type: "post_delete", actorId: user.uid, actorName: `${authProfile?.firstName || ""} ${authProfile?.lastName || ""}`.trim(), targetId: postId, targetType: "post" });
   };
 
+  const handlePinPost = async (postId, pin) => {
+    await updateDoc(doc(db, "posts", postId), { isPinned: pin });
+  };
+
   const handleRepost = async (originalPost, thoughts) => {
     if (!user || !profile) return;
     const authorName = `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || user.email;
@@ -1061,6 +1077,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             <PostCard key={p.id} post={p} currentUser={user} isAdmin={authProfile?.isAdmin}
               onDelete={handleDeletePost} onRepost={handleRepost}
               onViewProfile={onViewProfile} onMessage={onMessage}
+              onPin={handlePinPost}
             />
           ))}
 
@@ -1090,6 +1107,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             <PostCard key={p.id} post={p} currentUser={user} isAdmin={authProfile?.isAdmin}
               onDelete={handleDeletePost} onRepost={handleRepost}
               onViewProfile={onViewProfile} onMessage={onMessage}
+              onPin={handlePinPost}
             />
           ))}
         </div>
