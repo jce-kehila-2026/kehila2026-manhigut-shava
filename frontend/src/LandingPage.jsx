@@ -207,7 +207,19 @@ if (!document.getElementById("lp-css")) {
   s.id = "lp-css";
   s.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    .lp-root{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#111827;}
+
+    :root {
+      --lp-bg:      #fdf9f7;
+      --lp-bg-blue: #f0f6fb;
+      --lp-ink:     #111827;
+    }
+    html.dark-mode {
+      --lp-bg:      #0f172a;
+      --lp-bg-blue: #131f35;
+      --lp-ink:     #e2e8f0;
+    }
+
+    .lp-root{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--lp-ink);background:var(--lp-bg);}
     .lp-root h1,.lp-root h2,.lp-root h3{font-family:'Playfair Display',Georgia,serif;}
 
     @keyframes lp-out     {to{transform:translateX(110%);}}
@@ -542,7 +554,7 @@ function HeroWaves({ C }) {
       <svg viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"
         style={{position:"absolute",bottom:-1,width:"100%",height:90,
           animation:"lp-wave-a 9s ease-in-out infinite"}}>
-        <path d="M0,45 C360,90 1080,0 1440,45 L1440,90 L0,90 Z" fill={C.bg}/>
+        <path d="M0,45 C360,90 1080,0 1440,45 L1440,90 L0,90 Z" fill="var(--lp-bg)"/>
       </svg>
     </div>
   );
@@ -1104,7 +1116,7 @@ export default function LandingPage({ onLogin }) {
   });
 
   return (
-    <div className="lp-root" style={{background:C.bg,minHeight:"100vh",overflowX:"hidden",direction:dir}}>
+    <div className="lp-root" style={{minHeight:"100vh",overflowX:"hidden",direction:dir}}>
       {!introComplete && <IntroOverlay T={T} onDone={handleIntroDone}/>}
       <FloatNavDots sections={navSections} visible={heroOut && !isMobile} isRTL={isRTL} C={C}/>
 
@@ -1122,7 +1134,7 @@ export default function LandingPage({ onLogin }) {
           position:"relative",
           background: isMobile
             ? `linear-gradient(160deg,${C.blueD} 0%,${C.blue} 60%,${C.blueL} 100%)`
-            : C.bg,
+            : "var(--lp-bg)",
         }}
       >
         <BackgroundBlobs/>
@@ -1345,7 +1357,7 @@ export default function LandingPage({ onLogin }) {
       ══════════════════════════════════════ */}
       <div ref={quoteRef} style={{
         position:"relative",
-        background:C.bg,
+        background:"var(--lp-bg)",
         minHeight:500,
         overflow:"hidden",
         zIndex:1,
@@ -1371,33 +1383,33 @@ export default function LandingPage({ onLogin }) {
           pointerEvents:"none",
         }}/>
 
-        {/* Quote — inside the blob, shifted left */}
+        {/* Quote — centered inside the dark blue blob */}
         <div style={{
           position:"relative",zIndex:2,
-          display:"flex",flexDirection:"column",alignItems:"flex-start",justifyContent:"center",
-          minHeight: isMobile ? 320 : 500,
-          padding: isMobile ? "3rem 2rem" : "5rem clamp(2rem,6vw,6rem) 5rem clamp(3rem,14vw,16rem)",
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+          minHeight: isMobile ? 300 : 480,
+          padding: isMobile ? "3rem 2rem" : "4rem clamp(2rem,8vw,12rem)",
           textAlign:"center",
         }}>
           <div className="lp-reveal" style={{
             opacity:quoteVis?1:0,
             transform:quoteVis?"none":"translateY(36px) scale(0.96)",
             filter:quoteVis?"none":"blur(6px)",
-            maxWidth:780, width:"100%",
+            maxWidth:620, width:"100%",
             display:"flex", flexDirection:"column", alignItems:"center",
           }}>
             <div style={{
-              width:quoteVis?80:0,height:3,borderRadius:99,
+              width:quoteVis?60:0,height:3,borderRadius:99,
               background:`linear-gradient(to right,${C.coral},${C.coralL})`,
-              marginBottom:"1.8rem",
+              marginBottom:"1.4rem",
               transition:"width 0.8s 0.2s cubic-bezier(0.2,0.8,0.2,1)",
             }}/>
             <blockquote style={{
-              fontSize:"clamp(18px,2.2vw,26px)",fontWeight:600,
-              color:C.white,lineHeight:1.75,margin:0,
+              fontSize:"clamp(14px,1.6vw,20px)",fontWeight:600,
+              color:C.white,lineHeight:1.8,margin:0,
               fontFamily:"'Plus Jakarta Sans','Outfit',system-ui,sans-serif",
               fontStyle:"normal",
-              textShadow:"0 2px 20px rgba(0,0,0,0.3)",
+              textShadow:"0 2px 16px rgba(0,0,0,0.4)",
               textAlign:"center",
               direction:"inherit",
             }}>
@@ -1431,7 +1443,7 @@ export default function LandingPage({ onLogin }) {
       }}>
         <div style={{
           position:"absolute",inset:0,
-          background:`linear-gradient(to bottom,${C.bg} 0%,transparent 18%,rgba(29,72,150,0.25) 65%,${C.bg} 96%)`,
+          background:`linear-gradient(to bottom,var(--lp-bg) 0%,transparent 18%,rgba(29,72,150,0.25) 65%,var(--lp-bg) 96%)`,
         }}/>
         <div className="lp-reveal" style={{
           position:"absolute",top:"50%",left:"50%",
@@ -1454,7 +1466,7 @@ export default function LandingPage({ onLogin }) {
       {/* ══════════════════════════════════════
           FEATURES
       ══════════════════════════════════════ */}
-      <section ref={featRef} style={{background:C.bg,padding:"5rem clamp(1.5rem,6vw,5rem)"}}>
+      <section ref={featRef} style={{background:"var(--lp-bg)",padding:"5rem clamp(1.5rem,6vw,5rem)"}}>
         <div style={{maxWidth:1100,margin:"0 auto"}}>
           <div {...reveal(featVis)}>
           <p style={{textAlign:"center",fontSize:12,fontWeight:700,color:C.coral,letterSpacing:"0.22em",textTransform:"uppercase",marginBottom:"0.6rem"}}>{T.featLabel}</p>
@@ -1479,7 +1491,7 @@ export default function LandingPage({ onLogin }) {
       {/* ══════════════════════════════════════
           SCREENSHOT FLIP GUIDE — how to use
       ══════════════════════════════════════ */}
-      <section ref={howRef} style={{background:C.bgBlue,padding:"5.5rem clamp(1.5rem,6vw,5rem)"}}>
+      <section ref={howRef} style={{background:"var(--lp-bg-blue)",padding:"5.5rem clamp(1.5rem,6vw,5rem)"}}>
         <div style={{maxWidth:860,margin:"0 auto"}}>
           <div className="lp-reveal" style={{opacity:howVis?1:0,transform:howVis?"none":"translateY(28px)"}}>
             <p style={{textAlign:"center",fontSize:12,fontWeight:700,color:C.blue,letterSpacing:"0.22em",textTransform:"uppercase",marginBottom:"0.6rem"}}>{T.howLabel}</p>
@@ -1495,7 +1507,7 @@ export default function LandingPage({ onLogin }) {
       {/* ══════════════════════════════════════
           WOMEN WHO LEAD
       ══════════════════════════════════════ */}
-      <section ref={leadRef} style={{background:C.bg,padding:"5rem clamp(1.5rem,6vw,5rem)",position:"relative",overflow:"hidden"}}>
+      <section ref={leadRef} style={{background:"var(--lp-bg)",padding:"5rem clamp(1.5rem,6vw,5rem)",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:"-10%",right:"-5%",width:400,height:400,borderRadius:"50%",
           background:`radial-gradient(circle,${C.bluePale} 0%,transparent 70%)`,
           filter:"blur(50px)",pointerEvents:"none"}}/>
@@ -1573,7 +1585,7 @@ export default function LandingPage({ onLogin }) {
           CONTACT & SOCIAL
       ══════════════════════════════════════ */}
       <section ref={footRef} style={{
-        background:C.bgBlue,
+        background:"var(--lp-bg-blue)",
         borderTop:`1px solid ${C.bluePale}`,
         padding:"3.5rem clamp(1.5rem,6vw,5rem)",
       }}>
