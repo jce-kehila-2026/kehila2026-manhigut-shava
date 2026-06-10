@@ -411,7 +411,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
           <h2 style={heading}>{Tr?.step1H||"הרשמה לרשת"}</h2>
           <p style={sub}>{Tr?.step1Sub||"מלאי את הפרטים האישיים שלך"}</p>
           {error && <div style={errBox}>{error}</div>}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.7rem" }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"0.7rem" }}>
             <Fld label={Tr?.firstNameLbl||"שם פרטי *"}>
               <input style={inputStyle("firstName")} name="firstName" value={form.firstName} onChange={set} placeholder="שם" required onFocus={focusOn} onBlur={focusOff}/>
             </Fld>

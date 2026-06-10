@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLang } from "./LanguageContext";
+import { useIsMobile } from "./hooks/useIsMobile";
 
 /* ── Palette ── */
 const C = {
@@ -1014,6 +1015,7 @@ function ScreenshotFlipGuide({ T, onLogin }) {
 ═══════════════════════════════════════════ */
 export default function LandingPage({ onLogin }) {
   const { isRTL, lang, setLang } = useLang();
+  const isMobile = useIsMobile();
   const T   = LP[lang] ?? LP.he;
   const dir = isRTL ? "rtl" : "ltr";
 
@@ -1088,7 +1090,7 @@ export default function LandingPage({ onLogin }) {
   return (
     <div className="lp-root" style={{background:C.bg,minHeight:"100vh",overflowX:"hidden",direction:dir}}>
       {!introComplete && <IntroOverlay T={T} onDone={handleIntroDone}/>}
-      <FloatNavDots sections={navSections} visible={heroOut} isRTL={isRTL}/>
+      <FloatNavDots sections={navSections} visible={heroOut && !isMobile} isRTL={isRTL}/>
 
       {/* ══════════════════════════════════════
           HERO — full cream background, waves,
@@ -1098,17 +1100,19 @@ export default function LandingPage({ onLogin }) {
       <section
         ref={heroRef}
         style={{
-          minHeight:"100vh",
+          minHeight:"100dvh",
           display:"grid",
-          gridTemplateColumns:"1fr 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
           position:"relative",
-          background:"#ffffff",
+          background: isMobile
+            ? `linear-gradient(160deg,${C.blueD} 0%,${C.blue} 60%,${C.blueL} 100%)`
+            : "#ffffff",
         }}
       >
         <BackgroundBlobs/>
 
-        {/* Vertical blob — organic divider, z-index above quote section so bottom bleeds naturally */}
-        <div style={{
+        {/* Vertical blob — organic divider, hidden on mobile */}
+        {!isMobile && <div style={{
           position:"absolute",
           ...(isRTL ? {left:"-5%"} : {right:"-5%"}),
           top:"-25%",
@@ -1118,9 +1122,9 @@ export default function LandingPage({ onLogin }) {
           willChange:"border-radius, transform",
           zIndex:4,
           pointerEvents:"none",
-        }}/>
-        {/* Small circle blob — lower-left of the vertical blob */}
-        <div style={{
+        }}/>}
+        {/* Small circle blob — hidden on mobile */}
+        {!isMobile && <div style={{
           position:"absolute",
           ...(isRTL ? {right:"31%"} : {left:"31%"}),
           bottom:"14%",
@@ -1130,14 +1134,14 @@ export default function LandingPage({ onLogin }) {
           animation:"lp-float-b 12s 2s ease-in-out infinite",
           zIndex:4,
           pointerEvents:"none",
-        }}/>
+        }}/>}
 
 
         {/* ── TOP BAR: BogrotNet brand + lang switcher ── */}
         <div style={{
           position:"absolute",top:0,left:0,right:0,zIndex:10,
           display:"flex",alignItems:"center",justifyContent:"space-between",
-          padding:"20px 28px",
+          padding: isMobile ? "14px 16px" : "20px 28px",
         }}>
           {/* BogrotNet — BIG brand name */}
           <div style={{
@@ -1155,9 +1159,9 @@ export default function LandingPage({ onLogin }) {
               <div style={{
                 fontFamily:"'Playfair Display',Georgia,serif",
                 fontSize:"clamp(22px,2.4vw,34px)",fontWeight:900,
-                color:C.blueD,letterSpacing:"-0.02em",lineHeight:1,
+                color: isMobile ? C.white : C.blueD,letterSpacing:"-0.02em",lineHeight:1,
               }}>BogrotNet</div>
-              <div style={{fontSize:10,fontWeight:600,color:C.inkLight,letterSpacing:"0.12em",textTransform:"uppercase"}}>
+              <div style={{fontSize:10,fontWeight:600,color: isMobile ? "rgba(255,255,255,0.55)" : C.inkLight,letterSpacing:"0.12em",textTransform:"uppercase"}}>
                 {T.tagline}
               </div>
             </div>
@@ -1168,8 +1172,12 @@ export default function LandingPage({ onLogin }) {
             {["he","en","ar"].map(code=>(
               <button key={code} onClick={()=>setLang(code)} style={{
                 padding:"5px 13px",borderRadius:999,border:"none",
-                background:lang===code?C.blue:C.white,
-                color:lang===code?C.white:C.blue,
+                background: isMobile
+                  ? (lang===code ? C.white : "rgba(255,255,255,0.12)")
+                  : (lang===code ? C.blue : C.white),
+                color: isMobile
+                  ? (lang===code ? C.blue : C.white)
+                  : (lang===code ? C.white : C.blue),
                 fontSize:11,fontWeight:700,cursor:"pointer",
                 transition:"all 0.18s",textTransform:"uppercase",
                 boxShadow:"0 2px 8px rgba(0,0,0,0.08)",
@@ -1179,8 +1187,8 @@ export default function LandingPage({ onLogin }) {
           </div>
         </div>
 
-        {/* BogrotNet badge — bottom left */}
-        {heroReady && (
+        {/* BogrotNet badge — bottom left, hidden on mobile */}
+        {!isMobile && heroReady && (
           <div style={{
             position:"absolute",
             [isRTL?"right":"left"]:28,bottom:110,
@@ -1195,8 +1203,8 @@ export default function LandingPage({ onLogin }) {
           }}>{T.bogrotBadge}</div>
         )}
 
-        {/* NAV CIRCLES — floating in hero, become fixed sidebar when scrolled */}
-        {heroReady && (
+        {/* NAV CIRCLES — floating in hero, hidden on mobile */}
+        {!isMobile && heroReady && (
           <div style={{
             position:"absolute",
             [isRTL?"left":"right"]:22,
@@ -1215,7 +1223,10 @@ export default function LandingPage({ onLogin }) {
         {/* LEFT — character mascot on cream bg, sonar rings behind it */}
         <div style={{
           display:"flex",alignItems:"center",justifyContent:"center",
-          position:"relative",paddingTop:80,paddingBottom:60,zIndex:6,
+          position:"relative",
+          paddingTop: isMobile ? 88 : 80,
+          paddingBottom: isMobile ? 8 : 60,
+          zIndex:6,
           opacity:heroReady?1:0,transition:"opacity 0.5s ease",
         }}>
           {/* Sonar rings sit behind the image */}
@@ -1227,7 +1238,7 @@ export default function LandingPage({ onLogin }) {
               e.target.style.display="none";
             }}
             style={{
-              width:"clamp(260px,36vw,460px)",
+              width: isMobile ? "clamp(100px,38vw,160px)" : "clamp(260px,36vw,460px)",
               objectFit:"contain",
               display:"block",position:"relative",zIndex:3,
               animation:heroReady?"lp-char 5s 1s ease-in-out infinite":"none",
@@ -1240,7 +1251,11 @@ export default function LandingPage({ onLogin }) {
         {/* RIGHT — text on cream bg */}
         <div style={{
           display:"flex",flexDirection:"column",justifyContent:"center",
-          padding:"clamp(2rem,5vw,4.5rem)",paddingTop:100,zIndex:6,
+          padding: isMobile ? "0 1.5rem 3rem" : "clamp(2rem,5vw,4.5rem)",
+          paddingTop: isMobile ? 8 : 100,
+          alignItems: isMobile ? "center" : undefined,
+          textAlign: isMobile ? "center" : undefined,
+          zIndex:6,
           animation:heroReady?"lp-text-in 0.85s 0.18s cubic-bezier(0.22,1,0.36,1) both":"none",
           opacity:heroReady?undefined:0,
         }}>
@@ -1257,12 +1272,13 @@ export default function LandingPage({ onLogin }) {
 
           <p style={{
             fontSize:"clamp(15px,1.5vw,18px)",color:"rgba(255,255,255,0.88)",
-            lineHeight:1.85,maxWidth:460,marginBottom:"2.5rem",
+            lineHeight:1.85,maxWidth: isMobile ? "100%" : 460,marginBottom: isMobile ? "1.75rem" : "2.5rem",
             animation:heroReady?"lp-fade-up 0.7s 0.55s ease both":"none",
           }}>{T.desc}</p>
 
           <div style={{
             display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",
+            justifyContent: isMobile ? "center" : undefined,
             animation:heroReady?"lp-fade-up 0.7s 0.68s ease both":"none",
           }}>
             <button onClick={handleJoin} style={{
@@ -1328,8 +1344,8 @@ export default function LandingPage({ onLogin }) {
         <div style={{
           position:"relative",zIndex:2,
           display:"flex",flexDirection:"column",alignItems:"flex-start",justifyContent:"center",
-          minHeight:500,
-          padding:"5rem clamp(2rem,6vw,6rem) 5rem clamp(3rem,14vw,16rem)",
+          minHeight: isMobile ? 320 : 500,
+          padding: isMobile ? "3rem 2rem" : "5rem clamp(2rem,6vw,6rem) 5rem clamp(3rem,14vw,16rem)",
           textAlign:"center",
         }}>
           <div className="lp-reveal" style={{
