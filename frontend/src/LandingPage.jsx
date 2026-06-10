@@ -1030,7 +1030,7 @@ function ScreenshotFlipGuide({ T, onLogin, C }) {
 export default function LandingPage({ onLogin }) {
   const { isRTL, lang, setLang } = useLang();
   const isMobile = useIsMobile();
-  const { dark } = useTheme();
+  const { dark, toggleTheme } = useTheme();
   const C = dark ? C_DARK : C_LIGHT;
   const T   = LP[lang] ?? LP.he;
   const dir = isRTL ? "rtl" : "ltr";
@@ -1183,23 +1183,38 @@ export default function LandingPage({ onLogin }) {
             </div>
           </div>
 
-          {/* Language switcher */}
-          <div style={{display:"flex",gap:6}}>
-            {["he","en","ar"].map(code=>(
-              <button key={code} onClick={()=>setLang(code)} style={{
-                padding:"5px 13px",borderRadius:999,border:"none",
-                background: isMobile
-                  ? (lang===code ? C.white : "rgba(255,255,255,0.12)")
-                  : (lang===code ? C.blue : C.white),
-                color: isMobile
-                  ? (lang===code ? C.blue : C.white)
-                  : (lang===code ? C.white : C.blue),
-                fontSize:11,fontWeight:700,cursor:"pointer",
-                transition:"all 0.18s",textTransform:"uppercase",
-                boxShadow:"0 2px 8px rgba(0,0,0,0.08)",
-                border:`1px solid ${lang===code?C.blue:C.bluePale}`,
-              }}>{code}</button>
-            ))}
+          {/* Language switcher + theme toggle */}
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={toggleTheme} title={dark?"Switch to light":"Switch to dark"} style={{
+              width:32,height:32,borderRadius:"50%",
+              background: isMobile ? "rgba(255,255,255,0.15)" : C.bluePale,
+              border:`1px solid ${isMobile?"rgba(255,255,255,0.3)":C.bluePale}`,
+              color: isMobile ? C.white : C.blue,
+              cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+              flexShrink:0,transition:"all 0.18s",
+            }}>
+              {dark
+                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              }
+            </button>
+            <div style={{display:"flex",gap:6}}>
+              {["he","en","ar"].map(code=>(
+                <button key={code} onClick={()=>setLang(code)} style={{
+                  padding:"5px 13px",borderRadius:999,border:"none",
+                  background: isMobile
+                    ? (lang===code ? C.white : "rgba(255,255,255,0.12)")
+                    : (lang===code ? C.blue : C.white),
+                  color: isMobile
+                    ? (lang===code ? C.blue : C.white)
+                    : (lang===code ? C.white : C.blue),
+                  fontSize:11,fontWeight:700,cursor:"pointer",
+                  transition:"all 0.18s",textTransform:"uppercase",
+                  boxShadow:"0 2px 8px rgba(0,0,0,0.08)",
+                  border:`1px solid ${lang===code?C.blue:C.bluePale}`,
+                }}>{code}</button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1254,7 +1269,7 @@ export default function LandingPage({ onLogin }) {
               e.target.style.display="none";
             }}
             style={{
-              width: isMobile ? "clamp(100px,38vw,160px)" : "clamp(260px,36vw,460px)",
+              width: isMobile ? "clamp(140px,50vw,210px)" : "clamp(340px,44vw,580px)",
               objectFit:"contain",
               display:"block",position:"relative",zIndex:3,
               animation:heroReady?"lp-char 5s 1s ease-in-out infinite":"none",
