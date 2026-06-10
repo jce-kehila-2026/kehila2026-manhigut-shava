@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLang } from "./LanguageContext";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -8,21 +9,139 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
 
-/* ─── Rose & Plum palette ─── */
-const C = {
-  brand: "#b8617a",      // dusty rose (primary)
-  brandSoft: "#d48aa0",  // lighter rose hover
-  plum: "#4a1f3d",       // deep plum (text / accent)
-  plumDeep: "#2e1428",   // darkest plum
-  cream: "#fdf8f6",      // page bg
-  blush: "#f7ecec",      // surface tint
-  blushDeep: "#e8c5c5",  // borders / dividers
-  ink: "#3a2230",        // body text
-  mute: "#8a6b76",       // muted text
-  line: "#ecd8de",       // hairline
+/* ─── Translation ─── */
+const AUTH_T = {
+  he: {
+    loginTab:"כניסה", signupTab:"הרשמה",
+    loginH:"ברוכה הבאה", loginSub:"היכנסי לרשת הבוגרות שלך",
+    emailLbl:"אימייל", passLbl:"סיסמה",
+    rememberMe:"זכרי אותי", forgotPass:"שכחתי סיסמה",
+    loginBtn:"כניסה לחשבון →", loginLoading:"מתחברת...",
+    noAccount:"עוד לא רשומה?", registerNow:"הרשמי עכשיו",
+    googleLogin:"המשכי עם Google", googleSignup:"הרשמי עם Google",
+    orEmail:"או המשכי עם אימייל", orEmailSignup:"או הרשמי עם אימייל",
+    resetSent:"נשלח אימייל לאיפוס סיסמה ✓",
+    step1H:"הרשמה לרשת", step1Sub:"מלאי את הפרטים האישיים שלך",
+    firstNameLbl:"שם פרטי *", lastNameLbl:"שם משפחה *",
+    phoneLbl:"טלפון *",
+    instituteLbl:"מוסד לימודים", institutePh:"בחרי מוסד...",
+    profLbl:"מקצוע / תפקיד", profPh:"רופאה, עורכת דין...",
+    cityLbl:"עיר מגורים", cityPh:"תל אביב, ירושלים...",
+    step2H:"פרטים מקצועיים", step2Sub:"ספרי לנו עליך",
+    step3H:"הגדרת סיסמה", step3Sub:"כמעט סיימנו",
+    passLbl2:"סיסמה *", passPh:"לפחות 6 תווים",
+    confirmPassLbl:"אימות סיסמה *", confirmPassPh:"חזרי על הסיסמה",
+    agreeTitle:"מסכימה לשיתוף פרטים בתוך הרשת",
+    agreeSub:"שם, מייל ומומחיות יהיו גלויים לבוגרות אחרות. פרטי קשר — רק לאחר אישורך.",
+    backBtn:"← חזרה", nextBtn:"המשך →",
+    submitBtn:"הרשמה →", submitting:"יוצרת חשבון...",
+    alreadyHave:"כבר יש לך חשבון?", loginLink:"כניסה",
+    errFill:"מלאי את כל השדות הנדרשים.",
+    errEmail:"כתובת אימייל לא תקינה.",
+    errPhone:"מספר טלפון לא תקין. השתמשי בפורמט: 05X-XXXXXXX",
+    errAgree:"יש לאשר את הסכמת שיתוף הפרטים.",
+    errPassMatch:"הסיסמאות אינן תואמות.",
+    backHome:"← חזרה לדף הבית",
+    passEmailPh:"your@email.com",
+    passPh2:"••••••••",
+    citySelectPh:"בחרי עיר...",cityOtherPh:"כתבי את עירך",
+    profSelectPh:"בחרי מקצוע...",profOtherPh:"כתבי את מקצועך",
+    cities:["ירושלים","תל אביב-יפו","חיפה","ראשון לציון","פתח תקווה","נתניה","אשדוד","אשקלון","באר שבע","רחובות","הרצליה","חולון","בת ים","כפר סבא","רמת גן","נס ציונה","עפולה","נצרת","טבריה","חדרה","מודיעין","אחר"],
+    professions:["רפואה","משפטים","הנדסה","חינוך","כלכלה ועסקים","פסיכולוגיה","מדעים","פוליטיקה וממשל","תקשורת ועיתונאות","אמנות ועיצוב","עבודה סוציאלית","בריאות הציבור","טכנולוגיה","מינהל ציבורי","שירות ציבורי","סטודנטית","אחר"],
+  },
+  en: {
+    loginTab:"Log In", signupTab:"Sign Up",
+    loginH:"Welcome back", loginSub:"Sign in to your BogrotNet account",
+    emailLbl:"Email", passLbl:"Password",
+    rememberMe:"Remember me", forgotPass:"Forgot password",
+    loginBtn:"Sign In →", loginLoading:"Signing in...",
+    noAccount:"Not registered yet?", registerNow:"Sign up now",
+    googleLogin:"Continue with Google", googleSignup:"Sign up with Google",
+    orEmail:"Or continue with email", orEmailSignup:"Or sign up with email",
+    resetSent:"Password reset email sent ✓",
+    step1H:"Create Account", step1Sub:"Fill in your personal details",
+    firstNameLbl:"First Name *", lastNameLbl:"Last Name *",
+    phoneLbl:"Phone *",
+    instituteLbl:"Institution", institutePh:"Select institution...",
+    profLbl:"Profession / Role", profPh:"Doctor, Lawyer, Engineer...",
+    cityLbl:"City", cityPh:"Tel Aviv, Jerusalem...",
+    step2H:"Professional Details", step2Sub:"Tell us about yourself",
+    step3H:"Set Password", step3Sub:"Almost done",
+    passLbl2:"Password *", passPh:"At least 6 characters",
+    confirmPassLbl:"Confirm Password *", confirmPassPh:"Repeat your password",
+    agreeTitle:"Agree to share details within the network",
+    agreeSub:"Name, email, and expertise will be visible to other members. Contact details only after your approval.",
+    backBtn:"← Back", nextBtn:"Continue →",
+    submitBtn:"Register →", submitting:"Creating account...",
+    alreadyHave:"Already have an account?", loginLink:"Sign in",
+    errFill:"Please fill all required fields.",
+    errEmail:"Invalid email address.",
+    errPhone:"Invalid phone number. Use format: 05X-XXXXXXX",
+    errAgree:"Please agree to share your details.",
+    errPassMatch:"Passwords do not match.",
+    backHome:"← Back to Home",
+    passEmailPh:"your@email.com",
+    passPh2:"••••••••",
+    citySelectPh:"Select city...",cityOtherPh:"Type your city",
+    profSelectPh:"Select profession...",profOtherPh:"Type your profession",
+    cities:["Jerusalem","Tel Aviv-Jaffa","Haifa","Rishon LeZion","Petah Tikva","Netanya","Ashdod","Ashkelon","Beer Sheva","Rehovot","Herzliya","Holon","Bat Yam","Kfar Saba","Ramat Gan","Nes Ziona","Afula","Nazareth","Tiberias","Hadera","Modi'in","Other"],
+    professions:["Medicine","Law","Engineering","Education","Economics & Business","Psychology","Sciences","Politics & Government","Media & Journalism","Arts & Design","Social Work","Public Health","Technology","Public Administration","Public Service","Student","Other"],
+  },
+  ar: {
+    loginTab:"تسجيل الدخول", signupTab:"إنشاء حساب",
+    loginH:"مرحباً بك", loginSub:"سجّلي دخولك إلى شبكة البوگروت",
+    emailLbl:"البريد الإلكتروني", passLbl:"كلمة المرور",
+    rememberMe:"تذكّريني", forgotPass:"نسيت كلمة المرور",
+    loginBtn:"تسجيل الدخول ←", loginLoading:"جارٍ تسجيل الدخول...",
+    noAccount:"لم تنضمي بعد؟", registerNow:"سجّلي الآن",
+    googleLogin:"الاستمرار بواسطة Google", googleSignup:"التسجيل بواسطة Google",
+    orEmail:"أو الاستمرار بالبريد الإلكتروني", orEmailSignup:"أو التسجيل بالبريد",
+    resetSent:"تم إرسال رسالة إعادة تعيين كلمة المرور ✓",
+    step1H:"إنشاء حساب", step1Sub:"أدخلي بياناتك الشخصية",
+    firstNameLbl:"الاسم الأول *", lastNameLbl:"اسم العائلة *",
+    phoneLbl:"رقم الهاتف *",
+    instituteLbl:"المؤسسة الأكاديمية", institutePh:"اختاري مؤسسة...",
+    profLbl:"المهنة / الوظيفة", profPh:"طبيبة، محامية...",
+    cityLbl:"المدينة", cityPh:"تل أبيب، القدس...",
+    step2H:"التفاصيل المهنية", step2Sub:"أخبرينا عن نفسك",
+    step3H:"تعيين كلمة المرور", step3Sub:"اقتربنا من النهاية",
+    passLbl2:"كلمة المرور *", passPh:"6 أحرف على الأقل",
+    confirmPassLbl:"تأكيد كلمة المرور *", confirmPassPh:"أعيدي إدخال كلمة المرور",
+    agreeTitle:"الموافقة على مشاركة البيانات داخل الشبكة",
+    agreeSub:"سيكون الاسم والبريد والتخصص مرئيين للعضوات الأخريات. بيانات الاتصال فقط بعد موافقتك.",
+    backBtn:"← رجوع", nextBtn:"التالي ←",
+    submitBtn:"التسجيل ←", submitting:"جارٍ إنشاء الحساب...",
+    alreadyHave:"هل لديك حساب بالفعل؟", loginLink:"تسجيل الدخول",
+    errFill:"يرجى ملء جميع الحقول المطلوبة.",
+    errEmail:"عنوان البريد الإلكتروني غير صالح.",
+    errPhone:"رقم الهاتف غير صالح. استخدمي الصيغة: 05X-XXXXXXX",
+    errAgree:"يجب الموافقة على مشاركة بياناتك.",
+    errPassMatch:"كلمتا المرور غير متطابقتين.",
+    backHome:"← العودة إلى الصفحة الرئيسية",
+    passEmailPh:"your@email.com",
+    passPh2:"••••••••",
+    citySelectPh:"اختاري المدينة...",cityOtherPh:"اكتبي مدينتك",
+    profSelectPh:"اختاري المهنة...",profOtherPh:"اكتبي مهنتك",
+    cities:["القدس","تل أبيب-يافا","حيفا","ريشون ليتسيون","بتاح تكفا","نتانيا","أشدود","عسقلان","بئر السبع","ريحوفوت","هرتسليا","حولون","بات يام","كفار سابا","رمات غان","نس تسيونا","عفولة","الناصرة","طبريا","حديرا","مودیعین","أخرى"],
+    professions:["الطب","القانون","الهندسة","التعليم","الاقتصاد والأعمال","علم النفس","العلوم","السياسة والحكم","الإعلام والصحافة","الفنون والتصميم","الخدمة الاجتماعية","الصحة العامة","التكنولوجيا","الإدارة العامة","الخدمة العامة","طالبة","أخرى"],
+  },
 };
 
-/* ─── helpers (unchanged) ─── */
+/* ─── Blue/Coral palette ─── */
+const C = {
+  brand:     "#4472b8",
+  brandSoft: "#6da3d4",
+  plum:      "#1d4896",
+  plumDeep:  "#111827",
+  cream:     "#fdf9f7",
+  blush:     "#f0f6fb",
+  blushDeep: "#daeaf8",
+  ink:       "#111827",
+  mute:      "#6b7280",
+  line:      "#daeaf8",
+  coral:     "#e8735a",
+};
+
 function normalizePhone(raw) {
   let s = raw.replace(/[\s\-().]/g, "");
   if (s.startsWith("0")) s = "+972" + s.slice(1);
@@ -33,13 +152,13 @@ function normalizePhone(raw) {
 
 function firebaseMsg(code) {
   const m = {
-    "auth/invalid-credential": "אימייל או סיסמה שגויים.",
-    "auth/user-not-found": "לא נמצא חשבון עם אימייל זה.",
-    "auth/wrong-password": "סיסמה שגויה.",
+    "auth/invalid-credential":   "אימייל או סיסמה שגויים.",
+    "auth/user-not-found":       "לא נמצא חשבון עם אימייל זה.",
+    "auth/wrong-password":       "סיסמה שגויה.",
     "auth/email-already-in-use": "קיים כבר חשבון עם אימייל זה.",
-    "auth/weak-password": "הסיסמה חייבת לכלול לפחות 6 תווים.",
-    "auth/invalid-email": "כתובת אימייל לא תקינה.",
-    "auth/too-many-requests": "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
+    "auth/weak-password":        "הסיסמה חייבת לכלול לפחות 6 תווים.",
+    "auth/invalid-email":        "כתובת אימייל לא תקינה.",
+    "auth/too-many-requests":    "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
     "auth/popup-closed-by-user": "הכניסה בוטלה.",
   };
   return m[code] || `שגיאה (${code || "unknown"}). נסי שוב.`;
@@ -56,67 +175,64 @@ function GoogleIcon() {
   );
 }
 
-/* ─── shared field styles ─── */
 const fontStack = "'Figtree','Outfit',system-ui,-apple-system,sans-serif";
 
 const inp = {
-  width: "100%", padding: "0.85rem 1rem", boxSizing: "border-box",
-  background: "#fff", border: `1px solid ${C.line}`,
-  borderRadius: 12, color: C.ink, fontSize: "0.92rem",
-  fontFamily: fontStack, fontWeight: 500,
-  outline: "none",
-  transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
+  width:"100%", padding:"0.85rem 1rem", boxSizing:"border-box",
+  background:"#fff", border:`1px solid ${C.line}`,
+  borderRadius:12, color:C.ink, fontSize:"0.92rem",
+  fontFamily:fontStack, fontWeight:500, outline:"none",
+  transition:"border-color 0.2s,box-shadow 0.2s",
 };
 const lbl = {
-  display: "block", color: C.mute,
-  fontSize: "0.74rem", fontWeight: 600, marginBottom: "0.45rem",
-  letterSpacing: "0.02em",
+  display:"block", color:C.mute,
+  fontSize:"0.74rem", fontWeight:600, marginBottom:"0.45rem",
+  letterSpacing:"0.02em",
 };
 const primaryBtn = {
-  width: "100%", padding: "0.9rem",
-  background: C.brand, color: "#fff",
-  border: "none", borderRadius: 12,
-  fontSize: "0.94rem", fontWeight: 600, cursor: "pointer",
-  fontFamily: fontStack, letterSpacing: "0.01em",
-  boxShadow: `0 6px 20px ${C.brand}38`,
-  transition: "transform 0.2s, box-shadow 0.2s, background 0.2s",
-  marginBottom: "0.9rem",
+  width:"100%", padding:"0.9rem",
+  background:C.brand, color:"#fff",
+  border:"none", borderRadius:12,
+  fontSize:"0.94rem", fontWeight:600, cursor:"pointer",
+  fontFamily:fontStack, letterSpacing:"0.01em",
+  boxShadow:`0 6px 20px rgba(68,114,184,0.35)`,
+  transition:"transform 0.2s,box-shadow 0.2s,background 0.2s",
+  marginBottom:"0.9rem",
 };
 const ghostBtn = {
-  width: "100%", padding: "0.85rem",
-  background: "#fff", color: C.ink,
-  border: `1px solid ${C.line}`, borderRadius: 12,
-  fontSize: "0.88rem", fontWeight: 500, cursor: "pointer",
-  fontFamily: fontStack,
-  transition: "background 0.2s, border-color 0.2s", marginBottom: "0.9rem",
+  width:"100%", padding:"0.85rem",
+  background:"#fff", color:C.ink,
+  border:`1px solid ${C.line}`, borderRadius:12,
+  fontSize:"0.88rem", fontWeight:500, cursor:"pointer",
+  fontFamily:fontStack, transition:"background 0.2s,border-color 0.2s",
+  marginBottom:"0.9rem",
 };
 const errBox = {
-  background: "#fbeaea", border: "1px solid #e9c4c4",
-  borderRadius: 10, padding: "0.7rem 0.95rem", marginBottom: "1rem",
-  fontSize: "0.82rem", color: "#9b2c3a", fontWeight: 500,
+  background:"#fbeaea", border:"1px solid #e9c4c4",
+  borderRadius:10, padding:"0.7rem 0.95rem", marginBottom:"1rem",
+  fontSize:"0.82rem", color:"#9b2c3a", fontWeight:500,
 };
 const okBox = {
-  background: "#eaf5ee", border: "1px solid #c5dfcd",
-  borderRadius: 10, padding: "0.7rem 0.95rem", marginBottom: "1rem",
-  fontSize: "0.82rem", color: "#2f6b48", fontWeight: 500,
+  background:"#eaf5ee", border:"1px solid #c5dfcd",
+  borderRadius:10, padding:"0.7rem 0.95rem", marginBottom:"1rem",
+  fontSize:"0.82rem", color:"#2f6b48", fontWeight:500,
 };
 
-function focusOn(e)  { e.target.style.borderColor = C.brand; e.target.style.boxShadow = `0 0 0 3px ${C.brand}1f`; }
-function focusOff(e) { e.target.style.borderColor = C.line;  e.target.style.boxShadow = "none"; }
+function focusOn(e)  { e.target.style.borderColor=C.brand; e.target.style.boxShadow=`0 0 0 3px rgba(68,114,184,0.18)`; }
+function focusOff(e) { e.target.style.borderColor=C.line;  e.target.style.boxShadow="none"; }
 
 function Fld({ label, children }) {
   return (
-    <div style={{ marginBottom: "0.95rem" }}>
+    <div style={{ marginBottom:"0.95rem" }}>
       <label style={lbl}>{label}</label>
       {children}
     </div>
   );
 }
 
-/* ─── GOOGLE BUTTON ─── */
-function GoogleButton({ label }) {
+function GoogleButton({ label, Tr }) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error,   setError]   = useState("");
   const handle = async () => {
     setLoading(true); setError("");
     try { await signInWithPopup(auth, googleProvider); }
@@ -127,24 +243,22 @@ function GoogleButton({ label }) {
     <>
       {error && <div style={errBox}>{error}</div>}
       <button onClick={handle} disabled={loading} style={{
-        ...ghostBtn, display: "flex", alignItems: "center",
-        justifyContent: "center", gap: 10,
+        ...ghostBtn, display:"flex", alignItems:"center", justifyContent:"center", gap:10,
       }}
-        onMouseOver={e => { e.currentTarget.style.background = C.blush; e.currentTarget.style.borderColor = C.blushDeep; }}
-        onMouseOut={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = C.line; }}
+        onMouseOver={e=>{ e.currentTarget.style.background=C.blush; e.currentTarget.style.borderColor=C.blushDeep; }}
+        onMouseOut={e =>{  e.currentTarget.style.background="#fff";  e.currentTarget.style.borderColor=C.line; }}
       >
-        <GoogleIcon /> {loading ? "מתחבר..." : label}
+        <GoogleIcon/> {loading ? "מתחבר..." : label}
       </button>
     </>
   );
 }
 
-/* ─── LOGIN FORM ─── */
-function LoginForm({ onSwitchTab }) {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
+function LoginForm({ onSwitchTab, Tr, dir }) {
+  const [form, setForm] = useState({ email:"", password:"" });
+  const [error, setError]       = useState("");
   const [resetSent, setResetSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]   = useState(false);
   const set = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
   const submit = async (e) => {
@@ -161,191 +275,263 @@ function LoginForm({ onSwitchTab }) {
   };
 
   return (
-    <form onSubmit={submit} style={{ direction: "rtl" }} autoComplete="off">
+    <form onSubmit={submit} style={{ direction:dir||"rtl" }} autoComplete="off">
       <h1 style={{
-        fontFamily: "'Outfit',system-ui,sans-serif",
-        fontSize: "1.7rem", fontWeight: 600, color: C.plum,
-        marginBottom: "0.35rem", letterSpacing: "-0.01em",
-      }}>ברוכה הבאה</h1>
-      <p style={{ color: C.mute, fontSize: "0.86rem", marginBottom: "1.6rem", fontWeight: 400 }}>
-        היכנסי לרשת הבוגרות שלך
+        fontFamily:"'Outfit',system-ui,sans-serif",
+        fontSize:"1.7rem", fontWeight:600, color:C.plum,
+        marginBottom:"0.35rem", letterSpacing:"-0.01em",
+      }}>{Tr?.loginH||"ברוכה הבאה"}</h1>
+      <p style={{ color:C.mute, fontSize:"0.86rem", marginBottom:"1.6rem", fontWeight:400 }}>
+        {Tr?.loginSub||"היכנסי לרשת הבוגרות שלך"}
       </p>
-      {error && <div style={errBox}>{error}</div>}
-      {resetSent && <div style={okBox}>נשלח אימייל לאיפוס סיסמה ✓</div>}
-      <Fld label="אימייל">
-        <input style={inp} type="email" name="email" placeholder="your@email.com" dir="ltr" value={form.email} onChange={set} required autoComplete="off"
-          onFocus={focusOn} onBlur={focusOff} />
+      {error    && <div style={errBox}>{error}</div>}
+      {resetSent && <div style={okBox}>{Tr?.resetSent||"נשלח אימייל לאיפוס סיסמה ✓"}</div>}
+      <Fld label={Tr?.emailLbl||"אימייל"}>
+        <input style={inp} type="email" name="email" placeholder={Tr?.passEmailPh||"your@email.com"} dir="ltr"
+          value={form.email} onChange={set} required autoComplete="off"
+          onFocus={focusOn} onBlur={focusOff}/>
       </Fld>
-      <Fld label="סיסמה">
-        <input style={inp} type="password" name="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={set} required autoComplete="new-password"
-          onFocus={focusOn} onBlur={focusOff} />
+      <Fld label={Tr?.passLbl||"סיסמה"}>
+        <input style={inp} type="password" name="password" placeholder={Tr?.passPh2||"••••••••"} dir="ltr"
+          value={form.password} onChange={set} required autoComplete="new-password"
+          onFocus={focusOn} onBlur={focusOff}/>
       </Fld>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.4rem" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: C.mute, fontSize: "0.8rem", cursor: "pointer" }}>
-          <input type="checkbox" style={{ accentColor: C.brand }} /> זכרי אותי
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1.4rem" }}>
+        <label style={{ display:"flex", alignItems:"center", gap:"0.5rem", color:C.mute, fontSize:"0.8rem", cursor:"pointer" }}>
+          <input type="checkbox" style={{ accentColor:C.brand }}/> {Tr?.rememberMe||"זכרי אותי"}
         </label>
-        <button type="button" onClick={forgot} style={{ background: "none", border: "none", color: C.brand, fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}>שכחתי סיסמה</button>
+        <button type="button" onClick={forgot} style={{ background:"none", border:"none", color:C.brand, fontSize:"0.8rem", fontWeight:600, cursor:"pointer" }}>
+          {Tr?.forgotPass||"שכחתי סיסמה"}
+        </button>
       </div>
       <button type="submit" disabled={loading} style={primaryBtn}
-        onMouseOver={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.background = C.brandSoft; }}
-        onMouseOut={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.background = C.brand; }}
-      >{loading ? "מתחברת..." : "כניסה לחשבון →"}</button>
-      <p style={{ textAlign: "center", color: C.mute, fontSize: "0.8rem", margin: 0 }}>
-        עוד לא רשומה?{" "}
-        <button type="button" onClick={() => onSwitchTab("signup")} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: "0.8rem" }}>הרשמי עכשיו</button>
+        onMouseOver={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.background=C.brandSoft; }}
+        onMouseOut={e =>{ e.currentTarget.style.transform=""; e.currentTarget.style.background=C.brand; }}
+      >{loading ? (Tr?.loginLoading||"מתחברת...") : (Tr?.loginBtn||"כניסה לחשבון →")}</button>
+      <p style={{ textAlign:"center", color:C.mute, fontSize:"0.8rem", margin:0 }}>
+        {Tr?.noAccount||"עוד לא רשומה?"}{" "}
+        <button type="button" onClick={()=>onSwitchTab("signup")} style={{ background:"none", border:"none", color:C.brand, fontWeight:600, cursor:"pointer", fontSize:"0.8rem" }}>
+          {Tr?.registerNow||"הרשמי עכשיו"}
+        </button>
       </p>
     </form>
   );
 }
 
-/* ─── SIGN UP FORM (3-step) ─── */
-function SignUpForm({ onSwitchTab }) {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE_RE = /^(\+972|972|0)[5-9]\d{8}$|^(\+972|972|0)[5-9]\d{1}-?\d{7}$/;
+function validPhone(raw) {
+  const s = raw.replace(/[\s\-().]/g,"");
+  return PHONE_RE.test(s);
+}
+
+function SignUpForm({ onSwitchTab, Tr, dir }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    firstName: "", lastName: "", email: "", phone: "",
-    institution: "", profession: "", city: "",
-    password: "", confirmPassword: "",
+    firstName:"", lastName:"", email:"", phone:"",
+    institution:"", profession:"", professionOther:"",
+    city:"", cityOther:"",
+    password:"", confirmPassword:"",
   });
-  const [agreed, setAgreed] = useState(true);
-  const [error, setError] = useState("");
+  const [agreed, setAgreed]   = useState(false);
+  const [agreeErr, setAgreeErr] = useState(false);
+  const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState({ email:false, phone:false });
+
   const set = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
+  const touch = field => () => setTouched(p => ({ ...p, [field]: true }));
+
+  const emailErr = touched.email && form.email && !EMAIL_RE.test(form.email)
+    ? (Tr?.errEmail || "כתובת אימייל לא תקינה.") : "";
+  const phoneErr = touched.phone && form.phone && !validPhone(form.phone)
+    ? (Tr?.errPhone || "מספר טלפון לא תקין.") : "";
+
+  const errStyle = name => ({
+    ...inputStyle(name),
+    ...(
+      (name==="email" && emailErr) || (name==="phone" && phoneErr)
+        ? { borderColor:"#e9415b", boxShadow:"0 0 0 3px rgba(233,65,91,0.14)" }
+        : {}
+    ),
+  });
+
+  const InlineErr = ({ msg }) => msg
+    ? <p style={{ color:"#e9415b", fontSize:"0.73rem", marginTop:"0.3rem", marginBottom:0, direction:"ltr", textAlign:"left", fontWeight:500 }}>{msg}</p>
+    : null;
+
+  const effectiveCity       = form.city==="אחר"||form.city==="Other"||form.city==="أخرى" ? form.cityOther : form.city;
+  const effectiveProfession = form.profession==="אחר"||form.profession==="Other"||form.profession==="أخرى" ? form.professionOther : form.profession;
 
   const submit = async () => {
-    if (!agreed) { setError("יש לאשר את הסכמת שיתוף הפרטים."); return; }
-    if (form.password !== form.confirmPassword) { setError("הסיסמאות אינן תואמות."); return; }
+    if (!agreed)  { setAgreeErr(true); setError(Tr?.errAgree||"יש לאשר את הסכמת שיתוף הפרטים."); return; }
+    setAgreeErr(false);
+    if (form.password !== form.confirmPassword) { setError(Tr?.errPassMatch||"הסיסמאות אינן תואמות."); return; }
     setError(""); setLoading(true);
     try {
       const { user } = await createUserWithEmailAndPassword(auth, form.email, form.password);
       await setDoc(doc(db, "users", user.uid), {
-        firstName: form.firstName, lastName: form.lastName,
-        phone: normalizePhone(form.phone), email: form.email,
-        institution: form.institution, profession: form.profession, city: form.city,
-        emailVerified: false, acceptedTerms: false, createdAt: new Date().toISOString(),
+        firstName:form.firstName, lastName:form.lastName,
+        phone:normalizePhone(form.phone), email:form.email,
+        institution:form.institution,
+        profession:effectiveProfession, city:effectiveCity,
+        emailVerified:false, acceptedTerms:true, createdAt:new Date().toISOString(),
       });
     } catch (e) { setError(firebaseMsg(e.code)); }
     finally { setLoading(false); }
   };
 
   const progressBar = (
-    <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1.8rem" }}>
-      {[1, 2, 3].map(n => (
+    <div style={{ display:"flex", gap:"0.4rem", marginBottom:"1.8rem" }}>
+      {[1,2,3].map(n=>(
         <div key={n} style={{
-          flex: 1, height: 3, borderRadius: 99,
-          background: n <= step ? C.brand : C.line,
-          transition: "background 0.3s",
-        }} />
+          flex:1, height:3, borderRadius:99,
+          background:n<=step ? C.brand : C.line,
+          transition:"background 0.3s",
+        }}/>
       ))}
     </div>
   );
 
-  const inputStyle = (name) => ({
+  const inputStyle = name => ({
     ...inp,
-    ...(["email", "phone", "password", "confirmPassword"].includes(name) ? { direction: "ltr", textAlign: "left" } : {}),
+    ...(["email","phone","password","confirmPassword"].includes(name) ? { direction:"ltr", textAlign:"left" } : {}),
   });
 
-  const heading = { fontFamily: "'Outfit',system-ui,sans-serif", fontSize: "1.65rem", fontWeight: 600, color: C.plum, marginBottom: "0.35rem", letterSpacing: "-0.01em" };
-  const sub     = { color: C.mute, fontSize: "0.85rem", marginBottom: "1.6rem", fontWeight: 400 };
+  const heading = { fontFamily:"'Outfit',system-ui,sans-serif", fontSize:"1.65rem", fontWeight:600, color:C.plum, marginBottom:"0.35rem", letterSpacing:"-0.01em" };
+  const sub     = { color:C.mute, fontSize:"0.85rem", marginBottom:"1.6rem", fontWeight:400 };
 
   return (
-    <div style={{ direction: "rtl" }}>
+    <div style={{ direction:dir||"rtl" }}>
       {progressBar}
-      {step === 1 && (
+
+      {step===1 && (
         <>
-          <h2 style={heading}>הרשמה לרשת</h2>
-          <p style={sub}>מלאי את הפרטים האישיים שלך</p>
+          <h2 style={heading}>{Tr?.step1H||"הרשמה לרשת"}</h2>
+          <p style={sub}>{Tr?.step1Sub||"מלאי את הפרטים האישיים שלך"}</p>
           {error && <div style={errBox}>{error}</div>}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem" }}>
-            <Fld label="שם פרטי *">
-              <input style={inputStyle("firstName")} name="firstName" value={form.firstName} onChange={set} placeholder="שם" required onFocus={focusOn} onBlur={focusOff} />
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.7rem" }}>
+            <Fld label={Tr?.firstNameLbl||"שם פרטי *"}>
+              <input style={inputStyle("firstName")} name="firstName" value={form.firstName} onChange={set} placeholder="שם" required onFocus={focusOn} onBlur={focusOff}/>
             </Fld>
-            <Fld label="שם משפחה *">
-              <input style={inputStyle("lastName")} name="lastName" value={form.lastName} onChange={set} placeholder="משפחה" required onFocus={focusOn} onBlur={focusOff} />
+            <Fld label={Tr?.lastNameLbl||"שם משפחה *"}>
+              <input style={inputStyle("lastName")} name="lastName" value={form.lastName} onChange={set} placeholder="משפחה" required onFocus={focusOn} onBlur={focusOff}/>
             </Fld>
           </div>
-          <Fld label="אימייל *">
-            <input style={inputStyle("email")} type="email" name="email" value={form.email} onChange={set} placeholder="your@email.com" required onFocus={focusOn} onBlur={focusOff} />
+          <Fld label={Tr?.emailLbl||"אימייל *"}>
+            <input
+              style={errStyle("email")} type="email" name="email"
+              value={form.email} onChange={set} placeholder="your@email.com"
+              required dir="ltr"
+              onFocus={focusOn}
+              onBlur={e => { focusOff(e); touch("email")(); }}
+            />
+            <InlineErr msg={emailErr}/>
           </Fld>
-          <Fld label="טלפון *">
-            <input style={inputStyle("phone")} type="tel" name="phone" value={form.phone} onChange={set} placeholder="05X-XXXXXXX" required onFocus={focusOn} onBlur={focusOff} />
+          <Fld label={Tr?.phoneLbl||"טלפון *"}>
+            <input
+              style={errStyle("phone")} type="tel" name="phone"
+              value={form.phone} onChange={set} placeholder="05X-XXXXXXX"
+              required dir="ltr"
+              onFocus={focusOn}
+              onBlur={e => { focusOff(e); touch("phone")(); }}
+            />
+            <InlineErr msg={phoneErr}/>
           </Fld>
-          <button style={primaryBtn} onClick={() => {
-            if (!form.firstName || !form.lastName || !form.email || !form.phone) { setError("מלאי את כל השדות הנדרשים."); return; }
+          <button style={primaryBtn} onClick={()=>{
+            setTouched({ email:true, phone:true });
+            if (!form.firstName||!form.lastName||!form.email||!form.phone) { setError(Tr?.errFill||"מלאי את כל השדות הנדרשים."); return; }
+            if (!EMAIL_RE.test(form.email)) { setError(Tr?.errEmail||"כתובת אימייל לא תקינה."); return; }
+            if (!validPhone(form.phone)) { setError(Tr?.errPhone||"מספר טלפון לא תקין."); return; }
             setError(""); setStep(2);
-          }}>המשך →</button>
-          <p style={{ textAlign: "center", color: C.mute, fontSize: "0.8rem", margin: 0 }}>
-            כבר יש לך חשבון?{" "}
-            <button type="button" onClick={() => onSwitchTab("login")} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: "0.8rem" }}>כניסה</button>
+          }}>{Tr?.nextBtn||"המשך →"}</button>
+          <p style={{ textAlign:"center", color:C.mute, fontSize:"0.8rem", margin:0 }}>
+            {Tr?.alreadyHave||"כבר יש לך חשבון?"}{" "}
+            <button type="button" onClick={()=>onSwitchTab("login")} style={{ background:"none", border:"none", color:C.brand, fontWeight:600, cursor:"pointer", fontSize:"0.8rem" }}>{Tr?.loginLink||"כניסה"}</button>
           </p>
         </>
       )}
 
-      {step === 2 && (
+      {step===2 && (
         <>
-          <h2 style={heading}>פרטים מקצועיים</h2>
-          <p style={sub}>ספרי לנו עליך</p>
+          <h2 style={heading}>{Tr?.step2H||"פרטים מקצועיים"}</h2>
+          <p style={sub}>{Tr?.step2Sub||"ספרי לנו עליך"}</p>
           {error && <div style={errBox}>{error}</div>}
-          <Fld label="מוסד לימודים">
-            <select style={{ ...inp, color: form.institution ? C.ink : C.mute }} name="institution" value={form.institution} onChange={set} onFocus={focusOn} onBlur={focusOff}>
-              <option value="">בחרי מוסד...</option>
-              {["אוניברסיטת תל-אביב", "האוניברסיטה העברית בירושלים", "אוניברסיטת חיפה", "בר אילן", "אוניברסיטת בן-גוריון", "מכללות ירושלים", "אחר"].map(o => (
+          <Fld label={Tr?.instituteLbl||"מוסד לימודים"}>
+            <select style={{ ...inp, color:form.institution?C.ink:C.mute }} name="institution" value={form.institution} onChange={set} onFocus={focusOn} onBlur={focusOff}>
+              <option value="">{Tr?.institutePh||"בחרי מוסד..."}</option>
+              {["אוניברסיטת תל-אביב","האוניברסיטה העברית בירושלים","אוניברסיטת חיפה","בר אילן","אוניברסיטת בן-גוריון","מכללות ירושלים","אחר"].map(o=>(
                 <option key={o} value={o}>{o}</option>
               ))}
             </select>
           </Fld>
-          <Fld label="מקצוע / תפקיד">
-            <input style={inputStyle("profession")} name="profession" value={form.profession} onChange={set} placeholder="רופאה, עורכת דין, מהנדסת..." onFocus={focusOn} onBlur={focusOff} />
+          <Fld label={Tr?.profLbl||"מקצוע / תפקיד"}>
+            <select style={{...inp,color:form.profession?C.ink:C.mute}} name="profession" value={form.profession} onChange={set} onFocus={focusOn} onBlur={focusOff}>
+              <option value="">{Tr?.profSelectPh||"בחרי מקצוע..."}</option>
+              {(Tr?.professions||[]).map(o=><option key={o} value={o}>{o}</option>)}
+            </select>
+            {(form.profession==="אחר"||form.profession==="Other"||form.profession==="أخرى")&&(
+              <input style={{...inputStyle("professionOther"),marginTop:6}} name="professionOther" value={form.professionOther} onChange={set}
+                placeholder={Tr?.profOtherPh||"כתבי את מקצועך"} onFocus={focusOn} onBlur={focusOff}/>
+            )}
           </Fld>
-          <Fld label="עיר מגורים">
-            <input style={inputStyle("city")} name="city" value={form.city} onChange={set} placeholder="תל אביב, ירושלים..." onFocus={focusOn} onBlur={focusOff} />
+          <Fld label={Tr?.cityLbl||"עיר מגורים"}>
+            <select style={{...inp,color:form.city?C.ink:C.mute}} name="city" value={form.city} onChange={set} onFocus={focusOn} onBlur={focusOff}>
+              <option value="">{Tr?.citySelectPh||"בחרי עיר..."}</option>
+              {(Tr?.cities||[]).map(o=><option key={o} value={o}>{o}</option>)}
+            </select>
+            {(form.city==="אחר"||form.city==="Other"||form.city==="أخرى")&&(
+              <input style={{...inputStyle("cityOther"),marginTop:6}} name="cityOther" value={form.cityOther} onChange={set}
+                placeholder={Tr?.cityOtherPh||"כתבי את עירך"} onFocus={focusOn} onBlur={focusOff}/>
+            )}
           </Fld>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.6rem" }}>
-            <button style={{ ...ghostBtn, margin: 0 }} onClick={() => setStep(1)}>← חזרה</button>
-            <button style={{ ...primaryBtn, margin: 0 }} onClick={() => { setError(""); setStep(3); }}>המשך →</button>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:"0.6rem" }}>
+            <button style={{ ...ghostBtn, margin:0 }} onClick={()=>setStep(1)}>{Tr?.backBtn||"← חזרה"}</button>
+            <button style={{ ...primaryBtn, margin:0 }} onClick={()=>{ setError(""); setStep(3); }}>{Tr?.nextBtn||"המשך →"}</button>
           </div>
         </>
       )}
 
-      {step === 3 && (
+      {step===3 && (
         <>
-          <h2 style={heading}>הגדרת סיסמה</h2>
-          <p style={sub}>כמעט סיימנו</p>
+          <h2 style={heading}>{Tr?.step3H||"הגדרת סיסמה"}</h2>
+          <p style={sub}>{Tr?.step3Sub||"כמעט סיימנו"}</p>
           {error && <div style={errBox}>{error}</div>}
-          <Fld label="סיסמה *">
-            <input style={inputStyle("password")} type="password" name="password" value={form.password} onChange={set} placeholder="לפחות 6 תווים" required onFocus={focusOn} onBlur={focusOff} />
+          <Fld label={Tr?.passLbl2||"סיסמה *"}>
+            <input style={inputStyle("password")} type="password" name="password" value={form.password} onChange={set} placeholder={Tr?.passPh||"לפחות 6 תווים"} required onFocus={focusOn} onBlur={focusOff}/>
           </Fld>
-          <Fld label="אימות סיסמה *">
-            <input style={inputStyle("confirmPassword")} type="password" name="confirmPassword" value={form.confirmPassword} onChange={set} placeholder="חזרי על הסיסמה" required onFocus={focusOn} onBlur={focusOff} />
+          <Fld label={Tr?.confirmPassLbl||"אימות סיסמה *"}>
+            <input style={inputStyle("confirmPassword")} type="password" name="confirmPassword" value={form.confirmPassword} onChange={set} placeholder={Tr?.confirmPassPh||"חזרי על הסיסמה"} required onFocus={focusOn} onBlur={focusOff}/>
           </Fld>
           <div style={{
-            display: "flex", gap: "0.75rem", alignItems: "flex-start",
-            background: C.blush, border: `1px solid ${C.line}`,
-            borderRadius: 12, padding: "0.95rem", marginBottom: "1.1rem",
+            display:"flex", gap:"0.75rem", alignItems:"flex-start",
+            background: agreeErr ? "rgba(233,65,91,0.06)" : C.blush,
+            border: agreeErr ? "1px solid #e9415b" : `1px solid ${C.line}`,
+            borderRadius:12, padding:"0.95rem", marginBottom:"1.1rem",
+            transition:"border-color 0.2s, background 0.2s",
           }}>
-            <div
-              onClick={() => setAgreed(!agreed)}
-              style={{
-                width: 36, height: 20, flexShrink: 0,
-                background: agreed ? C.brand : "#d9c4cb",
-                borderRadius: 99, position: "relative", cursor: "pointer",
-                transition: "background 0.2s", marginTop: 2,
-              }}>
+            <div onClick={()=>{ setAgreed(!agreed); setAgreeErr(false); }} style={{
+              width:36, height:20, flexShrink:0,
+              background:agreed ? C.brand : "#d0d8e4",
+              borderRadius:99, position:"relative", cursor:"pointer",
+              transition:"background 0.2s", marginTop:2,
+            }}>
               <div style={{
-                position: "absolute", width: 14, height: 14, background: "#fff",
-                borderRadius: "50%", top: 3,
-                right: agreed ? 3 : "auto", left: agreed ? "auto" : 3,
-                transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
-              }} />
+                position:"absolute", width:14, height:14, background:"#fff",
+                borderRadius:"50%", top:3,
+                right:agreed?3:"auto", left:agreed?"auto":3,
+                transition:"all 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.18)",
+              }}/>
             </div>
-            <div style={{ color: C.ink, fontSize: "0.78rem", lineHeight: 1.6 }}>
-              <strong style={{ color: C.plum, fontWeight: 600 }}>מסכימה לשיתוף פרטים בתוך הרשת</strong><br />
-              <span style={{ color: C.mute }}>שם, מייל ומומחיות יהיו גלויים לבוגרות אחרות. פרטי קשר — רק לאחר אישורך.</span>
+            <div style={{ color:C.ink, fontSize:"0.78rem", lineHeight:1.6 }}>
+              <strong style={{ color:C.plum, fontWeight:600 }}>{Tr?.agreeTitle||"מסכימה לשיתוף פרטים בתוך הרשת"}</strong><br/>
+              <span style={{ color:C.mute }}>{Tr?.agreeSub||"שם, מייל ומומחיות יהיו גלויים לבוגרות אחרות. פרטי קשר — רק לאחר אישורך."}</span>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.6rem" }}>
-            <button style={{ ...ghostBtn, margin: 0 }} onClick={() => setStep(2)}>← חזרה</button>
-            <button style={{ ...primaryBtn, margin: 0 }} disabled={loading} onClick={submit}>
-              {loading ? "יוצרת חשבון..." : "הרשמה →"}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:"0.6rem" }}>
+            <button style={{ ...ghostBtn, margin:0 }} onClick={()=>setStep(2)}>{Tr?.backBtn||"← חזרה"}</button>
+            <button style={{ ...primaryBtn, margin:0 }} disabled={loading} onClick={submit}>
+              {loading ? (Tr?.submitting||"יוצרת חשבון...") : (Tr?.submitBtn||"הרשמה →")}
             </button>
           </div>
         </>
@@ -357,128 +543,164 @@ function SignUpForm({ onSwitchTab }) {
 /* ─── MAIN ─── */
 export default function AuthPage({ onBack }) {
   const [tab, setTab] = useState("login");
+  const { lang, isRTL, setLang } = useLang();
+  const Tr = AUTH_T[lang] || AUTH_T.he;
+  const dir = isRTL ? "rtl" : "ltr";
+
+  useEffect(() => {
+    document.body.style.overflow = "auto";
+    document.body.style.height   = "auto";
+    document.documentElement.style.overflow = "auto";
+    const root = document.getElementById("root");
+    if (root) { root.style.height = "auto"; root.style.overflow = "visible"; }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.height   = "";
+      document.documentElement.style.overflow = "";
+      if (root) { root.style.height = ""; root.style.overflow = ""; }
+    };
+  }, []);
 
   return (
     <div style={{
-      minHeight: "100vh", position: "relative",
-      fontFamily: fontStack,
-      background: C.cream,
-      overflow: "hidden",
+      minHeight:"100vh", position:"relative",
+      fontFamily:fontStack,
     }}>
-      {/* Soft floral bloom backdrop — pure CSS, no photo */}
+      {/* Background — group photo with overlay */}
       <div style={{
-        position: "fixed", inset: 0, zIndex: 0,
-        background: `
-          radial-gradient(800px circle at 12% 18%, ${C.blush} 0%, transparent 55%),
-          radial-gradient(700px circle at 88% 82%, #f3dde2 0%, transparent 55%),
-          radial-gradient(500px circle at 70% 12%, #faeef0 0%, transparent 60%),
-          ${C.cream}
-        `,
-      }} />
+        position:"fixed", inset:0, zIndex:0,
+        backgroundImage:"url('/background.jpg')",
+        backgroundSize:"cover", backgroundPosition:"center",
+      }}/>
+      <div style={{
+        position:"fixed", inset:0, zIndex:1,
+        background:"linear-gradient(135deg,rgba(29,72,150,0.82) 0%,rgba(68,114,184,0.70) 50%,rgba(232,115,90,0.35) 100%)",
+      }}/>
 
       {/* Top bar */}
       <div style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 10,
-        padding: "1.3rem 2.5rem", display: "flex",
-        alignItems: "center", justifyContent: "space-between",
-        direction: "rtl",
+        position:"fixed", top:0, left:0, right:0, zIndex:10,
+        padding:"1.3rem 2.5rem", display:"flex",
+        alignItems:"center", justifyContent:"space-between",
+        direction:"rtl",
+        background:"rgba(29,72,150,0.35)",
+        backdropFilter:"blur(12px)",
+        borderBottom:"1px solid rgba(255,255,255,0.1)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{
-            width: 40, height: 40, background: "#fff",
-            border: `1px solid ${C.line}`, borderRadius: 14,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "1.2rem", color: C.brand,
-            boxShadow: `0 4px 14px ${C.brand}1f`,
-          }}>♀</div>
+        <div style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
+          <img src="/NewLogoNGO.png"
+            onError={e=>{ e.target.style.display="none"; }}
+            alt="BogrotNet"
+            style={{ width:38, height:38, objectFit:"contain", borderRadius:"50%",
+              background:"rgba(255,255,255,0.12)", padding:4,
+              border:"2px solid rgba(255,255,255,0.4)" }}
+          />
           <div>
             <div style={{
-              fontFamily: "'Outfit',system-ui,sans-serif",
-              fontSize: "1.02rem", fontWeight: 600, color: C.plum, lineHeight: 1.15,
-              letterSpacing: "-0.005em",
-            }}>מנהיגות שווה</div>
-            <div style={{ fontSize: "0.66rem", color: C.mute, letterSpacing: "0.08em", fontWeight: 500 }}>רשת בוגרות</div>
+              fontFamily:"'Outfit',system-ui,sans-serif",
+              fontSize:"1.1rem", fontWeight:800, color:"#ffffff",
+              letterSpacing:"-0.01em",
+            }}>BogrotNet</div>
+            <div style={{ fontSize:"0.65rem", color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", fontWeight:500 }}>
+              רשת בוגרות · מנהיגות שווה
+            </div>
           </div>
         </div>
-        {onBack && (
-          <button onClick={onBack} style={{
-            background: "#fff",
-            border: `1px solid ${C.line}`,
-            color: C.ink, borderRadius: 99,
-            padding: "8px 18px", fontSize: "0.82rem",
-            fontWeight: 500, cursor: "pointer",
-            fontFamily: fontStack,
-            transition: "background 0.2s, border-color 0.2s",
-          }}
-            onMouseOver={e => { e.currentTarget.style.background = C.blush; e.currentTarget.style.borderColor = C.blushDeep; }}
-            onMouseOut={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = C.line; }}
-          >
-            ← חזרה לדף הבית
-          </button>
-        )}
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {/* Language switcher */}
+          <div style={{display:"flex",gap:4}}>
+            {["he","en","ar"].map(code=>(
+              <button key={code} onClick={()=>setLang(code)} style={{
+                padding:"4px 10px",borderRadius:999,border:"none",
+                background:lang===code?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.15)",
+                color:lang===code?"#1d4896":"#fff",
+                fontSize:11,fontWeight:700,cursor:"pointer",
+                transition:"all 0.18s",textTransform:"uppercase",
+                letterSpacing:"0.05em",
+              }}>{code}</button>
+            ))}
+          </div>
+          {onBack && (
+            <button onClick={onBack} style={{
+              background:"rgba(255,255,255,0.15)",
+              border:"1px solid rgba(255,255,255,0.35)",
+              color:"#fff", borderRadius:99,
+              padding:"8px 18px", fontSize:"0.82rem",
+              fontWeight:500, cursor:"pointer",
+              fontFamily:fontStack,
+              backdropFilter:"blur(8px)",
+              transition:"background 0.2s",
+            }}
+              onMouseOver={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.28)"; }}
+              onMouseOut={e =>{ e.currentTarget.style.background="rgba(255,255,255,0.15)"; }}
+            >
+              {Tr.backHome}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Card */}
       <div style={{
-        position: "relative", zIndex: 5,
-        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "6rem 1rem 5rem",
+        position:"relative", zIndex:5,
+        minHeight:"100vh", display:"flex", alignItems:"flex-start", justifyContent:"center",
+        padding:"6rem 1rem 5rem",
       }}>
         <div style={{
-          width: "100%", maxWidth: 420,
-          background: "#fff",
-          border: `1px solid ${C.line}`,
-          borderRadius: 24, padding: "2.5rem",
-          boxShadow: "0 20px 60px rgba(74,31,61,0.10), 0 4px 16px rgba(74,31,61,0.05)",
-          animation: "cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
+          width:"100%", maxWidth:420,
+          background:"rgba(255,255,255,0.97)",
+          border:"1px solid rgba(218,234,248,0.6)",
+          borderRadius:24, padding:"2.5rem",
+          boxShadow:"0 32px 80px rgba(29,72,150,0.28),0 4px 16px rgba(0,0,0,0.08)",
+          animation:"cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
         }}>
           {/* Tabs */}
           <div style={{
-            display: "flex", background: C.blush,
-            borderRadius: 99, padding: 4, marginBottom: "1.8rem",
-            direction: "rtl",
+            display:"flex", background:C.blush,
+            borderRadius:99, padding:4, marginBottom:"1.8rem",
+            direction:dir,
           }}>
-            {[["login", "כניסה"], ["signup", "הרשמה"]].map(([key, label]) => (
-              <button key={key} onClick={() => setTab(key)} style={{
-                flex: 1, padding: "0.55rem", borderRadius: 99, border: "none",
-                background: tab === key ? "#fff" : "transparent",
-                color: tab === key ? C.plum : C.mute,
-                fontFamily: fontStack,
-                fontSize: "0.86rem", fontWeight: 600, cursor: "pointer",
-                boxShadow: tab === key ? "0 2px 8px rgba(74,31,61,0.08)" : "none",
-                transition: "all 0.2s",
+            {[["login",Tr.loginTab],["signup",Tr.signupTab]].map(([key,label])=>(
+              <button key={key} onClick={()=>setTab(key)} style={{
+                flex:1, padding:"0.55rem", borderRadius:99, border:"none",
+                background:tab===key?"#fff":"transparent",
+                color:tab===key?C.plum:C.mute,
+                fontFamily:fontStack,
+                fontSize:"0.86rem", fontWeight:600, cursor:"pointer",
+                boxShadow:tab===key?"0 2px 8px rgba(68,114,184,0.12)":"none",
+                transition:"all 0.2s",
               }}>{label}</button>
             ))}
           </div>
 
-          {tab === "login" ? (
+          {tab==="login" ? (
             <>
-              <GoogleButton label="המשכי עם Google" />
-              <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "1.3rem 0" }}>
-                <div style={{ flex: 1, height: 1, background: C.line }} />
-                <span style={{ fontSize: "0.74rem", color: C.mute, fontWeight: 500 }}>או המשכי עם אימייל</span>
-                <div style={{ flex: 1, height: 1, background: C.line }} />
+              <GoogleButton label={Tr.googleLogin} Tr={Tr}/>
+              <div style={{ display:"flex", alignItems:"center", gap:14, margin:"1.3rem 0" }}>
+                <div style={{ flex:1, height:1, background:C.line }}/>
+                <span style={{ fontSize:"0.74rem", color:C.mute, fontWeight:500 }}>{Tr.orEmail}</span>
+                <div style={{ flex:1, height:1, background:C.line }}/>
               </div>
-              <LoginForm onSwitchTab={setTab} />
+              <LoginForm onSwitchTab={setTab} Tr={Tr} dir={dir}/>
             </>
           ) : (
             <>
-              <GoogleButton label="הרשמי עם Google" />
-              <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "1.3rem 0" }}>
-                <div style={{ flex: 1, height: 1, background: C.line }} />
-                <span style={{ fontSize: "0.74rem", color: C.mute, fontWeight: 500 }}>או הרשמי עם אימייל</span>
-                <div style={{ flex: 1, height: 1, background: C.line }} />
+              <GoogleButton label={Tr.googleSignup} Tr={Tr}/>
+              <div style={{ display:"flex", alignItems:"center", gap:14, margin:"1.3rem 0" }}>
+                <div style={{ flex:1, height:1, background:C.line }}/>
+                <span style={{ fontSize:"0.74rem", color:C.mute, fontWeight:500 }}>{Tr.orEmailSignup}</span>
+                <div style={{ flex:1, height:1, background:C.line }}/>
               </div>
-              <SignUpForm onSwitchTab={setTab} />
+              <SignUpForm onSwitchTab={setTab} Tr={Tr} dir={dir}/>
             </>
           )}
         </div>
       </div>
 
       <style>{`
-        @keyframes cardUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-        input::placeholder { color: ${C.mute} !important; opacity: 0.7; }
-        select option { background: #fff; }
+        @keyframes cardUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        input::placeholder { color:${C.mute} !important; opacity:0.7; }
+        select option { background:#fff; }
       `}</style>
     </div>
   );
