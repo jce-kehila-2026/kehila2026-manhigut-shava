@@ -297,7 +297,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [recommended,      setRecommended]      = useState([]);
   const [showSuggest,      setShowSuggest]      = useState(false);
   const [dropPos,          setDropPos]          = useState(null);
-  const nameInputRef = useRef(null);
+  const nameInputRef    = useRef(null);
+  const searchRef       = useRef(null);
+  const myReqRef        = useRef(null);
+  const receivedRef     = useRef(null);
+  const recommendedRef  = useRef(null);
+
+  const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const effectiveRegion = selectedRegion === "OTHER" ? otherRegion : selectedRegion;
   const effectiveArea   = selectedArea   === "OTHER" ? otherArea   : selectedArea;
@@ -608,8 +614,42 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       <p style={S.pageTitle}>{Tr.title}</p>
       <p style={S.pageSub}>{Tr.sub}</p>
 
+      {/* ── Section shortcuts ── */}
+      <div style={{
+        display: "flex", gap: 8, overflowX: "auto", flexWrap: "nowrap",
+        marginBottom: "1.25rem", paddingBottom: 4,
+        scrollbarWidth: "none", msOverflowStyle: "none",
+        WebkitScrollbar: "none",
+      }}>
+        {[
+          { label: lang === "he" ? "🔍 חיפוש" : "🔍 Search",       ref: searchRef      },
+          ...(sentRequests.length > 0     ? [{ label: lang === "he" ? "📤 הבקשות שלי"    : "📤 My Requests",      ref: myReqRef     }] : []),
+          ...(receivedRequests.length > 0 ? [{ label: lang === "he" ? "📥 בקשות שהתקבלו" : "📥 Received",         ref: receivedRef  }] : []),
+          ...(recommended.length > 0      ? [{ label: lang === "he" ? "⭐ מומלצות"        : "⭐ Recommended",      ref: recommendedRef }] : []),
+        ].map(({ label, ref }) => (
+          <button
+            key={label}
+            onClick={() => scrollTo(ref)}
+            style={{
+              flexShrink: 0,
+              padding: "7px 16px", borderRadius: 99,
+              background: "var(--bg-primary)",
+              border: "1.5px solid var(--border)",
+              color: "var(--text-secondary)",
+              fontSize: 13, fontWeight: 600,
+              cursor: "pointer", whiteSpace: "nowrap",
+              transition: "border-color 0.15s, color 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand)"; e.currentTarget.style.color = "var(--brand)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* ── Search Card — help area → region → member name ── */}
-      <div style={S.searchCard}>
+      <div ref={searchRef} style={S.searchCard}>
         {/* Help area (first — most important) */}
         <div style={S.group}>
           <label style={S.label}>{Tr.helpAreaLbl}</label>
@@ -832,7 +872,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
 
       {/* My Requests */}
       {sentRequests.length > 0 && (
-        <div style={S.myReqSection}>
+        <div ref={myReqRef} style={S.myReqSection}>
           <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.myReqs}</p>
           <div style={S.myReqGrid}>
             {sentRequests.map((r) => (
@@ -856,7 +896,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
 
       {/* Received Requests */}
       {receivedRequests.length > 0 && (
-        <div style={{ marginTop: "2.5rem", marginBottom: "2rem" }}>
+        <div ref={receivedRef} style={{ marginTop: "2.5rem", marginBottom: "2rem" }}>
           <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.recvReqs}</p>
           <div style={S.myReqGrid}>
             {receivedRequests.map((r) => (
@@ -896,7 +936,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
 
       {/* ── Recommended — at bottom ── */}
       {recommended.length > 0 && (
-        <div style={{ marginTop: "1rem" }}>
+        <div ref={recommendedRef} style={{ marginTop: "1rem" }}>
           <p style={S.sectionLabel}>{Tr.recommended}</p>
           <div style={S.recGrid}>
             {recommended.map((u) => (

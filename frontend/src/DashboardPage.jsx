@@ -423,6 +423,16 @@ export default function DashboardPage() {
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
 
+  /* Tab switch — resets back-history so pressing back never returns to a random tab */
+  const switchTab = useCallback((s) => {
+    localStorage.setItem("section", s);
+    setSection(s);
+    setProfileTarget(null);
+    setChatTarget(null);
+    setNavHistory([s]);
+  }, []);
+
+  /* Deep navigation — view profile, open specific chat, etc. — pushes history */
   const navigate = useCallback((s, options = {}) => {
     localStorage.setItem("section", s);
     setSection(s);
@@ -449,6 +459,8 @@ export default function DashboardPage() {
       const prevSection = next[next.length - 1];
       localStorage.setItem("section", prevSection);
       setSection(prevSection);
+      setProfileTarget(null);
+      setChatTarget(null);
       return next;
     });
   }, []);
@@ -578,7 +590,7 @@ export default function DashboardPage() {
               key={item.id} item={item}
               active={section === item.id}
               badge={item.id === "chat" ? unreadDMs : 0}
-              onClick={() => navigate(item.id)}
+              onClick={() => switchTab(item.id)}
               expanded={sidebarExpanded}
             />
           ))}
@@ -595,7 +607,7 @@ export default function DashboardPage() {
             display: "flex", alignItems: "center", gap: 10,
             paddingLeft: sidebarExpanded ? 12 : 0,
             justifyContent: sidebarExpanded ? "flex-start" : "center" }}
-            onClick={() => navigate("profile")} title={t.nav.profile}>
+            onClick={() => switchTab("profile")} title={t.nav.profile}>
             <div style={{ position: "relative", flexShrink: 0 }}>
               {avatarUrl(profile) ? (
                 <img src={avatarUrl(profile)} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(218,234,248,0.25)" }} alt="" />
@@ -746,7 +758,7 @@ export default function DashboardPage() {
                     background: "var(--bg-tertiary)", border: "1px solid var(--border)",
                     cursor: "pointer", transition: "border-color 0.2s",
                   }}
-                  onClick={() => navigate("profile")}
+                  onClick={() => switchTab("profile")}
                   onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--brand)"}
                   onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
                 >
@@ -765,7 +777,7 @@ export default function DashboardPage() {
 
           {/* Page content */}
           <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
-            {section === "home"      && <HomePage user={user} profile={profile} onNavigate={navigate} onViewProfile={(userId) => navigate("profile", { userId })} />}
+            {section === "home"      && <HomePage user={user} profile={profile} onNavigate={switchTab} onViewProfile={(userId) => navigate("profile", { userId })} />}
             {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
             {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
             {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
@@ -794,7 +806,7 @@ export default function DashboardPage() {
             return (
               <button
                 key={item.id}
-                onClick={() => navigate(item.id)}
+                onClick={() => switchTab(item.id)}
                 style={{
                   flex: 1, display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 3,
