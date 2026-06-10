@@ -1,15 +1,26 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLang } from "./LanguageContext";
 import { useIsMobile } from "./hooks/useIsMobile";
+import { useTheme } from "./ThemeContext";
 
 /* ── Palette ── */
-const C = {
+const C_LIGHT = {
   bg:"#fdf9f7", bgSoft:"#f0ebe5", bgBlue:"#f0f6fb",
   blue:"#4472b8", blueL:"#6da3d4", blueD:"#1d4896",
   bluePale:"#daeaf8", blueGhost:"#f0f6fb",
   coral:"#e8735a", coralL:"#f5a08c", coralD:"#c4503a",
   ink:"#111827", inkMid:"#374151", inkLight:"#6b7280",
-  white:"#ffffff",
+  white:"#ffffff",   // always pure white: text on colored bg, CTA buttons
+  card:"#ffffff",    // surface/card background
+};
+const C_DARK = {
+  bg:"#0f172a", bgSoft:"#1e293b", bgBlue:"#131f35",
+  blue:"#4472b8", blueL:"#6da3d4", blueD:"#1d4896",
+  bluePale:"#2a3f5e", blueGhost:"#1a2a40",
+  coral:"#e8735a", coralL:"#f5a08c", coralD:"#c4503a",
+  ink:"#e2e8f0", inkMid:"#94a3b8", inkLight:"#64748b",
+  white:"#ffffff",   // stays pure white (text on blue/coral backgrounds)
+  card:"#1e293b",    // dark surface/card background
 };
 
 /* ── Translations ── */
@@ -277,7 +288,7 @@ if (!document.getElementById("lp-css")) {
 /* ═══════════════════════════════════
    NAV CIRCLE — floating circular badge in hero
 ═══════════════════════════════════ */
-function NavCircle({ icon, title, sub, delay, onClick }) {
+function NavCircle({ icon, title, sub, delay, onClick, C }) {
   const [hov, setHov] = useState(false);
   const [vis, setVis] = useState(false);
   useEffect(() => {
@@ -289,7 +300,7 @@ function NavCircle({ icon, title, sub, delay, onClick }) {
       onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}>
       <button onClick={onClick} style={{
         width:64,height:64,borderRadius:"50%",border:`2.5px solid ${hov?C.blue:C.bluePale}`,
-        background:hov?C.blue:"rgba(255,255,255,0.94)",
+        background:hov?C.blue:C.card,
         boxShadow:hov?"0 10px 32px rgba(68,114,184,0.32)":"0 5px 22px rgba(68,114,184,0.16)",
         cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
         color:hov?C.white:C.blue,
@@ -327,7 +338,7 @@ function NavCircle({ icon, title, sub, delay, onClick }) {
 /* ═══════════════════════════════════
    FLOAT NAV DOTS — fixed sidebar after hero
 ═══════════════════════════════════ */
-function FloatNavDots({ sections, visible, isRTL }) {
+function FloatNavDots({ sections, visible, isRTL, C }) {
   const [hovIdx, setHovIdx] = useState(-1);
   if (!visible) return null;
   return (
@@ -343,7 +354,7 @@ function FloatNavDots({ sections, visible, isRTL }) {
           <button onClick={()=>sec.ref.current?.scrollIntoView({behavior:"smooth",block:"start"})}
             style={{
               width:38,height:38,borderRadius:"50%",
-              background:hovIdx===i?C.blue:"rgba(255,255,255,0.92)",
+              background:hovIdx===i?C.blue:C.card,
               border:`2px solid ${hovIdx===i?C.blue:C.bluePale}`,
               boxShadow:"0 3px 14px rgba(68,114,184,0.18)",
               cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
@@ -503,7 +514,7 @@ function useInView(threshold = 0.12) {
 /* ═══════════════════════════════════
    HERO WAVES — 4 animated layers
 ═══════════════════════════════════ */
-function HeroWaves() {
+function HeroWaves({ C }) {
   return (
     <div style={{position:"absolute",bottom:0,left:0,right:0,overflow:"visible",pointerEvents:"none",zIndex:1}}>
       {/* Wave D — deepest, slow */}
@@ -563,11 +574,11 @@ const Ic = {
 /* ═══════════════════════════════════
    FEATURE CARD
 ═══════════════════════════════════ */
-function FeatureCard({ icon, title, body, accent }) {
+function FeatureCard({ icon, title, body, accent, C }) {
   const [hov, setHov] = useState(false);
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
-      background:C.white,borderRadius:20,padding:"1.75rem 1.5rem",
+      background:C.card,borderRadius:20,padding:"1.75rem 1.5rem",
       border:`${hov?"2.5px":"1px"} solid ${hov?C.blue:C.bluePale}`,
       boxShadow:hov?"0 16px 48px rgba(68,114,184,0.14)":"0 2px 12px rgba(0,0,0,0.04)",
       transform:hov?"translateY(-5px)":"none",transition:"all 0.25s ease",
@@ -585,12 +596,12 @@ function FeatureCard({ icon, title, body, accent }) {
 /* ═══════════════════════════════════
    LEADER CARD
 ═══════════════════════════════════ */
-function LeaderCard({ name, role, achievement, photo, delay }) {
+function LeaderCard({ name, role, achievement, photo, delay, C }) {
   const [hov, setHov] = useState(false);
   const initials = name.split(" ").filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
-      background:C.white,borderRadius:22,padding:"1.75rem",
+      background:C.card,borderRadius:22,padding:"1.75rem",
       border:`${hov?"2.5px":"1px"} solid ${hov?C.blue:C.bluePale}`,
       boxShadow:hov?"0 20px 56px rgba(68,114,184,0.14)":"0 4px 20px rgba(0,0,0,0.05)",
       transform:hov?"translateY(-5px)":"none",
@@ -879,7 +890,7 @@ function MockupRequest() {
 /* ═══════════════════════════════════
    SCREENSHOT FLIP GUIDE
 ═══════════════════════════════════ */
-function ScreenshotFlipGuide({ T, onLogin }) {
+function ScreenshotFlipGuide({ T, onLogin, C }) {
   const [cur, setCur]       = useState(0);
   const [phase, setPhase]   = useState("idle"); // idle | exit | enter
   const total = T.howSteps.length;
@@ -912,7 +923,7 @@ function ScreenshotFlipGuide({ T, onLogin }) {
           position:"absolute",
           top:offset*8, left:offset*6, right:offset*6,
           height:"calc(100% - "+(offset*16)+"px)",
-          background:C.white,borderRadius:24,
+          background:C.card,borderRadius:24,
           border:`1px solid ${C.bluePale}`,
           transform:`rotate(${offset*2.5}deg)`,
           zIndex:3-offset,
@@ -924,7 +935,7 @@ function ScreenshotFlipGuide({ T, onLogin }) {
       {/* Front card */}
       <div style={{
         position:"relative",zIndex:3,
-        background:C.white,borderRadius:24,
+        background:C.card,borderRadius:24,
         border:`1px solid ${C.bluePale}`,
         boxShadow:"0 24px 64px rgba(68,114,184,0.14)",
         overflow:"hidden",
@@ -960,11 +971,11 @@ function ScreenshotFlipGuide({ T, onLogin }) {
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:16}}>
             <button onClick={()=>advance(-1)} style={{
               width:38,height:38,borderRadius:"50%",border:`1.5px solid ${C.bluePale}`,
-              background:C.white,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+              background:C.card,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
               color:C.blue,transition:"all 0.2s",
             }}
               onMouseOver={e=>{e.currentTarget.style.background=C.bluePale;}}
-              onMouseOut={e =>{e.currentTarget.style.background=C.white;}}
+              onMouseOut={e =>{e.currentTarget.style.background=C.card;}}
             >
               <span style={{transform:"scaleX(-1)",display:"block"}}>{Ic.chev}</span>
             </button>
@@ -982,11 +993,11 @@ function ScreenshotFlipGuide({ T, onLogin }) {
 
             <button onClick={()=>advance(1)} style={{
               width:38,height:38,borderRadius:"50%",border:`1.5px solid ${C.bluePale}`,
-              background:C.white,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+              background:C.card,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
               color:C.blue,transition:"all 0.2s",
             }}
               onMouseOver={e=>{e.currentTarget.style.background=C.bluePale;}}
-              onMouseOut={e =>{e.currentTarget.style.background=C.white;}}
+              onMouseOut={e =>{e.currentTarget.style.background=C.card;}}
             >{Ic.chev}</button>
           </div>
 
@@ -1016,6 +1027,8 @@ function ScreenshotFlipGuide({ T, onLogin }) {
 export default function LandingPage({ onLogin }) {
   const { isRTL, lang, setLang } = useLang();
   const isMobile = useIsMobile();
+  const { dark } = useTheme();
+  const C = dark ? C_DARK : C_LIGHT;
   const T   = LP[lang] ?? LP.he;
   const dir = isRTL ? "rtl" : "ltr";
 
@@ -1090,7 +1103,7 @@ export default function LandingPage({ onLogin }) {
   return (
     <div className="lp-root" style={{background:C.bg,minHeight:"100vh",overflowX:"hidden",direction:dir}}>
       {!introComplete && <IntroOverlay T={T} onDone={handleIntroDone}/>}
-      <FloatNavDots sections={navSections} visible={heroOut && !isMobile} isRTL={isRTL}/>
+      <FloatNavDots sections={navSections} visible={heroOut && !isMobile} isRTL={isRTL} C={C}/>
 
       {/* ══════════════════════════════════════
           HERO — full cream background, waves,
@@ -1106,7 +1119,7 @@ export default function LandingPage({ onLogin }) {
           position:"relative",
           background: isMobile
             ? `linear-gradient(160deg,${C.blueD} 0%,${C.blue} 60%,${C.blueL} 100%)`
-            : "#ffffff",
+            : C.bg,
         }}
       >
         <BackgroundBlobs/>
@@ -1211,11 +1224,11 @@ export default function LandingPage({ onLogin }) {
             top:"50%",transform:"translateY(-50%)",
             zIndex:50,display:"flex",flexDirection:"column",gap:12,
           }}>
-            <NavCircle icon={Ic.star}   title={T.navFeatures} sub={T.navFeaturesSub} delay={600}
+            <NavCircle icon={Ic.star}   title={T.navFeatures} sub={T.navFeaturesSub} delay={600}   C={C}
               onClick={()=>featRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}/>
-            <NavCircle icon={Ic.grad}   title={T.navHow}      sub={T.navHowSub}      delay={850}
+            <NavCircle icon={Ic.grad}   title={T.navHow}      sub={T.navHowSub}      delay={850}   C={C}
               onClick={()=>howRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}/>
-            <NavCircle icon={Ic.people} title={T.navLead}     sub={T.navLeadSub}     delay={1100}
+            <NavCircle icon={Ic.people} title={T.navLead}     sub={T.navLeadSub}     delay={1100}  C={C}
               onClick={()=>leadRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}/>
           </div>
         )}
@@ -1437,7 +1450,7 @@ export default function LandingPage({ onLogin }) {
                 filter:featVis?"none":"blur(4px)",
                 transitionDelay:`${i*0.09}s`,
               }}>
-                <FeatureCard icon={featIcons[i]} title={f.title} body={f.body} accent={featAccents[i]}/>
+                <FeatureCard icon={featIcons[i]} title={f.title} body={f.body} accent={featAccents[i]} C={C}/>
               </div>
             ))}
           </div>
@@ -1456,7 +1469,7 @@ export default function LandingPage({ onLogin }) {
             <p style={{textAlign:"center",color:C.inkLight,fontSize:17,maxWidth:480,margin:"0 auto 3rem",lineHeight:1.8}}>{T.howSub}</p>
           </div>
           <div className="lp-reveal" style={{opacity:howVis?1:0,transform:howVis?"none":"translateY(40px) scale(0.95)",filter:howVis?"none":"blur(5px)",transitionDelay:"0.15s"}}>
-            <ScreenshotFlipGuide T={T} onLogin={handleJoin}/>
+            <ScreenshotFlipGuide T={T} onLogin={handleJoin} C={C}/>
           </div>
         </div>
       </section>
@@ -1482,7 +1495,7 @@ export default function LandingPage({ onLogin }) {
                 filter:leadVis?"none":"blur(6px)",
                 transitionDelay:`${0.1+i*0.16}s`,
               }}>
-                <LeaderCard {...l} delay="0s"/>
+                <LeaderCard {...l} delay="0s" C={C}/>
               </div>
             ))}
           </div>
@@ -1520,7 +1533,7 @@ export default function LandingPage({ onLogin }) {
           <p style={{fontSize:18,color:"rgba(255,255,255,0.78)",lineHeight:1.85,marginBottom:"2.5rem"}}>{T.ctaDesc}</p>
           <div style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
             <button onClick={handleJoin} style={{
-              background:C.white,color:C.blue,border:"none",
+              background:"#ffffff",color:C.blue,border:"none",
               padding:"16px 42px",borderRadius:999,fontSize:15,fontWeight:700,cursor:"pointer",
               boxShadow:"0 8px 28px rgba(0,0,0,0.18)",transition:"transform 0.2s,box-shadow 0.2s"}}
               onMouseOver={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 12px 36px rgba(0,0,0,0.24)";}}
@@ -1619,7 +1632,7 @@ export default function LandingPage({ onLogin }) {
 
       {/* FOOTER BAR */}
       <footer style={{
-        background:C.ink,color:"rgba(255,255,255,0.35)",
+        background: dark ? "#0a0f1a" : "#111827", color:"rgba(255,255,255,0.35)",
         padding:"1.4rem clamp(1.5rem,6vw,5rem)",
         display:"flex",alignItems:"center",justifyContent:"space-between",
         flexWrap:"wrap",gap:"0.75rem",fontSize:12,
