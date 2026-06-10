@@ -568,15 +568,17 @@ export default function AuthPage({ onBack }) {
       minHeight:"100vh", position:"relative",
       fontFamily:fontStack,
     }}>
-      {/* Background — group photo with overlay */}
+      {/* Background — group photo with overlay, pointer-events:none so they don't capture scroll on iOS */}
       <div style={{
         position:"fixed", inset:0, zIndex:0,
         backgroundImage:"url('/background.jpg')",
         backgroundSize:"cover", backgroundPosition:"center",
+        pointerEvents:"none",
       }}/>
       <div style={{
         position:"fixed", inset:0, zIndex:1,
         background:"linear-gradient(135deg,rgba(29,72,150,0.82) 0%,rgba(68,114,184,0.70) 50%,rgba(232,115,90,0.35) 100%)",
+        pointerEvents:"none",
       }}/>
 
       {/* Top bar */}
@@ -642,11 +644,12 @@ export default function AuthPage({ onBack }) {
         </div>
       </div>
 
-      {/* Card */}
+      {/* Card — this div is the scroll container */}
       <div style={{
         position:"relative", zIndex:5,
-        minHeight:"100vh", display:"flex", alignItems:"flex-start", justifyContent:"center",
+        minHeight:"100dvh", display:"flex", alignItems:"flex-start", justifyContent:"center",
         padding:"6rem 1rem 5rem",
+        overflowY:"auto", overflowX:"hidden",
       }}>
         <div style={{
           width:"100%", maxWidth:420,
