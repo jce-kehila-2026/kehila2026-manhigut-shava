@@ -22,6 +22,9 @@ const C_DARK = {
   white:"#ffffff",   // stays pure white (text on blue/coral backgrounds)
   card:"#1e293b",    // dark surface/card background
 };
+// Static fallback for components that don't need theme-switching
+// (IntroOverlay, BackgroundBlobs, SonarRings — all use blues/corals identical in both themes)
+const C = C_LIGHT;
 
 /* ── Translations ── */
 const LP = {
