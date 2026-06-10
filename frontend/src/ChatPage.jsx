@@ -766,13 +766,16 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
     }
   };
 
+  const didOpenInitial = useRef(false);
   useEffect(() => {
-    if (!openChatWithUserId || activeConvId || allUsers.length === 0) return;
+    if (!openChatWithUserId || allUsers.length === 0) return;
+    if (didOpenInitial.current) return;
     const targetUser = allUsers.find((u) => u.id === openChatWithUserId);
     if (targetUser) {
+      didOpenInitial.current = true;
       handleNewConversation(targetUser);
     }
-  }, [openChatWithUserId, allUsers, activeConvId]);
+  }, [openChatWithUserId, allUsers]);
 
   const getDateLabel = (msg, prev) => {
     if (!prev) return formatDateLabel(msg.createdAt);

@@ -91,9 +91,10 @@ body {
   line-height: 1.55;
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
   font-weight: 400;
 }
-#root { height: 100vh; display: flex; flex-direction: column; }
+#root { height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
 a { color: inherit; text-decoration: none; }
 button { font-family: var(--font); cursor: pointer; border: none; background: none; }
 input, textarea, select { font-family: var(--font); }

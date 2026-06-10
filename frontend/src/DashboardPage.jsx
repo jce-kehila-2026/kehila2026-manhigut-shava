@@ -144,12 +144,14 @@ const eyebrow = {
 };
 
 /* ── Quick-access floating circle ── */
-function QuickCircle({ icon, title, desc, coral, floatIdx, onClick }) {
+function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, small }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
   const floatAnim = `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
+  const sz = small ? 110 : 160;
+  const ringInset = small ? 12 : 18;
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, cursor:"pointer",
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: small ? 6 : 10, cursor:"pointer",
       animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
@@ -159,14 +161,14 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick }) {
         {[1,2].map(r => (
           <div key={r} style={{
             position:"absolute", borderRadius:"50%",
-            inset: -(r * 18),
+            inset: -(r * ringInset),
             border:`1.5px solid ${coral ? `rgba(232,115,90,${0.22 - r*0.08})` : `rgba(68,114,184,${0.18 - r*0.07})`}`,
             animation:`qc-ring ${2.8 + r * 0.6}s ${r * 0.55}s ease-out infinite`,
             pointerEvents:"none",
           }}/>
         ))}
         <div style={{
-          width:160, height:160, borderRadius:"50%",
+          width:sz, height:sz, borderRadius:"50%",
           background: hov ? color : (coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)"),
           border:`2.5px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
           display:"flex", alignItems:"center", justifyContent:"center",
@@ -176,14 +178,15 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick }) {
           boxShadow: hov ? `0 20px 48px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 4px 20px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform:"scale(1.5)" }}>{icon}</div>
+          <div style={{ transform: small ? "scale(1.2)" : "scale(1.5)" }}>{icon}</div>
         </div>
       </div>
-      <p style={{ fontSize:13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth:110 }}>{title}</p>
-      {/* Reserve fixed space — opacity prevents layout shift on hover */}
-      <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
-        lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
-        opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
+      <p style={{ fontSize: small ? 11 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: small ? 80 : 110 }}>{title}</p>
+      {!small && (
+        <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
+          lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
+          opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
+      )}
     </div>
   );
 }
@@ -193,6 +196,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [helpRequests, setHelpRequests] = useState([]);
   const [suggested, setSuggested]       = useState([]);
   const { t } = useLang();
+  const isMobile = useIsMobile();
 
   const initials = profile
     ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
@@ -226,7 +230,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   ];
 
   return (
-    <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "2.25rem 2.75rem" }}>
+    <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: isMobile ? "1.25rem 1rem 1.5rem" : "2.25rem 2.75rem" }}>
       {/* Welcome banner — redesigned */}
       {(() => {
         const hr = new Date().getHours();
@@ -234,11 +238,11 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         const greeting = t.dash[greetKey] || t.dash.welcomeBack;
         return (
           <div style={{
-            marginBottom:"2rem", borderRadius:20, padding:"1.5rem 1.75rem",
+            marginBottom:"2rem", borderRadius:20, padding: isMobile ? "1rem 1.1rem" : "1.5rem 1.75rem",
             background:"var(--bg-primary,#fff)",
             position:"relative", overflow:"hidden",
             boxShadow:"0 2px 18px rgba(29,72,150,0.08), 0 0 0 1px rgba(29,72,150,0.07)",
-            display:"flex", alignItems:"center", gap:18,
+            display:"flex", alignItems:"center", gap:14,
           }}>
             {/* Left gradient accent */}
             <div style={{ position:"absolute", left:0, top:0, bottom:0, width:4,
@@ -283,18 +287,20 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               )}
             </div>
 
-            {/* Online badge */}
-            <div style={{
-              flexShrink:0, display:"flex", alignItems:"center", gap:6,
-              padding:"5px 13px", borderRadius:99,
-              background:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.28)",
-            }}>
-              <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80",
-                boxShadow:"0 0 0 2px rgba(74,222,128,0.25)" }} />
-              <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>
-                {t.common?.online || "Online"}
-              </span>
-            </div>
+            {/* Online badge — hidden on mobile to avoid crowding */}
+            {!isMobile && (
+              <div style={{
+                flexShrink:0, display:"flex", alignItems:"center", gap:6,
+                padding:"5px 13px", borderRadius:99,
+                background:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.28)",
+              }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80",
+                  boxShadow:"0 0 0 2px rgba(74,222,128,0.25)" }} />
+                <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>
+                  {t.common?.online || "Online"}
+                </span>
+              </div>
+            )}
           </div>
         );
       })()}
@@ -334,9 +340,9 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
         @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
       `}</style>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1.5rem", marginBottom: "2.5rem", padding: "0.5rem 0 1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "1rem" : "1.5rem", marginBottom: "2.5rem", padding: "0.5rem 0 1.5rem" }}>
         {quickCircles.map((circle, i) => (
-          <QuickCircle key={circle.action} {...circle} floatIdx={i} onClick={() => onNavigate(circle.action)} />
+          <QuickCircle key={circle.action} {...circle} floatIdx={i} small={isMobile} onClick={() => onNavigate(circle.action)} />
         ))}
       </div>
 
@@ -487,10 +493,16 @@ export default function DashboardPage() {
 
   return (
     <div style={{
-      display: "flex", height: "100vh", overflow: "hidden",
+      display: "flex", flexDirection: "column",
+      height: "100dvh",
+      /* 100dvh = shrinks as mobile browser chrome shows/hides; fallback to 100vh */
       fontFamily: "'Figtree','Outfit',system-ui,-apple-system,sans-serif",
       direction: dir,
+      overflow: "hidden",
     }}>
+      {/* ── Row that holds sidebar + main (fills all space above bottom nav) ── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden", minHeight: 0 }}>
+
       {/* ── Sidebar — expandable (hidden on mobile) ── */}
       <aside style={{
         width: isMobile ? 0 : sidebarW,
@@ -602,7 +614,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* ── Main ── */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative", paddingBottom: isMobile ? 60 : 0 }}>
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative" }}>
         {/* Floating water blob background */}
         <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
           {/* Blob 1 — large blue, top-right */}
@@ -763,15 +775,18 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* ── Mobile bottom navigation bar ── */}
+      </div>{/* end row (sidebar + main) */}
+
+      {/* ── Mobile bottom navigation bar — flex sibling, not position:fixed ── */}
       {isMobile && (
         <nav style={{
-          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
+          flexShrink: 0,
           background: "var(--sidebar-bg)",
           borderTop: "1px solid rgba(255,255,255,0.08)",
           display: "flex", alignItems: "stretch",
-          height: 60,
+          height: "calc(56px + env(safe-area-inset-bottom, 0px))",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          zIndex: 50,
         }}>
           {navItems.map((item) => {
             const isActive = section === item.id;
