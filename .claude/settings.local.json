@@ -8,7 +8,10 @@
       "Bash(git commit -m 'fix: upgrade Cloud Functions runtime to Node.js 20 *)",
       "Bash(git commit -m 'feat: remove Terms page from user flow *)",
       "Bash(git commit -m 'fix: remove duplicate OTP send from AuthPage — OtpVerificationPage handles it on mount *)",
-      "Bash(git commit -m 'chore: add background image and functions lockfile *)"
+      "Bash(git commit -m 'chore: add background image and functions lockfile *)",
+      "Bash(npx eslint *)",
+      "Bash(git stash *)",
+      "Bash(npx vite *)"
     ]
   }
 }

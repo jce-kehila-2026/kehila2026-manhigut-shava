@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import * as XLSX from "xlsx";
 import {
   collection, getDocs, deleteDoc, doc, query,
   orderBy, updateDoc, limit, where,
@@ -42,6 +43,18 @@ const AT = {
       canSendAnnouncements:"שליחת הודעות לקהילה",
       canExportData:"ייצוא נתונים",
     },
+    downloadExcel:"הורדה לאקסל", uploadData:"העלאת נתונים",
+    exportTitle:"בחרי שדות לייצוא", exportSub:"סמני אילו עמודות לכלול בקובץ האקסל",
+    selectAllFields:"בחרי הכל", clearAllFields:"נקי הכל",
+    exportSelectedBtn:(n)=>`ייצוא ${n} שדות`, noFieldsSelected:"לא נבחרו שדות לייצוא.",
+    downloading:"מוריד...", uploading:"מעלה...",
+    downloadSuccess:"הקובץ הורד בהצלחה!", uploadSuccess:(n)=>`${n} שורות עודכנו בהצלחה!`,
+    uploadError:"שגיאה בהעלאת הקובץ.", downloadError:"שגיאה בהורדת הקובץ.",
+    invalidFileType:"סוג קובץ לא חוקי. אנא העלי קובץ אקסל אמיתי (.xlsx או .xls) בלבד.",
+    corruptedFile:"הקובץ פגום או שאינו ניתן לקריאה.",
+    emptyFile:"הקובץ ריק — לא נמצאו שורות.",
+    missingEmailCol:"עמודת 'email' חסרה בקובץ.",
+    skippedRows:(n)=>`${n} שורות דולגו (אימייל לא נמצא במערכת).`,
     showDataTab:"נתונים", reportsTab:"דיווחים",
     noReports:"אין דיווחים עדיין.", reportFrom:"דווח ע\"י", reportedUser:"משתמשת מדווחת",
     reportReason:"סיבה", reportDate:"תאריך", reportStatus:"סטטוס",
@@ -99,6 +112,18 @@ const AT = {
       canSendAnnouncements:"Send Community Announcements",
       canExportData:"Export Data",
     },
+    downloadExcel:"Download to Excel", uploadData:"Upload Data",
+    exportTitle:"Select Fields to Export", exportSub:"Choose which columns to include in the Excel file",
+    selectAllFields:"Select All", clearAllFields:"Clear All",
+    exportSelectedBtn:(n)=>`Export ${n} field${n===1?"":"s"}`, noFieldsSelected:"No fields selected for export.",
+    downloading:"Downloading…", uploading:"Uploading…",
+    downloadSuccess:"File downloaded successfully!", uploadSuccess:(n)=>`${n} rows updated successfully!`,
+    uploadError:"Error uploading file.", downloadError:"Error downloading file.",
+    invalidFileType:"Invalid file type. Please upload a real Excel file (.xlsx or .xls) only.",
+    corruptedFile:"The file is corrupted or unreadable.",
+    emptyFile:"The file is empty — no rows found.",
+    missingEmailCol:"'email' column is missing from the file.",
+    skippedRows:(n)=>`${n} rows skipped (email not found in system).`,
     showDataTab:"Data", reportsTab:"Reports",
     noReports:"No reports yet.", reportFrom:"Reported by", reportedUser:"Reported user",
     reportReason:"Reason", reportDate:"Date", reportStatus:"Status",
@@ -156,6 +181,18 @@ const AT = {
       canSendAnnouncements:"إرسال إعلانات للمجتمع",
       canExportData:"تصدير البيانات",
     },
+    downloadExcel:"تنزيل إلى إكسل", uploadData:"رفع بيانات",
+    exportTitle:"اختاري الحقول للتصدير", exportSub:"اختاري الأعمدة التي تريدين تضمينها في ملف إكسل",
+    selectAllFields:"تحديد الكل", clearAllFields:"مسح الكل",
+    exportSelectedBtn:(n)=>`تصدير ${n} حقول`, noFieldsSelected:"لم يتم تحديد أي حقول للتصدير.",
+    downloading:"جارٍ التنزيل…", uploading:"جارٍ الرفع…",
+    downloadSuccess:"تم تنزيل الملف بنجاح!", uploadSuccess:(n)=>`تم تحديث ${n} صفوف بنجاح!`,
+    uploadError:"خطأ في رفع الملف.", downloadError:"خطأ في تنزيل الملف.",
+    invalidFileType:"نوع ملف غير صالح. يرجى رفع ملف إكسل حقيقي (.xlsx أو .xls) فقط.",
+    corruptedFile:"الملف تالف أو غير قابل للقراءة.",
+    emptyFile:"الملف فارغ — لم يتم العثور على صفوف.",
+    missingEmailCol:"عمود 'email' مفقود من الملف.",
+    skippedRows:(n)=>`تم تخطي ${n} صفوف (البريد الإلكتروني غير موجود في النظام).`,
     showDataTab:"البيانات", reportsTab:"البلاغات",
     noReports:"لا توجد بلاغات بعد.", reportFrom:"مُبلَّغ من قِبَل", reportedUser:"المستخدمة المُبلَّغ عنها",
     reportReason:"السبب", reportDate:"التاريخ", reportStatus:"الحالة",
@@ -348,6 +385,39 @@ const S = {
     fontSize: "12px", fontWeight: 700, cursor: "pointer",
     transition: "background 0.15s",
   },
+  /* Excel buttons */
+  excelBtn: {
+    display: "inline-flex", alignItems: "center", gap: "6px",
+    padding: "8px 18px", borderRadius: "10px",
+    fontSize: "12px", fontWeight: 700, cursor: "pointer",
+    fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+    transition: "all 0.18s",
+    border: "1.5px solid #bfdbfe", background: "#eff6ff", color: "#1d4896",
+  },
+  excelBtnUpload: {
+    display: "inline-flex", alignItems: "center", gap: "6px",
+    padding: "8px 18px", borderRadius: "10px",
+    fontSize: "12px", fontWeight: 700, cursor: "pointer",
+    fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+    transition: "all 0.18s",
+    border: "1.5px solid #a3d9a5", background: "#f0fdf4", color: "#166534",
+  },
+  /* Toast */
+  toastWrap: {
+    position: "fixed", bottom: "2rem", left: "50%", transform: "translateX(-50%)",
+    zIndex: 999, pointerEvents: "none",
+  },
+  toastBox: (variant) => ({
+    pointerEvents: "auto",
+    padding: "12px 22px", borderRadius: "14px",
+    fontSize: "13px", fontWeight: 700,
+    display: "flex", alignItems: "center", gap: "10px",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+    animation: "slideUp 0.35s ease both",
+    background: variant === "success" ? "#e2efe1" : variant === "error" ? "#f5dada" : "#dbeafe",
+    color: variant === "success" ? "#3f6a3e" : variant === "error" ? "#c25c5c" : "#1d4896",
+    border: variant === "success" ? "1.5px solid #cfe4ce" : variant === "error" ? "1.5px solid #d99090" : "1.5px solid #bfdbfe",
+  }),
   logFilterInput: {
     padding: "7px 12px", fontSize: "12px",
     border: "1.5px solid var(--border,#f0dce0)", borderRadius: "9px",
@@ -413,6 +483,31 @@ function SectionHeader({ title, count, action }) {
   );
 }
 
+/* ── Toast notification ── */
+function Toast({ message, variant, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4500);
+    return () => clearTimeout(t);
+  }, [onClose]);
+  return (
+    <div style={S.toastWrap}>
+      <div style={S.toastBox(variant)}>
+        {variant === "success" ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        ) : variant === "error" ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        )}
+        <span>{message}</span>
+        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"inherit", padding:"2px", marginLeft:"4px", lineHeight:1 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Log type config ─── */
 const LOG_TYPES = {
   signup:               { label: "SIGNUP",         bg: "#e2efe1", color: "#3f6a3e", borderColor: "#7ba87a" },
@@ -468,6 +563,41 @@ function formatAbsoluteTime(ts) {
 /* ─── Permission keys ─── */
 const PERM_KEYS = ["canManageUsers","canManageContent","canViewLogs","canManageAdmins","canViewStats","canSendAnnouncements","canExportData"];
 const DEFAULT_PERMS = Object.fromEntries(PERM_KEYS.map(k => [k, false]));
+
+/* ─── Excel export fields config (shared by download + selection modal) ─── */
+const EXPORT_FIELDS = [
+  { key:"firstName",          label:"First Name" },
+  { key:"lastName",           label:"Last Name" },
+  { key:"email",              label:"Email" },
+  { key:"phone",              label:"Phone" },
+  { key:"birthdate",          label:"Birthdate" },
+  { key:"region",             label:"Region" },
+  { key:"city",               label:"City" },
+  { key:"profession",         label:"Profession" },
+  { key:"campus",             label:"Campus" },
+  { key:"bachelorDegree",     label:"Bachelor Degree" },
+  { key:"masterDegree",       label:"Master Degree" },
+  { key:"phdDegree",          label:"PhD Degree" },
+  { key:"currentRole",        label:"Current Role" },
+  { key:"employmentSectors",  label:"Employment Sectors" },
+  { key:"governmentMinistry", label:"Government Ministry" },
+  { key:"localAuthority",     label:"Local Authority" },
+  { key:"partyAffiliation",   label:"Party Affiliation" },
+  { key:"publicRoles",        label:"Public Roles" },
+  { key:"helpAreas",          label:"Help Areas" },
+  { key:"wantToReceive",      label:"Wants to Receive" },
+  { key:"mentoringRole",      label:"Mentoring Role" },
+  { key:"linkedin",           label:"LinkedIn" },
+  { key:"instagram",          label:"Instagram" },
+  { key:"facebook",           label:"Facebook" },
+  { key:"tagline",            label:"Tagline" },
+  { key:"bio",                label:"Bio" },
+  { key:"_religiousIdentity", label:"Religious Identity" },
+  { key:"_communityEthnicity",label:"Community / Ethnicity" },
+  { key:"emailVerified",      label:"Email Verified" },
+  { key:"isAdmin",            label:"Is Admin" },
+  { key:"createdAt",          label:"Created At" },
+];
 
 /* ── Simple confirm modal ── */
 function ConfirmModal({ title, message, confirmLabel, onConfirm, onCancel, danger = true }) {
@@ -538,6 +668,91 @@ function PermissionsModal({ user: u, isNew, onSave, onCancel, Tr }) {
           <button style={S.cancelModalBtn} onClick={onCancel}>{Tr?.cancel}</button>
           <button style={{ ...S.saveModalBtn, opacity: saving ? 0.7 : 1 }} onClick={handleSave} disabled={saving}>
             {saving ? Tr?.saving : (isNew ? Tr?.savePerms : Tr?.updatePerms)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   EXPORT FIELD-SELECTION MODAL
+   Lets the admin pick exactly which columns to include
+   in the Excel export before downloading.
+═══════════════════════════════════════════════════════ */
+function ExportFieldsModal({ busy, onExport, onCancel, Tr }) {
+  /* Selected = set of field keys. Default: everything checked. */
+  const [selected, setSelected] = useState(() => new Set(EXPORT_FIELDS.map(f => f.key)));
+
+  const toggle = (key) =>
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  const selectAll = () => setSelected(new Set(EXPORT_FIELDS.map(f => f.key)));
+  const clearAll  = () => setSelected(new Set());
+
+  const count = selected.size;
+
+  const handleExport = () => {
+    if (count === 0) return;
+    /* Preserve the canonical field order from EXPORT_FIELDS */
+    onExport(EXPORT_FIELDS.filter(f => selected.has(f.key)).map(f => f.key));
+  };
+
+  return (
+    <div style={S.overlay} onClick={onCancel}>
+      <div style={{ ...S.modalBox, maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+        <p style={S.modalTitle}>{Tr?.exportTitle}</p>
+        <p style={{ fontSize: 13, color: "var(--text-muted,#6b7280)", margin: "0 0 0.25rem" }}>{Tr?.exportSub}</p>
+
+        {/* Select-all / clear-all bar */}
+        <div style={{ display: "flex", gap: 8, marginBottom: "0.25rem" }}>
+          <button type="button" onClick={selectAll} style={{ ...S.refreshBtn, padding: "5px 12px" }}>
+            {Tr?.selectAllFields}
+          </button>
+          <button type="button" onClick={clearAll} style={{ ...S.refreshBtn, padding: "5px 12px", background: "var(--bg-tertiary,#f0f6fb)", border: "1.5px solid var(--border,#daeaf8)", color: "var(--text-muted,#6b7280)" }}>
+            {Tr?.clearAllFields}
+          </button>
+        </div>
+
+        {/* Field checkboxes — 2-column grid, same checkbox visual as PermissionsModal */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, maxHeight: "48vh", overflowY: "auto", paddingRight: 4 }}>
+          {EXPORT_FIELDS.map(({ key, label }) => {
+            const on = selected.has(key);
+            return (
+              <label key={key} onClick={() => toggle(key)} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderRadius: 10, cursor: "pointer",
+                background: on ? "rgba(68,114,184,0.08)" : "var(--bg-secondary,#f0f6fb)",
+                border: on ? "1.5px solid rgba(68,114,184,0.3)" : "1.5px solid transparent",
+                transition: "all 0.15s",
+              }}>
+                <div style={{
+                  width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                  background: on ? "var(--brand,#4472b8)" : "var(--bg-tertiary,#daeaf8)",
+                  border: on ? "none" : "1.5px solid #b0c4de",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.15s",
+                }}>
+                  {on && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <span style={{ fontSize: 12.5, fontWeight: on ? 700 : 500, color: "var(--text-primary,#111827)" }}>{label}</span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div style={S.modalActions}>
+          <button style={S.cancelModalBtn} onClick={onCancel} disabled={busy}>{Tr?.cancel}</button>
+          <button
+            style={{ ...S.saveModalBtn, opacity: (busy || count === 0) ? 0.6 : 1, cursor: (busy || count === 0) ? "not-allowed" : "pointer" }}
+            onClick={handleExport}
+            disabled={busy || count === 0}
+          >
+            {busy ? Tr?.downloading : (count === 0 ? Tr?.noFieldsSelected : Tr?.exportSelectedBtn?.(count))}
           </button>
         </div>
       </div>
@@ -666,6 +881,15 @@ export default function AdminPage() {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchUser, setSearchUser] = useState("");
+
+  /* ── Toast state ── */
+  const [toast, setToast] = useState(null); // { message, variant }
+  const showToast = useCallback((message, variant = "success") => setToast({ message, variant }), []);
+
+  /* ── Excel refs ── */
+  const fileInputRef = useRef(null);
+  const [excelBusy, setExcelBusy] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
@@ -888,6 +1112,168 @@ export default function AdminPage() {
       });
     } catch (err) { console.error("Admin delete comment error:", err); }
   };
+
+  /* ── Download to Excel (only the admin-selected fields) ── */
+  const handleDownloadExcel = useCallback((selectedKeys) => {
+    /* Fall back to all fields if called without a selection */
+    const keys = (selectedKeys && selectedKeys.length)
+      ? selectedKeys
+      : EXPORT_FIELDS.map(f => f.key);
+    const fields = EXPORT_FIELDS.filter(f => keys.includes(f.key));
+
+    setExcelBusy(true);
+    try {
+      const rows = users.map(u => {
+        const row = {};
+        fields.forEach(({ key, label }) => {
+          const val = u[key];
+          if (Array.isArray(val)) row[label] = val.join("; ");
+          else if (typeof val === "boolean") row[label] = val ? "Yes" : "No";
+          else row[label] = val ?? "";
+        });
+        return row;
+      });
+      const ws = XLSX.utils.json_to_sheet(rows);
+      /* Set column widths (per selected field, same order) */
+      ws["!cols"] = fields.map(({ key }) => ({
+        wch: key === "bio" ? 40 : key === "email" ? 28 : key === "helpAreas" || key === "employmentSectors" ? 50 : 20,
+      }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Users");
+      const date = new Date().toISOString().slice(0,10);
+      /* Force a TRUE native .xlsx (OOXML) — bookType pinned so the format is
+         never inferred from the name nor written as renamed CSV. */
+      XLSX.writeFile(wb, `kehila_users_${date}.xlsx`, { bookType: "xlsx", compression: true });
+      showToast(Tr.downloadSuccess, "success");
+      logActivity({
+        type: "admin_export_data", actorId: user.uid, actorName: adminName,
+        details: { rowCount: users.length, fields: keys },
+      });
+      setExportModalOpen(false);
+    } catch (err) {
+      console.error("Download error:", err);
+      showToast(Tr.downloadError, "error");
+    } finally {
+      setExcelBusy(false);
+    }
+  }, [users, Tr, user, adminName, showToast]);
+
+  /* ── Upload — STRICTLY true Excel files (.xlsx / .xls) only ── */
+  const handleUploadExcel = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+
+    /* Gate 1: extension must be .xlsx or .xls (no .csv) */
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "xlsx" && ext !== "xls") {
+      showToast(Tr.invalidFileType, "error");
+      return;
+    }
+
+    setExcelBusy(true);
+    try {
+      const data = await file.arrayBuffer();
+
+      /* Gate 2: verify the BINARY signature so a renamed .csv can't slip
+         through. A real .xlsx is a ZIP archive (starts with "PK", 50 4B);
+         a real .xls is an OLE2 compound file (D0 CF 11 E0). Anything else
+         (e.g. a CSV renamed to .xlsx) is rejected before parsing. */
+      const sig = new Uint8Array(data.slice(0, 4));
+      const isXlsx = sig[0] === 0x50 && sig[1] === 0x4b;                              // PK..
+      const isXls  = sig[0] === 0xd0 && sig[1] === 0xcf && sig[2] === 0x11 && sig[3] === 0xe0; // OLE2
+      if (!isXlsx && !isXls) {
+        showToast(Tr.invalidFileType, "error");
+        setExcelBusy(false);
+        return;
+      }
+
+      let wb;
+      try {
+        /* Pin the type so SheetJS never falls back to CSV/text parsing */
+        wb = XLSX.read(data, { type: "array", codepage: 65001 });
+      } catch {
+        showToast(Tr.corruptedFile, "error");
+        setExcelBusy(false);
+        return;
+      }
+
+      const sheetName = wb.SheetNames[0];
+      if (!sheetName) { showToast(Tr.emptyFile, "error"); setExcelBusy(false); return; }
+
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: "" });
+      if (rows.length === 0) { showToast(Tr.emptyFile, "error"); setExcelBusy(false); return; }
+
+      /* Build a reverse label→key map */
+      const labelToKey = {};
+      EXPORT_FIELDS.forEach(({ key, label }) => { labelToKey[label.toLowerCase()] = key; });
+
+      /* Check for email column */
+      const headerKeys = Object.keys(rows[0]).map(h => h.toLowerCase());
+      if (!headerKeys.includes("email")) {
+        showToast(Tr.missingEmailCol, "error");
+        setExcelBusy(false);
+        return;
+      }
+
+      /* Build email→userId map from existing users */
+      const emailToUser = {};
+      users.forEach(u => { if (u.email) emailToUser[u.email.toLowerCase().trim()] = u; });
+
+      const ARRAY_FIELDS = new Set(["employmentSectors", "helpAreas"]);
+      const BOOL_FIELDS = new Set(["emailVerified", "isAdmin"]);
+      const READONLY_FIELDS = new Set(["createdAt", "emailVerified", "isAdmin"]);
+
+      let updatedCount = 0;
+      let skippedCount = 0;
+
+      for (const row of rows) {
+        /* Find email value (case-insensitive header match) */
+        const emailHeader = Object.keys(row).find(h => h.toLowerCase() === "email");
+        const email = (row[emailHeader] || "").toString().toLowerCase().trim();
+        if (!email) { skippedCount++; continue; }
+
+        const existingUser = emailToUser[email];
+        if (!existingUser) { skippedCount++; continue; }
+
+        /* Build update payload */
+        const updates = {};
+        Object.entries(row).forEach(([header, val]) => {
+          const fieldKey = labelToKey[header.toLowerCase()];
+          if (!fieldKey || READONLY_FIELDS.has(fieldKey)) return;
+          if (ARRAY_FIELDS.has(fieldKey)) {
+            updates[fieldKey] = typeof val === "string" ? val.split(";").map(s => s.trim()).filter(Boolean) : [];
+          } else if (BOOL_FIELDS.has(fieldKey)) {
+            updates[fieldKey] = val === true || val === "Yes" || val === "yes" || val === "TRUE" || val === "true";
+          } else {
+            updates[fieldKey] = val === "" ? null : val;
+          }
+        });
+
+        if (Object.keys(updates).length > 0) {
+          await updateDoc(doc(db, "users", existingUser.id), updates);
+          /* Update local state */
+          setUsers(prev => prev.map(u => u.id === existingUser.id ? { ...u, ...updates } : u));
+          updatedCount++;
+        }
+      }
+
+      /* Log activity */
+      logActivity({
+        type: "admin_import_data", actorId: user.uid, actorName: adminName,
+        details: { updatedCount, skippedCount, fileName: file.name },
+      });
+
+      let msg = Tr.uploadSuccess(updatedCount);
+      if (skippedCount > 0) msg += " " + Tr.skippedRows(skippedCount);
+      showToast(msg, "success");
+    } catch (err) {
+      console.error("Upload error:", err);
+      showToast(Tr.uploadError, "error");
+    } finally {
+      setExcelBusy(false);
+    }
+  }, [users, Tr, user, adminName, showToast]);
 
   /* ── Log filters ── */
   const filteredLogs = logs.filter(log => {
@@ -1332,6 +1718,39 @@ export default function AdminPage() {
       {/* ══ DATA TAB ══ */}
       {!loading && tab === "data" && (
         <>
+          {/* ── Excel import/export buttons ── */}
+          {(profile?.adminPermissions?.canExportData || profile?.isAdmin) && (
+            <div style={{ display:"flex", gap:"10px", marginBottom:"1.25rem", flexWrap:"wrap", alignItems:"center" }}>
+              <button
+                style={{ ...S.excelBtn, opacity: excelBusy ? 0.6 : 1 }}
+                disabled={excelBusy}
+                onClick={() => setExportModalOpen(true)}
+                onMouseEnter={e => { if (!excelBusy) e.currentTarget.style.background = "#dbeafe"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#eff6ff"; }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                {excelBusy ? Tr.downloading : Tr.downloadExcel}
+              </button>
+              <button
+                style={{ ...S.excelBtnUpload, opacity: excelBusy ? 0.6 : 1 }}
+                disabled={excelBusy}
+                onClick={() => fileInputRef.current?.click()}
+                onMouseEnter={e => { if (!excelBusy) e.currentTarget.style.background = "#dcfce7"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#f0fdf4"; }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {excelBusy ? Tr.uploading : Tr.uploadData}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                style={{ display: "none" }}
+                onChange={handleUploadExcel}
+              />
+            </div>
+          )}
+
           {/* Stat summary row */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:"1rem", marginBottom:"1.5rem" }}>
             {[
@@ -1757,6 +2176,25 @@ export default function AdminPage() {
           Tr={Tr}
           onSave={(perms) => doUpdatePerms(editPermsTarget, perms)}
           onCancel={() => setEditPermsTarget(null)}
+        />
+      )}
+
+      {/* ── Export field-selection modal ── */}
+      {exportModalOpen && (
+        <ExportFieldsModal
+          busy={excelBusy}
+          Tr={Tr}
+          onExport={handleDownloadExcel}
+          onCancel={() => { if (!excelBusy) setExportModalOpen(false); }}
+        />
+      )}
+
+      {/* ── Toast notification ── */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onClose={() => setToast(null)}
         />
       )}
     </div>
