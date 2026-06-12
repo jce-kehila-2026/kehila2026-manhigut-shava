@@ -237,11 +237,21 @@ const isOnline = (u) => {
 /* ─── Inject styles ─── */
 const styleTag = document.createElement("style");
 styleTag.textContent = `
+  .support-input {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+  }
   .support-input:focus {
     border-color: #4472b8 !important;
     box-shadow: 0 0 0 3px rgba(68,114,184,0.16) !important;
-    background: #fff !important;
+    background-color: var(--bg-secondary) !important;
     outline: none;
+  }
+  .support-input:-webkit-autofill,
+  .support-input:-webkit-autofill:hover,
+  .support-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px var(--bg-secondary) inset !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
   }
   .result-card:hover {
     transform: translateY(-2px);
