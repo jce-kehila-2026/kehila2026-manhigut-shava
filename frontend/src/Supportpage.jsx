@@ -61,6 +61,14 @@ const T = {
       "ניהול פיננסי",
       "אוזן קשבת",
     ],
+    // ── NEW: request message dialog ──
+    reqModalTitle: "שלחי בקשת עזרה",
+    reqModalTo: "אל:",
+    reqMsgLabel: "במה את צריכה עזרה?",
+    reqMsgPh: "תארי בקצרה מה את מחפשת... (אופציונלי)",
+    reqModalSend: "שלחי בקשה",
+    reqModalCancel: "ביטול",
+    reqMsgReceived: "הודעה:",
   },
   en: {
     title: "Find Help",
@@ -115,6 +123,14 @@ const T = {
       "Financial management",
       "Emotional support",
     ],
+    // ── NEW: request message dialog ──
+    reqModalTitle: "Send a Help Request",
+    reqModalTo: "To:",
+    reqMsgLabel: "What do you need help with?",
+    reqMsgPh: "Briefly describe what you're looking for… (optional)",
+    reqModalSend: "Send Request",
+    reqModalCancel: "Cancel",
+    reqMsgReceived: "Message:",
   },
   ar: {
     title: "البحث عن مساعدة",
@@ -169,6 +185,14 @@ const T = {
       "الإدارة المالية",
       "الدعم العاطفي",
     ],
+    // ── NEW: request message dialog ──
+    reqModalTitle: "أرسلي طلب مساعدة",
+    reqModalTo: "إلى:",
+    reqMsgLabel: "بماذا تحتاجين المساعدة؟",
+    reqMsgPh: "صفي باختصار ما تبحثين عنه... (اختياري)",
+    reqModalSend: "إرسال الطلب",
+    reqModalCancel: "إلغاء",
+    reqMsgReceived: "الرسالة:",
   },
 };
 
@@ -229,6 +253,11 @@ styleTag.textContent = `
   .view-btn:hover      { background: #f0f6fb !important; }
   .req-btn:hover       { background: #daeaf8 !important; }
   .suggest-item:hover  { background: #f0f7ff !important; }
+  .req-msg-textarea:focus {
+    border-color: #4472b8 !important;
+    box-shadow: 0 0 0 3px rgba(68,114,184,0.14) !important;
+    outline: none;
+  }
   @keyframes fadeSlideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
   @keyframes dropIn      { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
   @keyframes modalPop    { from { opacity:0; transform:scale(0.94) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
@@ -273,6 +302,129 @@ function MemberAvatar({ user, size = 46, fontSize = 15 }) {
   );
 }
 
+/* ─── RequestMessageModal ─── */
+// A focused, compact dialog that collects an optional message before sending the request.
+function RequestMessageModal({ targetUser, Tr, dir, onConfirm, onCancel }) {
+  const [message, setMessage] = useState("");
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    // Auto-focus textarea after mount
+    setTimeout(() => textareaRef.current?.focus(), 60);
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(29,72,150,0.38)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 200, padding: "1rem", backdropFilter: "blur(4px)",
+      }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          background: "var(--bg-primary)", borderRadius: "20px", padding: "1.75rem",
+          width: "100%", maxWidth: "400px",
+          boxShadow: "0 20px 56px rgba(29,72,150,0.22)",
+          display: "flex", flexDirection: "column", gap: "1.1rem",
+          animation: "modalPop 0.24s cubic-bezier(.34,1.56,.64,1) both",
+          direction: dir,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+            {Tr.reqModalTitle}
+          </p>
+          <button
+            onClick={onCancel}
+            style={{
+              background: "var(--bg-secondary)", border: "none", borderRadius: "9px",
+              padding: "5px 11px", cursor: "pointer", fontSize: "12px",
+              fontWeight: "600", color: "var(--text-muted)",
+            }}
+          >{Tr.reqModalCancel}</button>
+        </div>
+
+        {/* Recipient */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: "10px",
+          background: "var(--bg-secondary)", borderRadius: "13px",
+          padding: "10px 14px", border: "1.5px solid var(--border)",
+        }}>
+          <MemberAvatar user={targetUser} size={36} fontSize={13} />
+          <div>
+            <p style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 1px" }}>
+              {Tr.reqModalTo}
+            </p>
+            <p style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+              {getFullName(targetUser)}
+            </p>
+            {(targetUser.currentRole || targetUser.profession) && (
+              <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>
+                {targetUser.currentRole || targetUser.profession}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Message field */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{
+            fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
+            textTransform: "uppercase", letterSpacing: "0.08em",
+          }}>
+            {Tr.reqMsgLabel}
+          </label>
+          <textarea
+            ref={textareaRef}
+            className="req-msg-textarea"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={Tr.reqMsgPh}
+            rows={4}
+            style={{
+              padding: "11px 14px", fontSize: "13px",
+              border: "1.5px solid var(--border)", borderRadius: "13px",
+              color: "var(--text-primary)", background: "var(--bg-secondary)",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+              width: "100%", boxSizing: "border-box", resize: "vertical",
+              fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+              direction: dir, lineHeight: "1.55",
+            }}
+          />
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1, padding: "11px 0", background: "var(--bg-secondary)",
+              color: "var(--text-secondary)", border: "1.5px solid var(--border)",
+              borderRadius: "12px", fontSize: "13px", fontWeight: "600",
+              cursor: "pointer", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+            }}
+          >{Tr.reqModalCancel}</button>
+          <button
+            onClick={() => onConfirm(message.trim())}
+            style={{
+              flex: 2, padding: "11px 0", background: "#4472b8", color: "#fff",
+              border: "none", borderRadius: "12px", fontSize: "13px", fontWeight: "700",
+              cursor: "pointer", transition: "background 0.2s",
+              fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = "#1d4896"}
+            onMouseOut={(e)  => e.currentTarget.style.background = "#4472b8"}
+          >{Tr.reqModalSend}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SupportPage({ onViewProfile, onMessage }) {
   const { user, isGuest } = useAuth();
   const guard = useGuestGate();
@@ -297,6 +449,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [recommended,      setRecommended]      = useState([]);
   const [showSuggest,      setShowSuggest]      = useState(false);
   const [dropPos,          setDropPos]          = useState(null);
+  // ── NEW: which user the message-compose modal is open for ──
+  const [pendingRequestTarget, setPendingRequestTarget] = useState(null);
   const nameInputRef = useRef(null);
 
   const effectiveRegion = selectedRegion === "OTHER" ? otherRegion : selectedRegion;
@@ -391,7 +545,15 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     (!senderProfile?.isAdmin && (u.blockedUsers || []).includes(user?.uid)) ||
     (senderProfile?.blockedUsers || []).includes(u.id);
 
-  const handleRequest = async (targetUser) => {
+  // ── NEW: open the message compose modal instead of sending directly ──
+  const initiateRequest = (targetUser) => {
+    if (!user || !senderProfile || requested[targetUser.id]) return;
+    if (cantSendHelp(targetUser)) return;
+    setPendingRequestTarget(targetUser);
+  };
+
+  // ── NEW: called by the modal on confirm ──
+  const handleRequest = async (targetUser, requestMessage = "") => {
     if (!user || !senderProfile || requested[targetUser.id]) return;
     if (cantSendHelp(targetUser)) return;
     try {
@@ -403,6 +565,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         fromUserEmail:      user.email,
         fromUserPhone:      senderProfile?.phone ?? "",
         fromUserProfession: senderProfile?.currentRole ?? senderProfile?.profession ?? "",
+        requestMessage:     requestMessage,   // ← NEW field
         status:             null,
         createdAt:          new Date().toISOString(),
       });
@@ -613,9 +776,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       <p style={S.pageTitle}>{Tr.title}</p>
       <p style={S.pageSub}>{Tr.sub}</p>
 
-      {/* ── Search Card — help area → region → member name ── */}
+      {/* ── Search Card ── */}
       <div style={S.searchCard}>
-        {/* Help area (first — most important) */}
+        {/* Help area */}
         <div style={S.group}>
           <label style={S.label}>{Tr.helpAreaLbl}</label>
           <div style={S.pillRow}>
@@ -747,7 +910,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       {/* Results */}
       {results.length > 0 && (
         layoutMode === "table" ? (
-          /* Table view */
           <div style={{ marginBottom: "2rem", overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 6px", fontSize: 13 }}>
               <thead>
@@ -776,7 +938,10 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                         {!cantSendHelp(u) && (
                           <button className={requested[u.id]?"":"req-btn"}
                             style={{ ...(requested[u.id]?S.reqDoneBtn:S.reqBtn), flex:"none", padding:"6px 14px" }}
+
                             onClick={guard(() => handleRequest(u))}>
+
+
                             {requested[u.id] ? Tr.sent : Tr.sendReq}
                           </button>
                         )}
@@ -788,7 +953,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
             </table>
           </div>
         ) : (
-          /* Card view */
           <div style={{ ...S.resultsGrid, marginBottom: "2rem" }}>
             {results.map((u, i) => (
               <div key={u.id} className="result-card"
@@ -823,7 +987,11 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     <button
                       className={requested[u.id] ? "" : "req-btn"}
                       style={requested[u.id] ? S.reqDoneBtn : S.reqBtn}
+
                       onClick={guard(() => handleRequest(u))}
+
+                      
+
                     >
                       {requested[u.id] ? Tr.sent : Tr.sendReq}
                     </button>
@@ -852,6 +1020,17 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   >{deleteIconSvg}</button>
                 </div>
                 {r.fromUserProfession && <p style={S.myReqProf}>{r.fromUserProfession}</p>}
+                {/* ── NEW: show the message the sender wrote ── */}
+                {r.requestMessage && (
+                  <p style={{
+                    fontSize: "12px", color: "var(--text-secondary)", margin: "2px 0 0",
+                    background: "var(--bg-secondary)", borderRadius: "9px",
+                    padding: "7px 10px", border: "1px solid var(--border)",
+                    lineHeight: "1.5", fontStyle: "italic",
+                  }}>
+                    {r.requestMessage}
+                  </p>
+                )}
                 <StatusPill status={r.status} />
               </div>
             ))}
@@ -880,6 +1059,26 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 )}
                 {r.fromUserEmail && (
                   <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>{r.fromUserEmail}</p>
+                )}
+                {/* ── NEW: show the requester's message so recipient can make an informed decision ── */}
+                {r.requestMessage && (
+                  <div style={{
+                    background: "#f5f8ff",
+                    border: "1.5px solid #daeaf8",
+                    borderInlineStart: "3px solid #4472b8",
+                    borderRadius: "10px",
+                    padding: "8px 12px",
+                    margin: "4px 0",
+                  }}>
+                    <p style={{
+                      fontSize: "10px", fontWeight: "700", color: "#4472b8",
+                      textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px",
+                    }}>{Tr.reqMsgReceived}</p>
+                    <p style={{
+                      fontSize: "13px", color: "var(--text-primary)",
+                      margin: 0, lineHeight: "1.55",
+                    }}>{r.requestMessage}</p>
+                  </div>
                 )}
                 {!r.status ? (
                   <div style={S.receivedReqActions}>
@@ -931,7 +1130,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     style={requested[u.id]
                       ? { ...S.reqDoneBtn, width: "100%", padding: "6px 0", fontSize: "12px" }
                       : { ...S.reqBtn, width: "100%", padding: "6px 0", fontSize: "12px" }}
+
                     onClick={guard((e) => { e.stopPropagation(); handleRequest(u); })}
+
                   >
                     {requested[u.id] ? Tr.sent : Tr.sendReq}
                   </button>
@@ -1007,7 +1208,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               {!cantSendHelp(selectedUser) && (
                 <button
                   style={requested[selectedUser.id] ? S.modalReqDoneBtn : S.modalReqBtn}
+
                   onClick={guard(() => handleRequest(selectedUser))}
+
                   onMouseOver={(e) => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#1d4896"; }}
                   onMouseOut={(e)  => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#4472b8"; }}
                 >
@@ -1017,6 +1220,20 @@ export default function SupportPage({ onViewProfile, onMessage }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── NEW: Request message compose modal ── */}
+      {pendingRequestTarget && (
+        <RequestMessageModal
+          targetUser={pendingRequestTarget}
+          Tr={Tr}
+          dir={dir}
+          onConfirm={(message) => {
+            handleRequest(pendingRequestTarget, message);
+            setPendingRequestTarget(null);
+          }}
+          onCancel={() => setPendingRequestTarget(null)}
+        />
       )}
     </div>
   );
