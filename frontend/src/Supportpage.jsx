@@ -47,7 +47,7 @@ const T = {
     otherPh: "כתבי כאן...",
     layoutCards: "כרטיסיות",
     layoutTable: "טבלה",
-    regions: ["צפון","חיפה","מרכז והשרון","תל אביב","ירושלים","דרום"],
+    regions: ["צפון", "חיפה", "מרכז והשרון", "תל אביב", "ירושלים", "דרום"],
     helpAreas: [
       "קידום קריירה ותעסוקה",
       "פיתוח מנהיגות וניהול",
@@ -61,6 +61,14 @@ const T = {
       "ניהול פיננסי",
       "אוזן קשבת",
     ],
+    // ── NEW: request message dialog ──
+    reqModalTitle: "שלחי בקשת עזרה",
+    reqModalTo: "אל:",
+    reqMsgLabel: "במה את צריכה עזרה?",
+    reqMsgPh: "תארי בקצרה מה את מחפשת... (אופציונלי)",
+    reqModalSend: "שלחי בקשה",
+    reqModalCancel: "ביטול",
+    reqMsgReceived: "הודעה:",
   },
   en: {
     title: "Find Help",
@@ -101,7 +109,7 @@ const T = {
     otherPh: "Type here...",
     layoutCards: "Cards",
     layoutTable: "Table",
-    regions: ["North","Haifa","Center & Sharon","Tel Aviv","Jerusalem","South"],
+    regions: ["North", "Haifa", "Center & Sharon", "Tel Aviv", "Jerusalem", "South"],
     helpAreas: [
       "Career advancement",
       "Leadership & management",
@@ -115,6 +123,14 @@ const T = {
       "Financial management",
       "Emotional support",
     ],
+    // ── NEW: request message dialog ──
+    reqModalTitle: "Send a Help Request",
+    reqModalTo: "To:",
+    reqMsgLabel: "What do you need help with?",
+    reqMsgPh: "Briefly describe what you're looking for… (optional)",
+    reqModalSend: "Send Request",
+    reqModalCancel: "Cancel",
+    reqMsgReceived: "Message:",
   },
   ar: {
     title: "البحث عن مساعدة",
@@ -155,7 +171,7 @@ const T = {
     otherPh: "اكتبي هنا...",
     layoutCards: "بطاقات",
     layoutTable: "جدول",
-    regions: ["الشمال","حيفا","الوسط والشارون","تل أبيب","القدس","الجنوب"],
+    regions: ["الشمال", "حيفا", "الوسط والشارون", "تل أبيب", "القدس", "الجنوب"],
     helpAreas: [
       "التقدم الوظيفي",
       "القيادة والإدارة",
@@ -169,26 +185,34 @@ const T = {
       "الإدارة المالية",
       "الدعم العاطفي",
     ],
+    // ── NEW: request message dialog ──
+    reqModalTitle: "أرسلي طلب مساعدة",
+    reqModalTo: "إلى:",
+    reqMsgLabel: "بماذا تحتاجين المساعدة؟",
+    reqMsgPh: "صفي باختصار ما تبحثين عنه... (اختياري)",
+    reqModalSend: "إرسال الطلب",
+    reqModalCancel: "إلغاء",
+    reqMsgReceived: "الرسالة:",
   },
 };
 
 /* Canonical Hebrew keys — always used for Firestore filtering regardless of UI language */
-const REGIONS_KEYS = ["צפון","חיפה","מרכז והשרון","תל אביב","ירושלים","דרום"];
+const REGIONS_KEYS = ["צפון", "חיפה", "מרכז והשרון", "תל אביב", "ירושלים", "דרום"];
 
 /* All language variants per region — so "Jerusalem" matches users who registered in English */
 const REGION_ALL_LANGS = {
-  "צפון":         ["צפון","North","الشمال"],
-  "חיפה":         ["חיפה","Haifa","حيفا"],
-  "מרכז והשרון":  ["מרכז והשרון","Center & Sharon","الوسط والشارون"],
-  "תל אביב":      ["תל אביב","Tel Aviv","تل أبيب"],
-  "ירושלים":      ["ירושלים","Jerusalem","القدس"],
-  "דרום":         ["דרום","South","الجنوب"],
+  "צפון": ["צפון", "North", "الشمال"],
+  "חיפה": ["חיפה", "Haifa", "حيفا"],
+  "מרכז והשרון": ["מרכז והשרון", "Center & Sharon", "الوسط والشارون"],
+  "תל אביב": ["תל אביב", "Tel Aviv", "تل أبيب"],
+  "ירושלים": ["ירושלים", "Jerusalem", "القدس"],
+  "דרום": ["דרום", "South", "الجنوب"],
 };
 const AREAS_KEYS = [
-  "קידום קריירה ותעסוקה","פיתוח מנהיגות וניהול","ניהול צוותים",
-  "חיבור למגזר הציבורי","חיבור למגזר הפרטי","הובלת מאבקים אזרחיים",
-  "יזמות עסקית וחברתית","ניהול קמפיינים פוליטיים","התמודדות לתפקידים",
-  "ניהול פיננסי","אוזן קשבת",
+  "קידום קריירה ותעסוקה", "פיתוח מנהיגות וניהול", "ניהול צוותים",
+  "חיבור למגזר הציבורי", "חיבור למגזר הפרטי", "הובלת מאבקים אזרחיים",
+  "יזמות עסקית וחברתית", "ניהול קמפיינים פוליטיים", "התמודדות לתפקידים",
+  "ניהול פיננסי", "אוזן קשבת",
 ];
 
 /* ─── Helpers ─── */
@@ -198,7 +222,7 @@ const getInitials = (u) => {
 };
 const getFullName = (u) =>
   u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email ?? "Unknown";
-const avatarUrl  = (u) => u?.photoURL || u?.avatarUrl || null;
+const avatarUrl = (u) => u?.photoURL || u?.avatarUrl || null;
 const parseLastSeen = (v) => {
   if (!v) return NaN;
   if (typeof v === "number") return v;
@@ -229,6 +253,11 @@ styleTag.textContent = `
   .view-btn:hover      { background: #f0f6fb !important; }
   .req-btn:hover       { background: #daeaf8 !important; }
   .suggest-item:hover  { background: #f0f7ff !important; }
+  .req-msg-textarea:focus {
+    border-color: #4472b8 !important;
+    box-shadow: 0 0 0 3px rgba(68,114,184,0.14) !important;
+    outline: none;
+  }
   @keyframes fadeSlideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
   @keyframes dropIn      { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
   @keyframes modalPop    { from { opacity:0; transform:scale(0.94) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
@@ -243,8 +272,8 @@ if (!document.head.querySelector("#support-styles")) {
 function StatusPill({ status }) {
   const map = {
     accepted: { bg: "#f0fdf4", color: "#3f6a3e", border: "#cfe4ce", label: "✓" },
-    declined:  { bg: "#fff0f0", color: "#9a4545", border: "#d99090", label: "✗" },
-    null:      { bg: "#f0f6fb", color: "#4472b8",  border: "#daeaf8",  label: "…" },
+    declined: { bg: "#fff0f0", color: "#9a4545", border: "#d99090", label: "✗" },
+    null: { bg: "#f0f6fb", color: "#4472b8", border: "#daeaf8", label: "…" },
   };
   const s = map[status] ?? map["null"];
   return (
@@ -273,34 +302,159 @@ function MemberAvatar({ user, size = 46, fontSize = 15 }) {
   );
 }
 
+/* ─── RequestMessageModal ─── */
+// A focused, compact dialog that collects an optional message before sending the request.
+function RequestMessageModal({ targetUser, Tr, dir, onConfirm, onCancel }) {
+  const [message, setMessage] = useState("");
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    // Auto-focus textarea after mount
+    setTimeout(() => textareaRef.current?.focus(), 60);
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(29,72,150,0.38)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 200, padding: "1rem", backdropFilter: "blur(4px)",
+      }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          background: "var(--bg-primary)", borderRadius: "20px", padding: "1.75rem",
+          width: "100%", maxWidth: "400px",
+          boxShadow: "0 20px 56px rgba(29,72,150,0.22)",
+          display: "flex", flexDirection: "column", gap: "1.1rem",
+          animation: "modalPop 0.24s cubic-bezier(.34,1.56,.64,1) both",
+          direction: dir,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+            {Tr.reqModalTitle}
+          </p>
+          <button
+            onClick={onCancel}
+            style={{
+              background: "var(--bg-secondary)", border: "none", borderRadius: "9px",
+              padding: "5px 11px", cursor: "pointer", fontSize: "12px",
+              fontWeight: "600", color: "var(--text-muted)",
+            }}
+          >{Tr.reqModalCancel}</button>
+        </div>
+
+        {/* Recipient */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: "10px",
+          background: "var(--bg-secondary)", borderRadius: "13px",
+          padding: "10px 14px", border: "1.5px solid var(--border)",
+        }}>
+          <MemberAvatar user={targetUser} size={36} fontSize={13} />
+          <div>
+            <p style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 1px" }}>
+              {Tr.reqModalTo}
+            </p>
+            <p style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+              {getFullName(targetUser)}
+            </p>
+            {(targetUser.currentRole || targetUser.profession) && (
+              <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>
+                {targetUser.currentRole || targetUser.profession}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Message field */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{
+            fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
+            textTransform: "uppercase", letterSpacing: "0.08em",
+          }}>
+            {Tr.reqMsgLabel}
+          </label>
+          <textarea
+            ref={textareaRef}
+            className="req-msg-textarea"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={Tr.reqMsgPh}
+            rows={4}
+            style={{
+              padding: "11px 14px", fontSize: "13px",
+              border: "1.5px solid var(--border)", borderRadius: "13px",
+              color: "var(--text-primary)", background: "var(--bg-secondary)",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+              width: "100%", boxSizing: "border-box", resize: "vertical",
+              fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+              direction: dir, lineHeight: "1.55",
+            }}
+          />
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1, padding: "11px 0", background: "var(--bg-secondary)",
+              color: "var(--text-secondary)", border: "1.5px solid var(--border)",
+              borderRadius: "12px", fontSize: "13px", fontWeight: "600",
+              cursor: "pointer", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+            }}
+          >{Tr.reqModalCancel}</button>
+          <button
+            onClick={() => onConfirm(message.trim())}
+            style={{
+              flex: 2, padding: "11px 0", background: "#4472b8", color: "#fff",
+              border: "none", borderRadius: "12px", fontSize: "13px", fontWeight: "700",
+              cursor: "pointer", transition: "background 0.2s",
+              fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = "#1d4896"}
+            onMouseOut={(e) => e.currentTarget.style.background = "#4472b8"}
+          >{Tr.reqModalSend}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SupportPage({ onViewProfile, onMessage }) {
   const { user, isGuest } = useAuth();
   const guard = useGuestGate();
   const { lang, isRTL } = useLang();
   const Tr = T[lang] || T.he;
 
-  const [memberName,     setMemberName]     = useState("");
+  const [memberName, setMemberName] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
-  const [selectedArea,   setSelectedArea]   = useState("");
-  const [otherRegion,    setOtherRegion]    = useState("");
-  const [otherArea,      setOtherArea]      = useState("");
-  const [layoutMode,       setLayoutMode]       = useState("cards");
-  const [results,          setResults]          = useState([]);
-  const [searched,         setSearched]         = useState(false);
-  const [loading,          setLoading]          = useState(false);
-  const [requested,        setRequested]        = useState({});
-  const [selectedUser,     setSelectedUser]     = useState(null);
-  const [senderProfile,    setSenderProfile]    = useState(null);
-  const [sentRequests,     setSentRequests]     = useState([]);
+  const [selectedArea, setSelectedArea] = useState("");
+  const [otherRegion, setOtherRegion] = useState("");
+  const [otherArea, setOtherArea] = useState("");
+  const [layoutMode, setLayoutMode] = useState("cards");
+  const [results, setResults] = useState([]);
+  const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [requested, setRequested] = useState({});
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [senderProfile, setSenderProfile] = useState(null);
+  const [sentRequests, setSentRequests] = useState([]);
   const [receivedRequests, setReceivedRequests] = useState([]);
-  const [allUsers,         setAllUsers]         = useState([]);
-  const [recommended,      setRecommended]      = useState([]);
-  const [showSuggest,      setShowSuggest]      = useState(false);
-  const [dropPos,          setDropPos]          = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [recommended, setRecommended] = useState([]);
+  const [showSuggest, setShowSuggest] = useState(false);
+  const [dropPos, setDropPos] = useState(null);
+  // ── NEW: which user the message-compose modal is open for ──
+  const [pendingRequestTarget, setPendingRequestTarget] = useState(null);
   const nameInputRef = useRef(null);
 
   const effectiveRegion = selectedRegion === "OTHER" ? otherRegion : selectedRegion;
-  const effectiveArea   = selectedArea   === "OTHER" ? otherArea   : selectedArea;
+  const effectiveArea = selectedArea === "OTHER" ? otherArea : selectedArea;
 
   useEffect(() => {
     if (!user) return;
@@ -309,11 +463,11 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     const tasks = [getDocs(collection(db, "users"))];
     if (!isGuest) {
       tasks.push(getDocs(query(collection(db, "helpRequests"), where("fromUserId", "==", user.uid))));
-      tasks.push(getDocs(query(collection(db, "helpRequests"), where("toUserId",   "==", user.uid))));
+      tasks.push(getDocs(query(collection(db, "helpRequests"), where("toUserId", "==", user.uid))));
     }
     Promise.all(tasks).then(([usersSnap, sentSnap, recvSnap]) => {
       const docs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const me   = isGuest ? null : docs.find((d) => d.id === user.uid);
+      const me = isGuest ? null : docs.find((d) => d.id === user.uid);
       if (me) setSenderProfile(me);
       const others = isGuest ? docs : docs.filter((d) => d.id !== user.uid);
       setAllUsers(others);
@@ -343,29 +497,29 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   };
   const suggestions = memberName.trim().length > 0
     ? allUsers.filter((u) => {
-        const q = memberName.toLowerCase().trim();
-        return (u.firstName ?? "").toLowerCase().startsWith(q)
-          || (u.lastName ?? "").toLowerCase().startsWith(q);
-      }).slice(0, 8)
+      const q = memberName.toLowerCase().trim();
+      return (u.firstName ?? "").toLowerCase().startsWith(q)
+        || (u.lastName ?? "").toLowerCase().startsWith(q);
+    }).slice(0, 8)
     : [];
 
   const handleSearch = () => {
     setLoading(true); setSearched(true);
     const regionQ = effectiveRegion.trim();
-    const areaQ   = effectiveArea.trim();
+    const areaQ = effectiveArea.trim();
     const filtered = allUsers.filter((u) => {
       const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-      const matchName   = memberName ? fullName.includes(memberName.toLowerCase()) : true;
+      const matchName = memberName ? fullName.includes(memberName.toLowerCase()) : true;
       const matchRegion = regionQ
         ? (() => {
-            const variants = REGION_ALL_LANGS[regionQ] || [regionQ];
-            return variants.some(v => (u.region ?? "").includes(v) || (u.city ?? "").includes(v));
-          })()
+          const variants = REGION_ALL_LANGS[regionQ] || [regionQ];
+          return variants.some(v => (u.region ?? "").includes(v) || (u.city ?? "").includes(v));
+        })()
         : true;
-      const matchArea   = areaQ
+      const matchArea = areaQ
         ? (u.helpAreas ?? []).some(a => a.includes(areaQ))
-          || (u.profession ?? "").toLowerCase().includes(areaQ.toLowerCase())
-          || (u.currentRole ?? "").toLowerCase().includes(areaQ.toLowerCase())
+        || (u.profession ?? "").toLowerCase().includes(areaQ.toLowerCase())
+        || (u.currentRole ?? "").toLowerCase().includes(areaQ.toLowerCase())
         : true;
       return matchName && matchRegion && matchArea;
     });
@@ -391,20 +545,29 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     (!senderProfile?.isAdmin && (u.blockedUsers || []).includes(user?.uid)) ||
     (senderProfile?.blockedUsers || []).includes(u.id);
 
-  const handleRequest = async (targetUser) => {
+  // ── NEW: open the message compose modal instead of sending directly ──
+  const initiateRequest = (targetUser) => {
+    if (!user || !senderProfile || requested[targetUser.id]) return;
+    if (cantSendHelp(targetUser)) return;
+    setPendingRequestTarget(targetUser);
+  };
+
+  // ── NEW: called by the modal on confirm ──
+  const handleRequest = async (targetUser, requestMessage = "") => {
     if (!user || !senderProfile || requested[targetUser.id]) return;
     if (cantSendHelp(targetUser)) return;
     try {
       await addDoc(collection(db, "helpRequests"), {
-        toUserId:           targetUser.id,
-        toUserName:         getFullName(targetUser),
-        fromUserId:         user.uid,
-        fromUserName:       getFullName(senderProfile),
-        fromUserEmail:      user.email,
-        fromUserPhone:      senderProfile?.phone ?? "",
+        toUserId: targetUser.id,
+        toUserName: getFullName(targetUser),
+        fromUserId: user.uid,
+        fromUserName: getFullName(senderProfile),
+        fromUserEmail: user.email,
+        fromUserPhone: senderProfile?.phone ?? "",
         fromUserProfession: senderProfile?.currentRole ?? senderProfile?.profession ?? "",
-        status:             null,
-        createdAt:          new Date().toISOString(),
+        requestMessage: requestMessage,   // ← NEW field
+        status: null,
+        createdAt: new Date().toISOString(),
       });
       setRequested((prev) => ({ ...prev, [targetUser.id]: true }));
       logActivity({ type: "request_sent", actorId: user.uid, actorName: getFullName(senderProfile), targetId: targetUser.id, targetType: "user", details: { toName: getFullName(targetUser) } });
@@ -438,7 +601,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
     },
     pageTitle: { fontSize: "22px", fontWeight: "700", color: "var(--text-primary)", margin: "0 0 3px" },
-    pageSub:   { fontSize: "13px", color: "var(--text-muted)", margin: "0 0 2rem" },
+    pageSub: { fontSize: "13px", color: "var(--text-muted)", margin: "0 0 2rem" },
     sectionLabel: {
       fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
       textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 0.85rem",
@@ -506,7 +669,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       transition: "transform 0.18s, box-shadow 0.18s",
     },
     cardTop: { display: "flex", alignItems: "center", gap: "1rem" },
-    name:       { fontSize: "15px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
+    name: { fontSize: "15px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
     profession: { fontSize: "13px", color: "var(--text-secondary)", margin: 0 },
     cityTag: {
       fontSize: "12px", color: "#1d4896",
@@ -545,8 +708,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       animation: "modalPop 0.26s cubic-bezier(.34,1.56,.64,1) both",
       direction: dir,
     },
-    modalHeader:  { display: "flex", alignItems: "center", justifyContent: "space-between" },
-    modalTitle:   { fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
+    modalHeader: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+    modalTitle: { fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
     closeBtn: {
       background: "var(--bg-secondary)", border: "none", borderRadius: "9px",
       padding: "6px 12px", cursor: "pointer", fontSize: "13px",
@@ -557,7 +720,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       padding: "1rem 1.25rem", border: "1.5px solid var(--border)",
       display: "flex", flexDirection: "column", gap: "10px",
     },
-    infoRow:   { display: "flex", flexDirection: "column", gap: "2px" },
+    infoRow: { display: "flex", flexDirection: "column", gap: "2px" },
     infoLabel: { fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 },
     infoValue: { fontSize: "13px", color: "var(--text-primary)", margin: 0 },
     modalReqBtn: {
@@ -604,7 +767,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
 
   const deleteIconSvg = (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
     </svg>
   );
 
@@ -613,9 +776,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       <p style={S.pageTitle}>{Tr.title}</p>
       <p style={S.pageSub}>{Tr.sub}</p>
 
-      {/* ── Search Card — help area → region → member name ── */}
+      {/* ── Search Card ── */}
       <div style={S.searchCard}>
-        {/* Help area (first — most important) */}
+        {/* Help area */}
         <div style={S.group}>
           <label style={S.label}>{Tr.helpAreaLbl}</label>
           <div style={S.pillRow}>
@@ -721,14 +884,16 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           {/* Layout toggle */}
           <div style={{ display: "flex", gap: 4, background: "var(--bg-secondary)", borderRadius: 10, padding: 3, border: "1.5px solid var(--border)" }}>
             {[
-              { mode: "cards", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>, label: Tr.layoutCards },
-              { mode: "table", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>, label: Tr.layoutTable },
+              { mode: "cards", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>, label: Tr.layoutCards },
+              { mode: "table", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="3" x2="9" y2="21" /></svg>, label: Tr.layoutTable },
             ].map(({ mode, icon, label }) => (
               <button key={mode} title={label}
-                style={{ display:"flex",alignItems:"center",gap:4, padding:"6px 10px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:600,
-                  background: layoutMode===mode ? "#4472b8" : "transparent",
-                  color: layoutMode===mode ? "#fff" : "var(--text-muted)",
-                  transition:"all 0.15s" }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                  background: layoutMode === mode ? "#4472b8" : "transparent",
+                  color: layoutMode === mode ? "#fff" : "var(--text-muted)",
+                  transition: "all 0.15s"
+                }}
                 onClick={() => setLayoutMode(mode)}
               >{icon} {label}</button>
             ))}
@@ -747,36 +912,37 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       {/* Results */}
       {results.length > 0 && (
         layoutMode === "table" ? (
-          /* Table view */
           <div style={{ marginBottom: "2rem", overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 6px", fontSize: 13 }}>
               <thead>
                 <tr>
-                  {[Tr.nameLbl, Tr.roleLabel, Tr.regionLabel, ""].map((h,i) => (
-                    <th key={i} style={{ textAlign: isRTL?"right":"left", padding:"6px 12px", fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", borderBottom:"1.5px solid var(--border)" }}>{h}</th>
+                  {[Tr.nameLbl, Tr.roleLabel, Tr.regionLabel, ""].map((h, i) => (
+                    <th key={i} style={{ textAlign: isRTL ? "right" : "left", padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: "1.5px solid var(--border)" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {results.map((u) => (
-                  <tr key={u.id} style={{ background:"var(--bg-primary)", transition:"background 0.15s", cursor:"pointer" }}
-                    onMouseEnter={e=>e.currentTarget.style.background="var(--bg-hover)"}
-                    onMouseLeave={e=>e.currentTarget.style.background="var(--bg-primary)"}
+                  <tr key={u.id} style={{ background: "var(--bg-primary)", transition: "background 0.15s", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-hover)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary)"}
                   >
-                    <td style={{ padding:"10px 12px", borderRadius:"10px 0 0 10px", display:"flex", alignItems:"center", gap:10 }}>
+                    <td style={{ padding: "10px 12px", borderRadius: "10px 0 0 10px", display: "flex", alignItems: "center", gap: 10 }}>
                       <MemberAvatar user={u} size={34} fontSize={12} />
-                      <span style={{ fontWeight:600, color:"var(--text-primary)" }}>{getFullName(u)}</span>
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{getFullName(u)}</span>
                     </td>
-                    <td style={{ padding:"10px 12px", color:"var(--text-secondary)" }}>{u.currentRole ?? u.profession ?? "—"}</td>
-                    <td style={{ padding:"10px 12px", color:"var(--text-muted)" }}>{u.region || u.city || "—"}</td>
-                    <td style={{ padding:"10px 12px", borderRadius:"0 10px 10px 0" }}>
-                      <div style={{ display:"flex", gap:6 }}>
-                        <button className="view-btn" style={{ ...S.viewBtn, flex:"none", padding:"6px 14px" }}
+                    <td style={{ padding: "10px 12px", color: "var(--text-secondary)" }}>{u.currentRole ?? u.profession ?? "—"}</td>
+                    <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{u.region || u.city || "—"}</td>
+                    <td style={{ padding: "10px 12px", borderRadius: "0 10px 10px 0" }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button className="view-btn" style={{ ...S.viewBtn, flex: "none", padding: "6px 14px" }}
                           onClick={() => onViewProfile ? onViewProfile(u.id) : setSelectedUser(u)}>{Tr.viewProfile}</button>
                         {!cantSendHelp(u) && (
-                          <button className={requested[u.id]?"":"req-btn"}
-                            style={{ ...(requested[u.id]?S.reqDoneBtn:S.reqBtn), flex:"none", padding:"6px 14px" }}
+                          <button className={requested[u.id] ? "" : "req-btn"}
+                            style={{ ...(requested[u.id] ? S.reqDoneBtn : S.reqBtn), flex: "none", padding: "6px 14px" }}
+
                             onClick={guard(() => handleRequest(u))}>
+
                             {requested[u.id] ? Tr.sent : Tr.sendReq}
                           </button>
                         )}
@@ -788,7 +954,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
             </table>
           </div>
         ) : (
-          /* Card view */
           <div style={{ ...S.resultsGrid, marginBottom: "2rem" }}>
             {results.map((u, i) => (
               <div key={u.id} className="result-card"
@@ -823,7 +988,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     <button
                       className={requested[u.id] ? "" : "req-btn"}
                       style={requested[u.id] ? S.reqDoneBtn : S.reqBtn}
+
                       onClick={guard(() => handleRequest(u))}
+
                     >
                       {requested[u.id] ? Tr.sent : Tr.sendReq}
                     </button>
@@ -842,16 +1009,27 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           <div style={S.myReqGrid}>
             {sentRequests.map((r) => (
               <div key={r.id} style={S.myReqCard}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <p style={S.myReqName}>{r.toUserName || "—"}</p>
                   <button title={Tr.delete}
-                    style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex", alignItems:"center" }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2, display: "flex", alignItems: "center" }}
                     onClick={() => handleDeleteSentRequest(r.id)}
-                    onMouseEnter={e=>e.currentTarget.style.color="#e8735a"}
-                    onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}
+                    onMouseEnter={e => e.currentTarget.style.color = "#e8735a"}
+                    onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
                   >{deleteIconSvg}</button>
                 </div>
                 {r.fromUserProfession && <p style={S.myReqProf}>{r.fromUserProfession}</p>}
+                {/* ── NEW: show the message the sender wrote ── */}
+                {r.requestMessage && (
+                  <p style={{
+                    fontSize: "12px", color: "var(--text-secondary)", margin: "2px 0 0",
+                    background: "var(--bg-secondary)", borderRadius: "9px",
+                    padding: "7px 10px", border: "1px solid var(--border)",
+                    lineHeight: "1.5", fontStyle: "italic",
+                  }}>
+                    {r.requestMessage}
+                  </p>
+                )}
                 <StatusPill status={r.status} />
               </div>
             ))}
@@ -866,13 +1044,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           <div style={S.myReqGrid}>
             {receivedRequests.map((r) => (
               <div key={r.id} style={S.receivedReqCard}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <p style={S.myReqName}>{r.fromUserName || "—"}</p>
                   <button title={Tr.delete}
-                    style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex", alignItems:"center" }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2, display: "flex", alignItems: "center" }}
                     onClick={() => handleDeleteReceivedRequest(r.id)}
-                    onMouseEnter={e=>e.currentTarget.style.color="#e8735a"}
-                    onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}
+                    onMouseEnter={e => e.currentTarget.style.color = "#e8735a"}
+                    onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
                   >{deleteIconSvg}</button>
                 </div>
                 {r.fromUserProfession && (
@@ -880,6 +1058,26 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 )}
                 {r.fromUserEmail && (
                   <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>{r.fromUserEmail}</p>
+                )}
+                {/* ── NEW: show the requester's message so recipient can make an informed decision ── */}
+                {r.requestMessage && (
+                  <div style={{
+                    background: "#f5f8ff",
+                    border: "1.5px solid #daeaf8",
+                    borderInlineStart: "3px solid #4472b8",
+                    borderRadius: "10px",
+                    padding: "8px 12px",
+                    margin: "4px 0",
+                  }}>
+                    <p style={{
+                      fontSize: "10px", fontWeight: "700", color: "#4472b8",
+                      textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px",
+                    }}>{Tr.reqMsgReceived}</p>
+                    <p style={{
+                      fontSize: "13px", color: "var(--text-primary)",
+                      margin: 0, lineHeight: "1.55",
+                    }}>{r.requestMessage}</p>
+                  </div>
                 )}
                 {!r.status ? (
                   <div style={S.receivedReqActions}>
@@ -931,7 +1129,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     style={requested[u.id]
                       ? { ...S.reqDoneBtn, width: "100%", padding: "6px 0", fontSize: "12px" }
                       : { ...S.reqBtn, width: "100%", padding: "6px 0", fontSize: "12px" }}
+
                     onClick={guard((e) => { e.stopPropagation(); handleRequest(u); })}
+
                   >
                     {requested[u.id] ? Tr.sent : Tr.sendReq}
                   </button>
@@ -1008,8 +1208,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 <button
                   style={requested[selectedUser.id] ? S.modalReqDoneBtn : S.modalReqBtn}
                   onClick={guard(() => handleRequest(selectedUser))}
+
                   onMouseOver={(e) => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#1d4896"; }}
-                  onMouseOut={(e)  => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#4472b8"; }}
+                  onMouseOut={(e) => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#4472b8"; }}
                 >
                   {requested[selectedUser.id] ? Tr.reqSent : Tr.sendReq}
                 </button>
@@ -1017,6 +1218,20 @@ export default function SupportPage({ onViewProfile, onMessage }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── NEW: Request message compose modal ── */}
+      {pendingRequestTarget && (
+        <RequestMessageModal
+          targetUser={pendingRequestTarget}
+          Tr={Tr}
+          dir={dir}
+          onConfirm={(message) => {
+            handleRequest(pendingRequestTarget, message);
+            setPendingRequestTarget(null);
+          }}
+          onCancel={() => setPendingRequestTarget(null)}
+        />
       )}
     </div>
   );
