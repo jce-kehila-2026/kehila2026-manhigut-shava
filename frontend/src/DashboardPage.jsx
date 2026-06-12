@@ -406,7 +406,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
 /* ── Main dashboard shell ── */
 export default function DashboardPage() {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, isGuest, exitGuest, openGate } = useAuth();
   const { lang, setLang, t, isRTL } = useLang();
   const { dark, toggleTheme } = useTheme();
 
@@ -417,6 +417,13 @@ export default function DashboardPage() {
   const [chatTarget, setChatTarget] = useState(null);
 
   const navigate = useCallback((s, options = {}) => {
+    /* Guests may browse Home / Community / Members and VIEW other members'
+       profiles (navigate with a userId). Account-only destinations — their own
+       profile/settings, DMs, admin — open the auth gate instead. */
+    if (isGuest && (s === "chat" || s === "admin" || (s === "profile" && !options.userId))) {
+      openGate();
+      return;
+    }
     localStorage.setItem("section", s);
     setSection(s);
     if (s === "profile") {
@@ -433,7 +440,7 @@ export default function DashboardPage() {
       if (prev[prev.length - 1] === s) return prev;
       return [...prev, s];
     });
-  }, []);
+  }, [isGuest, openGate]);
 
   const goBack = useCallback(() => {
     setNavHistory((prev) => {
@@ -449,7 +456,7 @@ export default function DashboardPage() {
   const canGoBack = navHistory.length > 1;
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isGuest) return;   // guests have no users/{uid} doc to update
     const ref = doc(db, "users", user.uid);
     updateDoc(ref, { isOnline: true, lastSeen: new Date().toISOString() }).catch(() => {});
     const offline = () =>
@@ -463,7 +470,7 @@ export default function DashboardPage() {
       clearInterval(hb);
       offline();
     };
-  }, [user]);
+  }, [user, isGuest]);
 
   const initials = profile
     ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
@@ -574,7 +581,7 @@ export default function DashboardPage() {
           gap: "10px", paddingLeft: sidebarExpanded ? 8 : 0, paddingRight: sidebarExpanded ? 8 : 0 }}>
           <NavBtn
             item={{ id: "logout", label: t.nav.logout, icon: Icon.logout }}
-            active={false} badge={0} onClick={logout} expanded={sidebarExpanded}
+            active={false} badge={0} onClick={isGuest ? exitGuest : logout} expanded={sidebarExpanded}
           />
           <div style={{ position: "relative", cursor: "pointer",
             display: "flex", alignItems: "center", gap: 10,

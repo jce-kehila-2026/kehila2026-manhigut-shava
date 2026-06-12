@@ -541,8 +541,8 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
 }
 
 /* ─── MAIN ─── */
-export default function AuthPage({ onBack }) {
-  const [tab, setTab] = useState("login");
+export default function AuthPage({ onBack, initialTab = "login" }) {
+  const [tab, setTab] = useState(initialTab);
   const { lang, isRTL, setLang } = useLang();
   const Tr = AUTH_T[lang] || AUTH_T.he;
   const dir = isRTL ? "rtl" : "ltr";

@@ -13,10 +13,12 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { useGuestGate } from "./GuestGate";
 import { useLang } from "./LanguageContext";
 
 export default function ConnectButton({ targetUserId, size = "md", onToggle }) {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
+  const guard = useGuestGate();
   const { t } = useLang();
 
   const [inNetwork, setInNetwork] = useState(false);
@@ -95,7 +97,7 @@ export default function ConnectButton({ targetUserId, size = "md", onToggle }) {
   };
 
   return (
-    <button style={style} onClick={handleToggle} disabled={loading}>
+    <button style={style} onClick={guard(handleToggle)} disabled={loading && !isGuest}>
       {inNetwork
         ? (t.network?.inNetwork  ?? "In Network")
         : (t.network?.joinNetwork ?? "Join Network")}

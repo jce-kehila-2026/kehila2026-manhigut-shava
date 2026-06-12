@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { collection, getDocs, addDoc, query, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { useGuestGate } from "./GuestGate";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
 
@@ -273,7 +274,8 @@ function MemberAvatar({ user, size = 46, fontSize = 15 }) {
 }
 
 export default function SupportPage({ onViewProfile, onMessage }) {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
+  const guard = useGuestGate();
   const { lang, isRTL } = useLang();
   const Tr = T[lang] || T.he;
 
@@ -302,15 +304,18 @@ export default function SupportPage({ onViewProfile, onMessage }) {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([
-      getDocs(collection(db, "users")),
-      getDocs(query(collection(db, "helpRequests"), where("fromUserId", "==", user.uid))),
-      getDocs(query(collection(db, "helpRequests"), where("toUserId",   "==", user.uid))),
-    ]).then(([usersSnap, sentSnap, recvSnap]) => {
+    /* Guests (anonymous) can read the member directory but have no help-request
+       history of their own — skip those queries for them. */
+    const tasks = [getDocs(collection(db, "users"))];
+    if (!isGuest) {
+      tasks.push(getDocs(query(collection(db, "helpRequests"), where("fromUserId", "==", user.uid))));
+      tasks.push(getDocs(query(collection(db, "helpRequests"), where("toUserId",   "==", user.uid))));
+    }
+    Promise.all(tasks).then(([usersSnap, sentSnap, recvSnap]) => {
       const docs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const me   = docs.find((d) => d.id === user.uid);
+      const me   = isGuest ? null : docs.find((d) => d.id === user.uid);
       if (me) setSenderProfile(me);
-      const others = docs.filter((d) => d.id !== user.uid);
+      const others = isGuest ? docs : docs.filter((d) => d.id !== user.uid);
       setAllUsers(others);
       const sorted = [...others].sort((a, b) => {
         const ta = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
@@ -318,14 +323,16 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         return tb - ta;
       });
       setRecommended(sorted.slice(0, 4));
-      const reqs = sentSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setSentRequests(reqs);
-      const reqMap = {};
-      reqs.forEach((r) => { reqMap[r.toUserId] = true; });
-      setRequested(reqMap);
-      setReceivedRequests(recvSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      if (sentSnap && recvSnap) {
+        const reqs = sentSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setSentRequests(reqs);
+        const reqMap = {};
+        reqs.forEach((r) => { reqMap[r.toUserId] = true; });
+        setRequested(reqMap);
+        setReceivedRequests(recvSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      }
     });
-  }, [user]);
+  }, [user, isGuest]);
 
   const openSuggest = () => {
     if (nameInputRef.current) {
@@ -769,7 +776,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                         {!cantSendHelp(u) && (
                           <button className={requested[u.id]?"":"req-btn"}
                             style={{ ...(requested[u.id]?S.reqDoneBtn:S.reqBtn), flex:"none", padding:"6px 14px" }}
-                            onClick={() => handleRequest(u)}>
+                            onClick={guard(() => handleRequest(u))}>
                             {requested[u.id] ? Tr.sent : Tr.sendReq}
                           </button>
                         )}
@@ -816,7 +823,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     <button
                       className={requested[u.id] ? "" : "req-btn"}
                       style={requested[u.id] ? S.reqDoneBtn : S.reqBtn}
-                      onClick={() => handleRequest(u)}
+                      onClick={guard(() => handleRequest(u))}
                     >
                       {requested[u.id] ? Tr.sent : Tr.sendReq}
                     </button>
@@ -924,7 +931,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     style={requested[u.id]
                       ? { ...S.reqDoneBtn, width: "100%", padding: "6px 0", fontSize: "12px" }
                       : { ...S.reqBtn, width: "100%", padding: "6px 0", fontSize: "12px" }}
-                    onClick={(e) => { e.stopPropagation(); handleRequest(u); }}
+                    onClick={guard((e) => { e.stopPropagation(); handleRequest(u); })}
                   >
                     {requested[u.id] ? Tr.sent : Tr.sendReq}
                   </button>
@@ -1000,7 +1007,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               {!cantSendHelp(selectedUser) && (
                 <button
                   style={requested[selectedUser.id] ? S.modalReqDoneBtn : S.modalReqBtn}
-                  onClick={() => handleRequest(selectedUser)}
+                  onClick={guard(() => handleRequest(selectedUser))}
                   onMouseOver={(e) => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#1d4896"; }}
                   onMouseOut={(e)  => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#4472b8"; }}
                 >

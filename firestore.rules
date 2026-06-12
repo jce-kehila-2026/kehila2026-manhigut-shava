@@ -4,64 +4,70 @@ service cloud.firestore {
 
     /* ── Helpers ── */
     function isAuth()     { return request.auth != null; }
+    /* A real (non-anonymous) account. Guests browse via Firebase Anonymous Auth,
+       which passes isAuth() for READS but must never be allowed to WRITE.
+       isMember() already implies isAuth() (request.auth != null). */
+    function isMember() {
+      return request.auth != null &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
     function isOwner(uid) { return request.auth.uid == uid; }
     function isAdmin() {
-      return isAuth() &&
+      return isMember() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
     /* ── Users ── */
     match /users/{userId} {
       allow read: if isAuth();
-      allow create: if isOwner(userId);
-      allow delete: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin()
-        || (isAuth() &&
-            request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['networksCount', 'isMentor', 'isMentee']));
+      allow create: if isMember() && isOwner(userId);
+      allow delete: if isMember() && (isOwner(userId) || isAdmin());
+      allow update: if isMember() && (isOwner(userId) || isAdmin()
+        || request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['networksCount', 'isMentor', 'isMentee']));
     }
 
     /* ── Posts ── */
     match /posts/{postId} {
       allow read:   if isAuth();
-      allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isAuth();
-      allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if isMember() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isMember();
+      allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
 
       match /comments/{commentId} {
         allow read:   if isAuth();
-        allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
-        allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
-        allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+        allow create: if isMember() && request.resource.data.authorId == request.auth.uid;
+        allow update: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
+        allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
       }
     }
 
     /* ── Conversations ── */
     match /conversations/{convId} {
       allow read:   if isAuth() && (request.auth.uid in resource.data.participants || isAdmin());
-      allow create: if isAuth() && request.auth.uid in request.resource.data.participants;
-      allow update: if isAuth() && request.auth.uid in resource.data.participants;
+      allow create: if isMember() && request.auth.uid in request.resource.data.participants;
+      allow update: if isMember() && request.auth.uid in resource.data.participants;
       allow delete: if isAdmin();
 
       match /messages/{msgId} {
         allow read:   if isAuth() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
-        allow create: if isAuth() &&
+        allow create: if isMember() &&
           request.resource.data.senderId == request.auth.uid &&
           request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
-        allow update: if isAuth() &&
+        allow update: if isMember() &&
           request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
-        allow delete: if isAuth() && (resource.data.senderId == request.auth.uid || isAdmin());
+        allow delete: if isMember() && (resource.data.senderId == request.auth.uid || isAdmin());
       }
     }
 
     /* ── Help requests ── */
     match /helpRequests/{docId} {
       allow read:   if isAuth();
-      allow create: if isAuth() && request.auth.uid == request.resource.data.fromUserId;
-      allow update: if isAuth() &&
+      allow create: if isMember() && request.auth.uid == request.resource.data.fromUserId;
+      allow update: if isMember() &&
         (request.auth.uid == resource.data.toUserId ||
          request.auth.uid == resource.data.fromUserId || isAdmin());
-      allow delete: if isAuth() &&
+      allow delete: if isMember() &&
         (request.auth.uid == resource.data.fromUserId ||
          request.auth.uid == resource.data.toUserId || isAdmin());
     }
@@ -69,77 +75,77 @@ service cloud.firestore {
     /* ── Networks (connection system) ── */
     match /networks/{docId} {
       allow read:   if isAuth();
-      allow create: if isAuth() && request.resource.data.fromUserId == request.auth.uid;
-      allow delete: if isAuth() && resource.data.fromUserId == request.auth.uid;
+      allow create: if isMember() && request.resource.data.fromUserId == request.auth.uid;
+      allow delete: if isMember() && resource.data.fromUserId == request.auth.uid;
     }
 
     /* ── Reviews ── */
     match /reviews/{reviewId} {
       allow read:   if isAuth();
-      allow create: if isAuth() && request.resource.data.reviewerId == request.auth.uid;
+      allow create: if isMember() && request.resource.data.reviewerId == request.auth.uid;
     }
 
     /* ── OTPs ── */
     match /otps/{uid} {
-      allow read, write: if isAuth() && isOwner(uid);
+      allow read, write: if isMember() && isOwner(uid);
     }
 
     /* ── Notifications ── */
     match /notifications/{userId}/items/{notifId} {
       allow read:   if isAuth() && isOwner(userId);
-      allow create: if isAuth();
-      allow update: if isAuth() && (isOwner(userId) || isAdmin());
-      allow delete: if isAuth() && (isOwner(userId) || isAdmin());
+      allow create: if isMember();
+      allow update: if isMember() && (isOwner(userId) || isAdmin());
+      allow delete: if isMember() && (isOwner(userId) || isAdmin());
     }
 
     /* ── Events ── */
     match /events/{eventId} {
       allow read:   if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
-      allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if isMember();
+      allow update: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
     /* ── Jobs ── */
     match /jobs/{jobId} {
       allow read:   if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
-      allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if isMember();
+      allow update: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
     /* ── Groups ── */
     match /groups/{groupId} {
       allow read:   if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth();
-      allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if isMember();
+      allow update: if isMember();
+      allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
     /* ── Mentorship requests ── */
     match /mentorRequests/{reqId} {
       allow read:   if isAuth() && (resource.data.mentorId == request.auth.uid || resource.data.menteeId == request.auth.uid || isAdmin());
-      allow create: if isAuth();
-      allow update: if isAuth() && (resource.data.mentorId == request.auth.uid || resource.data.menteeId == request.auth.uid);
-      allow delete: if isAuth() && (resource.data.mentorId == request.auth.uid || resource.data.menteeId == request.auth.uid || isAdmin());
+      allow create: if isMember();
+      allow update: if isMember() && (resource.data.mentorId == request.auth.uid || resource.data.menteeId == request.auth.uid);
+      allow delete: if isMember() && (resource.data.mentorId == request.auth.uid || resource.data.menteeId == request.auth.uid || isAdmin());
     }
 
     /* ── Stories ── */
     match /stories/{storyId} {
       allow read:   if isAuth();
-      allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
-      allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if isMember() && request.resource.data.authorId == request.auth.uid;
+      allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
     /* ── Activity logs ── */
     match /activityLogs/{logId} {
-      allow create: if isAuth();
+      allow create: if isMember();
       allow read:   if isAdmin();
     }
 
     /* ── Reports ── */
     match /reports/{reportId} {
-      allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
+      allow create: if isMember() && request.resource.data.reporterId == request.auth.uid;
       allow read, update, delete: if isAdmin();
     }
 

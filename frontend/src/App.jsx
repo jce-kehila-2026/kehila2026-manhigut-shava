@@ -7,6 +7,7 @@ import LandingPage from "./LandingPage";
 import CompleteProfilePage from "./CompleteProfilePage";
 import OtpVerificationPage from "./OtpVerificationPage";
 import DashboardPage from "./DashboardPage";
+import AuthGateModal from "./GuestGate";
 
 /* Global cursor trail — smooth comet tail */
 function CursorTrail() {
@@ -187,16 +188,17 @@ function LoadingScreen() {
 }
 
 function AppContent() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isGuest, enterGuest, authRequest, clearAuthRequest } = useAuth();
   const [showAuth, setShowAuth]         = useState(false);
   const [showLoginIntro, setShowLoginIntro] = useState(false);
   const prevUserRef = useRef(null);
 
-  /* Show intro once per session when user transitions from null → logged-in */
+  /* Show intro once per session when user transitions from null → logged-in.
+     Skip it for anonymous guests — they didn't "log in". */
   useEffect(() => {
     if (!loading) {
       const wasLoggedOut = prevUserRef.current === null;
-      const isNowLoggedIn = !!user;
+      const isNowLoggedIn = !!user && !user.isAnonymous;
       if (wasLoggedOut && isNowLoggedIn && !sessionStorage.getItem("login_intro_done")) {
         sessionStorage.setItem("login_intro_done", "1");
         setShowLoginIntro(true);
@@ -212,9 +214,15 @@ function AppContent() {
   }
 
   if (!user) {
-    if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
-    return <LandingPage onLogin={() => setShowAuth(true)} />;
+    /* Guest tapped Log In / Sign Up inside the gate → open AuthPage on that tab. */
+    if (authRequest) return <AuthPage initialTab={authRequest} onBack={clearAuthRequest} />;
+    if (showAuth)    return <AuthPage onBack={() => setShowAuth(false)} />;
+    return <LandingPage onLogin={() => setShowAuth(true)} onExplore={enterGuest} />;
   }
+
+  /* Anonymous guest → straight into the (read-only) dashboard, bypassing the
+     Complete-Profile / OTP guards that only apply to real accounts. */
+  if (isGuest) return <DashboardPage />;
 
   if (profile === null) return <CompleteProfilePage />;
 
@@ -230,6 +238,7 @@ export default function App() {
         <AuthProvider>
           <CursorTrail />
           <AppContent />
+          <AuthGateModal />
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>

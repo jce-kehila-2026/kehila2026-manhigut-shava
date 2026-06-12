@@ -8,6 +8,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { useGuestGate } from "./GuestGate";
 import { logActivity } from "./activityLogger";
 
 /* ── Helpers ── */
@@ -143,6 +144,8 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
 /* ── Post card ── */
 function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfile, onMessage }) {
   const { t } = useLang();
+  const { isGuest } = useAuth();
+  const guard = useGuestGate();
   const [liked,    setLiked]    = useState((post.likedBy || []).includes(currentUser?.uid));
   const [likes,    setLikes]    = useState(post.likesCount || (post.likedBy?.length || 0));
   const [comments, setComments] = useState([]);
@@ -375,7 +378,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
         display: "flex", alignItems: "center", gap: 2,
       }}>
         <button
-          onClick={handleLike}
+          onClick={guard(handleLike)}
           style={{
             display: "flex", alignItems: "center", gap: 6,
             padding: "7px 14px", borderRadius: "var(--r-full)",
@@ -414,9 +417,9 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
           <span>{t.community.comment}</span>
         </button>
 
-        {currentUser && post.authorId !== currentUser.uid && (
+        {(isGuest || (currentUser && post.authorId !== currentUser.uid)) && (
           <button
-            onClick={() => onMessage?.(post.authorId)}
+            onClick={guard(() => onMessage?.(post.authorId))}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "7px 14px", borderRadius: "var(--r-full)",
@@ -434,9 +437,9 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
           </button>
         )}
 
-        {currentUser && post.authorId !== currentUser.uid && (
+        {(isGuest || (currentUser && post.authorId !== currentUser.uid)) && (
           <button
-            onClick={() => setShowRepostModal(true)}
+            onClick={guard(() => setShowRepostModal(true))}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "7px 14px", borderRadius: "var(--r-full)",
@@ -507,13 +510,13 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
             />
           ))}
 
-          {currentUser && (
+          {(currentUser || isGuest) && (
             <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
               <div style={{ flex: 1 }}>
                 <input
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleComment(); } }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); guard(handleComment)(e); } }}
                   placeholder={t.community.commentPlaceholder}
                   style={{
                     width: "100%", padding: "10px 14px",
@@ -527,7 +530,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
                 />
               </div>
               <button
-                onClick={handleComment}
+                onClick={guard(handleComment)}
                 disabled={!commentText.trim() || postingComment}
                 style={{
                   width: 36, height: 36, borderRadius: "50%",
@@ -554,6 +557,8 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
 /* ── Compose box ── */
 function ComposeBox({ currentUser, profile, onPost }) {
   const { t } = useLang();
+  const { isGuest } = useAuth();
+  const guard = useGuestGate();
   const [text, setText]       = useState("");
   const [files, setFiles]     = useState([]);
   const [posting, setPosting] = useState(false);
@@ -595,7 +600,10 @@ function ComposeBox({ currentUser, profile, onPost }) {
     } finally { setPosting(false); }
   };
 
+  /* For guests the button is always "active" so the very first tap opens the
+     auth gate (instead of sitting disabled). hasContent still drives real users. */
   const hasContent = text.trim() || files.length > 0;
+  const canSubmit  = isGuest || hasContent;
 
   return (
     <div
@@ -648,7 +656,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
           )}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-            <button onClick={() => fileRef.current.click()} style={{
+            <button onClick={guard(() => fileRef.current.click())} style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "7px 13px", borderRadius: "var(--r-full)",
               background: "var(--bg-secondary)", border: "1px solid var(--border)",
@@ -667,16 +675,16 @@ function ComposeBox({ currentUser, profile, onPost }) {
             <div style={{ flex: 1 }} />
 
             <button
-              onClick={handlePost}
-              disabled={!hasContent || posting}
+              onClick={guard(handlePost)}
+              disabled={!canSubmit || posting}
               style={{
                 padding: "9px 22px", borderRadius: "var(--r-full)",
-                background: hasContent ? "linear-gradient(135deg, var(--brand), var(--brand-dark))" : "var(--bg-tertiary)",
-                color: hasContent ? "#fff" : "var(--text-muted)",
+                background: canSubmit ? "linear-gradient(135deg, var(--brand), var(--brand-dark))" : "var(--bg-tertiary)",
+                color: canSubmit ? "#fff" : "var(--text-muted)",
                 border: "none", fontSize: 13, fontWeight: 700,
-                cursor: hasContent ? "pointer" : "default",
+                cursor: canSubmit ? "pointer" : "default",
                 transition: "all var(--t-fast)",
-                boxShadow: hasContent ? "0 6px 18px var(--brand-glow)" : "none",
+                boxShadow: canSubmit ? "0 6px 18px var(--brand-glow)" : "none",
                 letterSpacing: "0.02em",
               }}
             >

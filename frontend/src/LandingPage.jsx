@@ -1012,7 +1012,7 @@ function ScreenshotFlipGuide({ T, onLogin }) {
 /* ═══════════════════════════════════════════
    LANDING PAGE
 ═══════════════════════════════════════════ */
-export default function LandingPage({ onLogin }) {
+export default function LandingPage({ onLogin, onExplore }) {
   const { isRTL, lang, setLang } = useLang();
   const T   = LP[lang] ?? LP.he;
   const dir = isRTL ? "rtl" : "ltr";
@@ -1279,7 +1279,7 @@ export default function LandingPage({ onLogin }) {
               {rippling&&<span style={{position:"absolute",inset:0,margin:"auto",width:10,height:10,borderRadius:"50%",background:"rgba(255,255,255,0.45)",animation:"lp-ripple 0.65s ease-out forwards"}}/>}
               {T.join}
             </button>
-            <button onClick={onLogin} style={{
+            <button onClick={onExplore || onLogin} style={{
               background:"rgba(255,255,255,0.18)",color:C.white,
               border:"2px solid rgba(255,255,255,0.5)",
               padding:"13px 28px",borderRadius:999,

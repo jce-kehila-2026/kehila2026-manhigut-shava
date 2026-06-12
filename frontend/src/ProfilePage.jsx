@@ -8,6 +8,7 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { useGuestGate } from "./GuestGate";
 import { useLang } from "./LanguageContext";
 
 const storage = getStorage();
@@ -184,6 +185,7 @@ function PlainInput(props) {
 
 export default function ProfilePage({ viewUserId, onMessage }) {
   const { user, refreshProfile } = useAuth();
+  const guard = useGuestGate();
   const { t, isRTL } = useLang();
   const fileRef = useRef();
 
@@ -699,7 +701,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
 
             <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
               <button
-                onClick={handleMessageClick}
+                onClick={guard(handleMessageClick)}
                 style={{
                   padding:"12px 20px", borderRadius:"14px",
                   background:"#1d4896", color:"#fff", border:"none",
