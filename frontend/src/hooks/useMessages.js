@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   collection, query, where, orderBy,
   onSnapshot, addDoc, updateDoc, doc,
-  getDocs, arrayUnion, serverTimestamp, increment,
+  getDoc, getDocs, arrayUnion, serverTimestamp, increment,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase";
@@ -93,12 +93,9 @@ export async function uploadChatImage(file, conversationId) {
 /* ── Toggle emoji reaction ── */
 export async function toggleReaction(conversationId, messageId, emoji, userId) {
   const msgRef = doc(db, "conversations", conversationId, "messages", messageId);
-  const snap = await getDocs(
-    query(collection(db, "conversations", conversationId, "messages"),
-      where("__name__", "==", messageId))
-  );
-  if (snap.empty) return;
-  const reactions = snap.docs[0].data().reactions || {};
+  const snap = await getDoc(msgRef);
+  if (!snap.exists()) return;
+  const reactions = snap.data().reactions || {};
   const users = reactions[emoji] || [];
   const hasReacted = users.includes(userId);
   await updateDoc(msgRef, {
