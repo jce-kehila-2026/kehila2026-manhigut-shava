@@ -56,7 +56,15 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read:   if isAuth();
       allow create: if isMember() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isMember();
+      /* Only the author or an admin may edit the post body/pin state. Any other
+         member may ONLY toggle the like/comment counters (same pattern as
+         users.networksCount). Previously `allow update: if isMember()` let any
+         member overwrite anyone's post text, author, or isPinned flag. */
+      allow update: if isMember() && (
+           resource.data.authorId == request.auth.uid
+        || isAdmin()
+        || request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['likedBy', 'likesCount', 'commentCount', 'commentsCount']));
       allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
 
       match /comments/{commentId} {
