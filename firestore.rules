@@ -144,7 +144,7 @@ service cloud.firestore {
     /* ── Events ── */
     match /events/{eventId} {
       allow read:   if isAuth();
-      allow create: if isMember();
+      allow create: if isMember() && request.resource.data.authorId == request.auth.uid;
       allow update: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
       allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
@@ -152,7 +152,7 @@ service cloud.firestore {
     /* ── Jobs ── */
     match /jobs/{jobId} {
       allow read:   if isAuth();
-      allow create: if isMember();
+      allow create: if isMember() && request.resource.data.authorId == request.auth.uid;
       allow update: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
       allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
@@ -160,15 +160,15 @@ service cloud.firestore {
     /* ── Groups ── */
     match /groups/{groupId} {
       allow read:   if isAuth();
-      allow create: if isMember();
-      allow update: if isMember();
+      allow create: if isMember() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
       allow delete: if isMember() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
     /* ── Mentorship requests ── */
     match /mentorRequests/{reqId} {
       allow read:   if isAuth() && (resource.data.mentorId == request.auth.uid || resource.data.menteeId == request.auth.uid || isAdmin());
-      allow create: if isMember();
+      allow create: if isMember() && (request.resource.data.mentorId == request.auth.uid || request.resource.data.menteeId == request.auth.uid);
       allow update: if isMember() && (resource.data.mentorId == request.auth.uid || resource.data.menteeId == request.auth.uid);
       allow delete: if isMember() && (resource.data.mentorId == request.auth.uid || resource.data.menteeId == request.auth.uid || isAdmin());
     }
