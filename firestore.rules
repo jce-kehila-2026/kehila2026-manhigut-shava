@@ -40,6 +40,16 @@ service cloud.firestore {
         || isAdmin()
         || request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['networksCount', 'isMentor', 'isMentee']));
+
+      /* Private contact (phone/email). The user doc above is world-readable to
+         any signed-in account, so contact must NOT live there. It is kept in
+         this subcollection and exposed only to the owner or an admin — matching
+         the privacy promise that contact details stay hidden from other
+         graduates until they explicitly connect. */
+      match /private/{docId} {
+        allow read:  if isOwner(userId) || isAdmin();
+        allow write: if isMember() && (isOwner(userId) || isAdmin());
+      }
     }
 
     /* ── Posts ── */
