@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { saveContact } from "./contact";
 
 /* ── Palette (matches blue/coral theme) ── */
 const C = {
@@ -293,8 +294,6 @@ export default function CompleteProfilePage() {
         /* public */
         firstName:          form.firstName,
         lastName:           form.lastName,
-        phone:              normalizePhone(form.phone),
-        email:              form.email,
         birthdate:          form.birthdate || null,
         region:             form.region,
         campus:             form.campus,
@@ -324,6 +323,12 @@ export default function CompleteProfilePage() {
         emailVerified: true,
         acceptedTerms: true,
         createdAt: new Date().toISOString(),
+      });
+      /* Contact (phone/email) is PII — store it in the owner/admin-only
+         private subcollection, never on the world-readable user doc. */
+      await saveContact(user.uid, {
+        phone: normalizePhone(form.phone),
+        email: form.email,
       });
       await refreshProfile();
     } catch (err) {

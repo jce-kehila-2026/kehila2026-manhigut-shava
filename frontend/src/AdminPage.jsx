@@ -6,6 +6,7 @@ import {
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
+import { getContact, saveContact } from "./contact";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
@@ -783,7 +784,10 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateDoc(doc(db, "users", u.id), { ...fields });
+      /* phone is PII — persist it to the private contact subdoc, not the user doc. */
+      const { phone, ...publicFields } = fields;
+      await updateDoc(doc(db, "users", u.id), { ...publicFields });
+      await saveContact(u.id, { phone });
       logActivity({
         type: "admin_edit_profile",
         actorId: adminUser.uid,
@@ -931,8 +935,15 @@ export default function AdminPage() {
       getDocs(collection(db, "users")),
       getDocs(query(collection(db, "posts"), orderBy("createdAt", "desc"))),
       getDocs(collection(db, "conversations")),
-    ]).then(([uSnap, pSnap, cSnap]) => {
-      setUsers(uSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    ]).then(async ([uSnap, pSnap, cSnap]) => {
+      const baseUsers = uSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      /* Contact (phone/email) now lives in users/{uid}/private/contact, which
+         admins are allowed to read. Merge it back so the admin views, search
+         and Excel matching keep seeing u.phone / u.email. */
+      const withContact = await Promise.all(
+        baseUsers.map(async (u) => ({ ...u, ...(await getContact(u.id)) }))
+      );
+      setUsers(withContact);
       setPosts(pSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setConvs(cSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
@@ -1251,7 +1262,17 @@ export default function AdminPage() {
         });
 
         if (Object.keys(updates).length > 0) {
-          await updateDoc(doc(db, "users", existingUser.id), updates);
+          /* phone/email are PII — route them to the private contact subdoc. */
+          const { phone, email, ...publicUpdates } = updates;
+          const contactUpdates = {};
+          if (phone !== undefined) contactUpdates.phone = phone;
+          if (email !== undefined) contactUpdates.email = email;
+          if (Object.keys(publicUpdates).length > 0) {
+            await updateDoc(doc(db, "users", existingUser.id), publicUpdates);
+          }
+          if (Object.keys(contactUpdates).length > 0) {
+            await saveContact(existingUser.id, contactUpdates);
+          }
           /* Update local state */
           setUsers(prev => prev.map(u => u.id === existingUser.id ? { ...u, ...updates } : u));
           updatedCount++;

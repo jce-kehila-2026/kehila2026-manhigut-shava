@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { collection, getDocs, addDoc, query, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { getContact } from "./contact";
 import { useAuth } from "./AuthContext";
 import { useGuestGate } from "./GuestGate";
 import { useLang } from "./LanguageContext";
@@ -567,13 +568,16 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     if (!user || !senderProfile || requested[targetUser.id]) return;
     if (cantSendHelp(targetUser)) return;
     try {
+      /* Share the requester's OWN contact with the recipient. phone lives in
+         the private subcollection now, so read it from there (owner-readable). */
+      const myContact = await getContact(user.uid);
       await addDoc(collection(db, "helpRequests"), {
         toUserId: targetUser.id,
         toUserName: getFullName(targetUser),
         fromUserId: user.uid,
         fromUserName: getFullName(senderProfile),
         fromUserEmail: user.email,
-        fromUserPhone: senderProfile?.phone ?? "",
+        fromUserPhone: myContact.phone ?? "",
         fromUserProfession: senderProfile?.currentRole ?? senderProfile?.profession ?? "",
         requestMessage: requestMessage,   // ← NEW field
         status: null,
@@ -1177,18 +1181,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               </p>
             </div>
             <div style={S.infoBlock}>
-              {selectedUser.email && (
-                <div style={S.infoRow}>
-                  <p style={S.infoLabel}>{Tr.emailLbl}</p>
-                  <p style={S.infoValue}>{selectedUser.email}</p>
-                </div>
-              )}
-              {selectedUser.phone && (
-                <div style={S.infoRow}>
-                  <p style={S.infoLabel}>{Tr.phoneLbl}</p>
-                  <p style={S.infoValue}>{selectedUser.phone}</p>
-                </div>
-              )}
+              {/* Contact (email/phone) is private and intentionally not shown
+                  here. Use the help-request flow to share contact with consent;
+                  the recipient receives the requester's details on the request. */}
               {(selectedUser.region || selectedUser.city) && (
                 <div style={S.infoRow}>
                   <p style={S.infoLabel}>{Tr.regionLabel}</p>

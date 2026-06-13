@@ -7,6 +7,7 @@ import {
 } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth } from "./firebase";
+import { getContact, saveContact } from "./contact";
 import { useAuth } from "./AuthContext";
 import { useGuestGate } from "./GuestGate";
 import { useLang } from "./LanguageContext";
@@ -216,13 +217,15 @@ export default function ProfilePage({ viewUserId, onMessage }) {
   useEffect(() => {
     const targetId = viewUserId || user?.uid;
     if (!targetId) return;
-    getDoc(doc(db, "users", targetId)).then((snap) => {
+    /* Contact (phone/email) lives in a private subcollection; getContact only
+       resolves for the owner or an admin and returns {} otherwise. */
+    Promise.all([getDoc(doc(db, "users", targetId)), getContact(targetId)]).then(([snap, contact]) => {
       if (snap.exists()) {
         const d = snap.data();
         setForm({
           firstName:      d.firstName      ?? "",
           lastName:       d.lastName       ?? "",
-          phone:          d.phone          ?? "",
+          phone:          contact.phone    ?? "",
           city:           d.city           ?? "",
           profession:     d.profession     ?? "",
           bio:            d.bio            ?? "",
@@ -239,7 +242,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
         });
         setPhotoURL(d.photoURL ?? d.avatarUrl ?? null);
         setNetworksCount(d.networksCount ?? 0);
-        setProfileEmail(d.email ?? "");
+        setProfileEmail(contact.email ?? "");
       } else {
         setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
@@ -313,7 +316,10 @@ export default function ProfilePage({ viewUserId, onMessage }) {
     if (!isOwner || !user) return;
     setSaving(true); setError("");
     try {
-      await updateDoc(doc(db, "users", user.uid), { ...form });
+      /* phone is PII — write it to the private contact subdoc, not the user doc. */
+      const { phone, ...publicForm } = form;
+      await updateDoc(doc(db, "users", user.uid), { ...publicForm });
+      await saveContact(user.uid, { phone });
       await refreshProfile();
       setSaved(true);
       setTimeout(() => setSaved(false), 2200);
@@ -332,7 +338,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
       const cred = EmailAuthProvider.credential(user.email, password);
       await reauthenticateWithCredential(auth.currentUser, cred);
       await updateEmail(auth.currentUser, newEmail);
-      await updateDoc(doc(db, "users", user.uid), { email: newEmail });
+      await saveContact(user.uid, { email: newEmail });
       setEmailSuccess("Email updated successfully.");
       setPassword(""); setNewEmail("");
     } catch (err) {

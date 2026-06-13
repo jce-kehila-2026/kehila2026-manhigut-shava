@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
+import { saveContact } from "./contact";
 
 /* ─── Translation ─── */
 const AUTH_T = {
@@ -372,11 +373,13 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
       const { user } = await createUserWithEmailAndPassword(auth, form.email, form.password);
       await setDoc(doc(db, "users", user.uid), {
         firstName:form.firstName, lastName:form.lastName,
-        phone:normalizePhone(form.phone), email:form.email,
         institution:form.institution,
         profession:effectiveProfession, city:effectiveCity,
         emailVerified:false, acceptedTerms:true, createdAt:new Date().toISOString(),
       });
+      /* Contact (phone/email) is PII — keep it in the owner/admin-only
+         private subcollection, not on the world-readable user doc. */
+      await saveContact(user.uid, { phone:normalizePhone(form.phone), email:form.email });
     } catch (e) { setError(firebaseMsg(e.code)); }
     finally { setLoading(false); }
   };
