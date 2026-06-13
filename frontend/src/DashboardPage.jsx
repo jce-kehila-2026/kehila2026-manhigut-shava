@@ -1,14 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { doc, updateDoc, collection, getDocs, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { useTheme } from "./ThemeContext";
-import SupportPage   from "./SupportPage";
-import CommunityPage from "./CommunityPage";
-import ProfilePage   from "./ProfilePage";
-import AdminPage     from "./AdminPage";
-import ChatPage      from "./ChatPage";
+/* Route-level pages are code-split: each loads as its own chunk on first use,
+   keeping AdminPage (and the heavy xlsx library it imports) plus the other
+   pages out of the initial bundle that every visitor downloads. */
+const SupportPage   = lazy(() => import("./SupportPage"));
+const CommunityPage = lazy(() => import("./CommunityPage"));
+const ProfilePage   = lazy(() => import("./ProfilePage"));
+const AdminPage     = lazy(() => import("./AdminPage"));
+const ChatPage      = lazy(() => import("./ChatPage"));
 
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
@@ -755,12 +758,18 @@ export default function DashboardPage() {
 
           {/* Page content */}
           <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
-            {section === "home"      && <HomePage user={user} profile={profile} onNavigate={navigate} onViewProfile={(userId) => navigate("profile", { userId })} />}
-            {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
-            {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
-            {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
-            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} />}
-            {section === "admin"     && <AdminPage />}
+            <Suspense fallback={
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted,#6b7280)", fontSize: 14 }}>
+                {t?.common?.loading ?? "…"}
+              </div>
+            }>
+              {section === "home"      && <HomePage user={user} profile={profile} onNavigate={navigate} onViewProfile={(userId) => navigate("profile", { userId })} />}
+              {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
+              {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
+              {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
+              {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} />}
+              {section === "admin"     && <AdminPage />}
+            </Suspense>
           </div>
         </div>
       </main>
