@@ -102,9 +102,14 @@ service cloud.firestore {
       allow create: if isMember() && request.resource.data.reviewerId == request.auth.uid;
     }
 
-    /* ── OTPs ── */
+    /* ── OTPs ──
+       Codes are written by sendOtpEmail and validated by verifyOtp, both of
+       which use the Admin SDK and bypass these rules. No client ever needs
+       direct access: allowing reads would let a user read their own code
+       (defeating email verification), and allowing writes would let them
+       reset the attempts counter to brute-force the code. */
     match /otps/{uid} {
-      allow read, write: if isMember() && isOwner(uid);
+      allow read, write: if false;
     }
 
     /* ── Notifications ── */
