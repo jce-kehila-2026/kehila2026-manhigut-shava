@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLang } from "./LanguageContext";
 import {
-  collection, addDoc, query, orderBy, onSnapshot,
+  collection, addDoc, query, orderBy, limit, onSnapshot,
   doc, updateDoc, deleteDoc, arrayUnion, arrayRemove,
   getDoc, getDocs, where,
 } from "firebase/firestore";
@@ -912,6 +912,8 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   const [requests, setRequests]     = useState([]);
   const [profile, setProfile]       = useState(null);
   const [loading, setLoading]       = useState(true);
+  const [postLimit, setPostLimit]   = useState(15);
+  const [hasMore, setHasMore]       = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -920,14 +922,18 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
     });
   }, [user]);
 
+  /* Live feed bounded by postLimit. "Load more" raises the limit, which
+     re-subscribes with a larger window; newly created posts still stream in
+     real time. Previously this loaded every post in the collection at once. */
   useEffect(() => {
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(postLimit));
     const unsub = onSnapshot(q, (snap) => {
       setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setHasMore(snap.docs.length === postLimit);
       setLoading(false);
     });
     return unsub;
-  }, []);
+  }, [postLimit]);
 
   useEffect(() => {
     getDocs(collection(db, "users")).then((snap) => {
@@ -1098,6 +1104,19 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
               onViewProfile={onViewProfile} onMessage={onMessage}
             />
           ))}
+          {hasMore && (
+            <button
+              onClick={() => setPostLimit((n) => n + 15)}
+              style={{
+                alignSelf: "center", margin: "0.5rem 0 1.5rem",
+                padding: "0.6rem 1.6rem", borderRadius: "var(--r-xl, 999px)",
+                border: "1px solid var(--border)", background: "var(--bg-card, #fff)",
+                color: "var(--brand-dark)", fontWeight: 700, fontSize: 14, cursor: "pointer",
+              }}
+            >
+              {t?.community?.loadMore || "טען עוד"}
+            </button>
+          )}
         </div>
 
         {/* Right sidebar */}
