@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const sgMail = require("@sendgrid/mail");
@@ -12,10 +13,22 @@ exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("invalid-argument", "Missing email or uid.");
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  /* Throttle: refuse to issue a new code within 60s of the last one (matches
+     the client resend countdown) to curb email spam and SendGrid cost abuse. */
+  const otpRef = db.collection("otps").doc(uid);
+  const existing = await otpRef.get();
+  if (existing.exists && Date.now() - (existing.data().createdAt || 0) < 60 * 1000) {
+    throw new functions.https.HttpsError(
+      "resource-exhausted",
+      "כבר נשלח קוד. נסי שוב בעוד דקה.",
+    );
+  }
+
+  /* Cryptographically secure 6-digit code — Math.random() is predictable. */
+  const otp = crypto.randomInt(100000, 1000000).toString();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-  await db.collection("otps").doc(uid).set({ otp, expiresAt, email, attempts: 0 });
+  await otpRef.set({ otp, expiresAt, email, attempts: 0, createdAt: Date.now() });
 
   sgMail.setApiKey(process.env.SENDGRID_KEY);
 
