@@ -2,22 +2,38 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow authenticated users to upload avatars
+
+    /* A real (non-anonymous) account. Guests browse via Firebase Anonymous
+       Auth and must never upload. */
+    function isMember() {
+      return request.auth != null &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+    function isImage()  { return request.resource.contentType.matches('image/.*'); }
+    function isImageOrVideo() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('video/.*');
+    }
+
+    // Avatars — only the owner may write, images only, <= 5 MB.
     match /avatars/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+      allow read:  if request.auth != null;
+      allow write: if isMember() && request.auth.uid == userId &&
+        isImage() && request.resource.size < 5 * 1024 * 1024;
     }
 
-    // Allow authenticated users to upload post media
+    // Post media — members only, images or videos, <= 50 MB.
     match /posts/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read:  if request.auth != null;
+      allow write: if isMember() &&
+        isImageOrVideo() && request.resource.size < 50 * 1024 * 1024;
     }
 
-    // Chat image uploads
+    // Chat images — members only, images only, <= 10 MB.
     match /chat-images/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read:  if request.auth != null;
+      allow write: if isMember() &&
+        isImage() && request.resource.size < 10 * 1024 * 1024;
     }
 
     // Default: deny all other access
