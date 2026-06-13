@@ -1181,9 +1181,14 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               </p>
             </div>
             <div style={S.infoBlock}>
-              {/* Contact (email/phone) is private and intentionally not shown
-                  here. Use the help-request flow to share contact with consent;
-                  the recipient receives the requester's details on the request. */}
+              {selectedUser.email && (
+                <div style={S.infoRow}>
+                  <p style={S.infoLabel}>{Tr.emailLbl}</p>
+                  <p style={S.infoValue}>{selectedUser.email}</p>
+                </div>
+              )}
+              {/* Phone is private (owner/admin only) and intentionally not shown
+                  to other members; it is shared via the help-request flow. */}
               {(selectedUser.region || selectedUser.city) && (
                 <div style={S.infoRow}>
                   <p style={S.infoLabel}>{Tr.regionLabel}</p>

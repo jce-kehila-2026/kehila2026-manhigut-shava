@@ -294,6 +294,7 @@ export default function CompleteProfilePage() {
         /* public */
         firstName:          form.firstName,
         lastName:           form.lastName,
+        email:              form.email,
         birthdate:          form.birthdate || null,
         region:             form.region,
         campus:             form.campus,
@@ -320,12 +321,11 @@ export default function CompleteProfilePage() {
         acceptedTerms: true,
         createdAt: new Date().toISOString(),
       });
-      /* Contact and national-religious identity are PII — store them in the
+      /* Phone and national-religious identity are PII — store them in the
          owner/admin-only private subcollection, never on the world-readable
-         user doc. */
+         user doc. (Email is public and written on the user doc above.) */
       await saveContact(user.uid, {
         phone: normalizePhone(form.phone),
-        email: form.email,
         _religiousIdentity:  form.religiousIdentity  || null,
         _communityEthnicity: form.communityEthnicity || null,
         _identityNote:       form.identityNote       || null,

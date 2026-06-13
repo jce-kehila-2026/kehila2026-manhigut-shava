@@ -373,13 +373,14 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
       const { user } = await createUserWithEmailAndPassword(auth, form.email, form.password);
       await setDoc(doc(db, "users", user.uid), {
         firstName:form.firstName, lastName:form.lastName,
+        email:form.email,
         institution:form.institution,
         profession:effectiveProfession, city:effectiveCity,
         emailVerified:false, acceptedTerms:true, createdAt:new Date().toISOString(),
       });
-      /* Contact (phone/email) is PII — keep it in the owner/admin-only
-         private subcollection, not on the world-readable user doc. */
-      await saveContact(user.uid, { phone:normalizePhone(form.phone), email:form.email });
+      /* Phone is PII — keep it in the owner/admin-only private subcollection,
+         not on the world-readable user doc. (Email is public, written above.) */
+      await saveContact(user.uid, { phone:normalizePhone(form.phone) });
     } catch (e) { setError(firebaseMsg(e.code)); }
     finally { setLoading(false); }
   };

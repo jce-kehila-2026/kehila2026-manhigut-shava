@@ -217,8 +217,9 @@ export default function ProfilePage({ viewUserId, onMessage }) {
   useEffect(() => {
     const targetId = viewUserId || user?.uid;
     if (!targetId) return;
-    /* Contact (phone/email) lives in a private subcollection; getContact only
-       resolves for the owner or an admin and returns {} otherwise. */
+    /* Phone lives in a private subcollection; getContact only resolves for the
+       owner or an admin and returns {} otherwise. Email is public (on the user
+       doc) and read from the snapshot below. */
     Promise.all([getDoc(doc(db, "users", targetId)), getContact(targetId)]).then(([snap, contact]) => {
       if (snap.exists()) {
         const d = snap.data();
@@ -242,7 +243,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
         });
         setPhotoURL(d.photoURL ?? d.avatarUrl ?? null);
         setNetworksCount(d.networksCount ?? 0);
-        setProfileEmail(contact.email ?? "");
+        setProfileEmail(d.email ?? "");
       } else {
         setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
@@ -338,7 +339,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
       const cred = EmailAuthProvider.credential(user.email, password);
       await reauthenticateWithCredential(auth.currentUser, cred);
       await updateEmail(auth.currentUser, newEmail);
-      await saveContact(user.uid, { email: newEmail });
+      await updateDoc(doc(db, "users", user.uid), { email: newEmail });
       setEmailSuccess("Email updated successfully.");
       setPassword(""); setNewEmail("");
     } catch (err) {

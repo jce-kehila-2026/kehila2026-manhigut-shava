@@ -1,17 +1,17 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
-/* Sensitive fields (contact + national-religious identity) are PII. They live
-   in a private subcollection — users/{uid}/private/contact — instead of the
+/* Private fields (phone + national-religious identity) are PII. They live in a
+   private subcollection — users/{uid}/private/contact — instead of the
    world-readable user doc, and the Firestore rules only let the owner or an
-   admin read them. */
+   admin read them. Email is intentionally NOT here: it is public and stays on
+   the user doc. */
 const contactRef = (uid) => doc(db, "users", uid, "private", "contact");
 
 /* Field keys that must never be stored on the public user doc. Used to split
    write payloads (signup, Excel import) into public vs private. */
 export const PRIVATE_FIELDS = [
   "phone",
-  "email",
   "_religiousIdentity",
   "_communityEthnicity",
   "_identityNote",
