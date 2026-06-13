@@ -21,17 +21,25 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuth();
       /* A user may create only their own doc, and may never bootstrap themselves
-         as admin. isAdmin is granted exclusively via the Admin SDK (grantAdmin.js). */
+         as admin. isAdmin is granted exclusively via the Admin SDK (grantAdmin.js).
+         A password (email/OTP) signup may not self-set emailVerified — that flag
+         is flipped only by the verifyOtp Cloud Function. Federated providers
+         (Google/phone) carry a verified email claim, so they may create as
+         verified. */
       allow create: if isMember() && isOwner(userId)
-        && request.resource.data.get('isAdmin', false) == false;
+        && request.resource.data.get('isAdmin', false) == false
+        && (request.auth.token.firebase.sign_in_provider != 'password'
+            || request.resource.data.get('emailVerified', false) == false);
       allow delete: if isMember() && (isOwner(userId) || isAdmin());
-      /* Owners may edit their own profile but NOT flip their own isAdmin flag —
-         that would let any member self-escalate to admin. Only an existing admin
-         (or the privileged-counter branch below) may change it. */
+      /* Owners may edit their own profile but NOT flip their own isAdmin or
+         emailVerified flags — that would let any member self-escalate to admin
+         or skip email verification. Only an existing admin (or the
+         privileged-counter branch below) may change them. */
       allow update: if isMember() && (
            isAdmin()
         || (isOwner(userId)
-             && request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false))
+             && request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false)
+             && request.resource.data.get('emailVerified', false) == resource.data.get('emailVerified', false))
         || request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['networksCount', 'isMentor', 'isMentee']));
     }
