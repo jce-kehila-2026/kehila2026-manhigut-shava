@@ -87,7 +87,13 @@ service cloud.firestore {
 
     /* ── Help requests ── */
     match /helpRequests/{docId} {
-      allow read:   if isAuth();
+      /* A help request carries the requester's own contact for the recipient,
+         so it must be readable only by the two parties (and admins), never by
+         every signed-in user. All client queries already filter by
+         from/toUserId == request.auth.uid, so this does not break them. */
+      allow read:   if isMember() &&
+        (request.auth.uid == resource.data.fromUserId ||
+         request.auth.uid == resource.data.toUserId || isAdmin());
       allow create: if isMember() && request.auth.uid == request.resource.data.fromUserId;
       allow update: if isMember() &&
         (request.auth.uid == resource.data.toUserId ||
