@@ -6,7 +6,7 @@ import {
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
-import { getContact, saveContact } from "./contact";
+import { getContact, saveContact, PRIVATE_FIELDS } from "./contact";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
@@ -1262,11 +1262,13 @@ export default function AdminPage() {
         });
 
         if (Object.keys(updates).length > 0) {
-          /* phone/email are PII — route them to the private contact subdoc. */
-          const { phone, email, ...publicUpdates } = updates;
-          const contactUpdates = {};
-          if (phone !== undefined) contactUpdates.phone = phone;
-          if (email !== undefined) contactUpdates.email = email;
+          /* PII (contact + identity) goes to the private subdoc, never the
+             world-readable user doc. */
+          const publicUpdates = {}, contactUpdates = {};
+          for (const [k, v] of Object.entries(updates)) {
+            if (PRIVATE_FIELDS.includes(k)) contactUpdates[k] = v;
+            else publicUpdates[k] = v;
+          }
           if (Object.keys(publicUpdates).length > 0) {
             await updateDoc(doc(db, "users", existingUser.id), publicUpdates);
           }

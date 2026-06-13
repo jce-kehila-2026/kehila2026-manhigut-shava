@@ -315,20 +315,20 @@ export default function CompleteProfilePage() {
         facebook:           form.facebook   || null,
         tagline:            form.tagline    || null,
         bio:                form.bio        || null,
-        /* private (stored but not shown publicly) */
-        _religiousIdentity: form.religiousIdentity  || null,
-        _communityEthnicity:form.communityEthnicity || null,
-        _identityNote:      form.identityNote       || null,
         /* meta */
         emailVerified: true,
         acceptedTerms: true,
         createdAt: new Date().toISOString(),
       });
-      /* Contact (phone/email) is PII — store it in the owner/admin-only
-         private subcollection, never on the world-readable user doc. */
+      /* Contact and national-religious identity are PII — store them in the
+         owner/admin-only private subcollection, never on the world-readable
+         user doc. */
       await saveContact(user.uid, {
         phone: normalizePhone(form.phone),
         email: form.email,
+        _religiousIdentity:  form.religiousIdentity  || null,
+        _communityEthnicity: form.communityEthnicity || null,
+        _identityNote:       form.identityNote       || null,
       });
       await refreshProfile();
     } catch (err) {
