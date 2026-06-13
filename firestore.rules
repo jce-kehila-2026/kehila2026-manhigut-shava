@@ -20,9 +20,18 @@ service cloud.firestore {
     /* ── Users ── */
     match /users/{userId} {
       allow read: if isAuth();
-      allow create: if isMember() && isOwner(userId);
+      /* A user may create only their own doc, and may never bootstrap themselves
+         as admin. isAdmin is granted exclusively via the Admin SDK (grantAdmin.js). */
+      allow create: if isMember() && isOwner(userId)
+        && request.resource.data.get('isAdmin', false) == false;
       allow delete: if isMember() && (isOwner(userId) || isAdmin());
-      allow update: if isMember() && (isOwner(userId) || isAdmin()
+      /* Owners may edit their own profile but NOT flip their own isAdmin flag —
+         that would let any member self-escalate to admin. Only an existing admin
+         (or the privileged-counter branch below) may change it. */
+      allow update: if isMember() && (
+           isAdmin()
+        || (isOwner(userId)
+             && request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false))
         || request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['networksCount', 'isMentor', 'isMentee']));
     }
