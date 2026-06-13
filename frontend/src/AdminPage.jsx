@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import * as XLSX from "xlsx";
 import {
   collection, getDocs, deleteDoc, doc, query,
   orderBy, updateDoc, limit, where,
@@ -1125,7 +1124,7 @@ export default function AdminPage() {
   };
 
   /* ── Download to Excel (only the admin-selected fields) ── */
-  const handleDownloadExcel = useCallback((selectedKeys) => {
+  const handleDownloadExcel = useCallback(async (selectedKeys) => {
     /* Fall back to all fields if called without a selection */
     const keys = (selectedKeys && selectedKeys.length)
       ? selectedKeys
@@ -1134,6 +1133,9 @@ export default function AdminPage() {
 
     setExcelBusy(true);
     try {
+      /* Load the heavy xlsx library on demand so it stays out of the main
+         AdminPage chunk until an export is actually triggered. */
+      const XLSX = await import("xlsx");
       const rows = users.map(u => {
         const row = {};
         fields.forEach(({ key, label }) => {
@@ -1199,6 +1201,8 @@ export default function AdminPage() {
         return;
       }
 
+      /* Load xlsx on demand (only once a valid file is being parsed). */
+      const XLSX = await import("xlsx");
       let wb;
       try {
         /* Pin the type so SheetJS never falls back to CSV/text parsing */
