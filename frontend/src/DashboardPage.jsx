@@ -305,18 +305,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         </div>
       )}
 
-      {/* Compact greeting */}
-      {(() => {
-        const hr = new Date().getHours();
-        const greetKey = hr < 12 ? "goodMorning" : hr < 18 ? "goodAfternoon" : "goodEvening";
-        const greeting = t.dash[greetKey] || t.dash.welcomeBack;
-        return (
-          <p style={{ fontSize:13, fontWeight:600, color:"var(--text-muted,#6b7280)", margin:"0 0 0.85rem 0" }}>
-            {greeting}{profile?.firstName ? `, ${profile.firstName}` : ""} 👋
-          </p>
-        );
-      })()}
-
       {/* Quick-access circles */}
       <style>{`
         @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -394,32 +382,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         </div>
       )}
 
-      {/* Movement website banner — soft plum, no harsh blue */}
-      <a
-        href="https://ywp-online.my.canva.site/manhigot2026"
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: "flex", alignItems: "center", gap: "1rem",
-          padding: "1.15rem 1.6rem",
-          background: "linear-gradient(135deg, #1a2f5e 0%, #2a4a8e 60%, #4472b8 100%)",
-          borderRadius: 16,
-          textDecoration: "none", cursor: "pointer",
-          transition: "transform 0.2s, box-shadow 0.2s",
-          boxShadow: "0 6px 22px rgba(29,72,150,0.22)",
-        }}
-        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(29,72,150,0.32)"; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 6px 22px rgba(29,72,150,0.22)"; }}
-      >
-        <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#daeaf8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: "0 0 2px", fontFamily: "'Outfit',sans-serif" }}>Manhigut Shava Website</p>
-          <p style={{ fontSize: 12, color: "rgba(218,234,248,0.7)", margin: 0 }}>ywp-online.my.canva.site/manhigot2026</p>
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
     </div>
   );
 }
@@ -746,65 +708,75 @@ export default function DashboardPage() {
 
               {!isMobile && <LangSwitcher lang={lang} setLang={setLang} />}
 
-              {/* Logout — mobile only (desktop has it in sidebar) */}
+              {/* Logout — mobile only */}
               {isMobile && (
-                <button
-                  onClick={logout}
-                  title={t.nav.logout}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: "6px 11px", borderRadius: 99,
-                    background: "transparent", border: "1px solid var(--border)",
-                    color: "var(--danger)", cursor: "pointer", fontSize: 12, fontWeight: 600,
-                    transition: "all var(--t-fast)",
-                  }}
+                <button onClick={logout} title={t.nav.logout} style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 11px", borderRadius: 99,
+                  background: "transparent", border: "1px solid var(--border)",
+                  color: "var(--danger)", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                  transition: "all var(--t-fast)",
+                }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "#fff0f0"; e.currentTarget.style.borderColor = "var(--danger)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; }}
                 >
                   {Icon.logout}
-                  <span>{t.nav.logout}</span>
+                  {!isMobile && <span>{t.nav.logout}</span>}
                 </button>
               )}
 
-              <button
-                onClick={toggleTheme}
-                title={dark ? "Switch to light mode" : "Switch to dark mode"}
-                style={{
-                  width: 34, height: 34, borderRadius: 99,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "transparent", border: "1px solid var(--border)",
-                  color: "var(--text-secondary)", cursor: "pointer",
-                  transition: "all var(--t-fast)",
-                }}
+              <button onClick={toggleTheme} title={dark ? "Switch to light mode" : "Switch to dark mode"} style={{
+                width: 34, height: 34, borderRadius: 99,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "transparent", border: "1px solid var(--border)",
+                color: "var(--text-secondary)", cursor: "pointer", transition: "all var(--t-fast)",
+              }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--brand)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border)"; }}
               >
                 {dark ? Icon.sun : Icon.moon}
               </button>
 
-              {/* User chip — hidden on mobile */}
-              {!isMobile && (
-                <div
-                  style={{
-                    display: "flex", alignItems: "center", gap: 9,
-                    padding: "4px 12px 4px 5px", borderRadius: 99,
+              {/* User chip — greeting + online dot + avatar + admin badge, on all screen sizes */}
+              {(() => {
+                const hr = new Date().getHours();
+                const greetKey = hr < 12 ? "goodMorning" : hr < 18 ? "goodAfternoon" : "goodEvening";
+                const greetText = (t.dash?.[greetKey] || "Hello") + (profile?.firstName ? `, ${profile.firstName}` : "");
+                return (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    padding: "4px 10px 4px 5px", borderRadius: 99,
                     background: "var(--bg-tertiary)", border: "1px solid var(--border)",
-                    cursor: "pointer", transition: "border-color 0.2s",
+                    cursor: "pointer", transition: "border-color 0.2s", flexShrink: 0,
                   }}
-                  onClick={() => switchTab("profile")}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--brand)"}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
-                >
-                  {avatarUrl(profile) ? (
-                    <img src={avatarUrl(profile)} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} alt="" />
-                  ) : (
-                    <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #4472b8, #6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
-                  )}
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-                    {profile?.firstName || t.nav.profile}
-                  </span>
-                </div>
-              )}
+                    onClick={() => switchTab("profile")}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--brand)"}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
+                  >
+                    {/* Avatar with online dot */}
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      {avatarUrl(profile) ? (
+                        <img src={avatarUrl(profile)} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} alt="" />
+                      ) : (
+                        <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #4472b8, #6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff" }}>{initials}</div>
+                      )}
+                      <div style={{ position: "absolute", bottom: 0, right: 0, width: 8, height: 8, borderRadius: "50%", background: "#4ade80", border: "1.5px solid var(--bg-primary)" }} />
+                    </div>
+                    {/* Greeting — hidden on mobile to keep compact */}
+                    {!isMobile && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", whiteSpace: "nowrap", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {greetText}
+                      </span>
+                    )}
+                    {/* Admin badge */}
+                    {profile?.isAdmin && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#1d4896", background: "#dbeafe", padding: "2px 7px", borderRadius: 99, letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
             </header>
           )}
 

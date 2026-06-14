@@ -1349,6 +1349,25 @@ export default function LandingPage({ onLogin }) {
               onMouseOut={e =>{e.currentTarget.style.background="rgba(255,255,255,0.18)";}}
             >{T.explore}</button>
           </div>
+
+          {/* Mobile nav shortcuts — pills below CTA (desktop uses NavCircle on the side) */}
+          {isMobile && heroReady && (
+            <div style={{ display:"flex", gap:8, marginTop:"1.25rem", flexWrap:"wrap", justifyContent:"center" }}>
+              {[
+                { label:T.navFeatures, ref:featRef },
+                { label:T.navHow,      ref:howRef  },
+                { label:T.navLead,     ref:leadRef },
+              ].map(({label,ref})=>(
+                <button key={label} onClick={()=>ref.current?.scrollIntoView({behavior:"smooth",block:"start"})} style={{
+                  padding:"7px 16px", borderRadius:999,
+                  background:"rgba(255,255,255,0.15)", color:C.white,
+                  border:"1.5px solid rgba(255,255,255,0.35)",
+                  fontSize:12, fontWeight:600, cursor:"pointer",
+                  backdropFilter:"blur(6px)",
+                }}>{label}</button>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
