@@ -1086,7 +1086,7 @@ export default function LandingPage({ onLogin }) {
   const [ctaRef,   ctaVis]   = useInView(0.12);
   const [howRef,   howVis]   = useInView(0.08);
   const [footRef,  footVis]  = useInView(0.10);
-  const [quoteRef, quoteVis] = useInView(0.20);
+  const [quoteRef, quoteVis] = useInView(0.05);
   const [photoRef, photoVis] = useInView(0.15);
 
   // Track when hero scrolls out of view → show fixed nav dots
@@ -1211,7 +1211,7 @@ export default function LandingPage({ onLogin }) {
               }
             </button>
             <div style={{display:"flex",gap:6}}>
-              {["he","en","ar"].map(code=>(
+              {[{code:"he",label:"עב"},{code:"en",label:"EN"},{code:"ar",label:"عر"}].map(({code,label})=>(
                 <button key={code} onClick={()=>setLang(code)} style={{
                   padding:"5px 13px",borderRadius:999,border:"none",
                   background: isMobile
@@ -1221,10 +1221,10 @@ export default function LandingPage({ onLogin }) {
                     ? (lang===code ? C.blue : C.white)
                     : (lang===code ? C.white : C.blue),
                   fontSize:11,fontWeight:700,cursor:"pointer",
-                  transition:"all 0.18s",textTransform:"uppercase",
+                  transition:"all 0.18s",
                   boxShadow:"0 2px 8px rgba(0,0,0,0.08)",
                   border:`1px solid ${lang===code?C.blue:C.bluePale}`,
-                }}>{code}</button>
+                }}>{label}</button>
               ))}
             </div>
           </div>
@@ -1368,6 +1368,7 @@ export default function LandingPage({ onLogin }) {
           top:"4%", left:"8%",
           width:"70%", height:"92%",
           background:"#12275f",
+          borderRadius:"62% 38% 56% 44% / 52% 62% 38% 48%",
           animation:"lp-blob-morph 18s ease-in-out infinite",
           willChange:"border-radius, transform",
           pointerEvents:"none",

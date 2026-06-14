@@ -637,7 +637,7 @@ export default function AuthPage({ onBack }) {
 
           {/* Language switcher */}
           <div style={{display:"flex",gap: isMobile ? 2 : 4}}>
-            {["he","en","ar"].map(code=>(
+            {[{code:"he",label:"עב"},{code:"en",label:"EN"},{code:"ar",label:"عر"}].map(({code,label})=>(
               <button key={code} onClick={()=>setLang(code)} style={{
                 padding: isMobile ? "3px 7px" : "4px 10px",
                 borderRadius:999, border:"none",
@@ -645,9 +645,9 @@ export default function AuthPage({ onBack }) {
                 color:lang===code?"#1d4896":"#fff",
                 fontSize: isMobile ? 10 : 11,
                 fontWeight:700, cursor:"pointer",
-                transition:"all 0.18s", textTransform:"uppercase",
+                transition:"all 0.18s",
                 letterSpacing:"0.04em",
-              }}>{code}</button>
+              }}>{label}</button>
             ))}
           </div>
 

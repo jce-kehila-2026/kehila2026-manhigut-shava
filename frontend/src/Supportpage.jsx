@@ -614,75 +614,36 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       <p style={S.pageTitle}>{Tr.title}</p>
       <p style={S.pageSub}>{Tr.sub}</p>
 
-      {/* ── Quick-action shortcuts ── */}
+      {/* ── Quick shortcuts ── */}
       <div style={{
         display: "flex", gap: 8, overflowX: "auto", flexWrap: "nowrap",
         marginBottom: "1.25rem", paddingBottom: 4,
         scrollbarWidth: "none", msOverflowStyle: "none",
       }}>
-        {/* Help-area quick filters — click to pre-select area & run search */}
         {[
-          { emoji: "💼", labelHe: "קריירה",     labelEn: "Career",     labelAr: "المهنة",    key: AREAS_KEYS[0] },
-          { emoji: "👑", labelHe: "מנהיגות",    labelEn: "Leadership", labelAr: "القيادة",   key: AREAS_KEYS[1] },
-          { emoji: "🤝", labelHe: "מנטורינג",   labelEn: "Mentoring",  labelAr: "الإرشاد",  key: AREAS_KEYS[10] },
-          { emoji: "🏛️", labelHe: "מגזר ציבורי", labelEn: "Public sector", labelAr: "القطاع العام", key: AREAS_KEYS[3] },
-          { emoji: "💡", labelHe: "יזמות",      labelEn: "Entrepreneurship", labelAr: "ريادة الأعمال", key: AREAS_KEYS[6] },
-        ].map(({ emoji, labelHe, labelEn, labelAr, key }) => {
-          const label = lang === "he" ? labelHe : lang === "ar" ? labelAr : labelEn;
-          const isActive = selectedArea === key;
-          return (
-            <button
-              key={key}
-              onClick={() => {
-                setSelectedArea(key);
-                setOtherArea("");
-                runSearch(key);
-                scrollTo(searchRef);
-              }}
-              style={{
-                flexShrink: 0,
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 16px", borderRadius: 99,
-                background: isActive ? "var(--brand)" : "var(--bg-primary)",
-                border: `1.5px solid ${isActive ? "var(--brand)" : "var(--border)"}`,
-                color: isActive ? "#fff" : "var(--text-secondary)",
-                fontSize: 13, fontWeight: 600,
-                cursor: "pointer", whiteSpace: "nowrap",
-                boxShadow: isActive ? "0 2px 8px var(--brand-glow)" : "none",
-                transition: "all 0.15s",
-              }}
-            >
-              <span>{emoji}</span>
-              <span>{label}</span>
-            </button>
-          );
-        })}
-
-        {/* Section jumps — conditional, scroll only */}
-        {[
-          ...(sentRequests.length > 0     ? [{ emoji: "📤", labelHe: "הבקשות שלי",     labelEn: "My Requests", labelAr: "طلباتي",          ref: myReqRef     }] : []),
-          ...(receivedRequests.length > 0 ? [{ emoji: "📥", labelHe: "בקשות שהתקבלו",  labelEn: "Received",    labelAr: "الطلبات الواردة", ref: receivedRef  }] : []),
-          ...(recommended.length > 0      ? [{ emoji: "⭐", labelHe: "מומלצות",         labelEn: "Recommended", labelAr: "الموصى بهن",      ref: recommendedRef }] : []),
-        ].map(({ emoji, labelHe, labelEn, labelAr, ref }) => {
+          { labelHe: "חיפוש עזרה",     labelEn: "Find Help",    labelAr: "بحث عن مساعدة",    scrollRef: searchRef,      primary: true },
+          { labelHe: "הבקשות שלי",     labelEn: "My Requests",  labelAr: "طلباتي",            scrollRef: myReqRef },
+          { labelHe: "בקשות שהתקבלו", labelEn: "Received",     labelAr: "الطلبات الواردة",   scrollRef: receivedRef },
+          { labelHe: "מומלצות",        labelEn: "Recommended",  labelAr: "الموصى بهن",        scrollRef: recommendedRef },
+        ].map(({ labelHe, labelEn, labelAr, scrollRef, primary }) => {
           const label = lang === "he" ? labelHe : lang === "ar" ? labelAr : labelEn;
           return (
             <button
               key={label}
-              onClick={() => scrollTo(ref)}
+              onClick={() => scrollTo(scrollRef)}
               style={{
                 flexShrink: 0,
-                display: "flex", alignItems: "center", gap: 6,
                 padding: "8px 16px", borderRadius: 99,
-                background: "var(--bg-tertiary)",
-                border: "1.5px solid var(--border)",
-                color: "var(--text-muted)",
+                background: primary ? "var(--brand)" : "var(--bg-primary)",
+                border: `1.5px solid ${primary ? "var(--brand)" : "var(--border)"}`,
+                color: primary ? "#fff" : "var(--text-secondary)",
                 fontSize: 13, fontWeight: 600,
                 cursor: "pointer", whiteSpace: "nowrap",
+                boxShadow: primary ? "0 2px 8px var(--brand-glow)" : "none",
                 transition: "all 0.15s",
               }}
             >
-              <span>{emoji}</span>
-              <span>{label}</span>
+              {label}
             </button>
           );
         })}

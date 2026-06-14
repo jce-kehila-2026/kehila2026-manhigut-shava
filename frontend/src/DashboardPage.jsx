@@ -143,51 +143,27 @@ const eyebrow = {
   fontFamily: "'Figtree',system-ui,sans-serif",
 };
 
-/* ── Quick-access floating circle ── */
-function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, small }) {
-  const [hov, setHov] = useState(false);
+/* ── Quick-access pill ── */
+function QuickPill({ icon, title, coral, onClick }) {
   const color = coral ? "#e8735a" : "#4472b8";
-  const floatAnim = `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
-  const sz = small ? 110 : 160;
-  const ringInset = small ? 12 : 18;
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: small ? 6 : 10, cursor:"pointer",
-      animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
+    <button
       onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "10px 18px", borderRadius: 99,
+        background: coral ? "rgba(232,115,90,0.08)" : "rgba(68,114,184,0.08)",
+        border: `1.5px solid ${coral ? "rgba(232,115,90,0.25)" : "rgba(68,114,184,0.2)"}`,
+        color, fontSize: 13, fontWeight: 600, cursor: "pointer",
+        transition: "background 0.15s, box-shadow 0.15s",
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = coral ? "rgba(232,115,90,0.15)" : "rgba(68,114,184,0.15)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background = coral ? "rgba(232,115,90,0.08)" : "rgba(68,114,184,0.08)"; }}
     >
-      <div style={{ position:"relative", animation: floatAnim }}>
-        {[1,2].map(r => (
-          <div key={r} style={{
-            position:"absolute", borderRadius:"50%",
-            inset: -(r * ringInset),
-            border:`1.5px solid ${coral ? `rgba(232,115,90,${0.22 - r*0.08})` : `rgba(68,114,184,${0.18 - r*0.07})`}`,
-            animation:`qc-ring ${2.8 + r * 0.6}s ${r * 0.55}s ease-out infinite`,
-            pointerEvents:"none",
-          }}/>
-        ))}
-        <div style={{
-          width:sz, height:sz, borderRadius:"50%",
-          background: hov ? color : (coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)"),
-          border:`2.5px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          color: hov ? "#fff" : color,
-          transition:"background 0.26s cubic-bezier(0.2,0.8,0.2,1), border-color 0.26s, color 0.26s, box-shadow 0.26s",
-          transform: hov ? "scale(1.08)" : "scale(1)",
-          boxShadow: hov ? `0 20px 48px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 4px 20px rgba(0,0,0,0.05)",
-          position:"relative", zIndex:1,
-        }}>
-          <div style={{ transform: small ? "scale(1.2)" : "scale(1.5)" }}>{icon}</div>
-        </div>
-      </div>
-      <p style={{ fontSize: small ? 11 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: small ? 80 : 110 }}>{title}</p>
-      {!small && (
-        <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
-          lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
-          opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
-      )}
-    </div>
+      {icon}
+      <span>{title}</span>
+    </button>
   );
 }
 
@@ -409,19 +385,11 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         </div>
       )}
 
-      {/* Quick-access circles — floating with sonar rings */}
+      {/* Quick shortcuts */}
       <p style={eyebrow}>{t.dash.quickActions}</p>
-      <style>{`
-        @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-        @keyframes qc-float-1{0%,100%{transform:translateY(-5px)}50%{transform:translateY(8px)}}
-        @keyframes qc-float-2{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-        @keyframes qc-float-3{0%,100%{transform:translateY(-4px)}50%{transform:translateY(9px)}}
-        @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
-        @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
-      `}</style>
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "1rem" : "1.5rem", marginBottom: "2.5rem", padding: "0.5rem 0 1.5rem" }}>
-        {quickCircles.map((circle, i) => (
-          <QuickCircle key={circle.action} {...circle} floatIdx={i} small={isMobile} onClick={() => onNavigate(circle.action)} />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: "2.5rem" }}>
+        {quickCircles.map((item) => (
+          <QuickPill key={item.action} {...item} onClick={() => onNavigate(item.action)} />
         ))}
       </div>
 
