@@ -1358,9 +1358,10 @@ export default function LandingPage({ onLogin }) {
       <div ref={quoteRef} style={{
         position:"relative",
         background:"var(--lp-bg)",
-        minHeight:500,
+        minHeight: isMobile ? 380 : 520,
         overflow:"hidden",
         zIndex:1,
+        display:"flex", alignItems:"center", justifyContent:"center",
       }}>
         {/* Main bubble — solid dark blue full bubble, no fading */}
         <div style={{
@@ -1388,9 +1389,9 @@ export default function LandingPage({ onLogin }) {
         <div style={{
           position:"relative",zIndex:2,
           display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-          minHeight: isMobile ? 300 : 480,
-          padding: isMobile ? "3rem 2rem" : "4rem clamp(2rem,8vw,12rem)",
+          padding: isMobile ? "3rem 2rem" : "3rem clamp(3rem,10vw,14rem)",
           textAlign:"center",
+          width:"100%",
         }}>
           <div className="lp-reveal" style={{
             opacity:quoteVis?1:0,
@@ -1406,7 +1407,7 @@ export default function LandingPage({ onLogin }) {
               transition:"width 0.8s 0.2s cubic-bezier(0.2,0.8,0.2,1)",
             }}/>
             <blockquote style={{
-              fontSize:"clamp(14px,1.6vw,20px)",fontWeight:600,
+              fontSize:"clamp(17px,2.1vw,26px)",fontWeight:600,
               color:C.white,lineHeight:1.8,margin:0,
               fontFamily:"'Plus Jakarta Sans','Outfit',system-ui,sans-serif",
               fontStyle:"normal",

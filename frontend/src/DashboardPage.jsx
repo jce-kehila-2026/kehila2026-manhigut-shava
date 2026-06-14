@@ -143,27 +143,46 @@ const eyebrow = {
   fontFamily: "'Figtree',system-ui,sans-serif",
 };
 
-/* ── Quick-access pill ── */
-function QuickPill({ icon, title, coral, onClick }) {
+/* ── Quick-access circle with sonar rings ── */
+function QuickCircle({ icon, title, coral, floatIdx, onClick, small }) {
+  const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
+  const floatAnim = `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
+  const sz = small ? 130 : 190;
+  const ringInset = small ? 14 : 22;
   return (
-    <button
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: small ? 7 : 12, cursor:"pointer",
+      animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
       onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", gap: 8,
-        padding: "10px 18px", borderRadius: 99,
-        background: coral ? "rgba(232,115,90,0.08)" : "rgba(68,114,184,0.08)",
-        border: `1.5px solid ${coral ? "rgba(232,115,90,0.25)" : "rgba(68,114,184,0.2)"}`,
-        color, fontSize: 13, fontWeight: 600, cursor: "pointer",
-        transition: "background 0.15s, box-shadow 0.15s",
-        flexShrink: 0,
-      }}
-      onMouseEnter={e => { e.currentTarget.style.background = coral ? "rgba(232,115,90,0.15)" : "rgba(68,114,184,0.15)"; }}
-      onMouseLeave={e => { e.currentTarget.style.background = coral ? "rgba(232,115,90,0.08)" : "rgba(68,114,184,0.08)"; }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
     >
-      {icon}
-      <span>{title}</span>
-    </button>
+      <div style={{ position:"relative", animation: floatAnim }}>
+        {[1,2].map(r => (
+          <div key={r} style={{
+            position:"absolute", borderRadius:"50%",
+            inset: -(r * ringInset),
+            border:`1.5px solid ${coral ? `rgba(232,115,90,${0.22 - r*0.08})` : `rgba(68,114,184,${0.18 - r*0.07})`}`,
+            animation:`qc-ring ${2.8 + r * 0.6}s ${r * 0.55}s ease-out infinite`,
+            pointerEvents:"none",
+          }}/>
+        ))}
+        <div style={{
+          width:sz, height:sz, borderRadius:"50%",
+          background: hov ? color : (coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)"),
+          border:`2.5px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          color: hov ? "#fff" : color,
+          transition:"background 0.26s, border-color 0.26s, color 0.26s, box-shadow 0.26s",
+          transform: hov ? "scale(1.06)" : "scale(1)",
+          boxShadow: hov ? `0 20px 48px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 4px 20px rgba(0,0,0,0.05)",
+          position:"relative", zIndex:1,
+        }}>
+          <div style={{ transform: small ? "scale(1.3)" : "scale(1.7)" }}>{icon}</div>
+        </div>
+      </div>
+      <p style={{ fontSize: small ? 12 : 14, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: small ? 90 : 120 }}>{title}</p>
+    </div>
   );
 }
 
@@ -286,79 +305,33 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         </div>
       )}
 
-      {/* Welcome banner — redesigned */}
+      {/* Compact greeting */}
       {(() => {
         const hr = new Date().getHours();
         const greetKey = hr < 12 ? "goodMorning" : hr < 18 ? "goodAfternoon" : "goodEvening";
         const greeting = t.dash[greetKey] || t.dash.welcomeBack;
         return (
-          <div style={{
-            marginBottom:"2rem", borderRadius:20, padding: isMobile ? "1rem 1.1rem" : "1.5rem 1.75rem",
-            background:"var(--bg-primary,#fff)",
-            position:"relative", overflow:"hidden",
-            boxShadow:"0 2px 18px rgba(29,72,150,0.08), 0 0 0 1px rgba(29,72,150,0.07)",
-            display:"flex", alignItems:"center", gap:14,
-          }}>
-            {/* Left gradient accent */}
-            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:4,
-              background:"linear-gradient(to bottom,#4472b8 0%,#e8735a 100%)",
-              borderRadius:"99px 0 0 99px", pointerEvents:"none" }} />
-
-            {/* Avatar */}
-            <div style={{ flexShrink:0, marginLeft:10, position:"relative" }}>
-              <div style={{
-                width:60, height:60, borderRadius:"50%",
-                background:"linear-gradient(135deg,#4472b8 0%,#e8735a 100%)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                overflow:"hidden",
-                boxShadow:"0 4px 16px rgba(68,114,184,0.22)",
-              }}>
-                {profile?.photoURL
-                  ? <img src={profile.photoURL} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  : <span style={{ color:"#fff", fontSize:19, fontWeight:800, fontFamily:"'Outfit',sans-serif" }}>{initials}</span>
-                }
-              </div>
-              <div style={{
-                position:"absolute", bottom:1, right:1,
-                width:14, height:14, borderRadius:"50%",
-                background:"#4ade80", border:"2.5px solid var(--bg-primary,#fff)",
-              }} />
-            </div>
-
-            {/* Text */}
-            <div style={{ flex:1, minWidth:0 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:"var(--brand,#4472b8)", margin:"0 0 2px",
-                textTransform:"uppercase", letterSpacing:"0.08em" }}>
-                {greeting}
-              </p>
-              <h2 style={{ fontSize:21, fontWeight:800, color:"var(--text-primary,#111827)", margin:"0 0 4px",
-                lineHeight:1.2, fontFamily:"'Outfit',sans-serif" }}>
-                {profile?.firstName || ""}
-              </h2>
-              {(profile?.profession || profile?.city) && (
-                <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", margin:0, fontWeight:400 }}>
-                  {[profile?.profession, profile?.city].filter(Boolean).join(" · ")}
-                </p>
-              )}
-            </div>
-
-            {/* Online badge — hidden on mobile to avoid crowding */}
-            {!isMobile && (
-              <div style={{
-                flexShrink:0, display:"flex", alignItems:"center", gap:6,
-                padding:"5px 13px", borderRadius:99,
-                background:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.28)",
-              }}>
-                <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80",
-                  boxShadow:"0 0 0 2px rgba(74,222,128,0.25)" }} />
-                <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>
-                  {t.common?.online || "Online"}
-                </span>
-              </div>
-            )}
-          </div>
+          <p style={{ fontSize:13, fontWeight:600, color:"var(--text-muted,#6b7280)", margin:"0 0 0.85rem 0" }}>
+            {greeting}{profile?.firstName ? `, ${profile.firstName}` : ""} 👋
+          </p>
         );
       })()}
+
+      {/* Quick-access circles */}
+      <style>{`
+        @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        @keyframes qc-float-1{0%,100%{transform:translateY(-5px)}50%{transform:translateY(8px)}}
+        @keyframes qc-float-2{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        @keyframes qc-float-3{0%,100%{transform:translateY(-4px)}50%{transform:translateY(9px)}}
+        @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
+        @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
+      `}</style>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap: isMobile ? "0.75rem" : "1.5rem",
+        marginBottom:"2rem", padding: isMobile ? "0.5rem 0 1.25rem" : "0.5rem 0 2rem" }}>
+        {quickCircles.map((item, i) => (
+          <QuickCircle key={item.action} {...item} floatIdx={i} small={isMobile} onClick={() => onNavigate(item.action)} />
+        ))}
+      </div>
 
       {/* Help Requests */}
       {pendingRequests.length > 0 && (
@@ -385,13 +358,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         </div>
       )}
 
-      {/* Quick shortcuts */}
-      <p style={eyebrow}>{t.dash.quickActions}</p>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: "2.5rem" }}>
-        {quickCircles.map((item) => (
-          <QuickPill key={item.action} {...item} onClick={() => onNavigate(item.action)} />
-        ))}
-      </div>
 
       {/* Suggested members */}
       {suggested.length > 0 && (

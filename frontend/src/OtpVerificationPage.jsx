@@ -21,10 +21,14 @@ export default function OtpVerificationPage() {
   const [sent, setSent]     = useState(false);
   const [countdown, setCountdown] = useState(0);
   const inputs = useRef([]);
+  const hasSent = useRef(false);
 
-  /* Auto-send OTP once user is available */
+  /* Auto-send OTP once user is available (ref guard prevents double-send in React StrictMode) */
   useEffect(() => {
-    if (user && !sent) sendOtp();
+    if (user && !hasSent.current) {
+      hasSent.current = true;
+      sendOtp();
+    }
   }, [user]);
 
   /* Countdown timer for resend */
@@ -40,7 +44,7 @@ export default function OtpVerificationPage() {
     try {
       await sendOtpFn({ email: user.email, uid: user.uid });
       setSent(true);
-      setCountdown(60);
+      setCountdown(90);
     } catch (e) {
       setError("שגיאה בשליחת הקוד: " + (e.message || "נסי שוב."));
     }
@@ -61,10 +65,13 @@ export default function OtpVerificationPage() {
   }
 
   function handlePaste(e) {
+    e.preventDefault();
     const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (text.length === 6) {
-      setDigits(text.split(""));
-      inputs.current[5]?.focus();
+    if (text.length > 0) {
+      const next = [...digits];
+      for (let i = 0; i < 6; i++) next[i] = text[i] || next[i] || "";
+      setDigits(next);
+      inputs.current[Math.min(text.length, 5)]?.focus();
     }
   }
 
@@ -126,17 +133,18 @@ export default function OtpVerificationPage() {
           )}
 
           {/* 6-digit OTP inputs */}
-          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", marginBottom: "1.8rem", direction: "ltr" }} onPaste={handlePaste}>
+          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", marginBottom: "1.8rem", direction: "ltr" }}>
             {digits.map((d, i) => (
               <input
                 key={i}
                 ref={el => inputs.current[i] = el}
                 type="text"
                 inputMode="numeric"
-                maxLength={1}
+                maxLength={6}
                 value={d}
                 onChange={e => handleChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
+                onPaste={handlePaste}
                 style={{
                   width: 48, height: 58,
                   textAlign: "center", fontSize: "1.5rem", fontWeight: 800,

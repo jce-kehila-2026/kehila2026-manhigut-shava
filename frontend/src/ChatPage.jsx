@@ -261,29 +261,28 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
     : { transform: "scale(1) translateY(0)", transition: "transform 0.18s ease, box-shadow 0.18s ease" };
 
   const myBubble = {
-    background: "linear-gradient(135deg, #e8735a, #d15a43 50%, #c94e36)",
-    color: "#fff",
+    background: "#fde8df",
+    color: "#2d1309",
     borderRadius: "22px 22px 6px 22px",
     padding: "10px 15px",
     fontSize: 14, lineHeight: 1.5,
     wordBreak: "break-word", maxWidth: "100%",
     boxShadow: hovering && !editing
-      ? "0 6px 20px rgba(184, 97, 122,0.42)"
-      : "0 2px 8px rgba(184, 97, 122,0.25)",
+      ? "0 6px 20px rgba(232,115,90,0.22)"
+      : "0 2px 8px rgba(232,115,90,0.12)",
     ...hoverLift,
   };
 
   const theirBubble = {
-    background: "#fff",
-    color: "var(--text-primary)",
+    background: "#dbeafe",
+    color: "#1e3a5f",
     borderRadius: "22px 22px 22px 6px",
     padding: "10px 15px",
     fontSize: 14, lineHeight: 1.5,
     wordBreak: "break-word", maxWidth: "100%",
-    border: "1px solid #e5eaf2",
     boxShadow: hovering && !editing
-      ? "0 4px 16px rgba(0,0,0,0.13)"
-      : "0 1px 4px rgba(0,0,0,0.06)",
+      ? "0 4px 16px rgba(68,114,184,0.14)"
+      : "0 1px 4px rgba(68,114,184,0.07)",
     ...hoverLift,
   };
 
