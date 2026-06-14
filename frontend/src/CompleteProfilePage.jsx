@@ -244,6 +244,7 @@ export default function CompleteProfilePage() {
     identityNote:      "",
     /* Step 2 — Studies & Work */
     campus:            "",
+    campusOther:       "",
     bachelorDegree:    "",
     masterDegree:      "",
     phdDegree:         "",
@@ -297,7 +298,7 @@ export default function CompleteProfilePage() {
         email:              form.email,
         birthdate:          form.birthdate || null,
         region:             form.region,
-        campus:             form.campus,
+        campus:             form.campus === "OTHER" ? (form.campusOther || "אחר") : form.campus,
         bachelorDegree:     form.bachelorDegree || null,
         masterDegree:       form.masterDegree  || null,
         phdDegree:          form.phdDegree     || null,
@@ -464,7 +465,12 @@ export default function CompleteProfilePage() {
                 <Select name="campus" value={form.campus} onChange={set} required>
                   <option value="">בחרי קמפוס...</option>
                   {CAMPUSES.map(c=><option key={c} value={c}>{c}</option>)}
+                  <option value="OTHER">אחר (כתבי כאן)</option>
                 </Select>
+                {form.campus === "OTHER" && (
+                  <Input name="campusOther" value={form.campusOther} onChange={set}
+                    placeholder="שם המוסד / הארגון..." style={{marginTop:6}} />
+                )}
               </Fld>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0.65rem"}}>

@@ -1031,23 +1031,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
       </div>
       <div style={{
         maxWidth: 1040, width: "100%", margin: "0 auto",
-        padding: "1.75rem 1.5rem 0.5rem",
-        position: "relative", zIndex: 1,
-      }}>
-        <h1 style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 28, fontWeight: 700,
-          color: "var(--text-primary)",
-          letterSpacing: "-0.02em",
-        }}>{t.community.title}</h1>
-        <p style={{ fontSize: 13.5, color: "var(--text-secondary)", marginTop: 4 }}>
-          {t.community.subtitle}
-        </p>
-      </div>
-
-      <div style={{
-        maxWidth: 1040, width: "100%", margin: "0 auto",
-        padding: isMobile ? "1rem 0.75rem 2rem" : "1rem 1.5rem 2rem",
+        padding: isMobile ? "0.75rem 0.75rem 2rem" : "0.75rem 1.5rem 2rem",
         display: "grid",
         gridTemplateColumns: isMobile ? "1fr" : "1fr 280px",
         gap: "1.5rem",

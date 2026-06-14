@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { doc, updateDoc, collection, getDocs, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
@@ -386,6 +386,69 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   );
 }
 
+/* ── Purple cursor trail — desktop only ── */
+function CursorTrail() {
+  const canvasRef = useRef(null);
+  const points = useRef([]);
+  const raf = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const resize = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const onMove = (e) => {
+      points.current.push({ x: e.clientX, y: e.clientY, t: Date.now() });
+      if (points.current.length > 60) points.current.shift();
+    };
+    window.addEventListener("mousemove", onMove);
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const now = Date.now();
+      const alive = points.current.filter(p => now - p.t < 600);
+      points.current = alive;
+      if (alive.length > 1) {
+        for (let i = 1; i < alive.length; i++) {
+          const age = (now - alive[i].t) / 600;
+          const alpha = (1 - age) * 0.55;
+          const width = (1 - age) * 3.5;
+          ctx.beginPath();
+          ctx.moveTo(alive[i - 1].x, alive[i - 1].y);
+          ctx.lineTo(alive[i].x, alive[i].y);
+          ctx.strokeStyle = `rgba(192,132,252,${alpha})`;
+          ctx.lineWidth   = width;
+          ctx.lineCap     = "round";
+          ctx.lineJoin    = "round";
+          ctx.stroke();
+        }
+      }
+      raf.current = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(raf.current);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ position:"fixed", inset:0, zIndex:9999, pointerEvents:"none" }}
+    />
+  );
+}
+
 /* ── Main dashboard shell ── */
 export default function DashboardPage() {
   const { user, profile, logout } = useAuth();
@@ -487,6 +550,9 @@ export default function DashboardPage() {
       direction: dir,
       overflow: "hidden",
     }}>
+      {/* Purple cursor trail — desktop only */}
+      {!isMobile && <CursorTrail />}
+
       {/* ── Row that holds sidebar + main (fills all space above bottom nav) ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden", minHeight: 0 }}>
 
