@@ -32,7 +32,9 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read:   if isAuth();
       allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isAuth();
+      allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin()
+        || request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['likesCount', 'likedBy', 'commentCount', 'isPinned', 'repostCount']));
       allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
 
       match /comments/{commentId} {
@@ -119,7 +121,8 @@ service cloud.firestore {
     match /groups/{groupId} {
       allow read:   if isAuth();
       allow create: if isAuth();
-      allow update: if isAuth();
+      allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin()
+        || request.auth.uid in resource.data.members);
       allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 

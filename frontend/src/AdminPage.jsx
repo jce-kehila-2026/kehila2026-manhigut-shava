@@ -5,6 +5,7 @@ import {
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
+import { deletePostWithCleanup } from "./utils/deletePost";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
@@ -834,7 +835,7 @@ export default function AdminPage() {
   /* ── Post operations ── */
   const deletePost = async (id) => {
     if (!window.confirm("Delete this post?")) return;
-    await deleteDoc(doc(db, "posts", id));
+    await deletePostWithCleanup(id);
     setPosts(prev => prev.filter(p => p.id !== id));
     logActivity({
       type: "admin_delete_post",

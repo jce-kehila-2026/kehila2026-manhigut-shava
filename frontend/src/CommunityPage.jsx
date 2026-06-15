@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { logActivity } from "./activityLogger";
+import { deletePostWithCleanup } from "./utils/deletePost";
 import { daysUntilBirthday, formatBirthday } from "./utils/birthday";
 
 /* ── Helpers ── */
@@ -631,10 +632,11 @@ function ComposeBox({ currentUser, profile, onPost }) {
     try {
       const mediaUrls = [];
       for (const file of files) {
-        const storageRef = ref(storage, `posts/${Date.now()}_${file.name}`);
+        const storagePath = `posts/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, storagePath);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
-        mediaUrls.push({ url, type: file.type.startsWith("video") ? "video" : "image" });
+        mediaUrls.push({ url, storagePath, type: file.type.startsWith("video") ? "video" : "image" });
       }
       const authorName = profile ? `${profile.firstName} ${profile.lastName}` : currentUser.email;
       const docRef = await addDoc(collection(db, "posts"), {
@@ -1049,7 +1051,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
 
   const handleDeletePost = async (postId) => {
     if (!window.confirm(t?.community?.confirmDelete || "Delete this post?")) return;
-    await deleteDoc(doc(db, "posts", postId));
+    await deletePostWithCleanup(postId);
     logActivity({ type: "post_delete", actorId: user.uid, actorName: `${authProfile?.firstName || ""} ${authProfile?.lastName || ""}`.trim(), targetId: postId, targetType: "post" });
   };
 
