@@ -239,12 +239,28 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
         marginBottom: "1.25rem",
         borderRadius: "var(--r-xl)",
         overflow: "hidden",
-        border: post.isPinned ? "1px solid var(--brand-light)" : "1px solid var(--border)",
-        boxShadow: post.isPinned ? "0 8px 28px rgba(184,97,122,0.12)" : "var(--shadow-sm)",
+        border: post.birthdayAutoPost ? "1.5px solid #6da3d4" : post.isPinned ? "1px solid var(--brand-light)" : "1px solid var(--border)",
+        boxShadow: post.birthdayAutoPost ? "0 8px 28px rgba(68,114,184,0.18)" : post.isPinned ? "0 8px 28px rgba(184,97,122,0.12)" : "var(--shadow-sm)",
         background: "var(--bg-primary)",
       }}
     >
-      {post.isPinned && (
+      {post.birthdayAutoPost && (
+        <div style={{
+          background: "linear-gradient(90deg, #4472b8, #6da3d4)",
+          padding: "8px 18px",
+          fontSize: 12, fontWeight: 700, color: "#fff",
+          display: "flex", alignItems: "center", gap: 8,
+          borderBottom: "1px solid #6da3d4",
+        }}>
+          🎂 Birthday Celebration
+          {post.birthdayUserAvatar ? (
+            <img src={post.birthdayUserAvatar} style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", marginLeft: "auto", border: "1.5px solid rgba(255,255,255,0.6)" }} alt="" />
+          ) : (
+            <span style={{ marginLeft: "auto", fontSize: 18 }}>🎉</span>
+          )}
+        </div>
+      )}
+      {!post.birthdayAutoPost && post.isPinned && (
         <div style={{
           background: "linear-gradient(90deg, var(--brand-pale), #fff)",
           padding: "6px 18px",
@@ -488,6 +504,26 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
               <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
             </svg>
             <span>{t.community.repost}</span>
+          </button>
+        )}
+
+        {/* Happy Birthday quick reply — only on birthday auto-posts */}
+        {post.birthdayAutoPost && currentUser && (
+          <button
+            onClick={() => { setCommentText("Happy Birthday! 🎂🎉"); setShowComments(true); }}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "7px 16px", borderRadius: "var(--r-full)",
+              background: "linear-gradient(135deg, #dbeafe, #eff6ff)",
+              color: "#1d4896",
+              border: "1.5px solid #93c5fd",
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
+              transition: "all var(--t-fast)", marginLeft: "auto",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#dbeafe"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(68,114,184,0.2)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #dbeafe, #eff6ff)"; e.currentTarget.style.boxShadow = "none"; }}
+          >
+            🎂 Happy Birthday!
           </button>
         )}
       </div>
@@ -941,6 +977,8 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   const [requests, setRequests]     = useState([]);
   const [profile, setProfile]       = useState(null);
   const [loading, setLoading]       = useState(true);
+  const [showMobileBdays, setShowMobileBdays] = useState(false);
+  const autoPostedRef = useRef(new Set());
 
   useEffect(() => {
     if (!user) return;
@@ -968,6 +1006,44 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
       setBirthdays(upcoming);
     });
   }, []);
+
+  /* Auto-post on someone's birthday — once per day, deduplicated via Firestore check */
+  useEffect(() => {
+    if (!user || !profile || loading) return;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayBdays = birthdays.filter((u) => u.daysUntil === 0);
+    if (!todayBdays.length) return;
+
+    todayBdays.forEach(async (bdayUser) => {
+      const key = `${bdayUser.id}-${todayStr}`;
+      if (autoPostedRef.current.has(key)) return;
+      autoPostedRef.current.add(key);
+
+      const q = query(collection(db, "posts"), where("birthdayUserId", "==", bdayUser.id));
+      const snap = await getDocs(q);
+      const alreadyPosted = snap.docs.some(
+        (d) => d.data().birthdayAutoPost && d.data().createdAt?.startsWith(todayStr)
+      );
+      if (alreadyPosted) return;
+
+      const name = `${bdayUser.firstName || ""} ${bdayUser.lastName || ""}`.trim() || "a member";
+      await addDoc(collection(db, "posts"), {
+        text: `Happy Birthday ${name}! 🎂🎉\nToday is ${name}'s birthday — drop a birthday wish in the comments below! 👇`,
+        media: [],
+        authorId: "system",
+        authorName: "BogrotNet",
+        authorAvatar: "/NewLogoNGO.png",
+        authorProfession: "Community",
+        likesCount: 0, likedBy: [], commentCount: 0,
+        isPinned: true,
+        birthdayAutoPost: true,
+        birthdayUserId: bdayUser.id,
+        birthdayUserName: name,
+        birthdayUserAvatar: bdayUser.photoURL || bdayUser.avatarUrl || null,
+        createdAt: new Date().toISOString(),
+      });
+    });
+  }, [birthdays, loading, user, profile]);
 
   useEffect(() => {
     if (!user) return;
@@ -1065,6 +1141,52 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
 
         {/* Center: Feed */}
         <div style={{ minWidth: 0, order: 1 }}>
+
+          {/* Mobile birthday banner */}
+          {isMobile && birthdays.length > 0 && (
+            <div style={{
+              marginBottom: "0.75rem",
+              borderRadius: "var(--r-xl)",
+              overflow: "hidden",
+              border: "1px solid var(--brand-light)",
+              background: "var(--bg-primary)",
+            }}>
+              <button
+                onClick={() => setShowMobileBdays((v) => !v)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "0.75rem 1rem",
+                  background: "linear-gradient(135deg, #4472b8 0%, #6da3d4 100%)",
+                  color: "#fff", border: "none", cursor: "pointer",
+                  fontSize: 13, fontWeight: 700,
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span>🎂</span>
+                  <span>
+                    {birthdays.filter((b) => b.daysUntil === 0).length > 0
+                      ? `Today: ${birthdays.filter((b) => b.daysUntil === 0).map((b) => `${b.firstName || ""} ${b.lastName || ""}`.trim()).join(", ")}`
+                      : `${birthdays.length} upcoming birthday${birthdays.length > 1 ? "s" : ""} this week`}
+                  </span>
+                </span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: showMobileBdays ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {showMobileBdays && (
+                <div style={{ padding: "0.75rem 1rem 1rem" }}>
+                  <BirthdaysCard
+                    birthdays={birthdays}
+                    onViewProfile={onViewProfile}
+                    onMessage={onMessage}
+                    currentUserUid={user?.uid}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           <ComposeBox currentUser={user} profile={profile} />
 
           {loading && Array.from({ length: 3 }).map((_, i) => (

@@ -4,7 +4,22 @@
       "WebFetch(domain:ywp-online.my.canva.site)",
       "PowerShell(firebase login:list 2>&1)",
       "PowerShell(firebase login 2>&1)",
-      "Bash(node -e \"const fs = require\\('fs'\\); ['frontend/src/activityLogger.js','frontend/src/DashboardPage.jsx','frontend/src/ProfilePage.jsx','frontend/src/CommunityPage.jsx','frontend/src/Supportpage.jsx','frontend/src/AdminPage.jsx'].forEach\\(f => { try { fs.readFileSync\\(f\\); console.log\\('OK:', f\\); } catch\\(e\\) { console.log\\('MISSING:', f\\); } }\\);\")"
+      "Bash(node -e \"const fs = require\\('fs'\\); ['frontend/src/activityLogger.js','frontend/src/DashboardPage.jsx','frontend/src/ProfilePage.jsx','frontend/src/CommunityPage.jsx','frontend/src/Supportpage.jsx','frontend/src/AdminPage.jsx'].forEach\\(f => { try { fs.readFileSync\\(f\\); console.log\\('OK:', f\\); } catch\\(e\\) { console.log\\('MISSING:', f\\); } }\\);\")",
+      "Bash(git commit -m 'fix: homepage scroll broken by missing min-height:0 on flex child *)",
+      "Bash(git commit -m 'fix: landing page scroll blocked by body overflow:hidden from dashboard CSS *)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Bash(git pull *)",
+      "Bash(git commit -m 'security: replace exposed Firebase keys in .env.example with placeholders *)",
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(firebase deploy *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\HP\\\\Desktop\\\\kehila2026-manhigut-shava\" -Recurse -Filter \"*.JPG\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "WebFetch(domain:ywp.co.il)",
+      "Bash(git commit -m ' *)",
+      "Bash(npx acorn *)",
+      "Bash(git fetch *)"
     ]
   }
 }

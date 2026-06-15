@@ -183,20 +183,31 @@ function PlainInput(props) {
   );
 }
 
-export default function ProfilePage({ viewUserId, onMessage }) {
-  const { user, refreshProfile, logout } = useAuth();
+const INSTITUTIONS = [
+  "אוניברסיטת תל אביב","האוניברסיטה העברית","הטכניון","אוניברסיטת חיפה",
+  "אוניברסיטת בן גוריון","אוניברסיטת בר אילן","המכון הבינתחומי הרצליה (IDC)",
+  "מכלל אריאל","האקדמית אשקלון","הקריה האקדמית אונו","מכללת ספיר",
+  "מכלל תל חי","מכלל כנרת","מכלל אחוה","מכלל רופין","מכלל עמק יזרעאל",
+  "Tel Aviv University","Hebrew University","Technion","University of Haifa",
+  "Ben-Gurion University","Bar-Ilan University","Reichman University (IDC)",
+  "Ariel University","Ashkelon Academic College","Ono Academic College",
+];
+
+export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommunity }) {
+  const { user, profile: authProfile, refreshProfile, logout } = useAuth();
   const { t, isRTL } = useLang();
   const isMobile = useIsMobile();
   const fileRef = useRef();
 
   const [form, setForm] = useState({
-    firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"",
+    firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
     ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
+  const [institutionOther, setInstitutionOther] = useState("");
   const [photoURL, setPhotoURL] = useState(null);
-  const [saving,   setSaving]   = useState(false);
-  const [saved,    setSaved]    = useState(false);
+  const [savingKey, setSavingKey] = useState(null);
+  const [savedKey,  setSavedKey]  = useState(null);
   const [error,    setError]    = useState("");
   const [profileEmail, setProfileEmail] = useState("");
 
@@ -223,7 +234,6 @@ export default function ProfilePage({ viewUserId, onMessage }) {
           firstName:      d.firstName      ?? "",
           lastName:       d.lastName       ?? "",
           phone:          d.phone          ?? "",
-          city:           d.city           ?? "",
           profession:     d.profession     ?? "",
           bio:            d.bio            ?? "",
           birthDate:      d.birthDate      ?? "",
@@ -240,8 +250,13 @@ export default function ProfilePage({ viewUserId, onMessage }) {
         setPhotoURL(d.photoURL ?? d.avatarUrl ?? null);
         setNetworksCount(d.networksCount ?? 0);
         setProfileEmail(d.email ?? "");
+        const inst = d.institution ?? "";
+        if (inst && !INSTITUTIONS.includes(inst)) {
+          setForm(prev => ({ ...prev, institution: "OTHER" }));
+          setInstitutionOther(inst);
+        }
       } else {
-        setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
+        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
         setNetworksCount(0);
         setProfileEmail("");
@@ -272,7 +287,7 @@ export default function ProfilePage({ viewUserId, onMessage }) {
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const fields = [form.firstName, form.lastName, form.phone, form.city, form.profession, form.bio, form.birthDate,
+  const fields = [form.firstName, form.lastName, form.phone, form.profession, form.bio, form.birthDate,
                   form.ethnicity, form.region, form.institution, form.linkedIn,
                   form.helpAreas?.length > 0, form.languages?.length > 0, form.experience, form.goals];
   const pct    = Math.round((fields.filter(Boolean).length / fields.length) * 100);
@@ -308,19 +323,24 @@ export default function ProfilePage({ viewUserId, onMessage }) {
     refreshProfile(); // keep AuthContext in sync so Dashboard shows updated photo
   };
 
-  /* ── Save ── */
-  const handleSave = async () => {
-    if (!isOwner || !user) return;
-    setSaving(true); setError("");
+  /* ── Save (per-section, supports admin editing another user) ── */
+  const handleSaveSection = async (sectionKey, fields) => {
+    if (!user) return;
+    const targetId = isOwner ? user.uid : (authProfile?.isAdmin && viewUserId ? viewUserId : null);
+    if (!targetId) return;
+    setSavingKey(sectionKey); setError("");
     try {
-      await updateDoc(doc(db, "users", user.uid), { ...form });
-      await refreshProfile();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2200);
+      const saveData = { ...fields };
+      if ("institution" in saveData && saveData.institution === "OTHER")
+        saveData.institution = institutionOther || "אחר";
+      await updateDoc(doc(db, "users", targetId), saveData);
+      if (isOwner) await refreshProfile();
+      setSavedKey(sectionKey);
+      setTimeout(() => setSavedKey(k => k === sectionKey ? null : k), 2200);
     } catch {
       setError(t.profile.errorGeneral);
     } finally {
-      setSaving(false);
+      setSavingKey(null);
     }
   };
 
@@ -369,23 +389,23 @@ export default function ProfilePage({ viewUserId, onMessage }) {
       direction: isRTL ? "rtl" : "ltr",
     },
     banner: {
-      width:"100%", height:"130px", borderRadius:"0 0 28px 28px",
-      background:"linear-gradient(135deg, #111827 0%, #1d4896 55%, #daeaf8 100%)",
-      position:"relative", marginBottom:"58px", flexShrink:0,
+      width:"100%", background:"linear-gradient(135deg, #0b1f52 0%, #1d4896 60%, #2f5fd4 100%)",
+      padding: isMobile ? "1rem 1.25rem" : "1.25rem 2rem",
+      display:"flex", alignItems:"center", gap:"1rem", flexShrink:0,
     },
-    avatarWrap:  { position:"absolute", bottom:"-46px", ...(isRTL ? { right:"2rem" } : { left:"2rem" }) },
-    avatarRing:  { width:"92px", height:"92px", borderRadius:"50%", background:"linear-gradient(135deg, #4472b8, #111827)", padding:"3px", boxShadow:"0 2px 8px rgba(29, 72, 150,0.12)" },
-    avatarInner: { width:"100%", height:"100%", borderRadius:"50%", background:"#111827", color:"#ffffff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", fontWeight:"700", overflow:"hidden" },
+    avatarWrap:  { position:"relative", flexShrink:0 },
+    avatarRing:  { width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg, #4472b8, #0b1f52)", padding:3, boxShadow:"0 4px 16px rgba(0,0,0,0.35)" },
+    avatarInner: { width:"100%", height:"100%", borderRadius:"50%", background:"#0b1f52", color:"#ffffff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", fontWeight:"700", overflow:"hidden" },
     avatarImg:   { width:"100%", height:"100%", objectFit:"cover" },
-    uploadPill:  { position:"absolute", bottom:"-46px", ...(isRTL ? { left:"2rem" } : { right:"2rem" }), display:"flex", flexDirection:"column", alignItems: isRTL ? "flex-start" : "flex-end", gap:"4px" },
+    uploadPill:  { display:"flex", flexDirection:"column", alignItems: isRTL ? "flex-start" : "flex-end", gap:4, marginLeft:"auto", flexShrink:0 },
     uploadBtn: {
-      padding:"9px 16px", background:"rgba(255,255,255,0.88)", color:"#111827",
-      border:"1.5px solid rgba(255,255,255,0.6)", borderRadius:"11px",
+      padding:"7px 14px", background:"rgba(255,255,255,0.18)", color:"#fff",
+      border:"1px solid rgba(255,255,255,0.35)", borderRadius:"11px",
       fontSize:"12px", fontWeight:"700", cursor:"pointer",
-      backdropFilter:"blur(6px)", boxShadow:"0 2px 8px rgba(0,0,0,0.1)", transition:"background 0.2s",
+      backdropFilter:"blur(6px)", transition:"background 0.2s",
     },
-    avatarHint: { fontSize:"10px", color:"rgba(255,255,255,0.75)", margin:0, textAlign: isRTL ? "left" : "right" },
-    body: { padding: isMobile ? "0 1rem" : "0 2rem" },
+    avatarHint: { fontSize:"10px", color:"rgba(255,255,255,0.5)", margin:0 },
+    body: { padding: isMobile ? "0.75rem 1rem 0" : "1rem 2rem 0" },
     twoCol: { display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"1.25rem", alignItems:"start" },
     greeting:    { fontSize:"23px", fontWeight:"700", color:"#111827", margin:"0 0 4px" },
     greetingSub: { fontSize:"13px", color:"#6b7280", margin:"0 0 1rem" },
@@ -412,14 +432,12 @@ export default function ProfilePage({ viewUserId, onMessage }) {
     actionRow: { display:"flex", alignItems:"center", gap:"12px", marginTop:"0.25rem" },
     saveBtn: {
       padding:"11px 28px",
-      background: saved ? "linear-gradient(135deg,#7ba87a,#7ba87a)" : "#111827",
+      background:"#111827",
       color:"#fff", border:"none", borderRadius:"13px",
-      fontSize:"14px", fontWeight:"700",
-      cursor: saving ? "not-allowed" : "pointer",
+      fontSize:"14px", fontWeight:"700", cursor:"pointer",
       transition:"background 0.3s, transform 0.15s, box-shadow 0.2s",
       boxShadow:"0 2px 8px rgba(29, 72, 150,0.1)",
       display:"flex", alignItems:"center", gap:"7px",
-      opacity: saving ? 0.7 : 1,
     },
     errorMsg:       { fontSize:"13px", color:"#9a4545", background:"#fff0f0", border:"1px solid #d99090", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
     emailRow:       { display:"flex", gap:"10px", alignItems:"flex-end" },
@@ -436,9 +454,21 @@ export default function ProfilePage({ viewUserId, onMessage }) {
     cancelBtn:    { flex:1, padding:"11px", background:"#f0f6fb", color:"#7a5868", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"600", cursor:"pointer", transition:"background 0.2s" },
   };
 
+  const getSaveBtnStyle = (key) => ({
+    ...S.saveBtn,
+    background: savedKey === key ? "linear-gradient(135deg,#7ba87a,#7ba87a)" : "#111827",
+    opacity: savingKey === key ? 0.7 : 1,
+    cursor: savingKey === key ? "not-allowed" : "pointer",
+  });
+  const saveBtnLabel = (key) => {
+    if (savedKey === key) return <><CheckMark /> {t.profile.saved}</>;
+    if (savingKey === key) return t.profile.saving;
+    return t.profile.saveChanges;
+  };
+
   return (
     <div style={S.page}>
-      {/* Banner + Avatar */}
+      {/* Compact profile header */}
       <div style={S.banner}>
         <div style={S.avatarWrap}>
           <div style={S.avatarRing}>
@@ -448,36 +478,48 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                 : getInitials()}
             </div>
           </div>
+          {isOwner && (
+            <>
+              <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handlePhotoUpload} />
+              <button className="upload-btn" onClick={() => fileRef.current.click()}
+                style={{ position:"absolute", bottom:-2, right:-2, width:22, height:22, borderRadius:"50%", background:"#fff", border:"1.5px solid #4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, fontSize:11, color:"#1d4896" }}
+                title={t.profile.uploadPhoto}>✎</button>
+            </>
+          )}
         </div>
-        {isOwner && (
-          <div style={S.uploadPill}>
-            <button className="upload-btn" style={S.uploadBtn} onClick={() => fileRef.current.click()}>
-              {t.profile.uploadPhoto}
-            </button>
-            <p style={S.avatarHint}>{t.profile.photoHint}</p>
-            <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handlePhotoUpload} />
-          </div>
-        )}
+
+        {/* Name + role */}
+        <div style={{ flex:1, minWidth:0 }}>
+          <h2 style={{ fontSize:17, fontWeight:800, color:"#fff", margin:0, lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+            {form.firstName || form.lastName ? `${form.firstName} ${form.lastName}`.trim() : (isOwner ? t.profile.myProfile : t.profile.memberProfile)}
+          </h2>
+          {form.profession && <p style={{ fontSize:12, color:"rgba(200,221,251,0.75)", margin:"4px 0 0" }}>{form.profession}</p>}
+          {networksCount > 0 && (
+            <span style={{ display:"inline-block", marginTop:5, fontSize:10, fontWeight:700, color:"rgba(200,221,251,0.85)", background:"rgba(255,255,255,0.12)", padding:"2px 9px", borderRadius:99 }}>
+              {networksCount} Connections
+            </span>
+          )}
+        </div>
+
+        {/* LinkedIn button */}
+        <div style={S.uploadPill}>
+          {form.linkedIn && (
+            <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
+              target="_blank" rel="noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 14px", borderRadius:99, background:"rgba(255,255,255,0.18)", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", border:"1px solid rgba(255,255,255,0.3)", whiteSpace:"nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.28)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+              LinkedIn
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Body */}
       <div style={S.body}>
-        <div style={{ marginBottom:"1.5rem" }}>
-          <p style={S.greeting}>
-            {profileHeading}
-          </p>
-          <p style={S.greetingSub}>{isReadOnly ? "Viewing public profile" : t.profile.subtitle}</p>
-          {networksCount > 0 && (
-            <div style={{ marginBottom:"1rem" }}>
-              <span style={{
-                fontSize:"13px", fontWeight:"700", color:"#1d4896",
-                background:"#eff6ff", border:"1px solid #bfdbfe",
-                borderRadius:"99px", padding:"5px 16px", display:"inline-block",
-              }}>
-                {networksCount} {t.network?.networkCount ?? "Connections"}
-              </span>
-            </div>
-          )}
+        <div style={{ marginBottom:"1rem" }}>
           {!isReadOnly && <CompletenessBadge pct={pct} />}
         </div>
 
@@ -504,10 +546,6 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                 <label style={S.label}>{t.profile.phone}</label>
                 <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} disabled={isReadOnly} />
               </div>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.city}</label>
-                <PlainInput name="city" value={form.city} onChange={handleChange} placeholder={t.profile.cityPlaceholder} disabled={isReadOnly} />
-              </div>
             </div>
 
             <div style={{ ...S.group, marginBottom:"1rem" }}>
@@ -527,20 +565,16 @@ export default function ProfilePage({ viewUserId, onMessage }) {
             </div>
 
             <div style={S.actionRow}>
-              {isOwner ? (
-                <button
-                  style={S.saveBtn}
-                  className={saving ? "save-btn-shimmer" : ""}
-                  onClick={handleSave}
-                  disabled={saving}
-                  onMouseOver={(e) => { if (!saving && !saved) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
-                >
-                  {saved ? <><CheckMark /> {t.profile.saved}</> : saving ? t.profile.saving : t.profile.saveChanges}
-                </button>
-              ) : (
-                <span style={{ color: "#7a5868", fontSize: "13px" }}>Viewing public profile</span>
-              )}
+              <button
+                style={getSaveBtnStyle("personal")}
+                className={savingKey === "personal" ? "save-btn-shimmer" : ""}
+                onClick={() => handleSaveSection("personal", { firstName:form.firstName, lastName:form.lastName, phone:form.phone, profession:form.profession, birthDate:form.birthDate })}
+                disabled={!!savingKey}
+                onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
+              >
+                {saveBtnLabel("personal")}
+              </button>
             </div>
           </div>
 
@@ -567,6 +601,18 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                   </span>
                 )}
               </div>
+              <div style={{ ...S.actionRow, marginTop:"0.75rem" }}>
+                <button
+                  style={getSaveBtnStyle("bio")}
+                  className={savingKey === "bio" ? "save-btn-shimmer" : ""}
+                  onClick={() => handleSaveSection("bio", { bio: form.bio })}
+                  disabled={!!savingKey}
+                  onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  {saveBtnLabel("bio")}
+                </button>
+              </div>
             </div>
 
             <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa", marginBottom:0 }}>
@@ -586,81 +632,6 @@ export default function ProfilePage({ viewUserId, onMessage }) {
             </div>
           </div>
 
-          {/* Additional Details — full-width below the two columns */}
-          <div className="profile-card" style={{ ...S.card, gridColumn:"1 / -1", borderLeftColor:"#e8735a", marginBottom:0 }}>
-            <SectionTitle label={t.profile.additionalDetails} />
-
-            <div style={S.row}>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.ethnicity}</label>
-                <SelectInput value={form.ethnicity} disabled={isReadOnly}
-                  placeholder="—"
-                  options={t.profile.ethnicityOptions}
-                  onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
-              </div>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.region}</label>
-                <SelectInput value={form.region} disabled={isReadOnly}
-                  placeholder="—"
-                  options={t.profile.regionOptions}
-                  onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
-              </div>
-            </div>
-
-            <div style={S.row}>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.institution}</label>
-                <PlainInput name="institution" value={form.institution} onChange={handleChange}
-                  placeholder={t.profile.institutionPlaceholder} disabled={isReadOnly} />
-              </div>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.graduationYear}</label>
-                <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
-                  placeholder={t.profile.graduationYearPlaceholder} disabled={isReadOnly} />
-              </div>
-            </div>
-
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.linkedIn}</label>
-              <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange}
-                placeholder={t.profile.linkedInPlaceholder} disabled={isReadOnly} />
-            </div>
-
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.languages}</label>
-              <MultiChips selectedValues={form.languages} options={t.profile.languageOptions} disabled={isReadOnly}
-                onChange={v => setForm(p => ({ ...p, languages:v }))} />
-            </div>
-
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.helpAreas}</label>
-              <MultiChips selectedValues={form.helpAreas} options={t.profile.helpAreaOptions} disabled={isReadOnly}
-                onChange={v => setForm(p => ({ ...p, helpAreas:v }))} />
-            </div>
-
-            {/* Private section — owner + admins only */}
-            {isOwner && (
-              <>
-                <div style={{ fontSize:11, fontWeight:700, color:"#a78bfa", textTransform:"uppercase",
-                  letterSpacing:"0.1em", margin:"1.25rem 0 0.85rem",
-                  paddingTop:"1rem", borderTop:"1px solid #f0f6fb" }}>
-                  🔒 {t.profile.privateSection}
-                </div>
-                <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <label style={S.label}>{t.profile.experience}</label>
-                  <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px" }}
-                    name="experience" value={form.experience} onChange={handleChange}
-                    placeholder={t.profile.experiencePlaceholder} disabled={isReadOnly} />
-                </div>
-                <div style={{ ...S.group, marginBottom:"0" }}>
-                  <label style={S.label}>{t.profile.goals}</label>
-                  <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px" }}
-                    name="goals" value={form.goals} onChange={handleChange}
-                    placeholder={t.profile.goalsPlaceholder} disabled={isReadOnly} />
-                </div>
-              </>
-            )}
-          </div>
         </div>
         ) : (
           <div style={{ display:"grid", gap:"1rem" }}>
@@ -682,14 +653,32 @@ export default function ProfilePage({ viewUserId, onMessage }) {
                   <div style={S.inputDisabled}>{form.profession || "—"}</div>
                 </div>
                 <div style={S.group}>
-                  <p style={S.label}>{t.profile.city}</p>
-                  <div style={S.inputDisabled}>{form.city || "—"}</div>
+                  <p style={S.label}>{t.profile.region}</p>
+                  <div style={S.inputDisabled}>{form.region || "—"}</div>
                 </div>
               </div>
-              <div style={S.group}>
-                <p style={S.label}>{t.profile.phone}</p>
-                <div style={S.inputDisabled}>{form.phone || "—"}</div>
+              <div style={S.row}>
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.phone}</p>
+                  <div style={S.inputDisabled}>{form.phone || "—"}</div>
+                </div>
+                {form.institution && (
+                  <div style={S.group}>
+                    <p style={S.label}>{t.profile.institution}</p>
+                    <div style={S.inputDisabled}>{form.institution === "OTHER" ? institutionOther : form.institution}</div>
+                  </div>
+                )}
               </div>
+              {form.linkedIn && (
+                <div style={S.group}>
+                  <p style={S.label}>LinkedIn</p>
+                  <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
+                    {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
+                  </a>
+                </div>
+              )}
             </div>
 
             <div className="profile-card" style={S.card}>
@@ -724,6 +713,111 @@ export default function ProfilePage({ viewUserId, onMessage }) {
             </div>
           </div>
         )}
+
+        {/* Additional Details — owner always editable; admins can view+edit any profile; others never see */}
+        {(isOwner || authProfile?.isAdmin) && (
+          <div className="profile-card" style={{ ...S.card, borderLeftColor:"#e8735a", marginTop:"1.25rem" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:"1.25rem" }}>
+              <p style={{ fontSize:"11px", fontWeight:"700", color:"#111827", textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
+                {t.profile.additionalDetails}
+              </p>
+              {!isOwner && authProfile?.isAdmin && (
+                <span style={{ fontSize:9, fontWeight:700, background:"#fff3cd", color:"#92400e", padding:"2px 8px", borderRadius:99, border:"1px solid #fcd34d" }}>
+                  Admin view only
+                </span>
+              )}
+            </div>
+            {error && <div style={S.errorMsg}>{error}</div>}
+
+            <div style={S.row}>
+              <div style={S.group}>
+                <label style={S.label}>{t.profile.region}</label>
+                <SelectInput value={form.region} disabled={false}
+                  placeholder="—" options={t.profile.regionOptions}
+                  onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
+              </div>
+            </div>
+
+            <div style={S.row}>
+              <div style={S.group}>
+                <label style={S.label}>{t.profile.institution}</label>
+                <select
+                  className="profile-input"
+                  value={INSTITUTIONS.includes(form.institution) ? form.institution : (form.institution ? "OTHER" : "")}
+                  onChange={e => {
+                    if (e.target.value === "OTHER") { setForm(p => ({ ...p, institution:"OTHER" })); setInstitutionOther(""); }
+                    else { handleChange({ target:{ name:"institution", value:e.target.value } }); setInstitutionOther(""); }
+                  }}
+                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:"1.5px solid #daeaf8", borderRadius:"13px", color:"#1a2e42", background:"#fdf8f6", fontFamily:"inherit", appearance:"none" }}
+                >
+                  <option value="">{t.profile.institutionPlaceholder || "בחרי מוסד..."}</option>
+                  {INSTITUTIONS.map((inst, i) => <option key={i} value={inst}>{inst}</option>)}
+                  <option value="OTHER">אחר (כתבי ידנית)</option>
+                </select>
+                {(form.institution === "OTHER" || (!INSTITUTIONS.includes(form.institution) && form.institution)) && (
+                  <PlainInput value={institutionOther} onChange={e => setInstitutionOther(e.target.value)}
+                    placeholder="שם המוסד / הארגון..." />
+                )}
+              </div>
+              <div style={S.group}>
+                <label style={S.label}>{t.profile.graduationYear}</label>
+                <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
+                  placeholder={t.profile.graduationYearPlaceholder} />
+              </div>
+            </div>
+
+            <div style={{ ...S.group, marginBottom:"1rem" }}>
+              <label style={S.label}>{t.profile.linkedIn}</label>
+              <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange}
+                placeholder={t.profile.linkedInPlaceholder} />
+            </div>
+
+            {/* Private section — ethnicity + experience + goals */}
+            <div style={{ fontSize:11, fontWeight:700, color:"#e8735a", textTransform:"uppercase",
+              letterSpacing:"0.1em", margin:"1.25rem 0 0.85rem",
+              paddingTop:"1rem", borderTop:"1px solid #f0f6fb",
+              display:"flex", alignItems:"center", gap:6,
+            }}>
+              {t.profile.privateSection}
+            </div>
+            <div style={{ ...S.group, marginBottom:"1rem" }}>
+              <label style={S.label}>{t.profile.ethnicity}</label>
+              <SelectInput value={form.ethnicity} disabled={false}
+                placeholder="—" options={t.profile.ethnicityOptions}
+                onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
+            </div>
+            <div style={{ ...S.group, marginBottom:"1rem" }}>
+              <label style={S.label}>{t.profile.experience}</label>
+              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px" }}
+                name="experience" value={form.experience} onChange={handleChange}
+                placeholder={t.profile.experiencePlaceholder} />
+            </div>
+            <div style={{ ...S.group, marginBottom:"1rem" }}>
+              <label style={S.label}>{t.profile.goals}</label>
+              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px" }}
+                name="goals" value={form.goals} onChange={handleChange}
+                placeholder={t.profile.goalsPlaceholder} />
+            </div>
+
+            <div style={S.actionRow}>
+              <button
+                style={getSaveBtnStyle("details")}
+                className={savingKey === "details" ? "save-btn-shimmer" : ""}
+                onClick={() => handleSaveSection("details", {
+                  ethnicity: form.ethnicity, region: form.region,
+                  institution: form.institution, graduationYear: form.graduationYear,
+                  linkedIn: form.linkedIn, experience: form.experience, goals: form.goals,
+                })}
+                disabled={!!savingKey}
+                onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
+              >
+                {saveBtnLabel("details")}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── My Posts ── */}
         <div style={{ marginTop: "2rem" }}>
           <p style={{
@@ -754,12 +848,18 @@ export default function ProfilePage({ viewUserId, onMessage }) {
               gap: "1.25rem",
             }}>
               {myPosts.map((post) => (
-                <div key={post.id} className="profile-card" style={{
+                <div key={post.id} className="profile-card" onClick={() => onNavigateToCommunity?.()}
+                  style={{
                   background: "#fff", borderRadius: "18px",
                   border: "1.5px solid #f0f6fb", borderLeft: "4px solid #4472b8",
                   boxShadow: "0 2px 8px rgba(29, 72, 150,0.05)",
                   padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem",
-                }}>
+                  cursor: onNavigateToCommunity ? "pointer" : "default",
+                  transition: "box-shadow 0.18s, transform 0.18s",
+                }}
+                  onMouseEnter={e => { if (onNavigateToCommunity) { e.currentTarget.style.boxShadow = "0 6px 20px rgba(29,72,150,0.12)"; e.currentTarget.style.transform = "translateY(-2px)"; }}}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 8px rgba(29,72,150,0.05)"; e.currentTarget.style.transform = "none"; }}
+                >
                   {/* Post text */}
                   {post.text && (
                     <p style={{

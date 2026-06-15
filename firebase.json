@@ -9,10 +9,18 @@
     "source": "functions",
     "runtime": "nodejs20"
   },
-  "hosting": {
-    "site": "bogrotnet",
-    "public": "frontend/dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }]
-  }
+  "hosting": [
+    {
+      "target": "bogrotnet",
+      "public": "frontend/dist",
+      "ignore": ["firebase.json","**/.*","**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    },
+    {
+      "target": "kehila-manhigut-shava",
+      "public": "frontend/dist",
+      "ignore": ["firebase.json","**/.*","**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    }
+  ]
 }
