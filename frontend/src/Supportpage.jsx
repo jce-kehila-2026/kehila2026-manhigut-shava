@@ -47,7 +47,14 @@ const T = {
     otherPh: "כתבי כאן...",
     layoutCards: "כרטיסיות",
     layoutTable: "טבלה",
-    regions: ["צפון","חיפה","מרכז והשרון","תל אביב","ירושלים","דרום"],
+    reqModalTitle: "שלחי בקשת עזרה",
+    reqModalTo: "אל:",
+    reqMsgLabel: "במה את צריכה עזרה?",
+    reqMsgPh: "תארי בקצרה מה את מחפשת... (אופציונלי)",
+    reqModalSend: "שלחי בקשה",
+    reqModalCancel: "ביטול",
+    reqMsgReceived: "הודעה:",
+    regions: ["צפון","גליל","עמקים","חיפה","מרכז והשרון","גוש דן","תל אביב","ירושלים","שפלה","דרום","נגב","חוץ לארץ"],
     helpAreas: [
       "קידום קריירה ותעסוקה",
       "פיתוח מנהיגות וניהול",
@@ -101,7 +108,14 @@ const T = {
     otherPh: "Type here...",
     layoutCards: "Cards",
     layoutTable: "Table",
-    regions: ["North","Haifa","Center & Sharon","Tel Aviv","Jerusalem","South"],
+    reqModalTitle: "Send a Help Request",
+    reqModalTo: "To:",
+    reqMsgLabel: "What do you need help with?",
+    reqMsgPh: "Briefly describe what you're looking for… (optional)",
+    reqModalSend: "Send Request",
+    reqModalCancel: "Cancel",
+    reqMsgReceived: "Message:",
+    regions: ["North","Galilee","Valleys (Emek)","Haifa","Center & Sharon","Gush Dan","Tel Aviv","Jerusalem","Shephelah","South","Negev","Overseas"],
     helpAreas: [
       "Career advancement",
       "Leadership & management",
@@ -155,7 +169,14 @@ const T = {
     otherPh: "اكتبي هنا...",
     layoutCards: "بطاقات",
     layoutTable: "جدول",
-    regions: ["الشمال","حيفا","الوسط والشارون","تل أبيب","القدس","الجنوب"],
+    reqModalTitle: "أرسلي طلب مساعدة",
+    reqModalTo: "إلى:",
+    reqMsgLabel: "بماذا تحتاجين المساعدة؟",
+    reqMsgPh: "صفي باختصار ما تبحثين عنه... (اختياري)",
+    reqModalSend: "إرسال الطلب",
+    reqModalCancel: "إلغاء",
+    reqMsgReceived: "الرسالة:",
+    regions: ["الشمال","الجليل","الأودية","حيفا","الوسط والشارون","غوش دان","تل أبيب","القدس","السفيلة","الجنوب","النقب","خارج البلاد"],
     helpAreas: [
       "التقدم الوظيفي",
       "القيادة والإدارة",
@@ -173,16 +194,22 @@ const T = {
 };
 
 /* Canonical Hebrew keys — always used for Firestore filtering regardless of UI language */
-const REGIONS_KEYS = ["צפון","חיפה","מרכז והשרון","תל אביב","ירושלים","דרום"];
+const REGIONS_KEYS = ["צפון","גליל","עמקים","חיפה","מרכז והשרון","גוש דן","תל אביב","ירושלים","שפלה","דרום","נגב","חוץ לארץ"];
 
 /* All language variants per region — so "Jerusalem" matches users who registered in English */
 const REGION_ALL_LANGS = {
-  "צפון":         ["צפון","North","الشمال"],
-  "חיפה":         ["חיפה","Haifa","حيفا"],
-  "מרכז והשרון":  ["מרכז והשרון","Center & Sharon","الوسط والشارون"],
-  "תל אביב":      ["תל אביב","Tel Aviv","تل أبيب"],
-  "ירושלים":      ["ירושלים","Jerusalem","القدس"],
-  "דרום":         ["דרום","South","الجنوب"],
+  "צפון":          ["צפון","North","الشمال"],
+  "גליל":          ["גליל","Galilee","الجليل"],
+  "עמקים":         ["עמקים","Valleys","Emek","الأودية"],
+  "חיפה":          ["חיפה","Haifa","حيفا"],
+  "מרכז והשרון":   ["מרכז והשרון","Center & Sharon","Center","Sharon","الوسط والشارون"],
+  "גוש דן":        ["גוש דן","Gush Dan","غوش دان"],
+  "תל אביב":       ["תל אביב","Tel Aviv","تل أبيب"],
+  "ירושלים":       ["ירושלים","Jerusalem","القدس"],
+  "שפלה":          ["שפלה","Shephelah","Shfela","السفيلة"],
+  "דרום":          ["דרום","South","الجنوب"],
+  "נגב":           ["נגב","Negev","النقب"],
+  "חוץ לארץ":      ["חוץ לארץ","Overseas","Abroad","خارج البلاد"],
 };
 const AREAS_KEYS = [
   "קידום קריירה ותעסוקה","פיתוח מנהיגות וניהול","ניהול צוותים",
@@ -229,6 +256,11 @@ styleTag.textContent = `
   .view-btn:hover      { background: #f0f6fb !important; }
   .req-btn:hover       { background: #daeaf8 !important; }
   .suggest-item:hover  { background: #f0f7ff !important; }
+  .req-msg-textarea:focus {
+    border-color: #4472b8 !important;
+    box-shadow: 0 0 0 3px rgba(68,114,184,0.14) !important;
+    outline: none;
+  }
   @keyframes fadeSlideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
   @keyframes dropIn      { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
   @keyframes modalPop    { from { opacity:0; transform:scale(0.94) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
@@ -237,6 +269,94 @@ styleTag.textContent = `
 if (!document.head.querySelector("#support-styles")) {
   styleTag.id = "support-styles";
   document.head.appendChild(styleTag);
+}
+
+/* ─── AreaDropdown — compact single-select replacing the pill grid ─── */
+function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("touchstart", close); };
+  }, [open]);
+
+  const selected = areas.find(a => a.key === value);
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: 8,
+          padding: "11px 14px", borderRadius: "13px",
+          border: `1.5px solid ${value && value !== "OTHER" ? "#4472b8" : "#daeaf8"}`,
+          background: value && value !== "OTHER" ? "#eef4ff" : "#fdf8f6",
+          color: value && value !== "OTHER" ? "#1d4896" : "#6b7280",
+          fontSize: "14px", fontWeight: value && value !== "OTHER" ? 600 : 400,
+          cursor: "pointer", fontFamily: "inherit",
+          direction: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left",
+          transition: "border-color 0.2s",
+        }}
+      >
+        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selected ? selected.label : placeholder}
+        </span>
+        {value && value !== "OTHER" ? (
+          <span
+            role="button"
+            tabIndex={0}
+            onMouseDown={e => { e.stopPropagation(); onChange(""); setOpen(false); }}
+            style={{ fontSize: 18, lineHeight: 1, color: "#9ca3af", cursor: "pointer", flexShrink: 0 }}
+          >×</span>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.18s" }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        )}
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 5px)",
+          [isRTL ? "right" : "left"]: 0, width: "100%", minWidth: 220,
+          background: "var(--bg-primary)", border: "1.5px solid var(--border)",
+          borderRadius: "14px", boxShadow: "0 8px 28px rgba(29,72,150,0.14)",
+          maxHeight: 260, overflowY: "auto", zIndex: 200,
+          scrollbarWidth: "thin",
+          animation: "dropIn 0.15s ease",
+        }}>
+          {areas.map(({ label, key }, idx) => (
+            <button
+              key={key}
+              type="button"
+              onMouseDown={() => { onChange(key === value ? "" : key); setOpen(false); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 14px",
+                background: value === key ? "#eef4ff" : "transparent",
+                border: "none",
+                borderBottom: idx < areas.length - 1 ? "1px solid var(--border)" : "none",
+                color: value === key ? "#1d4896" : "var(--text-primary)",
+                fontSize: "13px", fontWeight: value === key ? 700 : 400,
+                cursor: "pointer", textAlign: isRTL ? "right" : "left",
+                direction: isRTL ? "rtl" : "ltr",
+                fontFamily: "inherit",
+              }}
+            >
+              {value === key && <span style={{ fontSize: 11, color: "#4472b8" }}>✓</span>}
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ─── StatusPill ─── */
@@ -252,6 +372,58 @@ function StatusPill({ status }) {
       fontSize: "11px", fontWeight: "700", padding: "3px 10px", borderRadius: "99px",
       background: s.bg, color: s.color, border: `1px solid ${s.border}`, display: "inline-block",
     }}>{s.label}</span>
+  );
+}
+
+/* ─── RequestMessageModal ─── */
+function RequestMessageModal({ targetUser, Tr, dir, onConfirm, onCancel }) {
+  const [message, setMessage] = useState("");
+  const textareaRef = useRef(null);
+  useEffect(() => { setTimeout(() => textareaRef.current?.focus(), 60); }, []);
+  return (
+    <div style={{
+      position:"fixed", inset:0, background:"rgba(29,72,150,0.38)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      zIndex:200, padding:"1rem", backdropFilter:"blur(4px)",
+    }} onClick={onCancel}>
+      <div style={{
+        background:"var(--bg-primary)", borderRadius:"20px", padding:"1.75rem",
+        width:"100%", maxWidth:"400px",
+        boxShadow:"0 20px 56px rgba(29,72,150,0.22)",
+        display:"flex", flexDirection:"column", gap:"1.1rem",
+        animation:"modalPop 0.24s cubic-bezier(.34,1.56,.64,1) both",
+        direction:dir,
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <p style={{ fontSize:"15px", fontWeight:"700", color:"var(--text-primary)", margin:0 }}>{Tr.reqModalTitle}</p>
+          <button onClick={onCancel} style={{ background:"var(--bg-secondary)", border:"none", borderRadius:"9px", padding:"5px 11px", cursor:"pointer", fontSize:"12px", fontWeight:"600", color:"var(--text-muted)" }}>{Tr.reqModalCancel}</button>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", background:"var(--bg-secondary)", borderRadius:"13px", padding:"10px 14px", border:"1.5px solid var(--border)" }}>
+          <MemberAvatar user={targetUser} size={36} fontSize={13} />
+          <div>
+            <p style={{ fontSize:"10px", fontWeight:"700", color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1px" }}>{Tr.reqModalTo}</p>
+            <p style={{ fontSize:"13px", fontWeight:"700", color:"var(--text-primary)", margin:0 }}>{getFullName(targetUser)}</p>
+            {(targetUser.currentRole || targetUser.profession) && (
+              <p style={{ fontSize:"11px", color:"var(--text-muted)", margin:0 }}>{targetUser.currentRole || targetUser.profession}</p>
+            )}
+          </div>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
+          <label style={{ fontSize:"11px", fontWeight:"700", color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em" }}>{Tr.reqMsgLabel}</label>
+          <textarea ref={textareaRef} className="req-msg-textarea" value={message} onChange={e => setMessage(e.target.value)}
+            placeholder={Tr.reqMsgPh} rows={4}
+            style={{ padding:"11px 14px", fontSize:"13px", border:"1.5px solid var(--border)", borderRadius:"13px", color:"var(--text-primary)", background:"var(--bg-secondary)", transition:"border-color 0.2s, box-shadow 0.2s", width:"100%", boxSizing:"border-box", resize:"vertical", fontFamily:"inherit", direction:dir, lineHeight:"1.55" }}
+          />
+        </div>
+        <div style={{ display:"flex", gap:"8px" }}>
+          <button onClick={onCancel} style={{ flex:1, padding:"11px 0", background:"var(--bg-secondary)", color:"var(--text-secondary)", border:"1.5px solid var(--border)", borderRadius:"12px", fontSize:"13px", fontWeight:"600", cursor:"pointer" }}>{Tr.reqModalCancel}</button>
+          <button onClick={() => onConfirm(message.trim())} style={{ flex:2, padding:"11px 0", background:"#4472b8", color:"#fff", border:"none", borderRadius:"12px", fontSize:"13px", fontWeight:"700", cursor:"pointer", transition:"background 0.2s" }}
+            onMouseOver={e => e.currentTarget.style.background="#1d4896"}
+            onMouseOut={e  => e.currentTarget.style.background="#4472b8"}
+          >{Tr.reqModalSend}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -297,6 +469,10 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [recommended,      setRecommended]      = useState([]);
   const [showSuggest,      setShowSuggest]      = useState(false);
   const [dropPos,          setDropPos]          = useState(null);
+  const [sortMode,         setSortMode]         = useState("recent");
+  const [showAreaSuggests,    setShowAreaSuggests]    = useState(false);
+  const [showRegionSuggests,  setShowRegionSuggests]  = useState(false);
+  const [pendingRequestTarget, setPendingRequestTarget] = useState(null);
   const nameInputRef    = useRef(null);
   const searchRef       = useRef(null);
   const myReqRef        = useRef(null);
@@ -374,6 +550,40 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     setLoading(false);
   };
 
+  /* Live search — inline filter so there are no stale-closure issues */
+  useEffect(() => {
+    if (!allUsers.length) return;
+    const name   = memberName.trim().toLowerCase();
+    const region = selectedRegion === "OTHER" ? otherRegion.trim() : selectedRegion.trim();
+    const area   = selectedArea   === "OTHER" ? otherArea.trim()   : selectedArea.trim();
+    if (!name && !region && !area) { setResults([]); setSearched(false); return; }
+    const id = setTimeout(() => {
+      const filtered = allUsers.filter((u) => {
+        const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
+        const matchName   = !name   || fullName.includes(name);
+        const matchRegion = !region || (() => {
+          const variants = REGION_ALL_LANGS[region] || [region];
+          return variants.some(v => (u.region ?? "").includes(v) || (u.city ?? "").includes(v));
+        })();
+        const matchArea   = !area   || (u.helpAreas ?? []).some(a => a.includes(area))
+          || (u.profession ?? "").toLowerCase().includes(area.toLowerCase())
+          || (u.currentRole ?? "").toLowerCase().includes(area.toLowerCase());
+        return matchName && matchRegion && matchArea;
+      });
+      setResults(filtered);
+      setSearched(true);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [memberName, selectedRegion, selectedArea, otherRegion, otherArea, allUsers]);
+
+  const sortedResults = sortMode === "alpha"
+    ? [...results].sort((a, b) => getFullName(a).localeCompare(getFullName(b), undefined, { sensitivity: "base" }))
+    : [...results].sort((a, b) => {
+        const ta = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
+        const tb = b.lastSeen ? new Date(b.lastSeen).getTime() : 0;
+        return tb - ta;
+      });
+
   const handleDeleteSentRequest = async (reqId) => {
     try {
       await deleteDoc(doc(db, "helpRequests", reqId));
@@ -392,7 +602,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     (!senderProfile?.isAdmin && (u.blockedUsers || []).includes(user?.uid)) ||
     (senderProfile?.blockedUsers || []).includes(u.id);
 
-  const handleRequest = async (targetUser) => {
+  const initiateRequest = (targetUser) => {
+    if (!user || !senderProfile || requested[targetUser.id]) return;
+    if (cantSendHelp(targetUser)) return;
+    setPendingRequestTarget(targetUser);
+  };
+
+  const handleRequest = async (targetUser, requestMessage = "") => {
     if (!user || !senderProfile || requested[targetUser.id]) return;
     if (cantSendHelp(targetUser)) return;
     try {
@@ -404,6 +620,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         fromUserEmail:      user.email,
         fromUserPhone:      senderProfile?.phone ?? "",
         fromUserProfession: senderProfile?.currentRole ?? senderProfile?.profession ?? "",
+        requestMessage:     requestMessage,
         status:             null,
         createdAt:          new Date().toISOString(),
       });
@@ -609,8 +826,60 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     </svg>
   );
 
+  const sideNavItems = [
+    {
+      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+      labelHe: "חיפוש", labelEn: "Search", labelAr: "بحث", ref: searchRef,
+    },
+    {
+      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+      labelHe: "שלחתי", labelEn: "My Requests", labelAr: "طلباتي", ref: myReqRef,
+    },
+    {
+      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>,
+      labelHe: "קיבלתי", labelEn: "Received", labelAr: "الواردة", ref: receivedRef,
+    },
+    {
+      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
+      labelHe: "מומלצות", labelEn: "Suggested", labelAr: "الموصى بهن", ref: recommendedRef,
+    },
+  ];
+  const sideNavLabel = (item) => lang === "he" ? item.labelHe : lang === "ar" ? item.labelAr : item.labelEn;
+
   return (
     <div style={S.page}>
+
+      {/* ── Fixed side nav — always visible while scrolling ── */}
+      <div style={{
+        position: "fixed",
+        [isRTL ? "left" : "right"]: isMobile ? 6 : 14,
+        top: "50%", transform: "translateY(-50%)",
+        zIndex: 50, display: "flex", flexDirection: "column",
+        gap: isMobile ? 6 : 8,
+      }}>
+        {sideNavItems.map((item) => (
+          <button
+            key={item.labelEn}
+            title={sideNavLabel(item)}
+            onClick={() => scrollTo(item.ref)}
+            style={{
+              width: isMobile ? 36 : 42, height: isMobile ? 36 : 42,
+              borderRadius: "50%",
+              background: "var(--bg-primary)",
+              border: "1.5px solid var(--border)",
+              boxShadow: "0 2px 10px rgba(29,72,150,0.12)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: isMobile ? 14 : 17, cursor: "pointer",
+              transition: "box-shadow 0.15s, transform 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(29,72,150,0.2)"; e.currentTarget.style.transform = "scale(1.08)"; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 10px rgba(29,72,150,0.12)"; e.currentTarget.style.transform = "scale(1)"; }}
+          >
+            {item.icon}
+          </button>
+        ))}
+      </div>
+
       <p style={S.pageTitle}>{Tr.title}</p>
       <p style={S.pageSub}>{Tr.sub}</p>
 
@@ -654,44 +923,85 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         {/* Help area (first — most important) */}
         <div style={S.group}>
           <label style={S.label}>{Tr.helpAreaLbl}</label>
-          <div style={S.pillRow}>
-            {(Tr.helpAreas || []).map((a, i) => (
-              <button key={i} className="prof-pill"
-                style={S.pill(selectedArea === AREAS_KEYS[i])}
-                onClick={() => { setSelectedArea(selectedArea === AREAS_KEYS[i] ? "" : AREAS_KEYS[i]); setOtherArea(""); }}
-              >{a}</button>
-            ))}
-            <button className="prof-pill"
-              style={S.pill(selectedArea === "OTHER")}
-              onClick={() => { setSelectedArea(selectedArea === "OTHER" ? "" : "OTHER"); setOtherArea(""); }}
-            >{Tr.otherLbl}</button>
-          </div>
+          <AreaDropdown
+            value={selectedArea}
+            onChange={(key) => { setSelectedArea(key); setOtherArea(""); }}
+            areas={[
+              ...[...(Tr.helpAreas || []).map((label, i) => ({ label, key: AREAS_KEYS[i] }))]
+                .sort((a, b) => a.label.localeCompare(b.label, "he")),
+              { label: Tr.otherLbl, key: "OTHER" },
+            ]}
+            placeholder={lang === "he" ? "כל התחומים..." : lang === "ar" ? "جميع المجالات..." : "All areas..."}
+            isRTL={isRTL}
+          />
           {selectedArea === "OTHER" && (
-            <input className="support-input" style={{ ...S.input, marginTop: 8 }}
-              type="text" placeholder={Tr.otherPh}
-              value={otherArea} onChange={(e) => setOtherArea(e.target.value)} />
+            <div style={{ position: "relative", marginTop: 8 }}>
+              <input className="support-input" style={S.input}
+                type="text" placeholder={Tr.otherPh}
+                value={otherArea}
+                onChange={(e) => { setOtherArea(e.target.value); setShowAreaSuggests(true); }}
+                onBlur={() => setTimeout(() => setShowAreaSuggests(false), 160)}
+                autoComplete="off"
+              />
+              {showAreaSuggests && otherArea.trim().length >= 1 && (() => {
+                const q = otherArea.trim().toLowerCase();
+                const opts = [...new Set(
+                  allUsers.flatMap(u => [u.profession, u.currentRole, ...(u.helpAreas||[])])
+                    .filter(v => v && v.toLowerCase().includes(q))
+                )].slice(0, 8);
+                return opts.length > 0 ? (
+                  <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"var(--bg-primary)", border:"1.5px solid var(--border)", borderRadius:12, boxShadow:"0 6px 20px rgba(29,72,150,0.12)", maxHeight:180, overflowY:"auto", zIndex:300, animation:"dropIn 0.14s ease" }}>
+                    {opts.map((s, i) => (
+                      <button key={s} type="button" onMouseDown={() => { setOtherArea(s); setShowAreaSuggests(false); }}
+                        style={{ width:"100%", textAlign:isRTL?"right":"left", padding:"9px 14px", background:"transparent", border:"none", borderBottom: i<opts.length-1?"1px solid var(--border)":"none", fontSize:13, color:"var(--text-primary)", cursor:"pointer", fontFamily:"inherit", direction:isRTL?"rtl":"ltr" }}
+                      >{s}</button>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+            </div>
           )}
         </div>
 
         {/* Region */}
         <div style={S.group}>
           <label style={S.label}>{Tr.regionLbl}</label>
-          <div style={S.pillRow}>
-            {(Tr.regions || []).map((r, i) => (
-              <button key={i} className="prof-pill"
-                style={S.pill(selectedRegion === REGIONS_KEYS[i])}
-                onClick={() => { setSelectedRegion(selectedRegion === REGIONS_KEYS[i] ? "" : REGIONS_KEYS[i]); setOtherRegion(""); }}
-              >{r}</button>
-            ))}
-            <button className="prof-pill"
-              style={S.pill(selectedRegion === "OTHER")}
-              onClick={() => { setSelectedRegion(selectedRegion === "OTHER" ? "" : "OTHER"); setOtherRegion(""); }}
-            >{Tr.otherLbl}</button>
-          </div>
+          <AreaDropdown
+            value={selectedRegion}
+            onChange={(key) => { setSelectedRegion(key); setOtherRegion(""); }}
+            areas={[
+              ...(Tr.regions || []).map((label, i) => ({ label, key: REGIONS_KEYS[i] })),
+              { label: Tr.otherLbl, key: "OTHER" },
+            ]}
+            placeholder={lang === "he" ? "כל האזורים..." : lang === "ar" ? "جميع المناطق..." : "All regions..."}
+            isRTL={isRTL}
+          />
           {selectedRegion === "OTHER" && (
-            <input className="support-input" style={{ ...S.input, marginTop: 8 }}
-              type="text" placeholder={Tr.otherPh}
-              value={otherRegion} onChange={(e) => setOtherRegion(e.target.value)} />
+            <div style={{ position: "relative", marginTop: 8 }}>
+              <input className="support-input" style={S.input}
+                type="text" placeholder={Tr.otherPh}
+                value={otherRegion}
+                onChange={(e) => { setOtherRegion(e.target.value); setShowRegionSuggests(true); }}
+                onBlur={() => setTimeout(() => setShowRegionSuggests(false), 160)}
+                autoComplete="off"
+              />
+              {showRegionSuggests && otherRegion.trim().length >= 1 && (() => {
+                const q = otherRegion.trim().toLowerCase();
+                const opts = [...new Set(
+                  allUsers.flatMap(u => [u.city, u.region].filter(Boolean))
+                    .filter(v => v.toLowerCase().includes(q) && !REGIONS_KEYS.includes(v))
+                )].slice(0, 8);
+                return opts.length > 0 ? (
+                  <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"var(--bg-primary)", border:"1.5px solid var(--border)", borderRadius:12, boxShadow:"0 6px 20px rgba(29,72,150,0.12)", maxHeight:180, overflowY:"auto", zIndex:300, animation:"dropIn 0.14s ease" }}>
+                    {opts.map((s, i) => (
+                      <button key={s} type="button" onMouseDown={() => { setOtherRegion(s); setShowRegionSuggests(false); }}
+                        style={{ width:"100%", textAlign:isRTL?"right":"left", padding:"9px 14px", background:"transparent", border:"none", borderBottom: i<opts.length-1?"1px solid var(--border)":"none", fontSize:13, color:"var(--text-primary)", cursor:"pointer", fontFamily:"inherit", direction:isRTL?"rtl":"ltr" }}
+                      >{s}</button>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+            </div>
           )}
         </div>
 
@@ -754,6 +1064,20 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           <button className="search-btn" style={S.searchBtn} onClick={() => runSearch()}>
             {loading ? Tr.searching : Tr.searchBtn}
           </button>
+          {/* Sort toggle */}
+          <div style={{ display: "flex", gap: 4, background: "var(--bg-secondary)", borderRadius: 10, padding: 3, border: "1.5px solid var(--border)" }}>
+            {[
+              { key: "recent", label: lang === "he" ? "פעילות אחרונה" : lang === "ar" ? "الأحدث نشاطاً" : "Most Recent" },
+              { key: "alpha",  label: lang === "he" ? "א–ת" : lang === "ar" ? "أ–ي" : "A–Z" },
+            ].map(({ key, label }) => (
+              <button key={key} onClick={() => setSortMode(key)} style={{
+                padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+                fontSize: 12, fontWeight: 600, transition: "all 0.15s",
+                background: sortMode === key ? "#4472b8" : "transparent",
+                color: sortMode === key ? "#fff" : "var(--text-muted)",
+              }}>{label}</button>
+            ))}
+          </div>
           {/* Layout toggle */}
           <div style={{ display: "flex", gap: 4, background: "var(--bg-secondary)", borderRadius: 10, padding: 3, border: "1.5px solid var(--border)" }}>
             {[
@@ -776,12 +1100,12 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       {!searched && (
         <div style={S.emptyBox}>{Tr.noFilter}</div>
       )}
-      {searched && !loading && results.length === 0 && (
+      {searched && !loading && sortedResults.length === 0 && (
         <div style={S.emptyBox}>{Tr.noResults}</div>
       )}
 
       {/* Results */}
-      {results.length > 0 && (
+      {sortedResults.length > 0 && (
         layoutMode === "table" ? (
           /* Table view */
           <div style={{ marginBottom: "2rem", overflowX: "auto" }}>
@@ -794,7 +1118,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 </tr>
               </thead>
               <tbody>
-                {results.map((u) => (
+                {sortedResults.map((u) => (
                   <tr key={u.id} style={{ background:"var(--bg-primary)", transition:"background 0.15s", cursor:"pointer" }}
                     onMouseEnter={e=>e.currentTarget.style.background="var(--bg-hover)"}
                     onMouseLeave={e=>e.currentTarget.style.background="var(--bg-primary)"}
@@ -812,7 +1136,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                         {!cantSendHelp(u) && (
                           <button className={requested[u.id]?"":"req-btn"}
                             style={{ ...(requested[u.id]?S.reqDoneBtn:S.reqBtn), flex:"none", padding:"6px 14px" }}
-                            onClick={() => handleRequest(u)}>
+                            onClick={() => initiateRequest(u)}>
                             {requested[u.id] ? Tr.sent : Tr.sendReq}
                           </button>
                         )}
@@ -826,7 +1150,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         ) : (
           /* Card view */
           <div style={{ ...S.resultsGrid, marginBottom: "2rem" }}>
-            {results.map((u, i) => (
+            {sortedResults.map((u, i) => (
               <div key={u.id} className="result-card"
                 style={{ ...S.card, animationDelay: `${i * 0.05}s` }}
               >
@@ -859,7 +1183,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     <button
                       className={requested[u.id] ? "" : "req-btn"}
                       style={requested[u.id] ? S.reqDoneBtn : S.reqBtn}
-                      onClick={() => handleRequest(u)}
+                      onClick={() => initiateRequest(u)}
                     >
                       {requested[u.id] ? Tr.sent : Tr.sendReq}
                     </button>
@@ -888,6 +1212,11 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   >{deleteIconSvg}</button>
                 </div>
                 {r.fromUserProfession && <p style={S.myReqProf}>{r.fromUserProfession}</p>}
+                {r.requestMessage && (
+                  <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0", background:"var(--bg-secondary)", borderRadius:"9px", padding:"7px 10px", border:"1px solid var(--border)", lineHeight:"1.5", fontStyle:"italic" }}>
+                    {r.requestMessage}
+                  </p>
+                )}
                 <StatusPill status={r.status} />
               </div>
             ))}
@@ -916,6 +1245,12 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 )}
                 {r.fromUserEmail && (
                   <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>{r.fromUserEmail}</p>
+                )}
+                {r.requestMessage && (
+                  <div style={{ background:"#f5f8ff", border:"1.5px solid #daeaf8", borderInlineStart:"3px solid #4472b8", borderRadius:"10px", padding:"8px 12px", margin:"4px 0" }}>
+                    <p style={{ fontSize:"10px", fontWeight:"700", color:"#4472b8", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 4px" }}>{Tr.reqMsgReceived}</p>
+                    <p style={{ fontSize:"13px", color:"var(--text-primary)", margin:0, lineHeight:"1.55" }}>{r.requestMessage}</p>
+                  </div>
                 )}
                 {!r.status ? (
                   <div style={S.receivedReqActions}>
@@ -967,7 +1302,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     style={requested[u.id]
                       ? { ...S.reqDoneBtn, width: "100%", padding: "6px 0", fontSize: "12px" }
                       : { ...S.reqBtn, width: "100%", padding: "6px 0", fontSize: "12px" }}
-                    onClick={(e) => { e.stopPropagation(); handleRequest(u); }}
+                    onClick={(e) => { e.stopPropagation(); initiateRequest(u); }}
                   >
                     {requested[u.id] ? Tr.sent : Tr.sendReq}
                   </button>
@@ -1043,7 +1378,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               {!cantSendHelp(selectedUser) && (
                 <button
                   style={requested[selectedUser.id] ? S.modalReqDoneBtn : S.modalReqBtn}
-                  onClick={() => handleRequest(selectedUser)}
+                  onClick={() => { setSelectedUser(null); initiateRequest(selectedUser); }}
                   onMouseOver={(e) => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#1d4896"; }}
                   onMouseOut={(e)  => { if (!requested[selectedUser.id]) e.currentTarget.style.background = "#4472b8"; }}
                 >
@@ -1053,6 +1388,19 @@ export default function SupportPage({ onViewProfile, onMessage }) {
             </div>
           </div>
         </div>
+      )}
+
+      {pendingRequestTarget && (
+        <RequestMessageModal
+          targetUser={pendingRequestTarget}
+          Tr={Tr}
+          dir={dir}
+          onConfirm={(message) => {
+            handleRequest(pendingRequestTarget, message);
+            setPendingRequestTarget(null);
+          }}
+          onCancel={() => setPendingRequestTarget(null)}
+        />
       )}
     </div>
   );

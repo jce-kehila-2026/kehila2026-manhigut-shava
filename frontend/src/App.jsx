@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { LanguageProvider } from "./LanguageContext";
 import { ThemeProvider } from "./ThemeContext";
@@ -7,8 +7,10 @@ import LandingPage from "./LandingPage";
 import CompleteProfilePage from "./CompleteProfilePage";
 import OtpVerificationPage from "./OtpVerificationPage";
 import DashboardPage from "./DashboardPage";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
-/* Global cursor trail — smooth comet tail */
+/* Pre-login cursor trail — LandingPage only */
 function CursorTrail() {
   useEffect(() => {
     const N = 18;
@@ -60,75 +62,6 @@ function CursorTrail() {
     };
   }, []);
   return null;
-}
-
-/* Login intro overlay — same animation as landing page intro */
-const LP_INTRO_CSS_ID = "login-intro-css";
-function ensureLoginIntroCss() {
-  if (document.getElementById(LP_INTRO_CSS_ID)) return;
-  const s = document.createElement("style");
-  s.id = LP_INTRO_CSS_ID;
-  s.textContent = `
-    @keyframes li-out    {to{transform:translateX(110%);opacity:0}}
-    @keyframes li-sweep  {from{transform:translateX(-160%) skewX(-3deg)}to{transform:translateX(160%) skewX(-3deg)}}
-    @keyframes li-fade-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-    @keyframes li-logo-in{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:none}}
-  `;
-  document.head.appendChild(s);
-}
-
-function LoginIntroOverlay({ onDone }) {
-  const [phase, setPhase] = useState(0);
-  useEffect(() => {
-    ensureLoginIntroCss();
-    const t1 = setTimeout(() => setPhase(1), 700);
-    const t2 = setTimeout(() => setPhase(2), 1450);
-    const t3 = setTimeout(onDone, 2300);
-    return () => [t1,t2,t3].forEach(clearTimeout);
-  }, [onDone]);
-
-  return (
-    <div style={{
-      position:"fixed",inset:0,zIndex:9999,overflow:"hidden",
-      background:"linear-gradient(135deg,#1d4896 0%,#4472b8 55%,#6da3d4 100%)",
-      animation:phase===2?"li-out 0.85s cubic-bezier(0.76,0,0.24,1) forwards":"none",
-    }}>
-      {/* Sweep waves */}
-      {phase>=1&&[{delay:"0s",dur:"0.72s",op:0.18},{delay:"0.11s",dur:"0.78s",op:0.13},{delay:"0.20s",dur:"0.68s",op:0.22}].map((w,i)=>(
-        <div key={i} style={{
-          position:"absolute",top:"-8%",bottom:"-8%",width:"52%",left:"-52%",
-          background:`rgba(255,255,255,${w.op})`,borderRadius:"50% / 8%",
-          animation:`li-sweep ${w.dur} ${w.delay} cubic-bezier(0.4,0,0.6,1) forwards`,
-        }}/>
-      ))}
-      {/* Logo + name */}
-      <div style={{
-        position:"absolute",inset:0,display:"flex",flexDirection:"column",
-        alignItems:"center",justifyContent:"center",gap:18,
-        opacity:phase>=1?0:1,transition:"opacity 0.3s ease",
-        animation:phase===0?"li-fade-up 0.55s 0.1s ease both":"none",
-      }}>
-        <img src="/NewLogoNGO.png"
-          onError={e=>{e.target.style.display="none";}}
-          alt="BogrotNet"
-          style={{width:96,height:96,objectFit:"contain",borderRadius:"50%",
-            background:"rgba(255,255,255,0.14)",padding:8,
-            border:"2px solid rgba(255,255,255,0.3)",
-            animation:"li-logo-in 0.55s 0.1s ease both"}}
-        />
-        <div style={{textAlign:"center",animation:"li-fade-up 0.6s 0.25s ease both"}}>
-          <div style={{fontSize:"clamp(22px,3.5vw,38px)",fontWeight:900,color:"#fff",
-            letterSpacing:"-0.02em",fontFamily:"'Playfair Display',Georgia,serif",margin:0}}>
-            BogrotNet
-          </div>
-          <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",letterSpacing:"0.26em",
-            textTransform:"uppercase",marginTop:6}}>
-            ברוכה הבאה
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function LoadingScreen() {
@@ -186,37 +119,42 @@ function LoadingScreen() {
   );
 }
 
+/* Fallback for Google users with no Firestore doc — create basic profile then reload */
+function GoogleProfileSetup() {
+  const { user, refreshProfile } = useAuth();
+  useEffect(() => {
+    if (!user) return;
+    const parts = (user.displayName || "").split(" ");
+    setDoc(doc(db, "users", user.uid), {
+      firstName:     parts[0] || "",
+      lastName:      parts.slice(1).join(" ") || "",
+      email:         user.email || "",
+      emailVerified: true,
+      acceptedTerms: true,
+      createdAt:     new Date().toISOString(),
+    })
+      .then(() => refreshProfile())
+      .catch(() => refreshProfile());
+  }, [user]);
+  return <LoadingScreen />;
+}
+
 function AppContent() {
   const { user, profile, loading } = useAuth();
-  const [showAuth, setShowAuth]         = useState(false);
-  const [showLoginIntro, setShowLoginIntro] = useState(false);
-  const prevUserRef = useRef(null);
-
-  /* Show intro once per session when user transitions from null → logged-in */
-  useEffect(() => {
-    if (!loading) {
-      const wasLoggedOut = prevUserRef.current === null;
-      const isNowLoggedIn = !!user;
-      if (wasLoggedOut && isNowLoggedIn && !sessionStorage.getItem("login_intro_done")) {
-        sessionStorage.setItem("login_intro_done", "1");
-        setShowLoginIntro(true);
-      }
-      prevUserRef.current = user;
-    }
-  }, [user, loading]);
+  const [showAuth, setShowAuth] = useState(false);
 
   if (loading) return <LoadingScreen />;
 
-  if (showLoginIntro) {
-    return <LoginIntroOverlay onDone={() => setShowLoginIntro(false)} />;
-  }
-
   if (!user) {
-    if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
-    return <LandingPage onLogin={() => setShowAuth(true)} />;
+    if (showAuth) return <><CursorTrail /><AuthPage onBack={() => setShowAuth(false)} /></>;
+    return <><CursorTrail /><LandingPage onLogin={() => setShowAuth(true)} /></>;
   }
 
-  if (profile === null) return <CompleteProfilePage />;
+  if (profile === null) {
+    const isGoogle = user.providerData?.some(p => p.providerId === "google.com");
+    if (isGoogle) return <GoogleProfileSetup />;
+    return <CompleteProfilePage />;
+  }
 
   if (!user.emailVerified && !profile.emailVerified) return <OtpVerificationPage />;
 
@@ -228,7 +166,6 @@ export default function App() {
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
-          <CursorTrail />
           <AppContent />
         </AuthProvider>
       </LanguageProvider>

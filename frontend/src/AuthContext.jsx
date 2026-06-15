@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { onAuthStateChanged, signOut, getRedirectResult } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 const AuthContext = createContext(null);
@@ -39,7 +39,28 @@ export function AuthProvider({ children }) {
 
           setProfile(profileData);
         } else {
-          setProfile(null);
+          /* No Firestore doc — check if this is a new Google/social sign-in */
+          const isGoogle = firebaseUser.providerData?.some(p => p.providerId === "google.com");
+          if (isGoogle) {
+            const parts = (firebaseUser.displayName || "").split(" ");
+            const basicProfile = {
+              firstName:     parts[0] || "",
+              lastName:      parts.slice(1).join(" ") || "",
+              email:         firebaseUser.email || "",
+              phone:         firebaseUser.phoneNumber || "",
+              emailVerified: true,
+              acceptedTerms: true,
+              createdAt:     new Date().toISOString(),
+            };
+            try {
+              await setDoc(doc(db, "users", firebaseUser.uid), basicProfile);
+              setProfile(basicProfile);
+            } catch (_) {
+              setProfile(null);
+            }
+          } else {
+            setProfile(null);
+          }
         }
       } else {
         setProfile(null);

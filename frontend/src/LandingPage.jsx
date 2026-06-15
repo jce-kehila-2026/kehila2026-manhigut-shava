@@ -303,9 +303,10 @@ if (!document.getElementById("lp-css")) {
 /* ═══════════════════════════════════
    NAV CIRCLE — floating circular badge in hero
 ═══════════════════════════════════ */
-function NavCircle({ icon, title, sub, delay, onClick, C }) {
+function NavCircle({ icon, title, sub, delay, onClick, C, small }) {
   const [hov, setHov] = useState(false);
   const [vis, setVis] = useState(false);
+  const sz = small ? 46 : 64;
   useEffect(() => {
     const t = setTimeout(() => setVis(true), delay);
     return () => clearTimeout(t);
@@ -314,7 +315,7 @@ function NavCircle({ icon, title, sub, delay, onClick, C }) {
     <div style={{position:"relative",display:"inline-flex",alignItems:"center"}}
       onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}>
       <button onClick={onClick} style={{
-        width:64,height:64,borderRadius:"50%",border:`2.5px solid ${hov?C.blue:C.bluePale}`,
+        width:sz,height:sz,borderRadius:"50%",border:`2.5px solid ${hov?C.blue:C.bluePale}`,
         background:hov?C.blue:C.card,
         boxShadow:hov?"0 10px 32px rgba(68,114,184,0.32)":"0 5px 22px rgba(68,114,184,0.16)",
         cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
@@ -1246,19 +1247,19 @@ export default function LandingPage({ onLogin }) {
           }}>{T.bogrotBadge}</div>
         )}
 
-        {/* NAV CIRCLES — floating in hero, hidden on mobile */}
-        {!isMobile && heroReady && (
+        {/* NAV CIRCLES — fixed to right edge, visible only while hero is in view */}
+        {heroReady && (!heroOut || isMobile) && (
           <div style={{
-            position:"absolute",
-            [isRTL?"left":"right"]:22,
+            position:"fixed",
+            [isRTL?"left":"right"]:isMobile?8:22,
             top:"50%",transform:"translateY(-50%)",
-            zIndex:50,display:"flex",flexDirection:"column",gap:12,
+            zIndex:50,display:"flex",flexDirection:"column",gap:isMobile?8:12,
           }}>
-            <NavCircle icon={Ic.star}   title={T.navFeatures} sub={T.navFeaturesSub} delay={600}   C={C}
+            <NavCircle icon={Ic.star}   title={T.navFeatures} sub={T.navFeaturesSub} delay={600}   C={C} small={isMobile}
               onClick={()=>featRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}/>
-            <NavCircle icon={Ic.grad}   title={T.navHow}      sub={T.navHowSub}      delay={850}   C={C}
+            <NavCircle icon={Ic.grad}   title={T.navHow}      sub={T.navHowSub}      delay={850}   C={C} small={isMobile}
               onClick={()=>howRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}/>
-            <NavCircle icon={Ic.people} title={T.navLead}     sub={T.navLeadSub}     delay={1100}  C={C}
+            <NavCircle icon={Ic.people} title={T.navLead}     sub={T.navLeadSub}     delay={1100}  C={C} small={isMobile}
               onClick={()=>leadRef.current?.scrollIntoView({behavior:"smooth",block:"start"})}/>
           </div>
         )}
@@ -1350,24 +1351,6 @@ export default function LandingPage({ onLogin }) {
             >{T.explore}</button>
           </div>
 
-          {/* Mobile nav shortcuts — pills below CTA (desktop uses NavCircle on the side) */}
-          {isMobile && heroReady && (
-            <div style={{ display:"flex", gap:8, marginTop:"1.25rem", flexWrap:"wrap", justifyContent:"center" }}>
-              {[
-                { label:T.navFeatures, ref:featRef },
-                { label:T.navHow,      ref:howRef  },
-                { label:T.navLead,     ref:leadRef },
-              ].map(({label,ref})=>(
-                <button key={label} onClick={()=>ref.current?.scrollIntoView({behavior:"smooth",block:"start"})} style={{
-                  padding:"7px 16px", borderRadius:999,
-                  background:"rgba(255,255,255,0.15)", color:C.white,
-                  border:"1.5px solid rgba(255,255,255,0.35)",
-                  fontSize:12, fontWeight:600, cursor:"pointer",
-                  backdropFilter:"blur(6px)",
-                }}>{label}</button>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 

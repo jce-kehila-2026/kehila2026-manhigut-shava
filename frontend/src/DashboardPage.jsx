@@ -314,7 +314,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
         @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
       `}</style>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap: isMobile ? "0.75rem" : "1.5rem",
+      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "0.75rem" : "1.5rem",
         marginBottom:"2rem", padding: isMobile ? "0.5rem 0 1.25rem" : "0.5rem 0 2rem" }}>
         {quickCircles.map((item, i) => (
           <QuickCircle key={item.action} {...item} floatIdx={i} small={isMobile} onClick={() => onNavigate(item.action)} />
@@ -386,66 +386,104 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   );
 }
 
-/* ── Purple cursor trail — desktop only ── */
-function CursorTrail() {
-  const canvasRef = useRef(null);
-  const points = useRef([]);
-  const raf = useRef(null);
+/* ── Welcome overlay — shown once per browser session on first login ── */
+function WelcomeOverlay({ profile, initials, onDone }) {
+  const [phase, setPhase] = useState(0);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const t1 = setTimeout(() => setPhase(1), 300);
+    const t2 = setTimeout(() => setPhase(2), 2000);
+    const t3 = setTimeout(() => onDoneRef.current(), 2900);
+    return () => [t1, t2, t3].forEach(clearTimeout);
+  }, []); // intentionally empty — timers fire once on mount
 
-    const resize = () => {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    const onMove = (e) => {
-      points.current.push({ x: e.clientX, y: e.clientY, t: Date.now() });
-      if (points.current.length > 60) points.current.shift();
-    };
-    window.addEventListener("mousemove", onMove);
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const now = Date.now();
-      const alive = points.current.filter(p => now - p.t < 600);
-      points.current = alive;
-      if (alive.length > 1) {
-        for (let i = 1; i < alive.length; i++) {
-          const age = (now - alive[i].t) / 600;
-          const alpha = (1 - age) * 0.55;
-          const width = (1 - age) * 3.5;
-          ctx.beginPath();
-          ctx.moveTo(alive[i - 1].x, alive[i - 1].y);
-          ctx.lineTo(alive[i].x, alive[i].y);
-          ctx.strokeStyle = `rgba(192,132,252,${alpha})`;
-          ctx.lineWidth   = width;
-          ctx.lineCap     = "round";
-          ctx.lineJoin    = "round";
-          ctx.stroke();
-        }
-      }
-      raf.current = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", onMove);
-      cancelAnimationFrame(raf.current);
-    };
-  }, []);
+  const hr = new Date().getHours();
+  const greetWord = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
+  const name = profile?.firstName || "";
+  const photoURL = profile?.photoURL || profile?.avatarUrl || null;
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ position:"fixed", inset:0, zIndex:9999, pointerEvents:"none" }}
-    />
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 99999, overflow: "hidden",
+      background: "linear-gradient(135deg,#0b1f52 0%,#1a3a8f 55%,#2f5fd4 100%)",
+      animation: phase === 2 ? "wo-out 0.92s cubic-bezier(0.76,0,0.24,1) forwards" : "none",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      {/* sweep sheen */}
+      {phase >= 1 && [{delay:"0s",dur:"0.72s",op:0.16},{delay:"0.12s",dur:"0.78s",op:0.12},{delay:"0.22s",dur:"0.68s",op:0.20}].map((w,i) => (
+        <div key={i} style={{
+          position:"absolute",top:"-8%",bottom:"-8%",width:"52%",left:"-52%",
+          background:`rgba(255,255,255,${w.op})`,borderRadius:"50% / 8%",
+          animation:`lp-sweep ${w.dur} ${w.delay} cubic-bezier(0.4,0,0.6,1) forwards`,
+          pointerEvents:"none",
+        }}/>
+      ))}
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 20,
+        opacity: phase >= 1 ? 0 : 1,
+        animation: phase === 0 ? "wo-in 0.55s 0.15s ease both" : "none",
+        textAlign: "center", padding: "0 1.5rem",
+      }}>
+        {/* Company logo */}
+        <div style={{
+          width: 80, height: 80, borderRadius: "50%",
+          background: "rgba(255,255,255,0.18)", padding: 6,
+          border: "2px solid rgba(255,255,255,0.35)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+        }}>
+          <img src="/NewLogoNGO.png"
+            onError={e => { e.target.style.display = "none"; }}
+            alt="BogrotNet"
+            style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "50%" }}
+          />
+        </div>
+
+        {/* User profile picture */}
+        {photoURL ? (
+          <img src={photoURL} alt={name}
+            style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover",
+              border: "3px solid rgba(255,255,255,0.5)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}
+          />
+        ) : (
+          <div style={{ width: 72, height: 72, borderRadius: "50%",
+            background: "linear-gradient(135deg,rgba(255,255,255,0.3),rgba(255,255,255,0.15))",
+            border: "3px solid rgba(255,255,255,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 26, fontWeight: 700, color: "#fff",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+            fontFamily: "'Outfit',sans-serif",
+          }}>
+            {initials}
+          </div>
+        )}
+
+        {/* Greeting */}
+        <div>
+          <h2 style={{
+            fontSize: "clamp(22px,3.5vw,38px)", fontWeight: 900, color: "#fff",
+            margin: 0, letterSpacing: "-0.02em",
+            fontFamily: "'Playfair Display',Georgia,serif",
+          }}>
+            {greetWord}{name ? `, ${name}` : ""}!
+          </h2>
+          <p style={{
+            fontSize: "clamp(13px,1.5vw,17px)", color: "rgba(200,221,251,0.75)",
+            margin: "10px 0 0", fontWeight: 500, letterSpacing: "0.01em",
+          }}>
+            Welcome back to BogrotNet, where women lead.
+          </p>
+        </div>
+      </div>
+      <style>{`
+        @keyframes wo-in { from{opacity:0;transform:scale(0.92) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes wo-out { to{opacity:0;transform:scale(1.06)} }
+        @keyframes lp-sweep { from{left:-52%}to{left:130%} }
+      `}</style>
+    </div>
   );
 }
 
@@ -541,6 +579,13 @@ export default function DashboardPage() {
   const pageTitle = navItems.find((n) => n.id === section)?.label || t.nav.home;
   const dir = isRTL ? "rtl" : "ltr";
 
+  const [showWelcome, setShowWelcome] = useState(false);
+  useEffect(() => {
+    if (profile && !sessionStorage.getItem("welcomed")) {
+      setShowWelcome(true);
+    }
+  }, [profile]);
+
   return (
     <div style={{
       display: "flex", flexDirection: "column",
@@ -550,9 +595,14 @@ export default function DashboardPage() {
       direction: dir,
       overflow: "hidden",
     }}>
-      {/* Purple cursor trail — desktop only */}
-      {!isMobile && <CursorTrail />}
-
+      {/* Welcome overlay — once per session */}
+      {showWelcome && (
+        <WelcomeOverlay
+          profile={profile}
+          initials={initials}
+          onDone={() => { sessionStorage.setItem("welcomed", "1"); setShowWelcome(false); }}
+        />
+      )}
       {/* ── Row that holds sidebar + main (fills all space above bottom nav) ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden", minHeight: 0 }}>
 
@@ -852,7 +902,7 @@ export default function DashboardPage() {
             {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
             {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
             {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
-            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} />}
+            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} onNavigateToCommunity={() => switchTab("community")} />}
             {section === "admin"     && <AdminPage />}
           </div>
         </div>
