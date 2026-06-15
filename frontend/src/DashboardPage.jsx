@@ -233,8 +233,23 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) 
 /* ── Home page (overview) ── */
 function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [suggested, setSuggested]       = useState([]);
+  const [helpRequests, setHelpRequests] = useState([]);
   const { t } = useLang();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, "helpRequests"),
+      where("toId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(20)
+    );
+    const unsub = onSnapshot(q, snap =>
+      setHelpRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    return unsub;
+  }, [user]);
 
   const initials = profile
     ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
