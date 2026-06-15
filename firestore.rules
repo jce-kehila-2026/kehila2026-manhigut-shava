@@ -19,6 +19,13 @@ service cloud.firestore {
         || (isAuth() &&
             request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['networksCount', 'isMentor', 'isMentee']));
+
+      /* ── Birthday wishes left on a user's profile ── */
+      match /birthdayWishes/{wishId} {
+        allow read:   if isAuth();
+        allow create: if isAuth() && request.resource.data.fromUserId == request.auth.uid;
+        allow delete: if isAuth() && (resource.data.fromUserId == request.auth.uid || isOwner(userId) || isAdmin());
+      }
     }
 
     /* ── Posts ── */
