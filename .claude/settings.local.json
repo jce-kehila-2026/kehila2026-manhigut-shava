@@ -10,7 +10,25 @@
       "Bash(git commit -m 'fix: remove duplicate OTP send from AuthPage — OtpVerificationPage handles it on mount *)",
       "Bash(git commit -m 'chore: add background image and functions lockfile *)",
       "Bash(npx vite *)",
-      "Bash(git -C \"c:\\\\Users\\\\HP\\\\Desktop\\\\kehila2026-manhigut-shava\" log --oneline -8)"
+      "Bash(git -C \"c:\\\\Users\\\\HP\\\\Desktop\\\\kehila2026-manhigut-shava\" log --oneline -8)",
+      "Bash(curl -s http://localhost:5174)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(lsof -i :5173 -i :5174 -sTCP:LISTEN)",
+      "Bash(which chromium-cli *)",
+      "Read(//private/tmp/claude-501/bundled-skills/2.1.170/**)",
+      "Bash(find /private/tmp/claude-501/bundled-skills -maxdepth 4 -iname \"*chromium*\" 2>/dev/null)",
+      "Read(//private/tmp/claude-501/bundled-skills/**)",
+      "Bash(npx playwright *)",
+      "Bash(node /tmp/check_app.mjs)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(node check_app2.mjs)",
+      "Bash(npx eslint *)",
+      "Bash(grep -E \"^/Users.*\\\\.jsx$|receivedRequests|handleDeleteReceivedRequest|handleRespondRequest\")",
+      "Bash(lsof -ti :5174 -sTCP:LISTEN)",
+      "Bash(xargs -r kill)"
     ]
   }
 }

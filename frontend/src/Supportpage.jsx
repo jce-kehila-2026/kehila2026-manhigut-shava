@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { collection, getDocs, addDoc, query, where, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, query, where, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -66,13 +66,6 @@ const T = {
       "ניהול פיננסי",
       "אוזן קשבת",
     ],
-    // ── NEW: request message dialog ──
-    reqModalTitle: "שלחי בקשת עזרה",
-    reqModalTo: "אל:",
-    reqMsgLabel: "במה את צריכה עזרה?",
-    reqMsgPh: "תארי בקצרה מה את מחפשת... (אופציונלי)",
-    reqModalSend: "שלחי בקשה",
-    reqModalCancel: "ביטול",
   },
   en: {
     title: "Find Help",
@@ -131,13 +124,6 @@ const T = {
       "Financial management",
       "Emotional support",
     ],
-    // ── NEW: request message dialog ──
-    reqModalTitle: "Send a Help Request",
-    reqModalTo: "To:",
-    reqMsgLabel: "What do you need help with?",
-    reqMsgPh: "Briefly describe what you're looking for… (optional)",
-    reqModalSend: "Send Request",
-    reqModalCancel: "Cancel",
   },
   ar: {
     title: "البحث عن مساعدة",
@@ -196,13 +182,6 @@ const T = {
       "الإدارة المالية",
       "الدعم العاطفي",
     ],
-    // ── NEW: request message dialog ──
-    reqModalTitle: "أرسلي طلب مساعدة",
-    reqModalTo: "إلى:",
-    reqMsgLabel: "بماذا تحتاجين المساعدة؟",
-    reqMsgPh: "صفي باختصار ما تبحثين عنه... (اختياري)",
-    reqModalSend: "إرسال الطلب",
-    reqModalCancel: "إلغاء",
   },
 };
 
@@ -477,6 +456,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [selectedUser,     setSelectedUser]     = useState(null);
   const [senderProfile,    setSenderProfile]    = useState(null);
   const [sentRequests,     setSentRequests]     = useState([]);
+  const [receivedRequests, setReceivedRequests] = useState([]);
   const [allUsers,         setAllUsers]         = useState([]);
   const [recommended,      setRecommended]      = useState([]);
   const [showSuggest,      setShowSuggest]      = useState(false);
@@ -501,7 +481,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     Promise.all([
       getDocs(collection(db, "users")),
       getDocs(query(collection(db, "helpRequests"), where("fromUserId", "==", user.uid))),
-    ]).then(([usersSnap, sentSnap]) => {
+      getDocs(query(collection(db, "helpRequests"), where("toUserId",   "==", user.uid))),
+    ]).then(([usersSnap, sentSnap, recvSnap]) => {
       const docs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const me   = docs.find((d) => d.id === user.uid);
       if (me) setSenderProfile(me);
@@ -518,6 +499,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       const reqMap = {};
       reqs.forEach((r) => { reqMap[r.toUserId] = true; });
       setRequested(reqMap);
+      setReceivedRequests(recvSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
   }, [user]);
 
@@ -599,6 +581,27 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       await deleteDoc(doc(db, "helpRequests", reqId));
       setSentRequests((prev) => prev.filter((r) => r.id !== reqId));
     } catch (err) { console.error("Delete error:", err); }
+  };
+
+  const handleDeleteReceivedRequest = async (reqId) => {
+    try {
+      await deleteDoc(doc(db, "helpRequests", reqId));
+      setReceivedRequests((prev) => prev.filter((r) => r.id !== reqId));
+    } catch (err) { console.error("Delete error:", err); }
+  };
+
+  const handleRespondRequest = async (reqId, status) => {
+    try {
+      await updateDoc(doc(db, "helpRequests", reqId), {
+        status,
+        responderName: senderProfile ? getFullName(senderProfile) : user.email,
+      });
+      const req = receivedRequests.find(r => r.id === reqId);
+      setReceivedRequests((prev) =>
+        prev.map((r) => r.id === reqId ? { ...r, status } : r)
+      );
+      logActivity({ type: status === "accepted" ? "request_accepted" : "request_declined", actorId: user.uid, actorName: getFullName(senderProfile), targetId: req?.fromUserId || reqId, targetType: "user", details: { fromUser: req?.fromUserName } });
+    } catch (err) { console.error("Respond error:", err); }
   };
 
   const cantSendHelp = (u) =>
