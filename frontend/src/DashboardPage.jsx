@@ -10,6 +10,17 @@ import ProfilePage   from "./ProfilePage";
 import AdminPage     from "./AdminPage";
 import ChatPage      from "./ChatPage";
 
+/* ── Responsive helper ── */
+function useIsMobile(bp = 640) {
+  const [m, setM] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
+  useEffect(() => {
+    const on = () => setM(window.innerWidth < bp);
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, [bp]);
+  return m;
+}
+
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
   home: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>,
@@ -114,6 +125,45 @@ function NavBtn({ item, active, badge, onClick, expanded }) {
   );
 }
 
+/* ── Bottom tab bar (mobile) ── */
+function BottomTabs({ items, section, navigate, unreadDMs }) {
+  return (
+    <nav style={{
+      position: "fixed", bottom: 0, left: 0, right: 0, height: 56,
+      background: "linear-gradient(180deg,#1a2f5e 0%,#162548 100%)",
+      borderTop: "1px solid rgba(218,234,248,0.08)",
+      display: "flex", justifyContent: "space-around", alignItems: "center",
+      zIndex: 50, paddingBottom: "env(safe-area-inset-bottom,0px)",
+    }}>
+      {items.map((item) => {
+        const active = section === item.id;
+        const badge = item.id === "chat" ? unreadDMs : 0;
+        return (
+          <button key={item.id} onClick={() => navigate(item.id)} style={{
+            flex: 1, height: "100%", border: "none", background: "transparent",
+            color: active ? "#daeaf8" : "rgba(218,234,248,0.55)",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            gap: 2, cursor: "pointer", position: "relative",
+          }}>
+            <span style={{ transform: "scale(0.85)" }}>{item.icon}</span>
+            <span style={{ fontSize: 9, fontWeight: active ? 700 : 500 }}>{item.label}</span>
+            {badge > 0 && (
+              <span style={{
+                position: "absolute", top: 6, right: "28%",
+                minWidth: 14, height: 14, borderRadius: 99,
+                background: "#e8735a", color: "#fff",
+                fontSize: 8, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 3px",
+              }}>{badge > 99 ? "99+" : badge}</span>
+            )}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 /* ── Language switcher ── */
 function LangSwitcher({ lang, setLang }) {
   const langs = [{ code: "en", label: "EN" }, { code: "he", label: "HE" }, { code: "ar", label: "AR" }];
@@ -121,10 +171,10 @@ function LangSwitcher({ lang, setLang }) {
     <div style={{ display: "flex", gap: 2, background: "var(--bg-tertiary)", borderRadius: 99, padding: 3 }}>
       {langs.map(({ code, label }) => (
         <button key={code} onClick={() => setLang(code)} style={{
-          padding: "5px 11px", borderRadius: 99, border: "none",
+          padding: "4px 9px", borderRadius: 99, border: "none",
           background: lang === code ? "var(--brand)" : "transparent",
           color: lang === code ? "#fff" : "var(--text-muted)",
-          fontSize: 11, fontWeight: 600, cursor: "pointer",
+          fontSize: 10, fontWeight: 600, cursor: "pointer",
           letterSpacing: "0.04em",
           transition: "all var(--t-fast)",
           fontFamily: "'Figtree',system-ui,sans-serif",
@@ -138,24 +188,25 @@ function LangSwitcher({ lang, setLang }) {
 const eyebrow = {
   fontSize: 11, fontWeight: 600, color: "var(--text-muted)",
   letterSpacing: "0.14em", textTransform: "uppercase",
-  marginBottom: "0.85rem",
+  marginBottom: "0.6rem",
   fontFamily: "'Figtree',system-ui,sans-serif",
 };
 
 /* ── Quick-access floating circle ── */
-function QuickCircle({ icon, title, desc, coral, floatIdx, onClick }) {
+function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const floatAnim = `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
+  const size = isMobile ? 64 : 160;
+  const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, cursor:"pointer",
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
       animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ position:"relative", animation: floatAnim }}>
-        {[1,2].map(r => (
+        {!isMobile && [1,2].map(r => (
           <div key={r} style={{
             position:"absolute", borderRadius:"50%",
             inset: -(r * 18),
@@ -165,24 +216,25 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick }) {
           }}/>
         ))}
         <div style={{
-          width:160, height:160, borderRadius:"50%",
+          width:size, height:size, borderRadius:"50%",
           background: hov ? color : (coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)"),
-          border:`2.5px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
+          border:`2px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
           display:"flex", alignItems:"center", justifyContent:"center",
           color: hov ? "#fff" : color,
-          transition:"background 0.26s cubic-bezier(0.2,0.8,0.2,1), border-color 0.26s, color 0.26s, box-shadow 0.26s",
-          transform: hov ? "scale(1.08)" : "scale(1)",
-          boxShadow: hov ? `0 20px 48px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 4px 20px rgba(0,0,0,0.05)",
+          transition:"background 0.26s, border-color 0.26s, color 0.26s, box-shadow 0.26s, transform 0.26s",
+          transform: hov ? "scale(1.06)" : "scale(1)",
+          boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform:"scale(1.5)" }}>{icon}</div>
+          <div style={{ transform: isMobile ? "scale(0.95)" : "scale(1.5)" }}>{icon}</div>
         </div>
       </div>
-      <p style={{ fontSize:13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth:110 }}>{title}</p>
-      {/* Reserve fixed space — opacity prevents layout shift on hover */}
-      <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
-        lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
-        opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
+      <p style={{ fontSize: isMobile ? 10 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? 72 : 110, lineHeight: 1.2 }}>{title}</p>
+      {!isMobile && (
+        <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
+          lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
+          opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
+      )}
     </div>
   );
 }
@@ -192,6 +244,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [helpRequests, setHelpRequests] = useState([]);
   const [suggested, setSuggested]       = useState([]);
   const { t } = useLang();
+  const isMobile = useIsMobile();
 
   const initials = profile
     ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
@@ -225,7 +278,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   ];
 
   return (
-    <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "2.25rem 2.75rem" }}>
+    <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: isMobile ? "0.75rem 0.85rem 1rem" : "2.25rem 2.75rem" }}>
       {/* Welcome banner — redesigned */}
       {(() => {
         const hr = new Date().getHours();
@@ -233,21 +286,21 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         const greeting = t.dash[greetKey] || t.dash.welcomeBack;
         return (
           <div style={{
-            marginBottom:"2rem", borderRadius:20, padding:"1.5rem 1.75rem",
+            marginBottom: isMobile ? "0.9rem" : "2rem",
+            borderRadius: isMobile ? 14 : 20,
+            padding: isMobile ? "0.7rem 0.85rem" : "1.5rem 1.75rem",
             background:"var(--bg-primary,#fff)",
             position:"relative", overflow:"hidden",
             boxShadow:"0 2px 18px rgba(29,72,150,0.08), 0 0 0 1px rgba(29,72,150,0.07)",
-            display:"flex", alignItems:"center", gap:18,
+            display:"flex", alignItems:"center", gap: isMobile ? 10 : 18,
           }}>
-            {/* Left gradient accent */}
-            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:4,
+            <div style={{ position:"absolute", left:0, top:0, bottom:0, width: isMobile ? 3 : 4,
               background:"linear-gradient(to bottom,#4472b8 0%,#e8735a 100%)",
               borderRadius:"99px 0 0 99px", pointerEvents:"none" }} />
 
-            {/* Avatar */}
-            <div style={{ flexShrink:0, marginLeft:10, position:"relative" }}>
+            <div style={{ flexShrink:0, marginLeft: isMobile ? 6 : 10, position:"relative" }}>
               <div style={{
-                width:60, height:60, borderRadius:"50%",
+                width: isMobile ? 42 : 60, height: isMobile ? 42 : 60, borderRadius:"50%",
                 background:"linear-gradient(135deg,#4472b8 0%,#e8735a 100%)",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 overflow:"hidden",
@@ -255,75 +308,89 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               }}>
                 {profile?.photoURL
                   ? <img src={profile.photoURL} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  : <span style={{ color:"#fff", fontSize:19, fontWeight:800, fontFamily:"'Outfit',sans-serif" }}>{initials}</span>
+                  : <span style={{ color:"#fff", fontSize: isMobile ? 15 : 19, fontWeight:800, fontFamily:"'Outfit',sans-serif" }}>{initials}</span>
                 }
               </div>
               <div style={{
                 position:"absolute", bottom:1, right:1,
-                width:14, height:14, borderRadius:"50%",
-                background:"#4ade80", border:"2.5px solid var(--bg-primary,#fff)",
+                width: isMobile ? 11 : 14, height: isMobile ? 11 : 14, borderRadius:"50%",
+                background:"#4ade80", border:"2px solid var(--bg-primary,#fff)",
               }} />
             </div>
 
-            {/* Text */}
             <div style={{ flex:1, minWidth:0 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:"var(--brand,#4472b8)", margin:"0 0 2px",
+              <p style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, color:"var(--brand,#4472b8)", margin:"0 0 1px",
                 textTransform:"uppercase", letterSpacing:"0.08em" }}>
                 {greeting}
               </p>
-              <h2 style={{ fontSize:21, fontWeight:800, color:"var(--text-primary,#111827)", margin:"0 0 4px",
+              <h2 style={{ fontSize: isMobile ? 16 : 21, fontWeight:800, color:"var(--text-primary,#111827)", margin:"0 0 2px",
                 lineHeight:1.2, fontFamily:"'Outfit',sans-serif" }}>
                 {profile?.firstName || ""}
               </h2>
               {(profile?.profession || profile?.city) && (
-                <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", margin:0, fontWeight:400 }}>
+                <p style={{ fontSize: isMobile ? 10 : 12, color:"var(--text-muted,#6b7280)", margin:0, fontWeight:400, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {[profile?.profession, profile?.city].filter(Boolean).join(" · ")}
                 </p>
               )}
             </div>
 
-            {/* Online badge */}
-            <div style={{
-              flexShrink:0, display:"flex", alignItems:"center", gap:6,
-              padding:"5px 13px", borderRadius:99,
-              background:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.28)",
-            }}>
-              <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80",
-                boxShadow:"0 0 0 2px rgba(74,222,128,0.25)" }} />
-              <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>
-                {t.common?.online || "Online"}
-              </span>
-            </div>
+            {!isMobile && (
+              <div style={{
+                flexShrink:0, display:"flex", alignItems:"center", gap:6,
+                padding:"5px 13px", borderRadius:99,
+                background:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.28)",
+              }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80",
+                  boxShadow:"0 0 0 2px rgba(74,222,128,0.25)" }} />
+                <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>
+                  {t.common?.online || "Online"}
+                </span>
+              </div>
+            )}
           </div>
         );
       })()}
 
       {/* Help Requests */}
       {pendingRequests.length > 0 && (
-        <div style={{ marginBottom: "2.25rem" }}>
+        <div style={{ marginBottom: isMobile ? "1rem" : "2.25rem" }}>
           <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {pendingRequests.slice(0, 3).map((r) => (
-              <div key={r.id} className="card" style={{ padding: "0.95rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem", borderLeft: "3px solid #e8735a", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{r.fromUserName}</p>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>
+          <div style={{
+            display: isMobile ? "grid" : "flex",
+            gridTemplateColumns: isMobile ? "repeat(2,minmax(0,1fr))" : undefined,
+            flexDirection: isMobile ? undefined : "column",
+            gap: isMobile ? "0.4rem" : "0.5rem",
+          }}>
+            {pendingRequests.slice(0, isMobile ? 4 : 3).map((r) => (
+              <div key={r.id} className="card" style={{
+                padding: isMobile ? "0.55rem 0.7rem" : "0.95rem 1.25rem",
+                display:"flex", alignItems:"center", gap: isMobile ? "0.5rem" : "1rem",
+                borderLeft:"3px solid #e8735a", background:"var(--bg-primary)",
+                border:"1px solid var(--border)", borderRadius:12,
+              }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize: isMobile ? 11 : 13, fontWeight:600, color:"var(--text-primary)", marginBottom:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.fromUserName}</p>
+                  {!isMobile && <p style={{ fontSize:11, color:"var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>}
                 </div>
-                <button onClick={() => onNavigate("members")} style={{ padding: "6px 16px", borderRadius: 99, background: "var(--brand)", color: "#fff", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                <button onClick={() => onNavigate("members")} style={{
+                  padding: isMobile ? "4px 9px" : "6px 16px", borderRadius:99,
+                  background:"var(--brand)", color:"#fff", border:"none",
+                  fontSize: isMobile ? 10 : 12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap",
+                }}>
                   {t.dash.viewReq}
                 </button>
               </div>
             ))}
-            {pendingRequests.length > 3 && (
-              <button onClick={() => onNavigate("members")} style={{ fontSize: 12, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontWeight: 600, padding: "4px 0" }}>
-                {t.dash.moreReqs(pendingRequests.length - 3)}
+            {pendingRequests.length > (isMobile ? 4 : 3) && (
+              <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontWeight:600, padding:"4px 0" }}>
+                {t.dash.moreReqs(pendingRequests.length - (isMobile ? 4 : 3))}
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* Quick-access circles — floating with sonar rings */}
+      {/* Quick-access circles */}
       <p style={eyebrow}>{t.dash.quickActions}</p>
       <style>{`
         @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -333,39 +400,56 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
         @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
       `}</style>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1.5rem", marginBottom: "2.5rem", padding: "0.5rem 0 1.5rem" }}>
+      <div style={{
+        display:"grid",
+        gridTemplateColumns:"repeat(4,1fr)",
+        gap: isMobile ? "0.4rem" : "1.5rem",
+        marginBottom: isMobile ? "1rem" : "2.5rem",
+        padding: isMobile ? "0.25rem 0 0.5rem" : "0.5rem 0 1.5rem",
+      }}>
         {quickCircles.map((circle, i) => (
-          <QuickCircle key={circle.action} {...circle} floatIdx={i} onClick={() => onNavigate(circle.action)} />
+          <QuickCircle key={circle.action} {...circle} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(circle.action)} />
         ))}
       </div>
 
       {/* Suggested members */}
       {suggested.length > 0 && (
-        <div style={{ marginBottom: "2.25rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.85rem" }}>
-            <p style={{ ...eyebrow, marginBottom: 0 }}>{t.dash.suggestedMembers}</p>
-            <button onClick={() => onNavigate("members")} style={{ fontSize: 12, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>{t.dash.viewAll}</button>
+        <div style={{ marginBottom: isMobile ? "1rem" : "2.25rem" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.6rem" }}>
+            <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
+            <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "0.75rem" }}>
+          <div style={{
+            display:"grid",
+            gridTemplateColumns: isMobile ? "repeat(2,minmax(0,1fr))" : "repeat(auto-fill, minmax(220px, 1fr))",
+            gap: isMobile ? "0.5rem" : "0.75rem",
+          }}>
             {suggested.map((u) => {
               const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
               const online = isActuallyOnline(u);
               return (
-                <div key={u.id} className="card card-hover" style={{ padding: "1rem 1.1rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.85rem", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 14, transition: "border-color 0.2s, transform 0.2s" }}
+                <div key={u.id} className="card card-hover" style={{
+                  padding: isMobile ? "0.55rem 0.65rem" : "1rem 1.1rem",
+                  cursor:"pointer", display:"flex", alignItems:"center",
+                  gap: isMobile ? "0.55rem" : "0.85rem",
+                  background:"var(--bg-primary)", border:"1px solid var(--border)",
+                  borderRadius: isMobile ? 12 : 14,
+                  transition:"border-color 0.2s, transform 0.2s",
+                }}
                   onClick={() => onViewProfile ? onViewProfile(u.id) : onNavigate("members")}>
-                  <div style={{ position: "relative", flexShrink: 0 }}>
+                  <div style={{ position:"relative", flexShrink:0 }}>
                     {avatarUrl(u) ? (
-                      <img src={avatarUrl(u)} style={{ width: 42, height: 42, borderRadius: "50%", objectFit: "cover" }} alt="" />
+                      <img src={avatarUrl(u)} style={{ width: isMobile ? 32 : 42, height: isMobile ? 32 : 42, borderRadius:"50%", objectFit:"cover" }} alt="" />
                     ) : (
-                      <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#4472b8,#6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>
+                      <div style={{ width: isMobile ? 32 : 42, height: isMobile ? 32 : 42, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#6da3d4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize: isMobile ? 11 : 13, fontWeight:600, color:"#fff", fontFamily:"'Outfit',sans-serif" }}>
                         {name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                       </div>
                     )}
-                    {online && <span style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: "50%", background: "#7cb88f", border: "2px solid var(--bg-primary)" }} />}
+                    {online && <span style={{ position:"absolute", bottom:0, right:0, width: isMobile ? 8 : 10, height: isMobile ? 8 : 10, borderRadius:"50%", background:"#7cb88f", border:"2px solid var(--bg-primary)" }} />}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</p>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.profession}</p>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize: isMobile ? 11 : 13, fontWeight:600, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                    <p style={{ fontSize: isMobile ? 10 : 11, color:"var(--text-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>
                   </div>
                 </div>
               );
@@ -374,31 +458,32 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         </div>
       )}
 
-      {/* Movement website banner — soft plum, no harsh blue */}
+      {/* Movement website banner */}
       <a
         href="https://ywp-online.my.canva.site/manhigot2026"
         target="_blank"
         rel="noopener noreferrer"
         style={{
-          display: "flex", alignItems: "center", gap: "1rem",
-          padding: "1.15rem 1.6rem",
-          background: "linear-gradient(135deg, #1a2f5e 0%, #2a4a8e 60%, #4472b8 100%)",
-          borderRadius: 16,
-          textDecoration: "none", cursor: "pointer",
-          transition: "transform 0.2s, box-shadow 0.2s",
-          boxShadow: "0 6px 22px rgba(29,72,150,0.22)",
+          display:"flex", alignItems:"center",
+          gap: isMobile ? "0.7rem" : "1rem",
+          padding: isMobile ? "0.7rem 0.9rem" : "1.15rem 1.6rem",
+          background:"linear-gradient(135deg, #1a2f5e 0%, #2a4a8e 60%, #4472b8 100%)",
+          borderRadius: isMobile ? 12 : 16,
+          textDecoration:"none", cursor:"pointer",
+          transition:"transform 0.2s, box-shadow 0.2s",
+          boxShadow:"0 6px 22px rgba(29,72,150,0.22)",
         }}
         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(29,72,150,0.32)"; }}
         onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 6px 22px rgba(29,72,150,0.22)"; }}
       >
-        <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#daeaf8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <div style={{ width: isMobile ? 32 : 42, height: isMobile ? 32 : 42, borderRadius: isMobile ? 9 : 12, background:"rgba(255,255,255,0.14)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          <svg width={isMobile ? 16 : 20} height={isMobile ? 16 : 20} viewBox="0 0 24 24" fill="none" stroke="#daeaf8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#fff", margin: "0 0 2px", fontFamily: "'Outfit',sans-serif" }}>Manhigut Shava Website</p>
-          <p style={{ fontSize: 12, color: "rgba(218,234,248,0.7)", margin: 0 }}>ywp-online.my.canva.site/manhigot2026</p>
+        <div style={{ flex:1, minWidth:0 }}>
+          <p style={{ fontSize: isMobile ? 12 : 14, fontWeight:600, color:"#fff", margin:"0 0 1px", fontFamily:"'Outfit',sans-serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Manhigut Shava Website</p>
+          <p style={{ fontSize: isMobile ? 10 : 12, color:"rgba(218,234,248,0.7)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>ywp-online.my.canva.site/manhigot2026</p>
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <svg width={isMobile ? 14 : 16} height={isMobile ? 14 : 16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>
     </div>
   );
@@ -409,6 +494,7 @@ export default function DashboardPage() {
   const { user, profile, logout } = useAuth();
   const { lang, setLang, t, isRTL } = useLang();
   const { dark, toggleTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   const [section,    setSection]    = useState(() => localStorage.getItem("section") || "home");
   const [navHistory, setNavHistory] = useState(() => [localStorage.getItem("section") || "home"]);
@@ -479,7 +565,7 @@ export default function DashboardPage() {
   ];
 
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const sidebarW = sidebarExpanded ? 220 : 68;
+  const sidebarW = isMobile ? 0 : (sidebarExpanded ? 220 : 68);
   const pageTitle = navItems.find((n) => n.id === section)?.label || t.nav.home;
   const dir = isRTL ? "rtl" : "ltr";
 
@@ -489,7 +575,8 @@ export default function DashboardPage() {
       fontFamily: "'Figtree','Outfit',system-ui,-apple-system,sans-serif",
       direction: dir,
     }}>
-      {/* ── Sidebar — expandable ── */}
+      {/* ── Sidebar — desktop only ── */}
+      {!isMobile && (
       <aside style={{
         width: sidebarW, minWidth: sidebarW,
         background: "linear-gradient(180deg, #1a2f5e 0%, #162548 100%)",
@@ -501,7 +588,7 @@ export default function DashboardPage() {
         transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
         overflow: "hidden",
       }}>
-        {/* Logo row — with BogrotNet text when expanded */}
+        {/* Logo row */}
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
           paddingLeft: sidebarExpanded ? 12 : 0,
@@ -597,29 +684,26 @@ export default function DashboardPage() {
           </div>
         </div>
       </aside>
+      )}
 
       {/* ── Main ── */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative" }}>
-        {/* Floating water blob background */}
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative", paddingBottom: isMobile ? 56 : 0 }}>
+        {/* Floating water blob background — desktop only */}
+        {!isMobile && (
         <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
-          {/* Blob 1 — large blue, top-right */}
           <div style={{ position:"absolute", width:"58%", height:"115%", top:"-18%", right:"-10%",
             background:"radial-gradient(ellipse at center, rgba(68,114,184,0.09) 0%, transparent 68%)",
             animation:"dash-blob-1 26s ease-in-out infinite", willChange:"border-radius, transform" }}/>
-          {/* Blob 2 — medium blue, center-left */}
           <div style={{ position:"absolute", width:"44%", height:"78%", top:"22%", left:"-8%",
             background:"radial-gradient(ellipse at center, rgba(68,114,184,0.07) 0%, transparent 68%)",
             animation:"dash-blob-2 20s 5s ease-in-out infinite", willChange:"border-radius, transform" }}/>
-          {/* Blob 3 — coral, upper area */}
           <div style={{ position:"absolute", width:"40%", height:"62%", top:"-6%", left:"20%",
             background:"radial-gradient(ellipse at center, rgba(232,115,90,0.07) 0%, transparent 68%)",
             animation:"dash-blob-3 30s 9s ease-in-out infinite", willChange:"border-radius, transform" }}/>
-          {/* Blob 4 — blue, lower-right */}
           <div style={{ position:"absolute", width:"42%", height:"68%", bottom:"-20%", right:"6%",
             background:"radial-gradient(ellipse at center, rgba(68,114,184,0.06) 0%, transparent 68%)",
             animation:"dash-blob-4 23s 14s ease-in-out infinite", willChange:"border-radius, transform" }}/>
 
-          {/* Side bubbles — left edge */}
           {[{s:32,t:"15%",l:-8,c:"rgba(68,114,184,0.13)",d:"21s",dl:"0s"},{s:20,t:"32%",l:6,c:"rgba(68,114,184,0.09)",d:"26s",dl:"3s"},{s:42,t:"52%",l:-10,c:"rgba(68,114,184,0.08)",d:"18s",dl:"7s"},{s:24,t:"70%",l:4,c:"rgba(68,114,184,0.11)",d:"23s",dl:"11s"},{s:16,t:"85%",l:10,c:"rgba(232,115,90,0.09)",d:"19s",dl:"5s"}].map((b,i)=>(
             <div key={`bl${i}`} style={{
               position:"absolute", width:b.s, height:b.s, borderRadius:"50%",
@@ -628,7 +712,6 @@ export default function DashboardPage() {
               animation:`side-bubble-${i} ${b.d} ${b.dl} ease-in-out infinite`,
             }}/>
           ))}
-          {/* Side bubbles — right edge */}
           {[{s:28,t:"20%",r:-6,c:"rgba(232,115,90,0.11)",d:"24s",dl:"2s"},{s:38,t:"40%",r:-12,c:"rgba(68,114,184,0.08)",d:"20s",dl:"6s"},{s:22,t:"60%",r:4,c:"rgba(232,115,90,0.09)",d:"27s",dl:"9s"},{s:34,t:"78%",r:-8,c:"rgba(68,114,184,0.1)",d:"22s",dl:"13s"},{s:18,t:"90%",r:8,c:"rgba(232,115,90,0.08)",d:"17s",dl:"4s"}].map((b,i)=>(
             <div key={`br${i}`} style={{
               position:"absolute", width:b.s, height:b.s, borderRadius:"50%",
@@ -638,6 +721,7 @@ export default function DashboardPage() {
             }}/>
           ))}
         </div>
+        )}
         <style>{`
           @keyframes dash-blob-1{
             0%,100%{border-radius:62% 38% 52% 48%/44% 56% 44% 56%;transform:translate(0,0) scale(1);}
@@ -674,11 +758,12 @@ export default function DashboardPage() {
           {/* Top bar */}
           {section !== "chat" && (
             <header style={{
-              height: 60, minHeight: 60,
+              height: isMobile ? 48 : 60, minHeight: isMobile ? 48 : 60,
               background: "var(--bg-primary)",
               borderBottom: "1px solid var(--border)",
               display: "flex", alignItems: "center",
-              padding: "0 1.75rem", gap: "0.85rem", zIndex: 10,
+              padding: isMobile ? "0 0.75rem" : "0 1.75rem",
+              gap: isMobile ? "0.5rem" : "0.85rem", zIndex: 10,
             }}>
               {canGoBack && (
                 <button
@@ -686,7 +771,7 @@ export default function DashboardPage() {
                   title="Go back"
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    width: 34, height: 34, borderRadius: 10,
+                    width: isMobile ? 30 : 34, height: isMobile ? 30 : 34, borderRadius: 10,
                     background: "transparent", border: "1px solid var(--border)",
                     color: "var(--text-secondary)", cursor: "pointer",
                     transition: "all var(--t-fast)", flexShrink: 0,
@@ -699,7 +784,7 @@ export default function DashboardPage() {
               )}
 
               <span style={{
-                fontSize: 17, fontWeight: 600, color: "var(--text-primary)",
+                fontSize: isMobile ? 14 : 17, fontWeight: 600, color: "var(--text-primary)",
                 fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em",
               }}>{pageTitle}</span>
               <div style={{ flex: 1 }} />
@@ -710,11 +795,11 @@ export default function DashboardPage() {
                 onClick={toggleTheme}
                 title={dark ? "Switch to light mode" : "Switch to dark mode"}
                 style={{
-                  width: 34, height: 34, borderRadius: 99,
+                  width: isMobile ? 30 : 34, height: isMobile ? 30 : 34, borderRadius: 99,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   background: "transparent", border: "1px solid var(--border)",
                   color: "var(--text-secondary)", cursor: "pointer",
-                  transition: "all var(--t-fast)",
+                  transition: "all var(--t-fast)", flexShrink: 0,
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--brand)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border)"; }}
@@ -722,27 +807,29 @@ export default function DashboardPage() {
                 {dark ? Icon.sun : Icon.moon}
               </button>
 
-              {/* User chip */}
-              <div
-                style={{
-                  display: "flex", alignItems: "center", gap: 9,
-                  padding: "4px 12px 4px 5px", borderRadius: 99,
-                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
-                  cursor: "pointer", transition: "border-color 0.2s",
-                }}
-                onClick={() => navigate("profile")}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--brand)"}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
-              >
-                {avatarUrl(profile) ? (
-                  <img src={avatarUrl(profile)} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} alt="" />
-                ) : (
-                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #4472b8, #6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
-                )}
-                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-                  {profile?.firstName || t.nav.profile}
-                </span>
-              </div>
+              {/* User chip — desktop only (mobile uses bottom tab) */}
+              {!isMobile && (
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", gap: 9,
+                    padding: "4px 12px 4px 5px", borderRadius: 99,
+                    background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                    cursor: "pointer", transition: "border-color 0.2s",
+                  }}
+                  onClick={() => navigate("profile")}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--brand)"}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
+                >
+                  {avatarUrl(profile) ? (
+                    <img src={avatarUrl(profile)} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} alt="" />
+                  ) : (
+                    <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #4472b8, #6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>{initials}</div>
+                  )}
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+                    {profile?.firstName || t.nav.profile}
+                  </span>
+                </div>
+              )}
             </header>
           )}
 
@@ -757,6 +844,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Bottom tab bar — mobile only */}
+      {isMobile && <BottomTabs items={navItems} section={section} navigate={navigate} unreadDMs={unreadDMs} />}
     </div>
   );
 }
