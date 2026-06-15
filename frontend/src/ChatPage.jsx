@@ -6,8 +6,9 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import {
   useConversations, useMessages,
   sendMessage, getOrCreateConversation, markRead, setTyping, uploadChatImage,
-  toggleReaction, editMessage, deleteMessage,
+  toggleReaction, editMessage, deleteMessage, respondToHelpRequestPrompt,
 } from "./hooks/useMessages";
+import { logActivity } from "./activityLogger";
 
 /* ── Helpers ── */
 function formatTime(ts) {
@@ -145,6 +146,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(msg.text || "");
+  const [responding, setResponding] = useState(false);
 
   const swipeDragging = useRef(false);
   const swipeStartX = useRef(0);
@@ -161,6 +163,34 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
 
   const reactionEntries = Object.entries(msg.reactions || {}).filter(([, u]) => u.length > 0);
   const isImage = msg.type === "image" && msg.imageUrl;
+  const isHelpRequestPrompt = msg.type === "helpRequestPrompt";
+  const { profile } = useAuth();
+
+  const handleHelpRequestResponse = async (response) => {
+    if (!conversationId || responding) return;
+    setResponding(true);
+    try {
+      await respondToHelpRequestPrompt(conversationId, msg.id, response);
+      if (msg.helpRequestId) {
+        updateDoc(doc(db, "helpRequests", msg.helpRequestId), {
+          status: response === "yes" ? "accepted" : "declined",
+        }).catch(() => {});
+      }
+      if (response === "yes") {
+        await sendMessage(conversationId, currentUserId, "Hi, how can I help you?", null, null, [msg.senderId]);
+      }
+      logActivity({
+        type: response === "yes" ? "request_accepted" : "request_declined",
+        actorId: currentUserId,
+        actorName: profile ? `${profile.firstName} ${profile.lastName}` : "",
+        targetId: msg.senderId,
+        targetType: "user",
+        details: { fromUser: msg.requesterName },
+      });
+    } finally {
+      setResponding(false);
+    }
+  };
 
   /* swipe progress 0→1 */
   const absSwipe = Math.abs(swipeX);
@@ -358,7 +388,65 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
 
           {/* Bubble */}
           <div ref={bubbleRef} style={{ position: "relative" }}>
-            {isImage ? (
+            {isHelpRequestPrompt ? (
+              <div style={{
+                background: isMe ? "linear-gradient(135deg, #e8735a, #d15a43 50%, #c94e36)" : "#fff",
+                color: isMe ? "#fff" : "var(--text-primary)",
+                borderRadius: isMe ? "22px 22px 6px 22px" : "22px 22px 22px 6px",
+                border: isMe ? "none" : "1px solid #e5eaf2",
+                padding: "12px 15px",
+                fontSize: 14, lineHeight: 1.5,
+                maxWidth: 280, boxSizing: "border-box",
+                boxShadow: hovering && !editing
+                  ? (isMe ? "0 6px 20px rgba(184, 97, 122,0.42)" : "0 4px 16px rgba(0,0,0,0.13)")
+                  : (isMe ? "0 2px 8px rgba(184, 97, 122,0.25)" : "0 1px 4px rgba(0,0,0,0.06)"),
+                ...hoverLift,
+              }}>
+                <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, opacity: 0.85 }}>
+                  Help request
+                </div>
+                {msg.text && (
+                  <p style={{ margin: "0 0 8px", fontStyle: "italic" }}>{msg.text}</p>
+                )}
+                <p style={{ margin: "0 0 8px" }}>Want to engage in conversation and help out?</p>
+                {!isMe && !msg.responded && (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      disabled={responding}
+                      onClick={() => handleHelpRequestResponse("yes")}
+                      style={{
+                        flex: 1, padding: "7px 0", borderRadius: 10, border: "none",
+                        background: "#4472b8", color: "#fff", fontSize: 13, fontWeight: 700,
+                        cursor: responding ? "default" : "pointer", opacity: responding ? 0.7 : 1,
+                        fontFamily: "var(--font)",
+                      }}
+                    >Yes</button>
+                    <button
+                      disabled={responding}
+                      onClick={() => handleHelpRequestResponse("no")}
+                      style={{
+                        flex: 1, padding: "7px 0", borderRadius: 10,
+                        border: "1.5px solid var(--border,#e5eaf2)",
+                        background: "transparent", color: "var(--text-secondary)",
+                        fontSize: 13, fontWeight: 700,
+                        cursor: responding ? "default" : "pointer", opacity: responding ? 0.7 : 1,
+                        fontFamily: "var(--font)",
+                      }}
+                    >No</button>
+                  </div>
+                )}
+                {msg.responded && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
+                    display: "inline-block",
+                    background: msg.response === "yes" ? "rgba(123,168,122,0.18)" : "rgba(0,0,0,0.08)",
+                    color: msg.response === "yes" ? "#3f6a3e" : (isMe ? "rgba(255,255,255,0.85)" : "var(--text-muted)"),
+                  }}>
+                    {msg.response === "yes" ? "Accepted" : "Declined"}
+                  </span>
+                )}
+              </div>
+            ) : isImage ? (
               <div style={{ ...hoverLift }}>
                 <img
                   src={msg.imageUrl}

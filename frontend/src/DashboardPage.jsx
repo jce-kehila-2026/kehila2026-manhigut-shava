@@ -115,6 +115,45 @@ function NavBtn({ item, active, badge, onClick, expanded }) {
   );
 }
 
+/* ── Bottom tab bar (mobile) ── */
+function BottomTabs({ items, section, navigate, unreadDMs }) {
+  return (
+    <nav style={{
+      position: "fixed", bottom: 0, left: 0, right: 0, height: 56,
+      background: "linear-gradient(180deg,#1a2f5e 0%,#162548 100%)",
+      borderTop: "1px solid rgba(218,234,248,0.08)",
+      display: "flex", justifyContent: "space-around", alignItems: "center",
+      zIndex: 50, paddingBottom: "env(safe-area-inset-bottom,0px)",
+    }}>
+      {items.map((item) => {
+        const active = section === item.id;
+        const badge = item.id === "chat" ? unreadDMs : 0;
+        return (
+          <button key={item.id} onClick={() => navigate(item.id)} style={{
+            flex: 1, height: "100%", border: "none", background: "transparent",
+            color: active ? "#daeaf8" : "rgba(218,234,248,0.55)",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            gap: 2, cursor: "pointer", position: "relative",
+          }}>
+            <span style={{ transform: "scale(0.85)" }}>{item.icon}</span>
+            <span style={{ fontSize: 9, fontWeight: active ? 700 : 500 }}>{item.label}</span>
+            {badge > 0 && (
+              <span style={{
+                position: "absolute", top: 6, right: "28%",
+                minWidth: 14, height: 14, borderRadius: 99,
+                background: "#e8735a", color: "#fff",
+                fontSize: 8, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 3px",
+              }}>{badge > 99 ? "99+" : badge}</span>
+            )}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 /* ── Language switcher ── */
 function LangSwitcher({ lang, setLang }) {
   const langs = [{ code: "en", label: "EN" }, { code: "he", label: "HE" }, { code: "ar", label: "AR" }];
@@ -122,10 +161,10 @@ function LangSwitcher({ lang, setLang }) {
     <div style={{ display: "flex", gap: 2, background: "var(--bg-tertiary)", borderRadius: 99, padding: 3 }}>
       {langs.map(({ code, label }) => (
         <button key={code} onClick={() => setLang(code)} style={{
-          padding: "5px 11px", borderRadius: 99, border: "none",
+          padding: "4px 9px", borderRadius: 99, border: "none",
           background: lang === code ? "var(--brand)" : "transparent",
           color: lang === code ? "#fff" : "var(--text-muted)",
-          fontSize: 11, fontWeight: 600, cursor: "pointer",
+          fontSize: 10, fontWeight: 600, cursor: "pointer",
           letterSpacing: "0.04em",
           transition: "all var(--t-fast)",
           fontFamily: "'Figtree',system-ui,sans-serif",
@@ -139,26 +178,26 @@ function LangSwitcher({ lang, setLang }) {
 const eyebrow = {
   fontSize: 11, fontWeight: 600, color: "var(--text-muted)",
   letterSpacing: "0.14em", textTransform: "uppercase",
-  marginBottom: "0.85rem",
+  marginBottom: "0.6rem",
   fontFamily: "'Figtree',system-ui,sans-serif",
 };
 
 /* ── Quick-access circle with sonar rings ── */
-function QuickCircle({ icon, title, coral, floatIdx, onClick, small }) {
+function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const floatAnim = `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
-  const sz = small ? 130 : 190;
-  const ringInset = small ? 14 : 22;
+  const size = isMobile ? 64 : 160;
+  const ringInset = 22;
+  const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: small ? 7 : 12, cursor:"pointer",
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
       animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ position:"relative", animation: floatAnim }}>
-        {[1,2].map(r => (
+        {!isMobile && [1,2].map(r => (
           <div key={r} style={{
             position:"absolute", borderRadius:"50%",
             inset: -(r * ringInset),
@@ -168,27 +207,31 @@ function QuickCircle({ icon, title, coral, floatIdx, onClick, small }) {
           }}/>
         ))}
         <div style={{
-          width:sz, height:sz, borderRadius:"50%",
+          width:size, height:size, borderRadius:"50%",
           background: hov ? color : (coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)"),
-          border:`2.5px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
+          border:`2px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
           display:"flex", alignItems:"center", justifyContent:"center",
           color: hov ? "#fff" : color,
-          transition:"background 0.26s, border-color 0.26s, color 0.26s, box-shadow 0.26s",
+          transition:"background 0.26s, border-color 0.26s, color 0.26s, box-shadow 0.26s, transform 0.26s",
           transform: hov ? "scale(1.06)" : "scale(1)",
-          boxShadow: hov ? `0 20px 48px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 4px 20px rgba(0,0,0,0.05)",
+          boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform: small ? "scale(1.3)" : "scale(1.7)" }}>{icon}</div>
+          <div style={{ transform: isMobile ? "scale(0.95)" : "scale(1.5)" }}>{icon}</div>
         </div>
       </div>
-      <p style={{ fontSize: small ? 12 : 14, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: small ? 90 : 120 }}>{title}</p>
+      <p style={{ fontSize: isMobile ? 10 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? 72 : 110, lineHeight: 1.2 }}>{title}</p>
+      {!isMobile && (
+        <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
+          lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
+          opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
+      )}
     </div>
   );
 }
 
 /* ── Home page (overview) ── */
 function HomePage({ user, profile, onNavigate, onViewProfile }) {
-  const [helpRequests, setHelpRequests] = useState([]);
   const [suggested, setSuggested]       = useState([]);
   const { t } = useLang();
   const isMobile = useIsMobile();
@@ -199,11 +242,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "helpRequests"), where("toUserId", "==", user.uid));
-    const unsub = onSnapshot(q, (snap) =>
-      setHelpRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-
     getDocs(query(collection(db, "users"), limit(20))).then((snap) => {
       const others = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
@@ -211,8 +249,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       others.sort((a, b) => ((b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1));
       setSuggested(others.slice(0, 4));
     });
-
-    return unsub;
   }, [user]);
 
   const pendingRequests = helpRequests.filter((r) => !r.status);
@@ -240,6 +276,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       size: 6 + (i % 4) * 2,
     })), []
   );
+
 
   const quickCircles = [
     { icon: Icon.members,   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
@@ -286,6 +323,136 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           </div>
         </div>
       )}
+      {/* Welcome banner — redesigned */}
+      {(() => {
+        const hr = new Date().getHours();
+        const greetKey = hr < 12 ? "goodMorning" : hr < 18 ? "goodAfternoon" : "goodEvening";
+        const greeting = t.dash[greetKey] || t.dash.welcomeBack;
+        return (
+          <div style={{
+            marginBottom: isMobile ? "0.9rem" : "2rem",
+            borderRadius: isMobile ? 14 : 20,
+            padding: isMobile ? "0.7rem 0.85rem" : "1.5rem 1.75rem",
+            background:"var(--bg-primary,#fff)",
+            position:"relative", overflow:"hidden",
+            boxShadow:"0 2px 18px rgba(29,72,150,0.08), 0 0 0 1px rgba(29,72,150,0.07)",
+            display:"flex", alignItems:"center", gap: isMobile ? 10 : 18,
+          }}>
+            <div style={{ position:"absolute", left:0, top:0, bottom:0, width: isMobile ? 3 : 4,
+              background:"linear-gradient(to bottom,#4472b8 0%,#e8735a 100%)",
+              borderRadius:"99px 0 0 99px", pointerEvents:"none" }} />
+            <div style={{ flexShrink:0, marginLeft: isMobile ? 6 : 10, position:"relative" }}>
+              <div style={{
+                width: isMobile ? 42 : 60, height: isMobile ? 42 : 60, borderRadius:"50%",
+                background:"linear-gradient(135deg,#4472b8 0%,#e8735a 100%)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                overflow:"hidden",
+                boxShadow:"0 4px 16px rgba(68,114,184,0.22)",
+              }}>
+                {profile?.photoURL
+                  ? <img src={profile.photoURL} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : <span style={{ color:"#fff", fontSize: isMobile ? 15 : 19, fontWeight:800, fontFamily:"'Outfit',sans-serif" }}>{initials}</span>
+                }
+              </div>
+              <div style={{
+                position:"absolute", bottom:1, right:1,
+                width: isMobile ? 11 : 14, height: isMobile ? 11 : 14, borderRadius:"50%",
+                background:"#4ade80", border:"2px solid var(--bg-primary,#fff)",
+              }} />
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <p style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, color:"var(--brand,#4472b8)", margin:"0 0 1px",
+                textTransform:"uppercase", letterSpacing:"0.08em" }}>
+                {greeting}
+              </p>
+              <h2 style={{ fontSize: isMobile ? 16 : 21, fontWeight:800, color:"var(--text-primary,#111827)", margin:"0 0 2px",
+                lineHeight:1.2, fontFamily:"'Outfit',sans-serif" }}>
+                {profile?.firstName || ""}
+              </h2>
+              {(profile?.profession || profile?.city) && (
+                <p style={{ fontSize: isMobile ? 10 : 12, color:"var(--text-muted,#6b7280)", margin:0, fontWeight:400, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {[profile?.profession, profile?.city].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </div>
+            {!isMobile && (
+              <div style={{
+                flexShrink:0, display:"flex", alignItems:"center", gap:6,
+                padding:"5px 13px", borderRadius:99,
+                background:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.28)",
+              }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80",
+                  boxShadow:"0 0 0 2px rgba(74,222,128,0.25)" }} />
+                <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>
+                  {t.common?.online || "Online"}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+      {/* Profile completion nudge */}
+      {(() => {
+        const fields = [
+          profile?.firstName, profile?.lastName, profile?.phone, profile?.city, profile?.profession,
+          profile?.bio, profile?.birthDate, profile?.ethnicity, profile?.region, profile?.institution,
+          profile?.linkedIn, profile?.helpAreas?.length > 0, profile?.languages?.length > 0,
+          profile?.experience, profile?.goals,
+        ];
+        const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+        if (pct >= 100) return null;
+        return (
+          <div
+            onClick={() => onNavigate("profile")}
+            style={{
+              marginBottom: isMobile ? "0.9rem" : "1.5rem",
+              borderRadius: isMobile ? 14 : 18,
+              padding: isMobile ? "0.7rem 0.85rem" : "1.1rem 1.5rem",
+              background: "var(--bg-primary,#fff)",
+              border: "1px solid rgba(232,115,90,0.22)",
+              boxShadow: "0 2px 14px rgba(232,115,90,0.08)",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", gap: isMobile ? "0.7rem" : "1.1rem",
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 22px rgba(232,115,90,0.16)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 14px rgba(232,115,90,0.08)"; }}
+          >
+            <div style={{
+              flexShrink: 0, width: isMobile ? 36 : 46, height: isMobile ? 36 : 46, borderRadius: "50%",
+              background: "rgba(232,115,90,0.12)", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#e8735a",
+            }}>
+              {Icon.profile}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: isMobile ? 12 : 14, fontWeight: 700, color: "var(--text-primary,#111827)", margin: "0 0 2px", fontFamily: "'Outfit',sans-serif" }}>
+                {t.dash.completeProfileTitle}
+              </p>
+              {!isMobile && (
+                <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)", margin: "0 0 8px", lineHeight: 1.5 }}>
+                  {t.dash.completeProfileDesc}
+                </p>
+              )}
+              <div style={{ height: 6, borderRadius: 99, background: "rgba(68,114,184,0.14)", overflow: "hidden", marginTop: isMobile ? 6 : 0 }}>
+                <div style={{
+                  height: "100%", width: `${pct}%`, borderRadius: 99,
+                  background: "linear-gradient(90deg,#4472b8,#e8735a)",
+                  transition: "width 0.6s ease",
+                }} />
+              </div>
+            </div>
+            <div style={{ flexShrink: 0, textAlign: "center" }}>
+              <div style={{ fontSize: isMobile ? 14 : 17, fontWeight: 800, color: "#e8735a", fontFamily: "'Outfit',sans-serif" }}>{pct}%</div>
+              {!isMobile && (
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--brand,#4472b8)", whiteSpace: "nowrap" }}>
+                  {t.dash.completeProfileCta}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {bdayStatus?.type === "soon" && (
         <div style={{
@@ -317,7 +484,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "0.75rem" : "1.5rem",
         marginBottom:"2rem", padding: isMobile ? "0.5rem 0 1.25rem" : "0.5rem 0 2rem" }}>
         {quickCircles.map((item, i) => (
-          <QuickCircle key={item.action} {...item} floatIdx={i} small={isMobile} onClick={() => onNavigate(item.action)} />
+          <QuickCircle key={item.action} {...item} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
         ))}
       </div>
 
@@ -346,34 +513,44 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         </div>
       )}
 
-
       {/* Suggested members */}
       {suggested.length > 0 && (
-        <div style={{ marginBottom: "2.25rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.85rem" }}>
-            <p style={{ ...eyebrow, marginBottom: 0 }}>{t.dash.suggestedMembers}</p>
-            <button onClick={() => onNavigate("members")} style={{ fontSize: 12, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>{t.dash.viewAll}</button>
+        <div style={{ marginBottom: isMobile ? "1rem" : "2.25rem" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.6rem" }}>
+            <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
+            <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "0.75rem" }}>
+          <div style={{
+            display:"grid",
+            gridTemplateColumns: isMobile ? "repeat(2,minmax(0,1fr))" : "repeat(auto-fill, minmax(220px, 1fr))",
+            gap: isMobile ? "0.5rem" : "0.75rem",
+          }}>
             {suggested.map((u) => {
               const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
               const online = isActuallyOnline(u);
               return (
-                <div key={u.id} className="card card-hover" style={{ padding: "1rem 1.1rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.85rem", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 14, transition: "border-color 0.2s, transform 0.2s" }}
+                <div key={u.id} className="card card-hover" style={{
+                  padding: isMobile ? "0.55rem 0.65rem" : "1rem 1.1rem",
+                  cursor:"pointer", display:"flex", alignItems:"center",
+                  gap: isMobile ? "0.55rem" : "0.85rem",
+                  background:"var(--bg-primary)", border:"1px solid var(--border)",
+                  borderRadius: isMobile ? 12 : 14,
+                  transition:"border-color 0.2s, transform 0.2s",
+                }}
                   onClick={() => onViewProfile ? onViewProfile(u.id) : onNavigate("members")}>
-                  <div style={{ position: "relative", flexShrink: 0 }}>
+                  <div style={{ position:"relative", flexShrink:0 }}>
                     {avatarUrl(u) ? (
-                      <img src={avatarUrl(u)} style={{ width: 42, height: 42, borderRadius: "50%", objectFit: "cover" }} alt="" />
+                      <img src={avatarUrl(u)} style={{ width: isMobile ? 32 : 42, height: isMobile ? 32 : 42, borderRadius:"50%", objectFit:"cover" }} alt="" />
                     ) : (
-                      <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#4472b8,#6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "'Outfit',sans-serif" }}>
+                      <div style={{ width: isMobile ? 32 : 42, height: isMobile ? 32 : 42, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#6da3d4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize: isMobile ? 11 : 13, fontWeight:600, color:"#fff", fontFamily:"'Outfit',sans-serif" }}>
                         {name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                       </div>
                     )}
-                    {online && <span style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: "50%", background: "#7cb88f", border: "2px solid var(--bg-primary)" }} />}
+                    {online && <span style={{ position:"absolute", bottom:0, right:0, width: isMobile ? 8 : 10, height: isMobile ? 8 : 10, borderRadius:"50%", background:"#7cb88f", border:"2px solid var(--bg-primary)" }} />}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</p>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.profession}</p>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize: isMobile ? 11 : 13, fontWeight:600, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                    <p style={{ fontSize: isMobile ? 10 : 11, color:"var(--text-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>
                   </div>
                 </div>
               );
@@ -492,6 +669,7 @@ export default function DashboardPage() {
   const { user, profile, logout } = useAuth();
   const { lang, setLang, t, isRTL } = useLang();
   const { dark, toggleTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   const [section,    setSection]    = useState(() => localStorage.getItem("section") || "home");
   const [navHistory, setNavHistory] = useState(() => [localStorage.getItem("section") || "home"]);
@@ -574,8 +752,7 @@ export default function DashboardPage() {
   ];
 
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const isMobile = useIsMobile();
-  const sidebarW = sidebarExpanded ? 220 : 68;
+  const sidebarW = isMobile ? 0 : (sidebarExpanded ? 220 : 68);
   const pageTitle = navItems.find((n) => n.id === section)?.label || t.nav.home;
   const dir = isRTL ? "rtl" : "ltr";
 
@@ -605,8 +782,8 @@ export default function DashboardPage() {
       )}
       {/* ── Row that holds sidebar + main (fills all space above bottom nav) ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden", minHeight: 0 }}>
-
-      {/* ── Sidebar — expandable (hidden on mobile) ── */}
+      {/* ── Sidebar — desktop only ── */}
+      {!isMobile && (
       <aside style={{
         width: isMobile ? 0 : sidebarW,
         minWidth: isMobile ? 0 : sidebarW,
@@ -619,7 +796,7 @@ export default function DashboardPage() {
         transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
         overflow: "hidden",
       }}>
-        {/* Logo row — with BogrotNet text when expanded */}
+        {/* Logo row */}
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
           paddingLeft: sidebarExpanded ? 12 : 0,
@@ -715,29 +892,26 @@ export default function DashboardPage() {
           </div>
         </div>
       </aside>
+      )}
 
       {/* ── Main ── */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative" }}>
-        {/* Floating water blob background */}
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative", paddingBottom: isMobile ? 56 : 0 }}>
+        {/* Floating water blob background — desktop only */}
+        {!isMobile && (
         <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
-          {/* Blob 1 — large blue, top-right */}
           <div style={{ position:"absolute", width:"58%", height:"115%", top:"-18%", right:"-10%",
             background:"radial-gradient(ellipse at center, rgba(68,114,184,0.09) 0%, transparent 68%)",
             animation:"dash-blob-1 26s ease-in-out infinite", willChange:"border-radius, transform" }}/>
-          {/* Blob 2 — medium blue, center-left */}
           <div style={{ position:"absolute", width:"44%", height:"78%", top:"22%", left:"-8%",
             background:"radial-gradient(ellipse at center, rgba(68,114,184,0.07) 0%, transparent 68%)",
             animation:"dash-blob-2 20s 5s ease-in-out infinite", willChange:"border-radius, transform" }}/>
-          {/* Blob 3 — coral, upper area */}
           <div style={{ position:"absolute", width:"40%", height:"62%", top:"-6%", left:"20%",
             background:"radial-gradient(ellipse at center, rgba(232,115,90,0.07) 0%, transparent 68%)",
             animation:"dash-blob-3 30s 9s ease-in-out infinite", willChange:"border-radius, transform" }}/>
-          {/* Blob 4 — blue, lower-right */}
           <div style={{ position:"absolute", width:"42%", height:"68%", bottom:"-20%", right:"6%",
             background:"radial-gradient(ellipse at center, rgba(68,114,184,0.06) 0%, transparent 68%)",
             animation:"dash-blob-4 23s 14s ease-in-out infinite", willChange:"border-radius, transform" }}/>
 
-          {/* Side bubbles — left edge */}
           {[{s:32,t:"15%",l:-8,c:"rgba(68,114,184,0.13)",d:"21s",dl:"0s"},{s:20,t:"32%",l:6,c:"rgba(68,114,184,0.09)",d:"26s",dl:"3s"},{s:42,t:"52%",l:-10,c:"rgba(68,114,184,0.08)",d:"18s",dl:"7s"},{s:24,t:"70%",l:4,c:"rgba(68,114,184,0.11)",d:"23s",dl:"11s"},{s:16,t:"85%",l:10,c:"rgba(232,115,90,0.09)",d:"19s",dl:"5s"}].map((b,i)=>(
             <div key={`bl${i}`} style={{
               position:"absolute", width:b.s, height:b.s, borderRadius:"50%",
@@ -746,7 +920,6 @@ export default function DashboardPage() {
               animation:`side-bubble-${i} ${b.d} ${b.dl} ease-in-out infinite`,
             }}/>
           ))}
-          {/* Side bubbles — right edge */}
           {[{s:28,t:"20%",r:-6,c:"rgba(232,115,90,0.11)",d:"24s",dl:"2s"},{s:38,t:"40%",r:-12,c:"rgba(68,114,184,0.08)",d:"20s",dl:"6s"},{s:22,t:"60%",r:4,c:"rgba(232,115,90,0.09)",d:"27s",dl:"9s"},{s:34,t:"78%",r:-8,c:"rgba(68,114,184,0.1)",d:"22s",dl:"13s"},{s:18,t:"90%",r:8,c:"rgba(232,115,90,0.08)",d:"17s",dl:"4s"}].map((b,i)=>(
             <div key={`br${i}`} style={{
               position:"absolute", width:b.s, height:b.s, borderRadius:"50%",
@@ -756,6 +929,7 @@ export default function DashboardPage() {
             }}/>
           ))}
         </div>
+        )}
         <style>{`
           @keyframes dash-blob-1{
             0%,100%{border-radius:62% 38% 52% 48%/44% 56% 44% 56%;transform:translate(0,0) scale(1);}
@@ -792,11 +966,12 @@ export default function DashboardPage() {
           {/* Top bar */}
           {section !== "chat" && (
             <header style={{
-              height: 60, minHeight: 60,
+              height: isMobile ? 48 : 60, minHeight: isMobile ? 48 : 60,
               background: "var(--bg-primary)",
               borderBottom: "1px solid var(--border)",
               display: "flex", alignItems: "center",
-              padding: isMobile ? "0 1rem" : "0 1.75rem", gap: "0.85rem", zIndex: 10,
+              padding: isMobile ? "0 0.75rem" : "0 1.75rem",
+              gap: isMobile ? "0.5rem" : "0.85rem", zIndex: 10,
             }}>
               {canGoBack && (
                 <button
@@ -804,7 +979,7 @@ export default function DashboardPage() {
                   title="Go back"
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    width: 34, height: 34, borderRadius: 10,
+                    width: isMobile ? 30 : 34, height: isMobile ? 30 : 34, borderRadius: 10,
                     background: "transparent", border: "1px solid var(--border)",
                     color: "var(--text-secondary)", cursor: "pointer",
                     transition: "all var(--t-fast)", flexShrink: 0,
@@ -817,7 +992,7 @@ export default function DashboardPage() {
               )}
 
               <span style={{
-                fontSize: 17, fontWeight: 600, color: "var(--text-primary)",
+                fontSize: isMobile ? 14 : 17, fontWeight: 600, color: "var(--text-primary)",
                 fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em",
               }}>{pageTitle}</span>
               <div style={{ flex: 1 }} />

@@ -353,9 +353,32 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
             <p style={{ fontSize: 11, fontWeight: 700, color: "var(--brand-dark)", marginBottom: 4 }}>
               ↻ {post.repostOf.authorName}
             </p>
-            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55, wordBreak: "break-word" }}>
-              {post.repostOf.text ? (post.repostOf.text.length > 200 ? post.repostOf.text.slice(0, 200) + "…" : post.repostOf.text) : "(media post)"}
-            </p>
+            {post.repostOf.text && (
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                {post.repostOf.text}
+              </p>
+            )}
+            {post.repostOf.media?.length > 0 && (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: post.repostOf.media.length === 1 ? "1fr" : "repeat(2, 1fr)",
+                gap: 3, marginTop: post.repostOf.text ? 8 : 0,
+              }}>
+                {post.repostOf.media.map((m, i) =>
+                  m.type === "image" ? (
+                    <img key={i} src={m.url} alt="" style={{
+                      width: "100%", maxHeight: post.repostOf.media.length === 1 ? 480 : 240,
+                      objectFit: "cover", cursor: "pointer", borderRadius: "var(--r-sm)",
+                    }} onClick={() => window.open(m.url, "_blank")} />
+                  ) : (
+                    <video key={i} src={m.url} controls style={{ width: "100%", maxHeight: 360, borderRadius: "var(--r-sm)" }} />
+                  )
+                )}
+              </div>
+            )}
+            {!post.repostOf.text && !(post.repostOf.media?.length > 0) && (
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55 }}>(media post)</p>
+            )}
           </div>
         )}
       </div>
@@ -980,6 +1003,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
       repostOf: {
         id: originalPost.id,
         text: originalPost.text || "",
+        media: originalPost.media || [],
         authorName: originalPost.authorName,
         authorAvatar: originalPost.authorAvatar || null,
       },
