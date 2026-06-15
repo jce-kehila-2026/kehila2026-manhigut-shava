@@ -341,6 +341,69 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         );
       })()}
 
+      {/* Profile completion nudge */}
+      {(() => {
+        const fields = [
+          profile?.firstName, profile?.lastName, profile?.phone, profile?.city, profile?.profession,
+          profile?.bio, profile?.birthDate, profile?.ethnicity, profile?.region, profile?.institution,
+          profile?.linkedIn, profile?.helpAreas?.length > 0, profile?.languages?.length > 0,
+          profile?.experience, profile?.goals,
+        ];
+        const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+        if (pct >= 100) return null;
+        return (
+          <div
+            onClick={() => onNavigate("profile")}
+            style={{
+              marginBottom: isMobile ? "0.9rem" : "1.5rem",
+              borderRadius: isMobile ? 14 : 18,
+              padding: isMobile ? "0.7rem 0.85rem" : "1.1rem 1.5rem",
+              background: "var(--bg-primary,#fff)",
+              border: "1px solid rgba(232,115,90,0.22)",
+              boxShadow: "0 2px 14px rgba(232,115,90,0.08)",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", gap: isMobile ? "0.7rem" : "1.1rem",
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 22px rgba(232,115,90,0.16)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 14px rgba(232,115,90,0.08)"; }}
+          >
+            <div style={{
+              flexShrink: 0, width: isMobile ? 36 : 46, height: isMobile ? 36 : 46, borderRadius: "50%",
+              background: "rgba(232,115,90,0.12)", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#e8735a",
+            }}>
+              {Icon.profile}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: isMobile ? 12 : 14, fontWeight: 700, color: "var(--text-primary,#111827)", margin: "0 0 2px", fontFamily: "'Outfit',sans-serif" }}>
+                {t.dash.completeProfileTitle}
+              </p>
+              {!isMobile && (
+                <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)", margin: "0 0 8px", lineHeight: 1.5 }}>
+                  {t.dash.completeProfileDesc}
+                </p>
+              )}
+              <div style={{ height: 6, borderRadius: 99, background: "rgba(68,114,184,0.14)", overflow: "hidden", marginTop: isMobile ? 6 : 0 }}>
+                <div style={{
+                  height: "100%", width: `${pct}%`, borderRadius: 99,
+                  background: "linear-gradient(90deg,#4472b8,#e8735a)",
+                  transition: "width 0.6s ease",
+                }} />
+              </div>
+            </div>
+            <div style={{ flexShrink: 0, textAlign: "center" }}>
+              <div style={{ fontSize: isMobile ? 14 : 17, fontWeight: 800, color: "#e8735a", fontFamily: "'Outfit',sans-serif" }}>{pct}%</div>
+              {!isMobile && (
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--brand,#4472b8)", whiteSpace: "nowrap" }}>
+                  {t.dash.completeProfileCta}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Quick-access circles */}
       <p style={eyebrow}>{t.dash.quickActions}</p>
       <style>{`

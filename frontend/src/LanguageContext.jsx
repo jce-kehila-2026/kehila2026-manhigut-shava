@@ -46,6 +46,9 @@ const translations = {
       ctaMessages: "פתחי הודעות",
       ctaSupport: "מצאי עזרה",
       ctaProfile: "ערכי פרופיל",
+      completeProfileTitle: "השלימי את הפרופיל שלך",
+      completeProfileDesc: "מלאי את שאר הפרטים האישיים שלך כדי שחברות הקהילה יכירו אותך טוב יותר.",
+      completeProfileCta: "השלימי עכשיו →",
     },
     community: {
       title: "קהילה",
@@ -352,6 +355,9 @@ const translations = {
       ctaMessages: "Open Messages",
       ctaSupport: "Find Help",
       ctaProfile: "Edit Profile",
+      completeProfileTitle: "Complete your profile",
+      completeProfileDesc: "Fill in the rest of your personal details so the community can get to know you better.",
+      completeProfileCta: "Complete now →",
     },
     community: {
       title: "Community",
@@ -658,6 +664,9 @@ const translations = {
       ctaMessages: "فتح الرسائل",
       ctaSupport: "ابحثي عن مساعدة",
       ctaProfile: "تعديل الملف",
+      completeProfileTitle: "أكملي ملفك الشخصي",
+      completeProfileDesc: "أكملي باقي بياناتك الشخصية حتى يتعرف عليك أعضاء المجتمع بشكل أفضل.",
+      completeProfileCta: "أكملي الآن ←",
     },
     community: {
       title: "المجتمع",
