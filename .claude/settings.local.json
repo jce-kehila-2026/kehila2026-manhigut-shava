@@ -28,7 +28,8 @@
       "Bash(npx eslint *)",
       "Bash(grep -E \"^/Users.*\\\\.jsx$|receivedRequests|handleDeleteReceivedRequest|handleRespondRequest\")",
       "Bash(lsof -ti :5174 -sTCP:LISTEN)",
-      "Bash(xargs -r kill)"
+      "Bash(xargs -r kill)",
+      "Bash(node -e ' *)"
     ]
   }
 }

@@ -28,17 +28,23 @@ function avatarColor(name) {
   const colors = ["#4472b8", "#6da3d4", "#1d4896", "#6da3d4", "#4472b8", "#daeaf8", "#223468"];
   return colors[(name?.charCodeAt(0) || 0) % colors.length];
 }
+function toLocalDate(dateStr) {
+  return new Date(dateStr + (String(dateStr).includes("T") ? "" : "T00:00:00"));
+}
 function isBirthdaySoon(birthdate) {
   if (!birthdate) return null;
-  const today = new Date(), bday = new Date(birthdate);
-  const thisYear = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
-  const diff = Math.ceil((thisYear - today) / 86400000);
-  return diff >= 0 && diff <= 7 ? diff : null;
+  const bday = toLocalDate(birthdate);
+  if (Number.isNaN(bday.getTime())) return null;
+  const today = new Date();
+  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let next = new Date(todayMid.getFullYear(), bday.getMonth(), bday.getDate());
+  if (next < todayMid) next.setFullYear(next.getFullYear() + 1);
+  const diff = Math.round((next - todayMid) / 86400000);
+  return diff <= 7 ? diff : null;
 }
 function formatBday(birthdate) {
   if (!birthdate) return "";
-  const d = new Date(birthdate);
-  return d.toLocaleDateString([], { month: "long", day: "numeric" });
+  return toLocalDate(birthdate).toLocaleDateString([], { month: "long", day: "numeric" });
 }
 
 /* ── Avatar ── */

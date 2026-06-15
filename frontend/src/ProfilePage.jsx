@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { doc, getDoc, updateDoc, query, where, collection, getDocs } from "firebase/firestore";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
 import {
   updateEmail,
   reauthenticateWithCredential,
@@ -40,6 +40,19 @@ styleTag.textContent = `
     0%   { background-position: 0% 50%; }
     50%  { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+  }
+  @keyframes balloonFloat {
+    0%   { transform: translateY(0) rotate(-3deg); }
+    50%  { transform: translateY(-14px) rotate(3deg); }
+    100% { transform: translateY(0) rotate(-3deg); }
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(140px) rotate(360deg); opacity: 0; }
+  }
+  @keyframes wishCardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   .profile-card { animation: fadeSlideUp 0.4s ease both; }
   .profile-card:nth-child(2) { animation-delay: 0.06s; }
@@ -180,6 +193,225 @@ function PlainInput(props) {
       }}
       {...props}
     />
+  );
+}
+
+const BALLOON_COLORS = ["#e8735a", "#4472b8", "#d4a574", "#7ba87a", "#c084fc", "#f4a4c0"];
+
+/* ─── Birthday helpers ─── */
+function isBirthdayToday(birthDate) {
+  if (!birthDate) return false;
+  const date = new Date(birthDate + (birthDate.includes("T") ? "" : "T00:00:00"));
+  if (Number.isNaN(date.getTime())) return false;
+  const now = new Date();
+  return date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+}
+
+/* ─── Decorative balloon (pure CSS, no emoji) ─── */
+function Balloon({ color, left, delay, size, duration }) {
+  return (
+    <div style={{
+      position:"absolute", bottom:6, left:`${left}%`,
+      animation:`balloonFloat ${duration}s ease-in-out ${delay}s infinite`,
+      pointerEvents:"none", zIndex:0,
+    }}>
+      <div style={{
+        width:size, height:size * 1.18, borderRadius:"50%",
+        background:`linear-gradient(135deg, ${color} 0%, ${color}aa 100%)`,
+        boxShadow:"inset -6px -8px 14px rgba(0,0,0,0.14), 0 4px 10px rgba(0,0,0,0.12)",
+        position:"relative",
+      }}>
+        <div style={{
+          position:"absolute", left:"50%", bottom:-6, transform:"translateX(-50%)",
+          width:0, height:0,
+          borderLeft:"4px solid transparent", borderRight:"4px solid transparent",
+          borderTop:`6px solid ${color}`,
+        }} />
+      </div>
+      <div style={{ width:1, height:34, background:"rgba(17,24,39,0.18)", margin:"0 auto" }} />
+    </div>
+  );
+}
+
+/* ─── Birthday banner — balloons + greeting, shown when it's the profile owner's birthday ─── */
+function BirthdayBanner({ name, isOwner, isMobile, t }) {
+  const balloons = useMemo(() => {
+    const count = isMobile ? 5 : 8;
+    return Array.from({ length: count }).map((_, i) => ({
+      color: BALLOON_COLORS[i % BALLOON_COLORS.length],
+      left: Math.round((i * (100 / count)) + (i % 2 === 0 ? 2 : 6)),
+      delay: (i * 0.35) % 2,
+      size: 34 + (i % 3) * 10,
+      duration: 3.2 + (i % 3) * 0.6,
+    }));
+  }, [isMobile]);
+
+  const confetti = useMemo(() => Array.from({ length: 16 }).map((_, i) => ({
+    left: Math.round((i * 6.2) % 100),
+    delay: (i * 0.18) % 2.4,
+    duration: 2.6 + (i % 4) * 0.4,
+    color: BALLOON_COLORS[(i + 2) % BALLOON_COLORS.length],
+    size: 5 + (i % 3) * 2,
+    rect: i % 2 === 0,
+  })), []);
+
+  return (
+    <div className="profile-card" style={{
+      position:"relative", overflow:"hidden",
+      borderRadius:20, marginBottom:"1.25rem",
+      background:"linear-gradient(135deg,#fdf8f6 0%,#f0f6fb 55%,#fdf1f6 100%)",
+      border:"1.5px solid #f0d9e4",
+      padding: isMobile ? "1.5rem 1.25rem" : "2rem 2.25rem",
+      minHeight: isMobile ? 110 : 130,
+      display:"flex", alignItems:"center",
+      boxShadow:"0 4px 24px rgba(29,72,150,0.06)",
+    }}>
+      {confetti.map((c, i) => (
+        <div key={`c${i}`} style={{
+          position:"absolute", top:0, left:`${c.left}%`,
+          width:c.size, height:c.size,
+          borderRadius: c.rect ? 2 : "50%",
+          background:c.color,
+          animation:`confettiFall ${c.duration}s ${c.delay}s linear infinite`,
+          zIndex:0,
+        }} />
+      ))}
+      {balloons.map((b, i) => <Balloon key={i} {...b} />)}
+      <div style={{ position:"relative", zIndex:1, maxWidth:"70%" }}>
+        <h2 style={{ fontSize: isMobile ? 19 : 24, fontWeight:800, margin:"0 0 4px", color:"#111827", fontFamily:"'Outfit', sans-serif" }}>
+          {isOwner ? t.profile.birthdayOwnerTitle : t.profile.birthdayVisitorTitle(name)}
+        </h2>
+        <p style={{ fontSize:13, color:"#6b7280", margin:0 }}>
+          {isOwner ? t.profile.birthdayOwnerSubtitle : t.profile.birthdayVisitorSubtitle}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Birthday wishes — read + leave a message on someone's birthday ─── */
+function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, relativeTime, isMobile }) {
+  const [wishes, setWishes] = useState([]);
+  const [wishText, setWishText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+
+  useEffect(() => {
+    if (!targetId) return;
+    const q = query(collection(db, "users", targetId, "birthdayWishes"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      setWishes(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    }, (err) => console.error("Failed to load birthday wishes:", err));
+    return unsub;
+  }, [targetId]);
+
+  const handleSend = async () => {
+    if (!wishText.trim() || !currentUser || sending) return;
+    setSending(true);
+    setSendError("");
+    try {
+      const fromName = `${currentProfile?.firstName || ""} ${currentProfile?.lastName || ""}`.trim() || currentUser.email;
+      await addDoc(collection(db, "users", targetId, "birthdayWishes"), {
+        fromUserId: currentUser.uid,
+        fromName,
+        fromAvatar: currentProfile?.photoURL || currentProfile?.avatarUrl || null,
+        message: wishText.trim(),
+        createdAt: new Date().toISOString(),
+      });
+      setWishText("");
+    } catch (err) {
+      console.error("Failed to send birthday wish:", err);
+      setSendError(t.profile.errorGeneral);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="profile-card" style={{
+      background:"#fff", borderRadius:"20px",
+      border:"1.5px solid #f0f6fb", boxShadow:"0 4px 24px rgba(29,72,150,0.06)",
+      padding:"1.75rem", marginBottom:"1.25rem", borderLeft:"4px solid #d4a574",
+    }}>
+      <SectionTitle label={t.profile.birthdayWishesTitle} />
+      {sendError && (
+        <div style={{ fontSize:"13px", color:"#9a4545", background:"#fff0f0", border:"1px solid #d99090", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" }}>
+          {sendError}
+        </div>
+      )}
+
+      {!isOwner && currentUser && (
+        <div style={{ display:"flex", gap:"10px", alignItems:"flex-start", marginBottom:"1.25rem", flexDirection: isMobile ? "column" : "row" }}>
+          <textarea
+            className="profile-textarea"
+            style={{
+              flex:1, width:"100%", boxSizing:"border-box",
+              padding:"12px 14px", fontSize:"14px",
+              border:"1.5px solid #daeaf8", borderRadius:"13px",
+              color:"#1a2e42", background:"#fdf8f6", fontFamily:"inherit",
+              resize:"vertical", minHeight:"46px",
+            }}
+            value={wishText}
+            onChange={(e) => setWishText(e.target.value)}
+            placeholder={t.profile.birthdayWishPlaceholder}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!wishText.trim() || sending}
+            style={{
+              padding:"12px 22px", background:"#111827", color:"#fff",
+              border:"none", borderRadius:"13px", fontSize:"14px", fontWeight:700,
+              cursor: (!wishText.trim() || sending) ? "not-allowed" : "pointer",
+              opacity: (!wishText.trim() || sending) ? 0.6 : 1,
+              whiteSpace:"nowrap", flexShrink:0,
+            }}
+          >
+            {sending ? t.profile.birthdaySending : t.profile.birthdaySend}
+          </button>
+        </div>
+      )}
+
+      {wishes.length === 0 ? (
+        <div style={{
+          textAlign:"center", padding:"1.5rem",
+          background:"#fdf8f6", borderRadius:"14px",
+          border:"1.5px dashed #daeaf8", color:"#6b7280", fontSize:"13px",
+        }}>
+          {t.profile.birthdayNoWishes}
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+          {wishes.map((w) => (
+            <div key={w.id} style={{
+              display:"flex", gap:"10px", alignItems:"flex-start",
+              padding:"12px 14px", background:"#fdf8f6",
+              border:"1px solid #f0f6fb", borderRadius:"13px",
+              animation:"wishCardIn 0.3s ease both",
+            }}>
+              <div style={{
+                width:32, height:32, borderRadius:"50%", flexShrink:0,
+                background:"#daeaf8", color:"#1d4896",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:13, fontWeight:700, overflow:"hidden",
+              }}>
+                {w.fromAvatar
+                  ? <img src={w.fromAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : (w.fromName?.[0] || "?").toUpperCase()}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                  <span style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{w.fromName}</span>
+                  <span style={{ fontSize:11, color:"#6b7280", flexShrink:0 }}>{relativeTime(w.createdAt)}</span>
+                </div>
+                <p style={{ fontSize:13, color:"#1a2e42", margin:"3px 0 0", lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                  {w.message}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -519,6 +751,27 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
       {/* Body */}
       <div style={S.body}>
+        {/* Birthday decorations + wishes */}
+        {isBirthdayToday(form.birthDate) && (
+          <>
+            <BirthdayBanner
+              name={form.firstName || (isOwner ? "" : t.profile.memberProfile)}
+              isOwner={isOwner}
+              isMobile={isMobile}
+              t={t}
+            />
+            <BirthdayWishes
+              targetId={viewUserId || user?.uid}
+              currentUser={user}
+              currentProfile={authProfile}
+              isOwner={isOwner}
+              t={t}
+              relativeTime={relativeTime}
+              isMobile={isMobile}
+            />
+          </>
+        )}
+
         <div style={{ marginBottom:"1rem" }}>
           {!isReadOnly && <CompletenessBadge pct={pct} />}
         </div>
