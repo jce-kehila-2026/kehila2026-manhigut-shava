@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { doc, updateDoc, collection, getDocs, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, collection, getDocs, query, limit } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -241,7 +241,6 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) 
 
 /* ── Home page (overview) ── */
 function HomePage({ user, profile, onNavigate, onViewProfile }) {
-  const [helpRequests, setHelpRequests] = useState([]);
   const [suggested, setSuggested]       = useState([]);
   const { t } = useLang();
   const isMobile = useIsMobile();
@@ -252,11 +251,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "helpRequests"), where("toUserId", "==", user.uid));
-    const unsub = onSnapshot(q, (snap) =>
-      setHelpRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-
     getDocs(query(collection(db, "users"), limit(20))).then((snap) => {
       const others = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
@@ -264,11 +258,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       others.sort((a, b) => ((b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1));
       setSuggested(others.slice(0, 4));
     });
-
-    return unsub;
   }, [user]);
-
-  const pendingRequests = helpRequests.filter((r) => !r.status);
 
   const quickCircles = [
     { icon: Icon.members,   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
@@ -350,45 +340,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           </div>
         );
       })()}
-
-      {/* Help Requests */}
-      {pendingRequests.length > 0 && (
-        <div style={{ marginBottom: isMobile ? "1rem" : "2.25rem" }}>
-          <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
-          <div style={{
-            display: isMobile ? "grid" : "flex",
-            gridTemplateColumns: isMobile ? "repeat(2,minmax(0,1fr))" : undefined,
-            flexDirection: isMobile ? undefined : "column",
-            gap: isMobile ? "0.4rem" : "0.5rem",
-          }}>
-            {pendingRequests.slice(0, isMobile ? 4 : 3).map((r) => (
-              <div key={r.id} className="card" style={{
-                padding: isMobile ? "0.55rem 0.7rem" : "0.95rem 1.25rem",
-                display:"flex", alignItems:"center", gap: isMobile ? "0.5rem" : "1rem",
-                borderLeft:"3px solid #e8735a", background:"var(--bg-primary)",
-                border:"1px solid var(--border)", borderRadius:12,
-              }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize: isMobile ? 11 : 13, fontWeight:600, color:"var(--text-primary)", marginBottom:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.fromUserName}</p>
-                  {!isMobile && <p style={{ fontSize:11, color:"var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>}
-                </div>
-                <button onClick={() => onNavigate("members")} style={{
-                  padding: isMobile ? "4px 9px" : "6px 16px", borderRadius:99,
-                  background:"var(--brand)", color:"#fff", border:"none",
-                  fontSize: isMobile ? 10 : 12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap",
-                }}>
-                  {t.dash.viewReq}
-                </button>
-              </div>
-            ))}
-            {pendingRequests.length > (isMobile ? 4 : 3) && (
-              <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontWeight:600, padding:"4px 0" }}>
-                {t.dash.moreReqs(pendingRequests.length - (isMobile ? 4 : 3))}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Quick-access circles */}
       <p style={eyebrow}>{t.dash.quickActions}</p>

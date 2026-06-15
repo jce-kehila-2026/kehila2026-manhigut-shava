@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { collection, getDocs, addDoc, query, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, query, where, doc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
+import { getOrCreateConversation, sendHelpRequestPrompt } from "./hooks/useMessages";
 
 /* ─── Translation ─── */
 const T = {
@@ -26,7 +27,6 @@ const T = {
     noFilter: "השתמשי בפילטרים כדי למצוא חברות שיכולות לעזור.",
     noResults: "לא נמצאו חברות מתאימות. נסי להרחיב את החיפוש.",
     myReqs: "הבקשות שלי",
-    recvReqs: "בקשות שהתקבלו",
     memberProfile: "פרופיל חברה",
     close: "סגרי",
     emailLbl: "אימייל",
@@ -37,8 +37,6 @@ const T = {
     taglineLabel: "משפט",
     msgBtn: "שלחי הודעה",
     reqSent: "בקשה נשלחה",
-    accept: "קבלי",
-    decline: "דחי",
     delete: "מחקי",
     cityBilingual: "חיפוש עובד בעברית, ערבית ואנגלית",
     roleLabel: "תפקיד",
@@ -67,7 +65,6 @@ const T = {
     reqMsgPh: "תארי בקצרה מה את מחפשת... (אופציונלי)",
     reqModalSend: "שלחי בקשה",
     reqModalCancel: "ביטול",
-    reqMsgReceived: "הודעה:",
   },
   en: {
     title: "Find Help",
@@ -88,7 +85,6 @@ const T = {
     noFilter: "Use the filters above to find members who can help.",
     noResults: "No matching members found. Try broadening your search.",
     myReqs: "My Requests",
-    recvReqs: "Received Requests",
     memberProfile: "Member Profile",
     close: "Close",
     emailLbl: "Email",
@@ -99,8 +95,6 @@ const T = {
     taglineLabel: "Tagline",
     msgBtn: "Message",
     reqSent: "Request Sent",
-    accept: "Accept",
-    decline: "Decline",
     delete: "Delete",
     cityBilingual: "Search works in Hebrew, Arabic and English",
     roleLabel: "Role",
@@ -129,7 +123,6 @@ const T = {
     reqMsgPh: "Briefly describe what you're looking for… (optional)",
     reqModalSend: "Send Request",
     reqModalCancel: "Cancel",
-    reqMsgReceived: "Message:",
   },
   ar: {
     title: "البحث عن مساعدة",
@@ -150,7 +143,6 @@ const T = {
     noFilter: "استخدمي الفلاتر أعلاه للعثور على عضوات يمكنهن المساعدة.",
     noResults: "لم يتم العثور على عضوات. حاولي توسيع نطاق البحث.",
     myReqs: "طلباتي",
-    recvReqs: "الطلبات الواردة",
     memberProfile: "ملف العضوة",
     close: "إغلاق",
     emailLbl: "البريد الإلكتروني",
@@ -161,8 +153,6 @@ const T = {
     taglineLabel: "عبارة",
     msgBtn: "إرسال رسالة",
     reqSent: "تم إرسال الطلب",
-    accept: "قبول",
-    decline: "رفض",
     delete: "حذف",
     cityBilingual: "البحث يعمل بالعبرية والعربية والإنجليزية",
     roleLabel: "المنصب",
@@ -191,7 +181,6 @@ const T = {
     reqMsgPh: "صفي باختصار ما تبحثين عنه... (اختياري)",
     reqModalSend: "إرسال الطلب",
     reqModalCancel: "إلغاء",
-    reqMsgReceived: "الرسالة:",
   },
 };
 
@@ -442,7 +431,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [selectedUser,     setSelectedUser]     = useState(null);
   const [senderProfile,    setSenderProfile]    = useState(null);
   const [sentRequests,     setSentRequests]     = useState([]);
-  const [receivedRequests, setReceivedRequests] = useState([]);
   const [allUsers,         setAllUsers]         = useState([]);
   const [recommended,      setRecommended]      = useState([]);
   const [showSuggest,      setShowSuggest]      = useState(false);
@@ -459,8 +447,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     Promise.all([
       getDocs(collection(db, "users")),
       getDocs(query(collection(db, "helpRequests"), where("fromUserId", "==", user.uid))),
-      getDocs(query(collection(db, "helpRequests"), where("toUserId",   "==", user.uid))),
-    ]).then(([usersSnap, sentSnap, recvSnap]) => {
+    ]).then(([usersSnap, sentSnap]) => {
       const docs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const me   = docs.find((d) => d.id === user.uid);
       if (me) setSenderProfile(me);
@@ -477,7 +464,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       const reqMap = {};
       reqs.forEach((r) => { reqMap[r.toUserId] = true; });
       setRequested(reqMap);
-      setReceivedRequests(recvSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
   }, [user]);
 
@@ -527,13 +513,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     } catch (err) { console.error("Delete error:", err); }
   };
 
-  const handleDeleteReceivedRequest = async (reqId) => {
-    try {
-      await deleteDoc(doc(db, "helpRequests", reqId));
-      setReceivedRequests((prev) => prev.filter((r) => r.id !== reqId));
-    } catch (err) { console.error("Delete error:", err); }
-  };
-
   const cantSendHelp = (u) =>
     (!senderProfile?.isAdmin && (u.blockedUsers || []).includes(user?.uid)) ||
     (senderProfile?.blockedUsers || []).includes(u.id);
@@ -550,7 +529,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     if (!user || !senderProfile || requested[targetUser.id]) return;
     if (cantSendHelp(targetUser)) return;
     try {
-      await addDoc(collection(db, "helpRequests"), {
+      const reqRef = await addDoc(collection(db, "helpRequests"), {
         toUserId:           targetUser.id,
         toUserName:         getFullName(targetUser),
         fromUserId:         user.uid,
@@ -564,21 +543,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       });
       setRequested((prev) => ({ ...prev, [targetUser.id]: true }));
       logActivity({ type: "request_sent", actorId: user.uid, actorName: getFullName(senderProfile), targetId: targetUser.id, targetType: "user", details: { toName: getFullName(targetUser) } });
-    } catch (err) { console.error("Request error:", err); }
-  };
 
-  const handleRespondRequest = async (reqId, status) => {
-    try {
-      await updateDoc(doc(db, "helpRequests", reqId), {
-        status,
-        responderName: senderProfile ? getFullName(senderProfile) : user.email,
-      });
-      const req = receivedRequests.find(r => r.id === reqId);
-      setReceivedRequests((prev) =>
-        prev.map((r) => r.id === reqId ? { ...r, status } : r)
-      );
-      logActivity({ type: status === "accepted" ? "request_accepted" : "request_declined", actorId: user.uid, actorName: getFullName(senderProfile), targetId: req?.fromUserId || reqId, targetType: "user", details: { fromUser: req?.fromUserName } });
-    } catch (err) { console.error("Respond error:", err); }
+      // ── NEW: also deliver the request as an interactive DM prompt ──
+      try {
+        const convId = await getOrCreateConversation(user.uid, targetUser.id, senderProfile, targetUser);
+        await sendHelpRequestPrompt(convId, user.uid, getFullName(senderProfile), reqRef.id, requestMessage, [targetUser.id]);
+      } catch (dmErr) { console.error("Help request DM error:", dmErr); }
+    } catch (err) { console.error("Request error:", err); }
   };
 
   /* ── Styles ── */
@@ -739,23 +710,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     },
     myReqName: { fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
     myReqProf: { fontSize: "12px", color: "var(--text-secondary)", margin: 0 },
-    receivedReqCard: {
-      background: "var(--bg-primary)", borderRadius: "16px", padding: "1.25rem",
-      border: "1.5px solid var(--border)", borderInlineStart: "4px solid #e8735a",
-      boxShadow: "0 2px 8px rgba(29,72,150,0.05)",
-      display: "flex", flexDirection: "column", gap: "6px",
-    },
-    receivedReqActions: { display: "flex", gap: "8px", marginTop: "6px" },
-    acceptBtn: {
-      flex: 1, padding: "7px 0", background: "#f0fdf4", color: "#3f6a3e",
-      border: "1.5px solid #cfe4ce", borderRadius: "9px",
-      fontSize: "12px", fontWeight: "700", cursor: "pointer",
-    },
-    declineBtn: {
-      flex: 1, padding: "7px 0", background: "#fff0f0", color: "#9a4545",
-      border: "1.5px solid #d99090", borderRadius: "9px",
-      fontSize: "12px", fontWeight: "700", cursor: "pointer",
-    },
   };
 
   const deleteIconSvg = (
@@ -1018,66 +972,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   </p>
                 )}
                 <StatusPill status={r.status} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Received Requests */}
-      {receivedRequests.length > 0 && (
-        <div style={{ marginTop: "2.5rem", marginBottom: "2rem" }}>
-          <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.recvReqs}</p>
-          <div style={S.myReqGrid}>
-            {receivedRequests.map((r) => (
-              <div key={r.id} style={S.receivedReqCard}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <p style={S.myReqName}>{r.fromUserName || "—"}</p>
-                  <button title={Tr.delete}
-                    style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex", alignItems:"center" }}
-                    onClick={() => handleDeleteReceivedRequest(r.id)}
-                    onMouseEnter={e=>e.currentTarget.style.color="#e8735a"}
-                    onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}
-                  >{deleteIconSvg}</button>
-                </div>
-                {r.fromUserProfession && (
-                  <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: 0 }}>{r.fromUserProfession}</p>
-                )}
-                {r.fromUserEmail && (
-                  <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>{r.fromUserEmail}</p>
-                )}
-                {/* ── NEW: show the requester's message so recipient can make an informed decision ── */}
-                {r.requestMessage && (
-                  <div style={{
-                    background: "#f5f8ff",
-                    border: "1.5px solid #daeaf8",
-                    borderInlineStart: "3px solid #4472b8",
-                    borderRadius: "10px",
-                    padding: "8px 12px",
-                    margin: "4px 0",
-                  }}>
-                    <p style={{
-                      fontSize: "10px", fontWeight: "700", color: "#4472b8",
-                      textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px",
-                    }}>{Tr.reqMsgReceived}</p>
-                    <p style={{
-                      fontSize: "13px", color: "var(--text-primary)",
-                      margin: 0, lineHeight: "1.55",
-                    }}>{r.requestMessage}</p>
-                  </div>
-                )}
-                {!r.status ? (
-                  <div style={S.receivedReqActions}>
-                    <button style={S.acceptBtn} onClick={() => handleRespondRequest(r.id, "accepted")}>
-                      {Tr.accept}
-                    </button>
-                    <button style={S.declineBtn} onClick={() => handleRespondRequest(r.id, "declined")}>
-                      {Tr.decline}
-                    </button>
-                  </div>
-                ) : (
-                  <StatusPill status={r.status} />
-                )}
               </div>
             ))}
           </div>

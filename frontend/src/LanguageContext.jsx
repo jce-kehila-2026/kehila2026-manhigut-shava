@@ -46,9 +46,6 @@ const translations = {
       ctaMessages: "פתחי הודעות",
       ctaSupport: "מצאי עזרה",
       ctaProfile: "ערכי פרופיל",
-      pendingHelp: "בקשות עזרה ממתינות",
-      viewReq: "צפייה",
-      moreReqs: (n) => `+ ${n} נוספות →`,
     },
     community: {
       title: "קהילה",
@@ -355,9 +352,6 @@ const translations = {
       ctaMessages: "Open Messages",
       ctaSupport: "Find Help",
       ctaProfile: "Edit Profile",
-      pendingHelp: "Pending Help Requests",
-      viewReq: "View",
-      moreReqs: (n) => `+ ${n} more →`,
     },
     community: {
       title: "Community",
@@ -664,9 +658,6 @@ const translations = {
       ctaMessages: "فتح الرسائل",
       ctaSupport: "ابحثي عن مساعدة",
       ctaProfile: "تعديل الملف",
-      pendingHelp: "طلبات مساعدة معلقة",
-      viewReq: "عرض",
-      moreReqs: (n) => `+ ${n} المزيد →`,
     },
     community: {
       title: "المجتمع",

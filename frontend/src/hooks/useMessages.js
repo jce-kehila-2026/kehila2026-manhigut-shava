@@ -81,6 +81,47 @@ export async function sendMessage(conversationId, senderId, text, replyTo = null
   await updateDoc(doc(db, "conversations", conversationId), updateData);
 }
 
+/* ── Send an interactive "help request" prompt message ── */
+export async function sendHelpRequestPrompt(conversationId, requesterId, requesterName, helpRequestId, requestMessage = "", recipientIds = []) {
+  const now = new Date().toISOString();
+  const msgData = {
+    senderId: requesterId,
+    text: (requestMessage || "").trim(),
+    type: "helpRequestPrompt",
+    helpRequestId: helpRequestId || null,
+    requesterName,
+    responded: false,
+    response: null,
+    imageUrl: null,
+    replyTo: null,
+    reactions: {},
+    readBy: [requesterId],
+    createdAt: now,
+    deleted: false,
+  };
+  await addDoc(collection(db, "conversations", conversationId, "messages"), msgData);
+  const updateData = {
+    lastMessage: {
+      text: "Help request",
+      type: "helpRequestPrompt",
+      senderId: requesterId, createdAt: now,
+    },
+    updatedAt: now,
+  };
+  recipientIds.forEach((id) => {
+    updateData[`unreadCounts.${id}`] = increment(1);
+  });
+  await updateDoc(doc(db, "conversations", conversationId), updateData);
+}
+
+/* ── Respond to a "help request" prompt (yes/no) ── */
+export async function respondToHelpRequestPrompt(conversationId, messageId, response) {
+  await updateDoc(doc(db, "conversations", conversationId, "messages", messageId), {
+    responded: true,
+    response,
+  });
+}
+
 /* ── Upload chat image to Firebase Storage ── */
 export async function uploadChatImage(file, conversationId) {
   const ext = file.name.split(".").pop().toLowerCase();
