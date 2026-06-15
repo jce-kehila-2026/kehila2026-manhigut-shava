@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { logActivity } from "./activityLogger";
+import { daysUntilBirthday, formatBirthday } from "./utils/birthday";
 
 /* ── Helpers ── */
 function timeAgo(ts, t) {
@@ -28,23 +29,9 @@ function avatarColor(name) {
   const colors = ["#4472b8", "#6da3d4", "#1d4896", "#6da3d4", "#4472b8", "#daeaf8", "#223468"];
   return colors[(name?.charCodeAt(0) || 0) % colors.length];
 }
-function toLocalDate(dateStr) {
-  return new Date(dateStr + (String(dateStr).includes("T") ? "" : "T00:00:00"));
-}
 function isBirthdaySoon(birthdate) {
-  if (!birthdate) return null;
-  const bday = toLocalDate(birthdate);
-  if (Number.isNaN(bday.getTime())) return null;
-  const today = new Date();
-  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  let next = new Date(todayMid.getFullYear(), bday.getMonth(), bday.getDate());
-  if (next < todayMid) next.setFullYear(next.getFullYear() + 1);
-  const diff = Math.round((next - todayMid) / 86400000);
-  return diff <= 7 ? diff : null;
-}
-function formatBday(birthdate) {
-  if (!birthdate) return "";
-  return toLocalDate(birthdate).toLocaleDateString([], { month: "long", day: "numeric" });
+  const diff = daysUntilBirthday(birthdate);
+  return diff !== null && diff <= 7 ? diff : null;
 }
 
 /* ── Avatar ── */
@@ -768,7 +755,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
 }
 
 /* ── Birthday hero card ── */
-function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) {
+function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
   if (birthdays.length === 0) {
     return (
       <div
@@ -843,7 +830,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
       <div style={{ padding: "0.75rem 1rem 1rem" }}>
         {today.map((u) => {
           const name = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-          const canSend = onMessage && u.id !== currentUserUid;
+          const canSend = onViewProfile && u.id !== currentUserUid;
           return (
             <div
               key={u.id}
@@ -899,7 +886,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
               </div>
               {canSend && (
                 <button
-                  onClick={() => onMessage(u.id)}
+                  onClick={() => onViewProfile(u.id)}
                   style={{
                     width: "100%",
                     marginTop: 10,
@@ -915,7 +902,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
                     letterSpacing: "0.03em",
                   }}
                 >
-                  Send wishes 
+                  Send wishes
                 </button>
               )}
             </div>
@@ -953,7 +940,7 @@ function BirthdaysCard({ birthdays, onViewProfile, onMessage, currentUserUid }) 
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>{name}</p>
                 <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-                  {formatBday(u.birthdate ?? u.birthDate)} · in {u.daysUntil} day{u.daysUntil > 1 ? "s" : ""}
+                  {formatBirthday(u.birthDate ?? u.birthdate)} · in {u.daysUntil} day{u.daysUntil > 1 ? "s" : ""}
                 </p>
               </div>
               <span style={{
@@ -1006,7 +993,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
     getDocs(collection(db, "users")).then((snap) => {
       const upcoming = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
-        .map((u) => ({ ...u, daysUntil: isBirthdaySoon(u.birthdate ?? u.birthDate) }))
+        .map((u) => ({ ...u, daysUntil: isBirthdaySoon(u.birthDate ?? u.birthdate) }))
         .filter((u) => u.daysUntil !== null)
         .sort((a, b) => a.daysUntil - b.daysUntil);
       setBirthdays(upcoming);
@@ -1185,7 +1172,6 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
                   <BirthdaysCard
                     birthdays={birthdays}
                     onViewProfile={onViewProfile}
-                    onMessage={onMessage}
                     currentUserUid={user?.uid}
                   />
                 </div>
@@ -1259,7 +1245,6 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
           <BirthdaysCard
             birthdays={birthdays}
             onViewProfile={onViewProfile}
-            onMessage={onMessage}
             currentUserUid={user?.uid}
           />
 

@@ -10,6 +10,7 @@ import CommunityPage from "./CommunityPage";
 import ProfilePage   from "./ProfilePage";
 import AdminPage     from "./AdminPage";
 import ChatPage      from "./ChatPage";
+import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
@@ -271,13 +272,9 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const bdayStatus = useMemo(() => {
     const bd = profile?.birthDate || profile?.birthdate;
     if (!bd) return null;
-    const date = new Date(bd + (bd.includes("T") ? "" : "T00:00:00"));
-    const now = new Date();
-    if (date.getMonth() === now.getMonth() && date.getDate() === now.getDate()) return { type: "today" };
-    let next = new Date(now.getFullYear(), date.getMonth(), date.getDate());
-    if (next <= now) next.setFullYear(now.getFullYear() + 1);
-    const days = Math.round((next - now) / 864e5);
-    if (days <= 7) return { type: "soon", days };
+    if (isBirthdayToday(bd)) return { type: "today" };
+    const days = daysUntilBirthday(bd);
+    if (days !== null && days > 0 && days <= 7) return { type: "soon", days };
     return null;
   }, [profile?.birthDate, profile?.birthdate]);
 

@@ -29,7 +29,11 @@
       "Bash(grep -E \"^/Users.*\\\\.jsx$|receivedRequests|handleDeleteReceivedRequest|handleRespondRequest\")",
       "Bash(lsof -ti :5174 -sTCP:LISTEN)",
       "Bash(xargs -r kill)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(firebase --version)",
+      "Bash(firebase projects:list)",
+      "Bash(node -e 'console.log\\(new Date\\(\\).toString\\(\\)\\)')",
+      "Bash(npx firebase-tools *)"
     ]
   }
 }

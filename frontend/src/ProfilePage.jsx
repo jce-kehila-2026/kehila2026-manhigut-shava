@@ -10,6 +10,7 @@ import { db, auth } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { useIsMobile } from "./hooks/useIsMobile";
+import { isBirthdayToday } from "./utils/birthday";
 
 const storage = getStorage();
 
@@ -197,15 +198,6 @@ function PlainInput(props) {
 }
 
 const BALLOON_COLORS = ["#e8735a", "#4472b8", "#d4a574", "#7ba87a", "#c084fc", "#f4a4c0"];
-
-/* ─── Birthday helpers ─── */
-function isBirthdayToday(birthDate) {
-  if (!birthDate) return false;
-  const date = new Date(birthDate + (birthDate.includes("T") ? "" : "T00:00:00"));
-  if (Number.isNaN(date.getTime())) return false;
-  const now = new Date();
-  return date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
-}
 
 /* ─── Decorative balloon (pure CSS, no emoji) ─── */
 function Balloon({ color, left, delay, size, duration }) {
@@ -455,6 +447,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [emailError,     setEmailError]     = useState("");
   const [emailSuccess,   setEmailSuccess]   = useState("");
 
+  /* Raw birthday value, kept separate from form.birthDate so legacy
+     "DD/MM/YYYY" free-text birthdays (saved via CompleteProfilePage)
+     still trigger the birthday banner even if they don't match the
+     <input type="date"> format. */
+  const [birthdayValue, setBirthdayValue] = useState("");
+
   /* ── Load profile + network count ── */
   useEffect(() => {
     const targetId = viewUserId || user?.uid;
@@ -482,6 +480,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setPhotoURL(d.photoURL ?? d.avatarUrl ?? null);
         setNetworksCount(d.networksCount ?? 0);
         setProfileEmail(d.email ?? "");
+        setBirthdayValue(d.birthDate ?? d.birthdate ?? "");
         const inst = d.institution ?? "";
         if (inst && !INSTITUTIONS.includes(inst)) {
           setForm(prev => ({ ...prev, institution: "OTHER" }));
@@ -492,12 +491,14 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setPhotoURL(null);
         setNetworksCount(0);
         setProfileEmail("");
+        setBirthdayValue("");
       }
     }).catch(() => {
       setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
       setPhotoURL(null);
       setNetworksCount(0);
       setProfileEmail("");
+      setBirthdayValue("");
     });
   }, [user, viewUserId]);
 
@@ -752,7 +753,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       {/* Body */}
       <div style={S.body}>
         {/* Birthday decorations + wishes */}
-        {isBirthdayToday(form.birthDate) && (
+        {isBirthdayToday(birthdayValue) && (
           <>
             <BirthdayBanner
               name={form.firstName || (isOwner ? "" : t.profile.memberProfile)}
