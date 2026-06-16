@@ -577,7 +577,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     { id: "posts",   label: postsTitle             || "Posts" },
   ];
   const visitorTabs = [
-    { id: "about", label: "About" },
+    { id: "about", label: t.profile.about || "About" },
     { id: "posts", label: postsTitle || "Posts" },
   ];
   const tabs = isOwner ? ownerTabs : visitorTabs;
@@ -1027,8 +1027,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             </a>
           )}
           {!isOwner && onMessage && (
-            <button onClick={handleMessageClick} style={{ padding:"7px 14px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:12, fontWeight:700, cursor:"pointer" }}>
-              Message
+            <button onClick={handleMessageClick} style={{ padding:"10px 20px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+              {t.profile.message || "Message"}
             </button>
           )}
         </div>
@@ -1258,11 +1258,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {/* Posts tab (owner + visitor) */}
         {currentTab === "posts" && <PostsGrid />}
 
-        {/* VISITOR: About tab */}
+        {/* VISITOR: Personal Info tab (read-only, mirrors owner's profile tab) */}
         {!isOwner && currentTab === "about" && (
           <div style={{ display:"grid", gap:"1rem" }}>
             <div className="profile-card" style={S.card}>
-              <SectionTitle label="About" />
+              <SectionTitle label={t.profile.about || "About"} />
+
               <div style={S.row}>
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.firstName}</p>
@@ -1273,6 +1274,18 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   <div style={S.inputDisabled}>{form.lastName || "—"}</div>
                 </div>
               </div>
+
+              <div style={S.row}>
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.phone}</p>
+                  <div style={S.inputDisabled}>{form.phone || "—"}</div>
+                </div>
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.birthDate ?? "Birth Date"}</p>
+                  <div style={S.inputDisabled}>{form.birthDate || "—"}</div>
+                </div>
+              </div>
+
               <div style={S.row}>
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.professionJob}</p>
@@ -1283,82 +1296,61 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   <div style={S.inputDisabled}>{form.region || "—"}</div>
                 </div>
               </div>
+
               <div style={S.row}>
                 <div style={S.group}>
-                  <p style={S.label}>{t.profile.phone}</p>
-                  <div style={S.inputDisabled}>{form.phone || "—"}</div>
-                </div>
-                {form.institution && (
-                  <div style={S.group}>
-                    <p style={S.label}>{t.profile.institution}</p>
-                    <div style={S.inputDisabled}>{form.institution === "OTHER" ? institutionOther : form.institution}</div>
+                  <p style={S.label}>{t.profile.institution}</p>
+                  <div style={S.inputDisabled}>
+                    {form.institution === "OTHER" ? (institutionOther || "—") : (form.institution || "—")}
                   </div>
-                )}
+                </div>
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.graduationYear}</p>
+                  <div style={S.inputDisabled}>{form.graduationYear || "—"}</div>
+                </div>
               </div>
-              {form.bio && (
-                <div style={{ ...S.group, marginTop:"0.5rem" }}>
-                  <p style={S.label}>{t.profile.bio}</p>
-                  <div style={{ ...S.inputDisabled, minHeight:"80px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>{form.bio}</div>
+
+              {form.linkedIn && (
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>{t.profile.linkedIn}</p>
+                  <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
+                    {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
+                  </a>
                 </div>
               )}
-              {/* Additional details — all public; only ethnicity can be set private */}
-              {(form.experience || form.goals || form.linkedIn || (form.ethnicity && !form.ethnicityPrivate)) && (
-                <div style={{ marginTop:"1rem", paddingTop:"1rem", borderTop:`1px solid ${T.cardBorder}` }}>
-                  {form.linkedIn && (
-                    <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                      <p style={S.label}>LinkedIn</p>
-                      <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
-                        target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
-                        {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
-                      </a>
-                    </div>
-                  )}
-                  {form.experience && (
-                    <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                      <p style={S.label}>{t.profile.experience}</p>
-                      <div style={{ ...S.inputDisabled, whiteSpace:"pre-wrap", lineHeight:1.7 }}>{form.experience}</div>
-                    </div>
-                  )}
-                  {form.goals && (
-                    <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                      <p style={S.label}>{t.profile.goals}</p>
-                      <div style={{ ...S.inputDisabled, whiteSpace:"pre-wrap", lineHeight:1.7 }}>{form.goals}</div>
-                    </div>
-                  )}
-                  {form.ethnicity && !form.ethnicityPrivate && (
-                    <div style={S.group}>
-                      <p style={S.label}>{t.profile.ethnicity}</p>
-                      <div style={S.inputDisabled}>{form.ethnicity}</div>
-                    </div>
-                  )}
+
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <p style={S.label}>{t.profile.bio}</p>
+                <div style={{ ...S.inputDisabled, minHeight:"80px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
+                  {form.bio || "—"}
+                </div>
+              </div>
+
+              <div style={S.row}>
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>{t.profile.experience}</p>
+                  <div style={{ ...S.inputDisabled, minHeight:"60px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
+                    {form.experience || "—"}
+                  </div>
+                </div>
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>{t.profile.goals}</p>
+                  <div style={{ ...S.inputDisabled, minHeight:"60px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
+                    {form.goals || "—"}
+                  </div>
+                </div>
+              </div>
+
+              {!form.ethnicityPrivate && (
+                <div style={S.group}>
+                  <p style={S.label}>{t.profile.ethnicity}</p>
+                  <div style={S.inputDisabled}>{form.ethnicity || "—"}</div>
                 </div>
               )}
             </div>
 
-            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
-              <button
-                onClick={handleMessageClick}
-                style={{
-                  padding:"12px 20px", borderRadius:"14px",
-                  background:"#1d4896", color:"#fff", border:"none",
-                  fontSize:"14px", fontWeight:700, cursor: onMessage ? "pointer" : "not-allowed",
-                }}
-                disabled={!onMessage}
-              >
-                Message {form.firstName || "this user"}
-              </button>
-              <button
-                onClick={() => window.history.back()}
-                style={{
-                  padding:"12px 20px", borderRadius:"14px",
-                  background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`,
-                  fontSize:"14px", fontWeight:700, cursor:"pointer",
-                }}
-              >
-                Back
-              </button>
-            </div>
           </div>
         )}
 
