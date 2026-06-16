@@ -504,7 +504,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
         {/* Happy Birthday quick reply — only on birthday auto-posts */}
         {post.birthdayAutoPost && currentUser && (
           <button
-            onClick={() => { setCommentText(t.community.happyBirthday); setShowComments(true); }}
+            onClick={() => { setCommentText("Happy Birthday! 🎂🎉"); setShowComments(true); }}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "7px 16px", borderRadius: "var(--r-full)",
@@ -852,8 +852,7 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
 }
 
 /* ── Birthday hero card ── */
-function BirthdaysCard({ birthdays, onViewProfile, currentUserUid, currentUser, currentUserProfile }) {
-  const { t } = useLang();
+function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
   if (birthdays.length === 0) {
     return (
       <div
@@ -866,8 +865,8 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid, currentUser, 
           textAlign: "center",
         }}
       >
-        <div style={{ marginBottom: 6, display: "flex", justifyContent: "center" }}><CakeIcon size={32} color="var(--text-muted)" /></div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.community.birthdayNoneThisWeek}</p>
+        <div style={{ fontSize: 28, marginBottom: 6 }}>🎂</div>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No birthdays this week.</p>
       </div>
     );
   }
@@ -915,7 +914,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid, currentUser, 
               fontSize: 10, fontWeight: 700,
               textTransform: "uppercase", letterSpacing: "0.12em",
               opacity: 0.85,
-            }}>{t.community.birthdayThisWeek}</p>
+            }}>This week</p>
             <p style={{
               fontSize: 17, fontWeight: 700,
               fontFamily: "var(--font-display)",
@@ -970,7 +969,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid, currentUser, 
                       cursor: onViewProfile ? "pointer" : "default",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}
-                  >{name || "Birthday girl"}</p>
+                  >{name || t.community.birthdayGirl}</p>
                   <span style={{
                     display: "inline-block",
                     fontSize: 10, fontWeight: 800,
@@ -1020,7 +1019,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid, currentUser, 
             fontSize: 9.5, fontWeight: 700, color: "var(--text-muted)",
             textTransform: "uppercase", letterSpacing: "0.1em",
             marginBottom: 6, paddingLeft: 4,
-          }}>{t.community.birthdayComingUp}</p>
+          }}>Coming up</p>
         )}
 
         {upcoming.map((u) => {
@@ -1249,8 +1248,8 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
                   <CakeIcon size={16} color="#fff" />
                   <span>
                     {birthdays.filter((b) => b.daysUntil === 0).length > 0
-                      ? t.community.birthdayBannerToday(birthdays.filter((b) => b.daysUntil === 0).map((b) => `${b.firstName || ""} ${b.lastName || ""}`.trim()).join(", "))
-                      : t.community.birthdayBannerUpcoming(birthdays.length)}
+                      ? `Today: ${birthdays.filter((b) => b.daysUntil === 0).map((b) => `${b.firstName || ""} ${b.lastName || ""}`.trim()).join(", ")}`
+                      : `${birthdays.length} upcoming birthday${birthdays.length > 1 ? "s" : ""} this week`}
                   </span>
                 </span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"

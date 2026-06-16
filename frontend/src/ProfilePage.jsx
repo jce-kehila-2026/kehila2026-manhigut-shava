@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
 import {
   updateEmail,
+  updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from "firebase/auth";
@@ -446,6 +447,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [password,       setPassword]       = useState("");
   const [emailError,     setEmailError]     = useState("");
   const [emailSuccess,   setEmailSuccess]   = useState("");
+  const [showPwModal,    setShowPwModal]    = useState(false);
+  const [currentPw,      setCurrentPw]      = useState("");
+  const [newPw,          setNewPw]          = useState("");
+  const [confirmPw,      setConfirmPw]      = useState("");
+  const [pwError,        setPwError]        = useState("");
+  const [pwSuccess,      setPwSuccess]      = useState("");
 
   /* Raw birthday value, kept separate from form.birthDate so legacy
      "DD/MM/YYYY" free-text birthdays (saved via CompleteProfilePage)
@@ -593,6 +600,34 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       if (err.code === "auth/wrong-password")   setEmailError("Incorrect password.");
       else if (err.code === "auth/invalid-email") setEmailError("Invalid email address.");
       else setEmailError(t.profile.errorGeneral);
+    }
+  };
+
+  /* ── Password change ──
+     Firebase Auth is the backend here: re-authenticate with the current
+     password, then updatePassword() (Firebase hashes/stores it). Only available
+     to email/password accounts — federated (Google) sign-ins have no password. */
+  const isPasswordUser = user?.providerData?.some((p) => p.providerId === "password");
+
+  const handlePasswordChange = async () => {
+    if (!isOwner || !user) return;
+    setPwError(""); setPwSuccess("");
+    if (!currentPw)            { setPwError(t.profile.passwordCurrentRequired); return; }
+    if (newPw !== confirmPw)   { setPwError(t.profile.passwordsNoMatch); return; }
+    if (newPw.length < 8)      { setPwError(t.profile.passwordTooShort); return; }
+    try {
+      const cred = EmailAuthProvider.credential(user.email, currentPw);
+      await reauthenticateWithCredential(auth.currentUser, cred);
+      await updatePassword(auth.currentUser, newPw);
+      setPwSuccess(t.profile.passwordSuccess);
+      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+      setTimeout(() => { setShowPwModal(false); setPwSuccess(""); }, 1400);
+    } catch (err) {
+      if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential")
+        setPwError(t.profile.passwordWrong);
+      else if (err.code === "auth/weak-password") setPwError(t.profile.passwordTooShort);
+      else if (err.code === "auth/too-many-requests") setPwError(t.profile.tooManyRequests);
+      else setPwError(t.profile.errorGeneral);
     }
   };
 
@@ -885,6 +920,22 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 )}
               </div>
             </div>
+
+            {isOwner && (
+              <div className="profile-card" style={{ ...S.card, borderLeftColor:"#60a5fa", marginBottom:0, marginTop:"1rem" }}>
+                <SectionTitle label={t.profile.passwordLabel} />
+                {pwSuccess && <div style={S.emailSuccessMsg}>{pwSuccess}</div>}
+                <div style={S.emailRow}>
+                  <div style={{ ...S.group, flex:1, marginBottom:0 }}>
+                    <label style={S.label}>{t.profile.passwordLabel}</label>
+                    <input style={S.inputDisabled} value="••••••••" type="password" disabled />
+                  </div>
+                  <button className="change-btn" style={S.changeBtn} onClick={() => { setPwError(""); setPwSuccess(""); setShowPwModal(true); }}>
+                    {t.profile.change}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
@@ -1267,6 +1318,49 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowEmailModal(false)}>{t.profile.cancel}</button>
               <button style={S.confirmBtn} onClick={handleEmailChange}>{t.profile.confirm}</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Change Modal */}
+      {showPwModal && isOwner && (
+        <div style={S.modal} onClick={() => setShowPwModal(false)}>
+          <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
+            <p style={S.modalTitle}>{t.profile.changePassword}</p>
+            {isPasswordUser ? (
+              <>
+                <p style={S.modalSub}>{t.profile.passwordModalSub}</p>
+                {pwError && <div style={S.errorMsg}>{pwError}</div>}
+                {pwSuccess && <div style={S.emailSuccessMsg}>{pwSuccess}</div>}
+
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.currentPassword}</label>
+                  <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••" autoComplete="current-password"
+                    value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} />
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.newPassword}</label>
+                  <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••" autoComplete="new-password"
+                    value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.confirmNewPassword}</label>
+                  <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••" autoComplete="new-password"
+                    value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
+                </div>
+                <div style={S.modalActions}>
+                  <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowPwModal(false)}>{t.profile.cancel}</button>
+                  <button style={S.confirmBtn} onClick={handlePasswordChange}>{t.profile.confirm}</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={S.modalSub}>{t.profile.passwordGoogleNote}</p>
+                <div style={S.modalActions}>
+                  <button style={S.confirmBtn} onClick={() => setShowPwModal(false)}>{t.profile.gotIt}</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

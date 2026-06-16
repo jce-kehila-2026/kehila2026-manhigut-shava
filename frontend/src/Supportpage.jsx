@@ -262,8 +262,16 @@ styleTag.textContent = `
   .support-input:focus {
     border-color: #4472b8 !important;
     box-shadow: 0 0 0 3px rgba(68,114,184,0.16) !important;
-    background: #fff !important;
+    background: var(--bg-primary) !important;
     outline: none;
+  }
+  /* Keep autofilled fields readable in dark mode — the browser otherwise forces
+     a yellow background with its own text colour. */
+  .support-input:-webkit-autofill,
+  .support-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-primary) !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--bg-primary) inset !important;
+    caret-color: var(--text-primary);
   }
   .result-card:hover {
     transform: translateY(-2px);
@@ -314,9 +322,9 @@ function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
           width: "100%", display: "flex", alignItems: "center",
           justifyContent: "space-between", gap: 8,
           padding: "11px 14px", borderRadius: "13px",
-          border: `1.5px solid ${value && value !== "OTHER" ? "#4472b8" : "#daeaf8"}`,
-          background: value && value !== "OTHER" ? "#eef4ff" : "#fdf8f6",
-          color: value && value !== "OTHER" ? "#1d4896" : "#6b7280",
+          border: `1.5px solid ${value && value !== "OTHER" ? "var(--border-focus)" : "var(--border)"}`,
+          background: value && value !== "OTHER" ? "var(--bg-tertiary)" : "var(--bg-secondary)",
+          color: value && value !== "OTHER" ? "var(--text-primary)" : "var(--text-muted)",
           fontSize: "14px", fontWeight: value && value !== "OTHER" ? 600 : 400,
           cursor: "pointer", fontFamily: "inherit",
           direction: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left",
@@ -358,10 +366,10 @@ function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
               style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 8,
                 padding: "9px 14px",
-                background: value === key ? "#eef4ff" : "transparent",
+                background: value === key ? "var(--bg-tertiary)" : "transparent",
                 border: "none",
                 borderBottom: idx < areas.length - 1 ? "1px solid var(--border)" : "none",
-                color: value === key ? "#1d4896" : "var(--text-primary)",
+                color: "var(--text-primary)",
                 fontSize: "13px", fontWeight: value === key ? 700 : 400,
                 cursor: "pointer", textAlign: isRTL ? "right" : "left",
                 direction: isRTL ? "rtl" : "ltr",
