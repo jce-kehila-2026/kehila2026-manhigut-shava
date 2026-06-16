@@ -504,7 +504,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
         {/* Happy Birthday quick reply — only on birthday auto-posts */}
         {post.birthdayAutoPost && currentUser && (
           <button
-            onClick={() => { setCommentText("Happy Birthday! 🎂🎉"); setShowComments(true); }}
+            onClick={() => { setCommentText(t.community.happyBirthdayPrefill); setShowComments(true); }}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "7px 16px", borderRadius: "var(--r-full)",
@@ -758,6 +758,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
 
 /* ── Birthday hero card ── */
 function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
+  const { t } = useLang();
   if (birthdays.length === 0) {
     return (
       <div
@@ -771,7 +772,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
         }}
       >
         <div style={{ fontSize: 28, marginBottom: 6 }}>🎂</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No birthdays this week.</p>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.community.noBirthdaysWeek}</p>
       </div>
     );
   }
@@ -819,7 +820,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
               fontSize: 10, fontWeight: 700,
               textTransform: "uppercase", letterSpacing: "0.12em",
               opacity: 0.85,
-            }}>This week</p>
+            }}>{t.community.thisWeek}</p>
             <p style={{
               fontSize: 17, fontWeight: 700,
               fontFamily: "var(--font-display)",
@@ -872,7 +873,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
                       cursor: onViewProfile ? "pointer" : "default",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}
-                  >{name || "Birthday girl"}</p>
+                  >{name || t.community.birthdayGirl}</p>
                   <span style={{
                     display: "inline-block",
                     fontSize: 10, fontWeight: 800,
@@ -916,7 +917,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
             fontSize: 9.5, fontWeight: 700, color: "var(--text-muted)",
             textTransform: "uppercase", letterSpacing: "0.1em",
             marginBottom: 6, paddingLeft: 4,
-          }}>Coming up</p>
+          }}>{t.community.comingUp}</p>
         )}
 
         {upcoming.map((u) => {
@@ -942,7 +943,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>{name}</p>
                 <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-                  {formatBirthday(u.birthDate ?? u.birthdate)} · in {u.daysUntil} day{u.daysUntil > 1 ? "s" : ""}
+                  {formatBirthday(u.birthDate ?? u.birthdate)} · {t.community.inDays(u.daysUntil)}
                 </p>
               </div>
               <span style={{
@@ -1160,8 +1161,8 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
                   <span>🎂</span>
                   <span>
                     {birthdays.filter((b) => b.daysUntil === 0).length > 0
-                      ? `Today: ${birthdays.filter((b) => b.daysUntil === 0).map((b) => `${b.firstName || ""} ${b.lastName || ""}`.trim()).join(", ")}`
-                      : `${birthdays.length} upcoming birthday${birthdays.length > 1 ? "s" : ""} this week`}
+                      ? t.community.bdayTodayList(birthdays.filter((b) => b.daysUntil === 0).map((b) => `${b.firstName || ""} ${b.lastName || ""}`.trim()).join(", "))
+                      : t.community.upcomingThisWeek(birthdays.length)}
                   </span>
                 </span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
