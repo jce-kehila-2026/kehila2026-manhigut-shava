@@ -612,11 +612,17 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     if (!isOwner || !user) return;
     const file = e.target.files[0];
     if (!file) return;
-    const storageRef = ref(storage, `covers/${user.uid}`);
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-    setCoverURL(url);
-    await updateDoc(doc(db, "users", user.uid), { coverPhotoURL: url });
+    e.target.value = "";
+    try {
+      const storageRef = ref(storage, `covers/${user.uid}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setCoverURL(url);
+      await updateDoc(doc(db, "users", user.uid), { coverPhotoURL: url });
+    } catch (err) {
+      console.error("Cover upload failed:", err);
+      setError(t.profile.errorGeneral);
+    }
   };
 
   /* ── Save (per-section) ── */
