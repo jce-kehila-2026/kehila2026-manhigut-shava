@@ -121,7 +121,7 @@ export default function OtpVerificationPage() {
           <div style={{ marginBottom: "0.75rem", display: "flex", justifyContent: "center" }}>
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="rgba(200,221,251,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           </div>
-          <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", marginBottom: "0.4rem" }}>אימות כתובת האימייל</h2>
+          <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", marginBottom: "0.4rem" }}>אימות כתובת הדוא״ל</h2>
           <p style={{ color: "rgba(200,221,251,0.6)", fontSize: "0.85rem", lineHeight: 1.6, marginBottom: "1.8rem" }}>
             {sent ? <>שלחנו קוד בן 6 ספרות ל<br/><strong style={{ color: C.pale }}>{user?.email}</strong></> : "שולחת קוד..."}
           </p>
@@ -205,7 +205,7 @@ export default function OtpVerificationPage() {
             onMouseEnter={e => e.target.style.background = "rgba(255,255,255,0.12)"}
             onMouseLeave={e => e.target.style.background = "rgba(255,255,255,0.06)"}
           >
-            ← חזרה / שינוי כתובת אימייל
+            ← חזרה / שינוי כתובת דוא״ל
           </button>
         </div>
       </div>
