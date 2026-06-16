@@ -831,7 +831,29 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
     }
   };
 
-  if (!currentUser || currentUser.uid === birthdayUserId) return null;
+  if (!currentUser) return null;
+
+  const isSelf = currentUser.uid === birthdayUserId;
+
+  if (isSelf) {
+    return (
+      <div style={{
+        flex: 1,
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        padding: "7px 0",
+        borderRadius: "var(--r-full)",
+        background: count > 0
+          ? "linear-gradient(135deg, #4472b8, #6da3d4)"
+          : "linear-gradient(135deg, rgba(68,114,184,0.12), rgba(109,163,212,0.12))",
+        color: count > 0 ? "#fff" : "#4472b8",
+        border: count > 0 ? "none" : "1.5px solid rgba(68,114,184,0.35)",
+        fontSize: 12, fontWeight: 700,
+      }}>
+        <BalloonSVG size={15} color={count > 0 ? "#fff" : "#4472b8"} />
+        {count > 0 ? count : ""}
+      </div>
+    );
+  }
 
   return (
     <button
