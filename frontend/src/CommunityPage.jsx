@@ -787,23 +787,29 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
 
   useEffect(() => {
     const ref = doc(db, "birthdayWishes", docId);
-    return onSnapshot(ref, (snap) => {
-      setWishData(snap.exists() ? snap.data() : { count: 0, wishers: [] });
-    });
+    return onSnapshot(
+      ref,
+      (snap) => {
+        setWishData(snap.exists() ? snap.data() : { count: 0, wishers: [] });
+      },
+      () => {
+        setWishData({ count: 0, wishers: [] });
+      }
+    );
   }, [docId]);
 
   const hasWished = wishData?.wishers?.includes(currentUser?.uid);
   const count = wishData?.count || 0;
 
   const handleClick = async () => {
-    if (hasWished || clicking || !currentUser || !wishData) return;
+    if (hasWished || clicking || !currentUser) return;
     setClicking(true);
     try {
       const ref = doc(db, "birthdayWishes", docId);
       await setDoc(ref, {
         birthdayUserId,
         date: todayStr,
-        count: (wishData.count || 0) + 1,
+        count: (wishData?.count || 0) + 1,
         wishers: arrayUnion(currentUser.uid),
       }, { merge: true });
       const fromName = `${currentUserProfile?.firstName || ""} ${currentUserProfile?.lastName || ""}`.trim() || currentUser.email || "";
@@ -818,12 +824,36 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
       });
       setJustSent(true);
       setTimeout(() => setJustSent(false), 2000);
+    } catch (e) {
+      console.error("Birthday wish failed:", e);
     } finally {
       setClicking(false);
     }
   };
 
-  if (!currentUser || currentUser.uid === birthdayUserId) return null;
+  if (!currentUser) return null;
+
+  const isSelf = currentUser.uid === birthdayUserId;
+
+  if (isSelf) {
+    return (
+      <div style={{
+        flex: 1,
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        padding: "7px 0",
+        borderRadius: "var(--r-full)",
+        background: count > 0
+          ? "linear-gradient(135deg, #4472b8, #6da3d4)"
+          : "linear-gradient(135deg, rgba(68,114,184,0.12), rgba(109,163,212,0.12))",
+        color: count > 0 ? "#fff" : "#4472b8",
+        border: count > 0 ? "none" : "1.5px solid rgba(68,114,184,0.35)",
+        fontSize: 12, fontWeight: 700,
+      }}>
+        <BalloonSVG size={15} color={count > 0 ? "#fff" : "#4472b8"} />
+        {count > 0 ? count : ""}
+      </div>
+    );
+  }
 
   return (
     <button

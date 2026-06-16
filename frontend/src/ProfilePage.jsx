@@ -17,7 +17,12 @@ import { isBirthdayToday } from "./utils/birthday";
 const storage = getStorage();
 
 /* ─── Inject keyframe animations once ─── */
-const styleTag = document.createElement("style");
+let styleTag = document.head.querySelector("#profile-styles");
+if (!styleTag) {
+  styleTag = document.createElement("style");
+  styleTag.id = "profile-styles";
+  document.head.appendChild(styleTag);
+}
 styleTag.textContent = `
   @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
   * { font-family: 'Figtree', 'Heebo', system-ui, sans-serif; }
@@ -96,11 +101,10 @@ styleTag.textContent = `
     animation: shimmer 1.6s infinite linear;
   }
   .check-svg { animation: checkPop 0.35s ease both; }
+  .cover-edit-btn:hover { background: rgba(0,0,0,0.65) !important; }
+  .avatar-edit-btn:hover { background: #1d4896 !important; color: #fff !important; border-color: #1d4896 !important; }
+  .profile-tab-btn { background: none; border: none; cursor: pointer; white-space: nowrap; }
 `;
-if (!document.head.querySelector("#profile-styles")) {
-  styleTag.id = "profile-styles";
-  document.head.appendChild(styleTag);
-}
 
 function CheckMark() {
   return (
@@ -117,7 +121,7 @@ function CompletenessBadge({ pct }) {
   const bg     = pct >= 80 ? "#f0fdf4" : pct >= 50 ? "#fffbeb" : "#fff5f5";
   const border = pct >= 80 ? "#cfe4ce" : pct >= 50 ? "#fde68a" : "#d99090";
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"1.75rem" }}>
+    <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"0.75rem" }}>
       <div style={{ flex:1, height:"6px", background:T.inputBorder, borderRadius:"99px", overflow:"hidden" }}>
         <div style={{
           width:`${pct}%`, height:"100%",
@@ -246,7 +250,7 @@ function Balloon({ color, left, delay, size, duration }) {
   );
 }
 
-/* ─── Birthday banner — balloons + greeting, shown when it's the profile owner's birthday ─── */
+/* ─── Birthday banner ─── */
 function BirthdayBanner({ name, isOwner, isMobile, t }) {
   const { T, dark } = useTheme();
   const balloons = useMemo(() => {
@@ -305,7 +309,7 @@ function BirthdayBanner({ name, isOwner, isMobile, t }) {
   );
 }
 
-/* ─── Birthday wishes — read + leave a message on someone's birthday ─── */
+/* ─── Birthday wishes ─── */
 function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, relativeTime, isMobile }) {
   const { T } = useTheme();
   const [wishes, setWishes] = useState([]);
@@ -448,6 +452,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const { T, dark } = useTheme();
   const isMobile = useIsMobile();
   const fileRef = useRef();
+  const coverFileRef = useRef();
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
@@ -456,6 +461,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   });
   const [institutionOther, setInstitutionOther] = useState("");
   const [photoURL, setPhotoURL] = useState(null);
+  const [coverURL, setCoverURL] = useState(null);
   const [savingKey, setSavingKey] = useState(null);
   const [savedKey,  setSavedKey]  = useState(null);
   const [error,    setError]    = useState("");
@@ -480,11 +486,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [passwordError,          setPasswordError]          = useState("");
   const [passwordSuccess,        setPasswordSuccess]        = useState("");
 
-  /* Raw birthday value, kept separate from form.birthDate so legacy
-     "DD/MM/YYYY" free-text birthdays (saved via CompleteProfilePage)
-     still trigger the birthday banner even if they don't match the
-     <input type="date"> format. */
   const [birthdayValue, setBirthdayValue] = useState("");
+  const [activeTab, setActiveTab] = useState(null);
 
   /* ── Load profile + network count ── */
   useEffect(() => {
@@ -512,6 +515,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           goals:          d.goals          ?? "",
         });
         setPhotoURL(d.photoURL ?? d.avatarUrl ?? null);
+        setCoverURL(d.coverPhotoURL ?? null);
         setNetworksCount(d.networksCount ?? 0);
         setProfileEmail(d.email ?? "");
         setBirthdayValue(d.birthDate ?? d.birthdate ?? "");
@@ -523,6 +527,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       } else {
         setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
+        setCoverURL(null);
         setNetworksCount(0);
         setProfileEmail("");
         setBirthdayValue("");
@@ -530,6 +535,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     }).catch(() => {
       setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
       setPhotoURL(null);
+      setCoverURL(null);
       setNetworksCount(0);
       setProfileEmail("");
       setBirthdayValue("");
@@ -561,11 +567,21 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const isOwner = !viewUserId || viewUserId === user?.uid;
   const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
   const isReadOnly = !isOwner;
-  const profileHeading = isOwner
-    ? (form.firstName ? t.profile.greeting(form.firstName) : t.profile.myProfile)
-    : (form.firstName ? `${form.firstName} ${form.lastName}`.trim() : t.profile.memberProfile);
   const postsTitle = isOwner ? t.profile.myPosts : t.profile.posts;
   const noPostsMessage = isOwner ? t.profile.noMyPosts : t.profile.noPosts;
+
+  /* Tab definitions */
+  const ownerTabs = [
+    { id: "profile", label: t.profile.personalInfo || "Profile" },
+    { id: "account", label: t.profile.emailAddress || "Account" },
+    { id: "posts",   label: postsTitle             || "Posts" },
+  ];
+  const visitorTabs = [
+    { id: "about", label: "About" },
+    { id: "posts", label: postsTitle || "Posts" },
+  ];
+  const tabs = isOwner ? ownerTabs : visitorTabs;
+  const currentTab = activeTab || tabs[0].id;
 
   const getPostMedia = (post) => {
     if (Array.isArray(post.media)) return post.media;
@@ -588,10 +604,22 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     const url = await getDownloadURL(storageRef);
     setPhotoURL(url);
     await updateDoc(doc(db, "users", user.uid), { photoURL: url });
-    refreshProfile(); // keep AuthContext in sync so Dashboard shows updated photo
+    refreshProfile();
   };
 
-  /* ── Save (per-section, supports admin editing another user) ── */
+  /* ── Cover photo upload ── */
+  const handleCoverUpload = async (e) => {
+    if (!isOwner || !user) return;
+    const file = e.target.files[0];
+    if (!file) return;
+    const storageRef = ref(storage, `covers/${user.uid}`);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    setCoverURL(url);
+    await updateDoc(doc(db, "users", user.uid), { coverPhotoURL: url });
+  };
+
+  /* ── Save (per-section) ── */
   const handleSaveSection = async (sectionKey, fields) => {
     if (!user) return;
     const targetId = isOwner ? user.uid : (authProfile?.isAdmin && viewUserId ? viewUserId : null);
@@ -671,37 +699,115 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     page: {
       display:"flex", flexDirection:"column",
       width:"100%", height:"100%", overflowY:"auto", overflowX:"hidden",
-      padding:"0 0 3rem",
+      padding:"0 0 2rem",
       boxSizing:"border-box",
       direction: isRTL ? "rtl" : "ltr",
       background: T.bg,
     },
-    banner: {
-      width:"100%", background:"linear-gradient(135deg, #0b1f52 0%, #1d4896 60%, #2f5fd4 100%)",
-      padding: isMobile ? "1rem 1.25rem" : "1.25rem 2rem",
-      display:"flex", alignItems:"center", gap:"1rem", flexShrink:0,
+    /* ── Cover photo (standalone, normal flow) ── */
+    coverWrap: {
+      position:"relative", flexShrink:0,
+      height: isMobile ? 110 : 150,
+      background:"linear-gradient(135deg, #0b1f52 0%, #1d4896 60%, #2f5fd4 100%)",
+      overflow:"hidden",
     },
-    avatarWrap:  { position:"relative", flexShrink:0 },
-    avatarRing:  { width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg, #4472b8, #0b1f52)", padding:3, boxShadow:"0 4px 16px rgba(0,0,0,0.35)" },
-    avatarInner: { width:"100%", height:"100%", borderRadius:"50%", background:"#0b1f52", color:"#ffffff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", fontWeight:"700", overflow:"hidden" },
-    avatarImg:   { width:"100%", height:"100%", objectFit:"cover" },
-    uploadPill:  { display:"flex", flexDirection:"column", alignItems: isRTL ? "flex-start" : "flex-end", gap:4, marginLeft:"auto", flexShrink:0 },
-    uploadBtn: {
-      padding:"7px 14px", background:"rgba(255,255,255,0.18)", color:"#fff",
-      border:"1px solid rgba(255,255,255,0.35)", borderRadius:"11px",
-      fontSize:"12px", fontWeight:"700", cursor:"pointer",
-      backdropFilter:"blur(6px)", transition:"background 0.2s",
+    coverImg: {
+      position:"absolute", inset:0,
+      width:"100%", height:"100%", objectFit:"cover",
     },
-    avatarHint: { fontSize:"10px", color:"rgba(255,255,255,0.5)", margin:0 },
-    body: { padding: isMobile ? "0.75rem 1rem 0" : "1rem 2rem 0" },
+    coverOverlay: {
+      position:"absolute", inset:0,
+      background:"linear-gradient(to top, rgba(11,31,82,0.45) 0%, transparent 55%)",
+      zIndex:1,
+    },
+    coverEditBtn: {
+      position:"absolute", top:12, ...(isRTL ? { left:12 } : { right:12 }), zIndex:2,
+      display:"flex", alignItems:"center", gap:5,
+      padding:"6px 13px",
+      background:"rgba(0,0,0,0.45)", color:"#fff",
+      border:"1px solid rgba(255,255,255,0.3)",
+      borderRadius:99, fontSize:12, fontWeight:700, cursor:"pointer",
+      backdropFilter:"blur(6px)", transition:"background 0.18s",
+    },
+    /* ── Profile info section: avatar pokes up into cover, name sits BELOW avatar ── */
+    profileInfoSection: {
+      position:"relative", flexShrink:0,
+      background: T.bg,
+      paddingTop: isMobile ? 56 : 64,
+      padding: isMobile ? "56px 1rem 8px" : "64px 2rem 10px",
+      display:"flex", justifyContent:"space-between", alignItems:"flex-start",
+    },
+    avatarWrap: {
+      position:"absolute",
+      top: isMobile ? -48 : -56,
+      ...(isRTL ? { right: isMobile ? "1rem" : "2rem" } : { left: isMobile ? "1rem" : "2rem" }),
+      zIndex:2,
+    },
+    avatarRing: {
+      width: isMobile ? 96 : 112, height: isMobile ? 96 : 112,
+      borderRadius:"50%",
+      border:`4px solid ${T.bg}`,
+      boxShadow:"0 4px 20px rgba(0,0,0,0.28)",
+      overflow:"hidden",
+      background:"linear-gradient(135deg, #4472b8, #0b1f52)",
+    },
+    avatarInner: {
+      width:"100%", height:"100%",
+      background:"#0b1f52", color:"#ffffff",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      fontSize: isMobile ? 26 : 30, fontWeight:"700", overflow:"hidden",
+    },
+    avatarImg: { width:"100%", height:"100%", objectFit:"cover" },
+    avatarEditBtn: {
+      position:"absolute", bottom:2, right:2,
+      width:26, height:26, borderRadius:"50%",
+      background:T.bg, border:`1.5px solid ${T.inputBorder}`,
+      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+      padding:0, fontSize:12, color:"#1d4896",
+      transition:"background 0.18s, color 0.18s, border-color 0.18s",
+    },
+    profileMetaText: { flex:1, minWidth:0 },
+    profileName: { fontSize: isMobile ? 18 : 22, fontWeight:800, color:T.text, margin:"0 0 3px", lineHeight:1.2 },
+    profilePro:  { fontSize:13, color:T.sub, margin:"0 0 5px" },
+    profileActions: { display:"flex", gap:8, alignItems:"flex-start", flexShrink:0, paddingTop:2 },
+    /* ── Tab bar ── */
+    tabBar: {
+      display:"flex", gap:0,
+      borderBottom:`2px solid ${T.cardBorder}`,
+      padding: isMobile ? "0.5rem 1rem 0" : "0.5rem 2rem 0",
+      marginBottom:"1rem",
+    },
+    tab: {
+      flexShrink:0, padding:"9px 16px",
+      background:"none", border:"none",
+      borderBottom:"2.5px solid transparent",
+      marginBottom:"-2px",
+      color:T.sub,
+      fontSize:13, fontWeight:500,
+      cursor:"pointer", whiteSpace:"nowrap",
+      transition:"color 0.15s",
+      fontFamily:"inherit",
+    },
+    tabActive: {
+      flexShrink:0, padding:"9px 16px",
+      background:"none", border:"none",
+      borderBottom:"2.5px solid #4472b8",
+      marginBottom:"-2px",
+      color:"#4472b8",
+      fontSize:13, fontWeight:700,
+      cursor:"pointer", whiteSpace:"nowrap",
+      transition:"color 0.15s",
+      fontFamily:"inherit",
+    },
+    body: { padding: isMobile ? "0 1rem" : "0 2rem" },
     twoCol: { display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"1.25rem", alignItems:"start" },
     greeting:    { fontSize:"23px", fontWeight:"700", color:T.text, margin:"0 0 4px" },
     greetingSub: { fontSize:"13px", color:T.sub, margin:"0 0 1rem" },
     card: {
-      background:T.card, borderRadius:"20px",
+      background:T.card, borderRadius:"16px",
       border:`1.5px solid ${T.cardBorder}`,
       boxShadow:"0 4px 24px rgba(29, 72, 150,0.06)",
-      padding:"1.75rem", marginBottom:"1.25rem",
+      padding:"1.25rem", marginBottom:"1rem",
       borderLeft:"4px solid #4472b8",
     },
     row:   { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:"1rem", marginBottom:"1rem" },
@@ -754,10 +860,125 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     return t.profile.saveChanges;
   };
 
+  /* ── Posts grid (shared between owner + visitor "posts" tab) ── */
+  const PostsGrid = () => (
+    <div style={{ marginTop:"0.25rem" }}>
+      {postsLoading && <p style={{ color: T.sub, fontSize: "14px" }}>…</p>}
+      {!postsLoading && myPosts.length === 0 && (
+        <div style={{
+          textAlign: "center", padding: "2.5rem",
+          background: T.inputBg, borderRadius: "16px",
+          border: `1.5px dashed ${T.inputBorder}`, color: T.sub, fontSize: "14px",
+        }}>
+          {noPostsMessage}
+        </div>
+      )}
+      {!postsLoading && myPosts.length > 0 && (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:"1.25rem" }}>
+          {myPosts.map((post) => (
+            <div key={post.id} className="profile-card" onClick={() => onNavigateToCommunity?.()}
+              style={{
+                background: T.card, borderRadius: "18px",
+                border: `1.5px solid ${T.cardBorder}`, borderLeft: "4px solid #4472b8",
+                boxShadow: "0 2px 8px rgba(29, 72, 150,0.05)",
+                padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem",
+                cursor: onNavigateToCommunity ? "pointer" : "default",
+                transition: "box-shadow 0.18s, transform 0.18s",
+              }}
+              onMouseEnter={e => { if (onNavigateToCommunity) { e.currentTarget.style.boxShadow = "0 6px 20px rgba(29,72,150,0.12)"; e.currentTarget.style.transform = "translateY(-2px)"; }}}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 8px rgba(29,72,150,0.05)"; e.currentTarget.style.transform = "none"; }}
+            >
+              {post.text && (
+                <p style={{
+                  fontSize: "14px", color: T.text, margin: 0,
+                  lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-word",
+                  display: "-webkit-box", WebkitLineClamp: 4,
+                  WebkitBoxOrient: "vertical", overflow: "hidden",
+                }}>
+                  {post.text}
+                </p>
+              )}
+              {post.repostOf && (
+                <span style={{
+                  fontSize: "11px", color: T.sub,
+                  background: T.tagBg, borderRadius: "6px",
+                  padding: "3px 8px", display: "inline-block", alignSelf: "flex-start",
+                }}>
+                  ↺ {t.community.repostedBy} {post.repostOf.authorName ?? ""}
+                </span>
+              )}
+              {(() => {
+                const postMedia = getPostMedia(post);
+                if (!postMedia.length) return null;
+                return (
+                  <div style={{ display:"grid", gridTemplateColumns: postMedia.length === 1 ? "1fr" : "repeat(2, minmax(0, 1fr))", gap:6 }}>
+                    {postMedia.slice(0, 4).map((media, i) => (
+                      media.type === "image" ? (
+                        <img key={i} src={media.url} alt=""
+                          style={{ width:"100%", height:120, objectFit:"cover", borderRadius:"12px", cursor:"pointer" }}
+                          onClick={() => window.open(media.url, "_blank")} />
+                      ) : (
+                        <video key={i} src={media.url} controls
+                          style={{ width:"100%", height:120, borderRadius:"12px", objectFit:"cover" }} />
+                      )
+                    ))}
+                    {postMedia.length > 4 && (
+                      <div style={{ display:"grid", placeItems:"center", borderRadius:"12px", background:T.tagBg, color:T.sub, fontSize:"13px", fontWeight:700 }}>
+                        +{postMedia.length - 4}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:"auto" }}>
+                <div style={{ display:"flex", gap:"12px" }}>
+                  {(post.likes?.length ?? post.likesCount ?? 0) > 0 && (
+                    <span style={{ fontSize:"12px", color:T.sub, display:"flex", alignItems:"center", gap:3 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                      {post.likes?.length ?? post.likesCount}
+                    </span>
+                  )}
+                  {(post.commentsCount ?? 0) > 0 && (
+                    <span style={{ fontSize:"12px", color:T.sub, display:"flex", alignItems:"center", gap:3 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      {post.commentsCount}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize:"11px", color:T.muted }}>{relativeTime(post.createdAt)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div style={S.page}>
-      {/* Compact profile header */}
-      <div style={S.banner}>
+
+      {/* ── Cover photo ── */}
+      <div style={S.coverWrap}>
+        {coverURL && <img src={coverURL} alt="cover" style={S.coverImg} />}
+        <div style={S.coverOverlay} />
+        {isOwner && (
+          <>
+            <input ref={coverFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleCoverUpload} />
+            <button className="cover-edit-btn" style={S.coverEditBtn} onClick={() => coverFileRef.current.click()}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              {coverURL ? t.profile.editCover : t.profile.addCover}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* ── Profile info: avatar pokes up into cover, name sits below ── */}
+      <div style={S.profileInfoSection}>
+
+        {/* Avatar: absolutely positioned, top half overlaps cover photo above */}
         <div style={S.avatarWrap}>
           <div style={S.avatarRing}>
             <div style={S.avatarInner}>
@@ -769,193 +990,270 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           {isOwner && (
             <>
               <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handlePhotoUpload} />
-              <button className="upload-btn" onClick={() => fileRef.current.click()}
-                style={{ position:"absolute", bottom:-2, right:-2, width:22, height:22, borderRadius:"50%", background:"#fff", border:"1.5px solid #4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, fontSize:11, color:"#1d4896" }}
-                title={t.profile.uploadPhoto}>✎</button>
+              <button className="avatar-edit-btn" style={S.avatarEditBtn} onClick={() => fileRef.current.click()} title={t.profile.uploadPhoto}>
+                ✎
+              </button>
             </>
           )}
         </div>
 
-        {/* Name + role */}
-        <div style={{ flex:1, minWidth:0 }}>
-          <h2 style={{ fontSize:17, fontWeight:800, color:"#fff", margin:0, lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-            {form.firstName || form.lastName ? `${form.firstName} ${form.lastName}`.trim() : (isOwner ? t.profile.myProfile : t.profile.memberProfile)}
+        {/* Name / profession — in normal flow, appears BELOW the avatar */}
+        <div style={S.profileMetaText}>
+          <h2 style={S.profileName}>
+            {form.firstName || form.lastName
+              ? `${form.firstName} ${form.lastName}`.trim()
+              : (isOwner ? t.profile.myProfile : t.profile.memberProfile)}
           </h2>
-          {form.profession && <p style={{ fontSize:12, color:"rgba(200,221,251,0.75)", margin:"4px 0 0" }}>{form.profession}</p>}
-          {networksCount > 0 && (
-            <span style={{ display:"inline-block", marginTop:5, fontSize:10, fontWeight:700, color:"rgba(200,221,251,0.85)", background:"rgba(255,255,255,0.12)", padding:"2px 9px", borderRadius:99 }}>
-              {networksCount} Connections
-            </span>
-          )}
+          {form.profession && <p style={S.profilePro}>{form.profession}</p>}
         </div>
 
-        {/* LinkedIn button */}
-        <div style={S.uploadPill}>
+        {/* Actions: LinkedIn / Message */}
+        <div style={S.profileActions}>
           {form.linkedIn && (
             <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
               target="_blank" rel="noreferrer"
-              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 14px", borderRadius:99, background:"rgba(255,255,255,0.18)", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", border:"1px solid rgba(255,255,255,0.3)", whiteSpace:"nowrap" }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.28)"}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
+              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#1d4896", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", border:"none", whiteSpace:"nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#0b1f52"}
+              onMouseLeave={e => e.currentTarget.style.background = "#1d4896"}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
               LinkedIn
             </a>
           )}
+          {!isOwner && onMessage && (
+            <button onClick={handleMessageClick} style={{ padding:"7px 14px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+              Message
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Body */}
-      <div style={S.body}>
-        {/* Birthday decorations + wishes */}
-        {isBirthdayToday(birthdayValue) && (
-          <>
-            <BirthdayBanner
-              name={form.firstName || (isOwner ? "" : t.profile.memberProfile)}
-              isOwner={isOwner}
-              isMobile={isMobile}
-              t={t}
-            />
-            <BirthdayWishes
-              targetId={viewUserId || user?.uid}
-              currentUser={user}
-              currentProfile={authProfile}
-              isOwner={isOwner}
-              t={t}
-              relativeTime={relativeTime}
-              isMobile={isMobile}
-            />
-          </>
-        )}
-
-        <div style={{ marginBottom:"1rem" }}>
-          {!isReadOnly && <CompletenessBadge pct={pct} />}
+      {/* ── Birthday decorations ── */}
+      {isBirthdayToday(birthdayValue) && (
+        <div style={{ padding: isMobile ? "0 1rem" : "0 2rem" }}>
+          <BirthdayBanner
+            name={form.firstName || (isOwner ? "" : t.profile.memberProfile)}
+            isOwner={isOwner}
+            isMobile={isMobile}
+            t={t}
+          />
+          <BirthdayWishes
+            targetId={viewUserId || user?.uid}
+            currentUser={user}
+            currentProfile={authProfile}
+            isOwner={isOwner}
+            t={t}
+            relativeTime={relativeTime}
+            isMobile={isMobile}
+          />
         </div>
+      )}
 
-        {!isReadOnly ? (
-          <div style={S.twoCol}>
-            {/* Left — Personal Info */}
-            <div className="profile-card" style={{ ...S.card, marginBottom:0 }}>
+      {/* Completeness badge — only for owner, pushes tab bar down when visible */}
+      {isOwner && (
+        <div style={{ padding: isMobile ? "0.5rem 1rem 0" : "0.5rem 2rem 0" }}>
+          <CompletenessBadge pct={pct} />
+        </div>
+      )}
+
+      {/* ── Tab bar ── */}
+      <div style={S.tabBar}>
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            style={currentTab === tab.id ? S.tabActive : S.tab}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab content ── */}
+      <div style={S.body}>
+
+        {/* OWNER: Profile tab (personal info + details combined) */}
+        {isOwner && currentTab === "profile" && (
+          <div>
+            {error && <div style={S.errorMsg}>{error}</div>}
+
+            <div className="profile-card" style={S.card}>
               <SectionTitle label={t.profile.personalInfo} />
-              {error && <div style={S.errorMsg}>{error}</div>}
 
-            <div style={S.row}>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.firstName}</label>
-                <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} disabled={isReadOnly} />
+              <div style={S.row}>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.firstName}</label>
+                  <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} />
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.lastName}</label>
+                  <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} />
+                </div>
               </div>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.lastName}</label>
-                <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} disabled={isReadOnly} />
+
+              <div style={S.row}>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.phone}</label>
+                  <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} />
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.birthDate ?? "Birth Date"}</label>
+                  <PlainInput type="date" name="birthDate" value={form.birthDate} onChange={handleChange} />
+                </div>
               </div>
-            </div>
 
-            <div style={S.row}>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.phone}</label>
-                <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} disabled={isReadOnly} />
+              <div style={S.row}>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.professionJob}</label>
+                  <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} />
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.region}</label>
+                  <SelectInput value={form.region} placeholder="—" options={t.profile.regionOptions}
+                    onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
+                </div>
               </div>
-            </div>
 
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.birthDate ?? "Birth Date"}</label>
-              <PlainInput
-                type="date"
-                name="birthDate"
-                value={form.birthDate}
-                onChange={handleChange}
-                disabled={isReadOnly}
-              />
-            </div>
+              <div style={S.row}>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.institution}</label>
+                  <select
+                    className="profile-input"
+                    value={INSTITUTIONS.includes(form.institution) ? form.institution : (form.institution ? "OTHER" : "")}
+                    onChange={e => {
+                      if (e.target.value === "OTHER") { setForm(p => ({ ...p, institution:"OTHER" })); setInstitutionOther(""); }
+                      else { handleChange({ target:{ name:"institution", value:e.target.value } }); setInstitutionOther(""); }
+                    }}
+                    style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.text, background:T.inputBg, fontFamily:"inherit", appearance:"none" }}
+                  >
+                    <option value="">{t.profile.institutionPlaceholder || "בחרי מוסד..."}</option>
+                    {INSTITUTIONS.map((inst, i) => <option key={i} value={inst}>{inst}</option>)}
+                    <option value="OTHER">אחר (כתבי ידנית)</option>
+                  </select>
+                  {(form.institution === "OTHER" || (!INSTITUTIONS.includes(form.institution) && form.institution)) && (
+                    <PlainInput value={institutionOther} onChange={e => setInstitutionOther(e.target.value)}
+                      placeholder="שם המוסד / הארגון..." />
+                  )}
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.graduationYear}</label>
+                  <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
+                    placeholder={t.profile.graduationYearPlaceholder} />
+                </div>
+              </div>
 
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.professionJob}</label>
-              <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} disabled={isReadOnly} />
-            </div>
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <label style={S.label}>{t.profile.linkedIn}</label>
+                <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder={t.profile.linkedInPlaceholder} />
+              </div>
 
-            <div style={S.actionRow}>
-              <button
-                style={getSaveBtnStyle("personal")}
-                className={savingKey === "personal" ? "save-btn-shimmer" : ""}
-                onClick={() => handleSaveSection("personal", { firstName:form.firstName, lastName:form.lastName, phone:form.phone, profession:form.profession, birthDate:form.birthDate })}
-                disabled={!!savingKey}
-                onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                {saveBtnLabel("personal")}
-              </button>
-            </div>
-          </div>
-
-          {/* Right — Bio + Email */}
-          <div style={{ display:"flex", flexDirection:"column", gap:"1.25rem" }}>
-            <div className="profile-card" style={{ ...S.card, marginBottom:0 }}>
-              <SectionTitle label={t.profile.bio} />
-              <div style={S.bioWrap}>
-                <textarea
-                  className="profile-textarea"
-                  style={{ ...S.textarea, minHeight:"148px", background: isReadOnly ? T.tagBg : T.inputBg, color: isReadOnly ? T.sub : T.text }}
-                  name="bio"
-                  value={form.bio}
-                  onChange={(e) => { if (!isReadOnly && e.target.value.length <= BIO_LIMIT) handleChange(e); }}
-                  placeholder={t.profile.bioPlaceholder}
-                  disabled={isReadOnly}
-                />
-                {!isReadOnly && (
-                  <span style={{
-                    ...S.charCount,
-                    color: form.bio.length > BIO_LIMIT * 0.9 ? "#d4a574" : "#d9c8ce",
-                  }}>
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <label style={S.label}>{t.profile.bio}</label>
+                <div style={S.bioWrap}>
+                  <textarea
+                    className="profile-textarea"
+                    style={{ ...S.textarea, minHeight:"110px" }}
+                    name="bio"
+                    value={form.bio}
+                    onChange={(e) => { if (e.target.value.length <= BIO_LIMIT) handleChange(e); }}
+                    placeholder={t.profile.bioPlaceholder}
+                  />
+                  <span style={{ ...S.charCount, color: form.bio.length > BIO_LIMIT * 0.9 ? "#d4a574" : "#d9c8ce" }}>
                     {form.bio.length}/{BIO_LIMIT}
                   </span>
-                )}
+                </div>
               </div>
-              <div style={{ ...S.actionRow, marginTop:"0.75rem" }}>
+
+              <div style={S.row}>
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <label style={S.label}>{t.profile.experience}</label>
+                  <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
+                    name="experience" value={form.experience} onChange={handleChange}
+                    placeholder={t.profile.experiencePlaceholder} />
+                </div>
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <label style={S.label}>{t.profile.goals}</label>
+                  <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
+                    name="goals" value={form.goals} onChange={handleChange}
+                    placeholder={t.profile.goalsPlaceholder} />
+                </div>
+              </div>
+
+              {/* Ethnicity — only this field has a privacy toggle */}
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
+                  <label style={S.label}>{t.profile.ethnicity}</label>
+                  <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:T.sub, cursor:"pointer", userSelect:"none" }}>
+                    <input
+                      type="checkbox"
+                      checked={!!form.ethnicityPrivate}
+                      onChange={e => setForm(p => ({ ...p, ethnicityPrivate: e.target.checked }))}
+                      style={{ cursor:"pointer" }}
+                    />
+                    {t.profile.ethnicityPrivateToggle}
+                  </label>
+                </div>
+                <SelectInput value={form.ethnicity} placeholder="—" options={t.profile.ethnicityOptions}
+                  onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
+              </div>
+
+              <div style={S.actionRow}>
                 <button
-                  style={getSaveBtnStyle("bio")}
-                  className={savingKey === "bio" ? "save-btn-shimmer" : ""}
-                  onClick={() => handleSaveSection("bio", { bio: form.bio })}
+                  style={getSaveBtnStyle("profile")}
+                  className={savingKey === "profile" ? "save-btn-shimmer" : ""}
+                  onClick={() => handleSaveSection("profile", {
+                    firstName:form.firstName, lastName:form.lastName, phone:form.phone,
+                    profession:form.profession, birthDate:form.birthDate, bio:form.bio,
+                    region:form.region, institution:form.institution, graduationYear:form.graduationYear,
+                    linkedIn:form.linkedIn, experience:form.experience, goals:form.goals,
+                    ethnicity:form.ethnicity, ethnicityPrivate:form.ethnicityPrivate,
+                  })}
                   disabled={!!savingKey}
                   onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
                   onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
                 >
-                  {saveBtnLabel("bio")}
+                  {saveBtnLabel("profile")}
                 </button>
               </div>
             </div>
-
-            <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa", marginBottom:0 }}>
-              <SectionTitle label={t.profile.emailAddress} />
-              {emailSuccess && <div style={S.emailSuccessMsg}>{emailSuccess}</div>}
-              {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
-              <div style={S.emailRow}>
-                <div style={{ ...S.group, flex:1, marginBottom:0 }}>
-                  <label style={S.label}>{t.profile.currentEmail}</label>
-                  <input style={S.inputDisabled} value={profileEmail || user?.email || ""} disabled />
-                </div>
-                {isOwner && (
-                  <button className="change-btn" style={S.changeBtn} onClick={() => setShowEmailModal(true)}>
-                    {t.profile.change}
-                  </button>
-                )}
-              </div>
-              {isOwner && !isGoogleUser && (
-                <div style={{ marginTop:"0.85rem" }}>
-                  <button className="change-btn" style={S.changeBtn} onClick={() => { setPasswordError(""); setPasswordSuccess(""); setShowPasswordModal(true); }}>
-                    {t.profile.changePassword}
-                  </button>
-                </div>
-              )}
-              {isOwner && isGoogleUser && (
-                <p style={{ fontSize:"12px", color:T.sub, marginTop:"0.75rem", margin:"0.75rem 0 0" }}>
-                  {t.profile.passwordManagedByGoogle}
-                </p>
-              )}
-            </div>
           </div>
+        )}
 
-        </div>
-        ) : (
+        {/* OWNER: Account tab */}
+        {isOwner && currentTab === "account" && (
+          <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa" }}>
+            <SectionTitle label={t.profile.emailAddress} />
+            {emailSuccess && <div style={S.emailSuccessMsg}>{emailSuccess}</div>}
+            {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
+            <div style={S.emailRow}>
+              <div style={{ ...S.group, flex:1, marginBottom:0 }}>
+                <label style={S.label}>{t.profile.currentEmail}</label>
+                <input style={S.inputDisabled} value={profileEmail || user?.email || ""} disabled />
+              </div>
+              <button className="change-btn" style={S.changeBtn} onClick={() => setShowEmailModal(true)}>
+                {t.profile.change}
+              </button>
+            </div>
+            {!isGoogleUser && (
+              <div style={{ marginTop:"0.85rem" }}>
+                <button className="change-btn" style={S.changeBtn} onClick={() => { setPasswordError(""); setPasswordSuccess(""); setShowPasswordModal(true); }}>
+                  {t.profile.changePassword}
+                </button>
+              </div>
+            )}
+            {isGoogleUser && (
+              <p style={{ fontSize:"12px", color:T.sub, margin:"0.75rem 0 0" }}>
+                {t.profile.passwordManagedByGoogle}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Posts tab (owner + visitor) */}
+        {currentTab === "posts" && <PostsGrid />}
+
+        {/* VISITOR: About tab */}
+        {!isOwner && currentTab === "about" && (
           <div style={{ display:"grid", gap:"1rem" }}>
             <div className="profile-card" style={S.card}>
               <SectionTitle label="About" />
@@ -991,23 +1289,45 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   </div>
                 )}
               </div>
-              {form.linkedIn && (
-                <div style={S.group}>
-                  <p style={S.label}>LinkedIn</p>
-                  <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
-                    {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
-                  </a>
+              {form.bio && (
+                <div style={{ ...S.group, marginTop:"0.5rem" }}>
+                  <p style={S.label}>{t.profile.bio}</p>
+                  <div style={{ ...S.inputDisabled, minHeight:"80px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>{form.bio}</div>
                 </div>
               )}
-            </div>
-
-            <div className="profile-card" style={S.card}>
-              <SectionTitle label={t.profile.bio} />
-              <div style={{ ...S.inputDisabled, minHeight:"120px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
-                {form.bio || "—"}
-              </div>
+              {/* Additional details — all public; only ethnicity can be set private */}
+              {(form.experience || form.goals || form.linkedIn || (form.ethnicity && !form.ethnicityPrivate)) && (
+                <div style={{ marginTop:"1rem", paddingTop:"1rem", borderTop:`1px solid ${T.cardBorder}` }}>
+                  {form.linkedIn && (
+                    <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                      <p style={S.label}>LinkedIn</p>
+                      <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
+                        {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
+                      </a>
+                    </div>
+                  )}
+                  {form.experience && (
+                    <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                      <p style={S.label}>{t.profile.experience}</p>
+                      <div style={{ ...S.inputDisabled, whiteSpace:"pre-wrap", lineHeight:1.7 }}>{form.experience}</div>
+                    </div>
+                  )}
+                  {form.goals && (
+                    <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                      <p style={S.label}>{t.profile.goals}</p>
+                      <div style={{ ...S.inputDisabled, whiteSpace:"pre-wrap", lineHeight:1.7 }}>{form.goals}</div>
+                    </div>
+                  )}
+                  {form.ethnicity && !form.ethnicityPrivate && (
+                    <div style={S.group}>
+                      <p style={S.label}>{t.profile.ethnicity}</p>
+                      <div style={S.inputDisabled}>{form.ethnicity}</div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
@@ -1036,268 +1356,20 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           </div>
         )}
 
-        {/* Additional Details — owner always editable; admins can view+edit any profile; others never see */}
-        <div className="profile-card" style={{ ...S.card, borderLeftColor:"#e8735a", marginTop:"1.25rem" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:"1.25rem" }}>
-              <p style={{ fontSize:"11px", fontWeight:"700", color:T.text, textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
-                {t.profile.additionalDetails}
-              </p>
-              {!isOwner && authProfile?.isAdmin && (
-                <span style={{ fontSize:9, fontWeight:700, background:"#fff3cd", color:"#92400e", padding:"2px 8px", borderRadius:99, border:"1px solid #fcd34d" }}>
-                  Admin view only
-                </span>
-              )}
-            </div>
-            {error && <div style={S.errorMsg}>{error}</div>}
-
-            <div style={S.row}>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.region}</label>
-                <SelectInput value={form.region} disabled={isReadOnly}
-                  placeholder="—" options={t.profile.regionOptions}
-                  onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
-              </div>
-            </div>
-
-            <div style={S.row}>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.institution}</label>
-                <select
-                  className="profile-input"
-                  value={INSTITUTIONS.includes(form.institution) ? form.institution : (form.institution ? "OTHER" : "")}
-                  disabled={isReadOnly}
-                  onChange={e => {
-                    if (e.target.value === "OTHER") { setForm(p => ({ ...p, institution:"OTHER" })); setInstitutionOther(""); }
-                    else { handleChange({ target:{ name:"institution", value:e.target.value } }); setInstitutionOther(""); }
-                  }}
-                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.text, background: isReadOnly ? T.tagBg : T.inputBg, fontFamily:"inherit", appearance:"none" }}
-                >
-                  <option value="">{t.profile.institutionPlaceholder || "בחרי מוסד..."}</option>
-                  {INSTITUTIONS.map((inst, i) => <option key={i} value={inst}>{inst}</option>)}
-                  <option value="OTHER">אחר (כתבי ידנית)</option>
-                </select>
-                {(form.institution === "OTHER" || (!INSTITUTIONS.includes(form.institution) && form.institution)) && (
-                  <PlainInput value={institutionOther} onChange={e => setInstitutionOther(e.target.value)}
-                    placeholder="שם המוסד / הארגון..." />
-                )}
-              </div>
-              <div style={S.group}>
-                <label style={S.label}>{t.profile.graduationYear}</label>
-                <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
-                  placeholder={t.profile.graduationYearPlaceholder} disabled={isReadOnly} />
-              </div>
-            </div>
-
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.linkedIn}</label>
-              <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange}
-                placeholder={t.profile.linkedInPlaceholder} disabled={isReadOnly} />
-            </div>
-
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.experience}</label>
-              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px", background: isReadOnly ? T.tagBg : T.inputBg }}
-                name="experience" value={form.experience} onChange={handleChange}
-                placeholder={t.profile.experiencePlaceholder} disabled={isReadOnly} />
-            </div>
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.goals}</label>
-              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px", background: isReadOnly ? T.tagBg : T.inputBg }}
-                name="goals" value={form.goals} onChange={handleChange}
-                placeholder={t.profile.goalsPlaceholder} disabled={isReadOnly} />
-            </div>
-            {(!form.ethnicityPrivate || isOwner || authProfile?.isAdmin) && (
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
-                  <label style={S.label}>{t.profile.ethnicity}</label>
-                  {isOwner && (
-                    <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:T.sub, cursor:"pointer", userSelect:"none" }}>
-                      <input
-                        type="checkbox"
-                        checked={!!form.ethnicityPrivate}
-                        onChange={e => setForm(p => ({ ...p, ethnicityPrivate: e.target.checked }))}
-                        style={{ cursor:"pointer" }}
-                      />
-                      {t.profile.ethnicityPrivateToggle}
-                    </label>
-                  )}
-                </div>
-                <SelectInput value={form.ethnicity} disabled={isReadOnly}
-                  placeholder="—" options={t.profile.ethnicityOptions}
-                  onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
-              </div>
-            )}
-
-            {isOwner && (
-              <div style={S.actionRow}>
-                <button
-                  style={getSaveBtnStyle("details")}
-                  className={savingKey === "details" ? "save-btn-shimmer" : ""}
-                  onClick={() => handleSaveSection("details", {
-                    ethnicity: form.ethnicity, ethnicityPrivate: form.ethnicityPrivate,
-                    region: form.region, institution: form.institution, graduationYear: form.graduationYear,
-                    linkedIn: form.linkedIn, experience: form.experience, goals: form.goals,
-                  })}
-                  disabled={!!savingKey}
-                  onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
-                >
-                  {saveBtnLabel("details")}
-                </button>
-              </div>
-            )}
-          </div>
-
-        {/* ── My Posts ── */}
-        <div style={{ marginTop: "2rem" }}>
-          <p style={{
-            fontSize: "11px", fontWeight: "700", color: T.text,
-            textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 1.25rem",
-          }}>
-            {postsTitle}
-          </p>
-
-          {postsLoading && (
-            <p style={{ color: T.sub, fontSize: "14px" }}>…</p>
-          )}
-
-          {!postsLoading && myPosts.length === 0 && (
-            <div style={{
-              textAlign: "center", padding: "2.5rem",
-              background: T.inputBg, borderRadius: "16px",
-              border: `1.5px dashed ${T.inputBorder}`, color: T.sub, fontSize: "14px",
-            }}>
-              {noPostsMessage}
-            </div>
-          )}
-
-          {!postsLoading && myPosts.length > 0 && (
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "1.25rem",
-            }}>
-              {myPosts.map((post) => (
-                <div key={post.id} className="profile-card" onClick={() => onNavigateToCommunity?.()}
-                  style={{
-                  background: T.card, borderRadius: "18px",
-                  border: `1.5px solid ${T.cardBorder}`, borderLeft: "4px solid #4472b8",
-                  boxShadow: "0 2px 8px rgba(29, 72, 150,0.05)",
-                  padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem",
-                  cursor: onNavigateToCommunity ? "pointer" : "default",
-                  transition: "box-shadow 0.18s, transform 0.18s",
-                }}
-                  onMouseEnter={e => { if (onNavigateToCommunity) { e.currentTarget.style.boxShadow = "0 6px 20px rgba(29,72,150,0.12)"; e.currentTarget.style.transform = "translateY(-2px)"; }}}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 8px rgba(29,72,150,0.05)"; e.currentTarget.style.transform = "none"; }}
-                >
-                  {/* Post text */}
-                  {post.text && (
-                    <p style={{
-                      fontSize: "14px", color: T.text, margin: 0,
-                      lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-word",
-                      display: "-webkit-box", WebkitLineClamp: 4,
-                      WebkitBoxOrient: "vertical", overflow: "hidden",
-                    }}>
-                      {post.text}
-                    </p>
-                  )}
-
-                  {/* Repost badge */}
-                  {post.repostOf && (
-                    <span style={{
-                      fontSize: "11px", color: T.sub,
-                      background: T.tagBg, borderRadius: "6px",
-                      padding: "3px 8px", display: "inline-block", alignSelf: "flex-start",
-                    }}>
-                      ↺ {t.community.repostedBy} {post.repostOf.authorName ?? ""}
-                    </span>
-                  )}
-
-                  {/* Images thumbnail strip */}
-                  {(() => {
-                    const postMedia = getPostMedia(post);
-                    if (!postMedia.length) return null;
-                    return (
-                      <div style={{
-                        display: "grid",
-                        gridTemplateColumns: postMedia.length === 1 ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                        gap: 6,
-                      }}>
-                        {postMedia.slice(0, 4).map((media, i) => (
-                          media.type === "image" ? (
-                            <img
-                              key={i}
-                              src={media.url}
-                              alt=""
-                              style={{
-                                width: "100%", height: 120,
-                                objectFit: "cover", borderRadius: "12px",
-                                cursor: "pointer",
-                              }}
-                              onClick={() => window.open(media.url, "_blank")}
-                            />
-                          ) : (
-                            <video
-                              key={i}
-                              src={media.url}
-                              controls
-                              style={{ width: "100%", height: 120, borderRadius: "12px", objectFit: "cover" }}
-                            />
-                          )
-                        ))}
-                        {postMedia.length > 4 && (
-                          <div style={{
-                            display: "grid", placeItems: "center",
-                            borderRadius: "12px", background: T.tagBg,
-                            color: T.sub, fontSize: "13px", fontWeight: 700,
-                          }}>
-                            +{postMedia.length - 4}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Stats + date */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
-                    <div style={{ display: "flex", gap: "12px" }}>
-                      {(post.likes?.length ?? post.likesCount ?? 0) > 0 && (
-                        <span style={{ fontSize: "12px", color: T.sub, display: "flex", alignItems: "center", gap: 3 }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                          {post.likes?.length ?? post.likesCount}
-                        </span>
-                      )}
-                      {(post.commentsCount ?? 0) > 0 && (
-                        <span style={{ fontSize: "12px", color: T.sub, display: "flex", alignItems: "center", gap: 3 }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                          {post.commentsCount}
-                        </span>
-                      )}
-                    </div>
-                    <span style={{ fontSize: "11px", color: T.muted }}>
-                      {relativeTime(post.createdAt)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Logout button — own profile only, prominent on mobile */}
+      {/* ── Logout button ── */}
       {isOwner && (
-        <div style={{ padding: isMobile ? "1.5rem 1rem 2rem" : "1.5rem 2rem 2rem", display: "flex", justifyContent: "center" }}>
+        <div style={{ padding: isMobile ? "1.5rem 1rem 2rem" : "1.5rem 2rem 2rem", display:"flex", justifyContent:"center" }}>
           <button
             onClick={logout}
             style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "11px 28px", borderRadius: 99,
-              background: dark ? "#3b1f1f" : "#fff0f0", color: "#c25c5c",
-              border: "1.5px solid #e8b8b8",
-              fontSize: 14, fontWeight: 700, cursor: "pointer",
-              transition: "all 0.15s",
-              fontFamily: "var(--font)",
+              display:"flex", alignItems:"center", gap:8,
+              padding:"11px 28px", borderRadius:99,
+              background: dark ? "#3b1f1f" : "#fff0f0", color:"#c25c5c",
+              border:"1.5px solid #e8b8b8",
+              fontSize:14, fontWeight:700, cursor:"pointer",
+              transition:"all 0.15s", fontFamily:"var(--font)",
             }}
             onMouseEnter={e => { e.currentTarget.style.background = "#c25c5c"; e.currentTarget.style.color = "#fff"; }}
             onMouseLeave={e => { e.currentTarget.style.background = dark ? "#3b1f1f" : "#fff0f0"; e.currentTarget.style.color = "#c25c5c"; }}
@@ -1312,14 +1384,13 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         </div>
       )}
 
-      {/* Email Change Modal */}
+      {/* ── Email Change Modal ── */}
       {showEmailModal && isOwner && (
         <div style={S.modal} onClick={() => setShowEmailModal(false)}>
           <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
             <p style={S.modalTitle}>{t.profile.changeEmail}</p>
             <p style={S.modalSub}>{t.profile.emailModalSub}</p>
             {emailError && <div style={S.errorMsg}>{emailError}</div>}
-
             <div style={S.group}>
               <label style={S.label}>{t.profile.currentPassword}</label>
               <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
@@ -1338,7 +1409,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         </div>
       )}
 
-      {/* Password Change Modal */}
+      {/* ── Password Change Modal ── */}
       {showPasswordModal && isOwner && !isGoogleUser && (
         <div style={S.modal} onClick={() => setShowPasswordModal(false)}>
           <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
@@ -1346,7 +1417,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             <p style={S.modalSub}>{t.profile.passwordModalSub}</p>
             {passwordError && <div style={S.errorMsg}>{passwordError}</div>}
             {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
-
             <div style={S.group}>
               <label style={S.label}>{t.profile.currentPassword}</label>
               <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
