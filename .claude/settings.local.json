@@ -47,7 +47,21 @@
       "Bash(npx --no-install react-scripts build)",
       "Bash(node_modules/.bin/react-scripts build *)",
       "Bash(node_modules/.bin/babel src/ProfilePage.jsx --presets @babel/preset-react)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(node --input-type=module --eval ' *)",
+      "Bash(timeout 30 node_modules/.bin/vite build --mode development)",
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash('button:has-text\\(\\\\\"Google\\\\\"\\)')",
+      "Bash(pkill -f \"vite --host\")",
+      "Bash(node /tmp/check_google_click.mjs)",
+      "Bash(git cherry-pick *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(grep -n \"^function \\\\|^const [A-Z].*= \\(\\\\|=> {$\" ChatPage.jsx)",
+      "Bash(grep -nE 'placeholder=\"[A-Z]|>[A-Z][a-z]+\\( [a-zA-Z]+\\){1,}[.!?]?<' AuthPage.jsx)",
+      "Bash(grep -nE 'placeholder=\"[A-Z]|>[A-Z][a-z]+\\( [a-zA-Z]+\\){1,}[.!?]?<' LandingPage.jsx)",
+      "Bash(awk 'NR>=413 && NR<=991 && \\(/^function [A-Z]/ || /^const [A-Z][a-zA-Z]+ = \\\\\\(/ || /^export default function/\\)' DashboardPage.jsx)"
     ],
     "additionalDirectories": [
       "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src"
