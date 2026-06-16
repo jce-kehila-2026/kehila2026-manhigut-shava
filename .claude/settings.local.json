@@ -34,7 +34,19 @@
       "Bash(firebase projects:list)",
       "Bash(node -e 'console.log\\(new Date\\(\\).toString\\(\\)\\)')",
       "Bash(npx firebase-tools *)",
-      "Bash(LC_ALL=C sed -i '' 's/אימייל/דוא״ל/g' \\\\ *)"
+      "Bash(LC_ALL=C sed -i '' 's/אימייל/דוא״ל/g' \\\\ *)",
+      "Read(//dev/**)",
+      "Bash(node --input-type=module)",
+      "Bash(npx --no-install acorn --ecma2020 --module frontend/src/ProfilePage.jsx)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(awk 'NR>=781 && NR<=975' /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/ProfilePage.jsx)",
+      "Bash(grep -n \"twoCol\\\\|isReadOnly\\\\|: \\(\\\\|</div>\\\\|\\)$\")",
+      "Bash(awk 'NR>=840 && NR<=975' /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/ProfilePage.jsx)",
+      "Bash(grep -n \": \\(\\\\|^\\\\s*\\)\\\\s*$\")",
+      "Bash(awk 'NR>=704 && NR<=790' /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/ProfilePage.jsx)",
+      "Bash(npx --no-install react-scripts build)",
+      "Bash(node_modules/.bin/react-scripts build *)",
+      "Bash(node_modules/.bin/babel src/ProfilePage.jsx --presets @babel/preset-react)"
     ],
     "additionalDirectories": [
       "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src"

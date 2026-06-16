@@ -425,7 +425,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
-    ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"",
+    ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
   const [institutionOther, setInstitutionOther] = useState("");
@@ -467,8 +467,9 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           profession:     d.profession     ?? "",
           bio:            d.bio            ?? "",
           birthDate:      d.birthDate      ?? "",
-          ethnicity:      d.ethnicity      ?? "",
-          region:         d.region         ?? "",
+          ethnicity:        d.ethnicity        ?? "",
+          ethnicityPrivate: d.ethnicityPrivate ?? false,
+          region:           d.region           ?? "",
           institution:    d.institution    ?? "",
           graduationYear: d.graduationYear ?? "",
           linkedIn:       d.linkedIn       ?? "",
@@ -487,14 +488,14 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           setInstitutionOther(inst);
         }
       } else {
-        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
+        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
         setNetworksCount(0);
         setProfileEmail("");
         setBirthdayValue("");
       }
     }).catch(() => {
-      setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
+      setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
       setPhotoURL(null);
       setNetworksCount(0);
       setProfileEmail("");
@@ -969,8 +970,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         )}
 
         {/* Additional Details — owner always editable; admins can view+edit any profile; others never see */}
-        {(isOwner || authProfile?.isAdmin) && (
-          <div className="profile-card" style={{ ...S.card, borderLeftColor:"#e8735a", marginTop:"1.25rem" }}>
+        <div className="profile-card" style={{ ...S.card, borderLeftColor:"#e8735a", marginTop:"1.25rem" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:"1.25rem" }}>
               <p style={{ fontSize:"11px", fontWeight:"700", color:"#111827", textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
                 {t.profile.additionalDetails}
@@ -986,7 +986,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             <div style={S.row}>
               <div style={S.group}>
                 <label style={S.label}>{t.profile.region}</label>
-                <SelectInput value={form.region} disabled={false}
+                <SelectInput value={form.region} disabled={isReadOnly}
                   placeholder="—" options={t.profile.regionOptions}
                   onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
               </div>
@@ -998,11 +998,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <select
                   className="profile-input"
                   value={INSTITUTIONS.includes(form.institution) ? form.institution : (form.institution ? "OTHER" : "")}
+                  disabled={isReadOnly}
                   onChange={e => {
                     if (e.target.value === "OTHER") { setForm(p => ({ ...p, institution:"OTHER" })); setInstitutionOther(""); }
                     else { handleChange({ target:{ name:"institution", value:e.target.value } }); setInstitutionOther(""); }
                   }}
-                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:"1.5px solid #daeaf8", borderRadius:"13px", color:"#1a2e42", background:"#fdf8f6", fontFamily:"inherit", appearance:"none" }}
+                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:"1.5px solid #daeaf8", borderRadius:"13px", color:"#1a2e42", background: isReadOnly ? "#f0f6fb" : "#fdf8f6", fontFamily:"inherit", appearance:"none" }}
                 >
                   <option value="">{t.profile.institutionPlaceholder || "בחרי מוסד..."}</option>
                   {INSTITUTIONS.map((inst, i) => <option key={i} value={inst}>{inst}</option>)}
@@ -1016,61 +1017,69 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.group}>
                 <label style={S.label}>{t.profile.graduationYear}</label>
                 <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
-                  placeholder={t.profile.graduationYearPlaceholder} />
+                  placeholder={t.profile.graduationYearPlaceholder} disabled={isReadOnly} />
               </div>
             </div>
 
             <div style={{ ...S.group, marginBottom:"1rem" }}>
               <label style={S.label}>{t.profile.linkedIn}</label>
               <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange}
-                placeholder={t.profile.linkedInPlaceholder} />
+                placeholder={t.profile.linkedInPlaceholder} disabled={isReadOnly} />
             </div>
 
-            {/* Private section — ethnicity + experience + goals */}
-            <div style={{ fontSize:11, fontWeight:700, color:"#e8735a", textTransform:"uppercase",
-              letterSpacing:"0.1em", margin:"1.25rem 0 0.85rem",
-              paddingTop:"1rem", borderTop:"1px solid #f0f6fb",
-              display:"flex", alignItems:"center", gap:6,
-            }}>
-              {t.profile.privateSection}
-            </div>
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{t.profile.ethnicity}</label>
-              <SelectInput value={form.ethnicity} disabled={false}
-                placeholder="—" options={t.profile.ethnicityOptions}
-                onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
-            </div>
             <div style={{ ...S.group, marginBottom:"1rem" }}>
               <label style={S.label}>{t.profile.experience}</label>
-              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px" }}
+              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px", background: isReadOnly ? "#f0f6fb" : undefined }}
                 name="experience" value={form.experience} onChange={handleChange}
-                placeholder={t.profile.experiencePlaceholder} />
+                placeholder={t.profile.experiencePlaceholder} disabled={isReadOnly} />
             </div>
             <div style={{ ...S.group, marginBottom:"1rem" }}>
               <label style={S.label}>{t.profile.goals}</label>
-              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px" }}
+              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px", background: isReadOnly ? "#f0f6fb" : undefined }}
                 name="goals" value={form.goals} onChange={handleChange}
-                placeholder={t.profile.goalsPlaceholder} />
+                placeholder={t.profile.goalsPlaceholder} disabled={isReadOnly} />
             </div>
+            {(!form.ethnicityPrivate || isOwner || authProfile?.isAdmin) && (
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
+                  <label style={S.label}>{t.profile.ethnicity}</label>
+                  {isOwner && (
+                    <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:"#6b7280", cursor:"pointer", userSelect:"none" }}>
+                      <input
+                        type="checkbox"
+                        checked={!!form.ethnicityPrivate}
+                        onChange={e => setForm(p => ({ ...p, ethnicityPrivate: e.target.checked }))}
+                        style={{ cursor:"pointer" }}
+                      />
+                      {t.profile.ethnicityPrivateToggle}
+                    </label>
+                  )}
+                </div>
+                <SelectInput value={form.ethnicity} disabled={isReadOnly}
+                  placeholder="—" options={t.profile.ethnicityOptions}
+                  onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
+              </div>
+            )}
 
-            <div style={S.actionRow}>
-              <button
-                style={getSaveBtnStyle("details")}
-                className={savingKey === "details" ? "save-btn-shimmer" : ""}
-                onClick={() => handleSaveSection("details", {
-                  ethnicity: form.ethnicity, region: form.region,
-                  institution: form.institution, graduationYear: form.graduationYear,
-                  linkedIn: form.linkedIn, experience: form.experience, goals: form.goals,
-                })}
-                disabled={!!savingKey}
-                onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                {saveBtnLabel("details")}
-              </button>
-            </div>
+            {isOwner && (
+              <div style={S.actionRow}>
+                <button
+                  style={getSaveBtnStyle("details")}
+                  className={savingKey === "details" ? "save-btn-shimmer" : ""}
+                  onClick={() => handleSaveSection("details", {
+                    ethnicity: form.ethnicity, ethnicityPrivate: form.ethnicityPrivate,
+                    region: form.region, institution: form.institution, graduationYear: form.graduationYear,
+                    linkedIn: form.linkedIn, experience: form.experience, goals: form.goals,
+                  })}
+                  disabled={!!savingKey}
+                  onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  {saveBtnLabel("details")}
+                </button>
+              </div>
+            )}
           </div>
-        )}
 
         {/* ── My Posts ── */}
         <div style={{ marginTop: "2rem" }}>
