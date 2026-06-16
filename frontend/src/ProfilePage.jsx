@@ -601,7 +601,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     return (user?.email?.[0] ?? "?").toUpperCase();
   };
 
-  const BIO_LIMIT = 300;
+  const BIO_LIMIT = 400;
 
   /* ── Relative timestamp ── */
   const relativeTime = (iso) => {
