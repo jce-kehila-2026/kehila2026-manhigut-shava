@@ -52,6 +52,15 @@ const T = {
     reqModalSend: "שלחי בקשה",
     reqModalCancel: "ביטול",
     reqMsgReceived: "הודעה:",
+    recvReqs: "בקשות שהגיעו אליי",
+    accept: "אשרי",
+    decline: "דחי",
+    statusPending: "ממתין לתשובה",
+    statusAccepted: "אושר",
+    statusDeclined: "נדחה",
+    noSentRequests: "עדיין לא שלחת בקשות עזרה.",
+    noReceivedRequests: "עדיין לא קיבלת בקשות עזרה.",
+    resultsFound: "תוצאות",
     regions: ["צפון","גליל","עמקים","חיפה","מרכז והשרון","גוש דן","תל אביב","ירושלים","שפלה","דרום","נגב","חוץ לארץ"],
     helpAreas: [
       "קידום קריירה ותעסוקה",
@@ -110,6 +119,15 @@ const T = {
     reqModalSend: "Send Request",
     reqModalCancel: "Cancel",
     reqMsgReceived: "Message:",
+    recvReqs: "Requests I Received",
+    accept: "Accept",
+    decline: "Decline",
+    statusPending: "Pending",
+    statusAccepted: "Accepted",
+    statusDeclined: "Declined",
+    noSentRequests: "You haven't sent any help requests yet.",
+    noReceivedRequests: "No help requests received yet.",
+    resultsFound: "results",
     regions: ["North","Galilee","Valleys (Emek)","Haifa","Center & Sharon","Gush Dan","Tel Aviv","Jerusalem","Shephelah","South","Negev","Overseas"],
     helpAreas: [
       "Career advancement",
@@ -168,6 +186,15 @@ const T = {
     reqModalSend: "إرسال الطلب",
     reqModalCancel: "إلغاء",
     reqMsgReceived: "الرسالة:",
+    recvReqs: "الطلبات الواردة",
+    accept: "قبول",
+    decline: "رفض",
+    statusPending: "قيد الانتظار",
+    statusAccepted: "تم القبول",
+    statusDeclined: "تم الرفض",
+    noSentRequests: "لم ترسلي أي طلبات مساعدة بعد.",
+    noReceivedRequests: "لم تتلقي أي طلبات مساعدة بعد.",
+    resultsFound: "نتائج",
     regions: ["الشمال","الجليل","الأودية","حيفا","الوسط والشارون","غوش دان","تل أبيب","القدس","السفيلة","الجنوب","النقب","خارج البلاد"],
     helpAreas: [
       "التقدم الوظيفي",
@@ -352,18 +379,21 @@ function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
 }
 
 /* ─── StatusPill ─── */
-function StatusPill({ status }) {
+function StatusPill({ status, Tr }) {
   const map = {
-    accepted: { bg: "#f0fdf4", color: "#3f6a3e", border: "#cfe4ce", label: "✓" },
-    declined:  { bg: "#fff0f0", color: "#9a4545", border: "#d99090", label: "✗" },
-    null:      { bg: "#f0f6fb", color: "#4472b8",  border: "#daeaf8",  label: "…" },
+    accepted: { bg: "#f0fdf4", color: "#3f6a3e", border: "#cfe4ce" },
+    declined:  { bg: "#fff0f0", color: "#9a4545", border: "#d99090" },
+    null:      { bg: "#f0f6fb", color: "#4472b8",  border: "#daeaf8" },
   };
   const s = map[status] ?? map["null"];
+  const label = status === "accepted" ? (Tr?.statusAccepted ?? "Accepted")
+              : status === "declined"  ? (Tr?.statusDeclined ?? "Declined")
+              : (Tr?.statusPending ?? "Pending");
   return (
     <span style={{
       fontSize: "11px", fontWeight: "700", padding: "3px 10px", borderRadius: "99px",
       background: s.bg, color: s.color, border: `1px solid ${s.border}`, display: "inline-block",
-    }}>{s.label}</span>
+    }}>{label}</span>
   );
 }
 
@@ -465,13 +495,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [showAreaSuggests,    setShowAreaSuggests]    = useState(false);
   const [showRegionSuggests,  setShowRegionSuggests]  = useState(false);
   const [pendingRequestTarget, setPendingRequestTarget] = useState(null);
-  const nameInputRef    = useRef(null);
-  const searchRef       = useRef(null);
-  const myReqRef        = useRef(null);
-  const receivedRef     = useRef(null);
-  const recommendedRef  = useRef(null);
-
-  const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const [activeTab, setActiveTab] = useState("search");
+  const nameInputRef = useRef(null);
 
   const effectiveRegion = selectedRegion === "OTHER" ? otherRegion : selectedRegion;
   const effectiveArea   = selectedArea   === "OTHER" ? otherArea   : selectedArea;
@@ -799,6 +824,23 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     },
     myReqName: { fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
     myReqProf: { fontSize: "12px", color: "var(--text-secondary)", margin: 0 },
+    receivedReqCard: {
+      background: "var(--bg-primary)", borderRadius: "16px", padding: "1.25rem",
+      border: "1.5px solid var(--border)", borderInlineStart: "4px solid #4472b8",
+      boxShadow: "0 2px 8px rgba(29,72,150,0.05)",
+      display: "flex", flexDirection: "column", gap: "6px",
+    },
+    receivedReqActions: { display: "flex", gap: 8, marginTop: 4 },
+    acceptBtn: {
+      flex: 1, padding: "8px 0", background: "#f0fdf4", color: "#3f6a3e",
+      border: "1.5px solid #cfe4ce", borderRadius: "12px",
+      fontSize: "13px", fontWeight: "700", cursor: "pointer",
+    },
+    declineBtn: {
+      flex: 1, padding: "8px 0", background: "#fff5f5", color: "#9a4545",
+      border: "1.5px solid #f5c6c6", borderRadius: "12px",
+      fontSize: "13px", fontWeight: "700", cursor: "pointer",
+    },
   };
 
   const deleteIconSvg = (
@@ -807,100 +849,51 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     </svg>
   );
 
-  const sideNavItems = [
-    {
-      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-      labelHe: "חיפוש", labelEn: "Search", labelAr: "بحث", ref: searchRef,
-    },
-    {
-      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
-      labelHe: "שלחתי", labelEn: "My Requests", labelAr: "طلباتي", ref: myReqRef,
-    },
-    {
-      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>,
-      labelHe: "קיבלתי", labelEn: "Received", labelAr: "الواردة", ref: receivedRef,
-    },
-    {
-      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
-      labelHe: "מומלצות", labelEn: "Suggested", labelAr: "الموصى بهن", ref: recommendedRef,
-    },
-  ];
-  const sideNavLabel = (item) => lang === "he" ? item.labelHe : lang === "ar" ? item.labelAr : item.labelEn;
-
   return (
     <div style={S.page}>
 
-      {/* ── Fixed side nav — always visible while scrolling ── */}
-      <div style={{
-        position: "fixed",
-        [isRTL ? "left" : "right"]: isMobile ? 6 : 14,
-        top: "50%", transform: "translateY(-50%)",
-        zIndex: 50, display: "flex", flexDirection: "column",
-        gap: isMobile ? 6 : 8,
-      }}>
-        {sideNavItems.map((item) => (
-          <button
-            key={item.labelEn}
-            title={sideNavLabel(item)}
-            onClick={() => scrollTo(item.ref)}
-            style={{
-              width: isMobile ? 36 : 42, height: isMobile ? 36 : 42,
-              borderRadius: "50%",
-              background: "var(--bg-primary)",
-              border: "1.5px solid var(--border)",
-              boxShadow: "0 2px 10px rgba(29,72,150,0.12)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: isMobile ? 14 : 17, cursor: "pointer",
-              transition: "box-shadow 0.15s, transform 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(29,72,150,0.2)"; e.currentTarget.style.transform = "scale(1.08)"; }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 10px rgba(29,72,150,0.12)"; e.currentTarget.style.transform = "scale(1)"; }}
-          >
-            {item.icon}
-          </button>
-        ))}
-      </div>
+      <p style={{ ...S.pageTitle, marginBottom: "1rem" }}>{Tr.title}</p>
 
-      <p style={S.pageTitle}>{Tr.title}</p>
-      <p style={S.pageSub}>{Tr.sub}</p>
-
-      {/* ── Quick shortcuts ── */}
+      {/* ── Tab bar ── */}
       <div style={{
-        display: "flex", gap: 8, overflowX: "auto", flexWrap: "nowrap",
-        marginBottom: "1.25rem", paddingBottom: 4,
-        scrollbarWidth: "none", msOverflowStyle: "none",
+        display: "flex", overflowX: "auto", flexWrap: "nowrap",
+        borderBottom: "2px solid var(--border)", marginBottom: "1.5rem",
+        scrollbarWidth: "none", gap: 0,
       }}>
         {[
-          { labelHe: "חיפוש עזרה",     labelEn: "Find Help",    labelAr: "بحث عن مساعدة",    scrollRef: searchRef,      primary: true },
-          { labelHe: "הבקשות שלי",     labelEn: "My Requests",  labelAr: "طلباتي",            scrollRef: myReqRef },
-          { labelHe: "בקשות שהתקבלו", labelEn: "Received",     labelAr: "الطلبات الواردة",   scrollRef: receivedRef },
-          { labelHe: "מומלצות",        labelEn: "Recommended",  labelAr: "الموصى بهن",        scrollRef: recommendedRef },
-        ].map(({ labelHe, labelEn, labelAr, scrollRef, primary }) => {
+          { key: "search",      labelHe: "חיפוש עזרה",  labelEn: "Find Help",   labelAr: "بحث عن مساعدة" },
+          { key: "myReqs",      labelHe: "הבקשות שלי",  labelEn: "My Requests", labelAr: "طلباتي",        badge: sentRequests.length },
+          { key: "received",    labelHe: "קיבלתי",       labelEn: "Received",    labelAr: "الواردة",        badge: receivedRequests.filter(r => !r.status).length },
+          { key: "recommended", labelHe: "מומלצות",      labelEn: "Recommended", labelAr: "الموصى بهن" },
+        ].map(({ key, labelHe, labelEn, labelAr, badge }) => {
           const label = lang === "he" ? labelHe : lang === "ar" ? labelAr : labelEn;
+          const active = activeTab === key;
           return (
-            <button
-              key={label}
-              onClick={() => scrollTo(scrollRef)}
-              style={{
-                flexShrink: 0,
-                padding: "8px 16px", borderRadius: 99,
-                background: primary ? "var(--brand)" : "var(--bg-primary)",
-                border: `1.5px solid ${primary ? "var(--brand)" : "var(--border)"}`,
-                color: primary ? "#fff" : "var(--text-secondary)",
-                fontSize: 13, fontWeight: 600,
-                cursor: "pointer", whiteSpace: "nowrap",
-                boxShadow: primary ? "0 2px 8px var(--brand-glow)" : "none",
-                transition: "all 0.15s",
-              }}
-            >
+            <button key={key} onClick={() => setActiveTab(key)} style={{
+              flexShrink: 0, padding: "9px 16px",
+              background: "none", border: "none",
+              borderBottom: active ? "2.5px solid #4472b8" : "2.5px solid transparent",
+              marginBottom: "-2px",
+              color: active ? "#4472b8" : "var(--text-muted)",
+              fontSize: 13, fontWeight: active ? 700 : 500,
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+              whiteSpace: "nowrap", transition: "color 0.15s",
+              fontFamily: "inherit",
+            }}>
               {label}
+              {badge > 0 && (
+                <span style={{ background: "#4472b8", color: "#fff", borderRadius: 99, fontSize: 10, fontWeight: 700, padding: "1px 6px", minWidth: 16, textAlign: "center" }}>{badge}</span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* ── Search Card — help area → region → member name ── */}
-      <div ref={searchRef} style={S.searchCard}>
+      {/* ── Search Tab ── */}
+      {activeTab === "search" && <>
+
+      {/* Search Card */}
+      <div style={S.searchCard}>
         {/* Help area (first — most important) */}
         <div style={S.group}>
           <label style={S.label}>{Tr.helpAreaLbl}</label>
@@ -1086,6 +1079,11 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       )}
 
       {/* Results */}
+      {searched && !loading && sortedResults.length > 0 && (
+        <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "0 0 0.75rem", direction: dir }}>
+          {sortedResults.length} {Tr.resultsFound}
+        </p>
+      )}
       {sortedResults.length > 0 && (
         layoutMode === "table" ? (
           <div style={{ marginBottom: "2rem", overflowX: "auto" }}>
@@ -1174,10 +1172,14 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         )
       )}
 
-      {/* My Requests */}
-      {sentRequests.length > 0 && (
-        <div ref={myReqRef} style={S.myReqSection}>
-          <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.myReqs}</p>
+      </> /* end search tab */}
+
+      {/* ── My Requests Tab ── */}
+      {activeTab === "myReqs" && <>
+        <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.myReqs}</p>
+        {sentRequests.length === 0 ? (
+          <div style={S.emptyBox}>{Tr.noSentRequests}</div>
+        ) : (
           <div style={S.myReqGrid}>
             {sentRequests.map((r) => (
               <div key={r.id} style={S.myReqCard}>
@@ -1190,28 +1192,34 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}
                   >{deleteIconSvg}</button>
                 </div>
-                {r.fromUserProfession && <p style={S.myReqProf}>{r.fromUserProfession}</p>}
                 {r.requestMessage && (
                   <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0", background:"var(--bg-secondary)", borderRadius:"9px", padding:"7px 10px", border:"1px solid var(--border)", lineHeight:"1.5", fontStyle:"italic" }}>
                     {r.requestMessage}
                   </p>
                 )}
-                <StatusPill status={r.status} />
+                <StatusPill status={r.status} Tr={Tr} />
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </> /* end myReqs tab */}
 
-      {/* Received Requests */}
-      {receivedRequests.length > 0 && (
-        <div ref={receivedRef} style={{ marginTop: "2.5rem", marginBottom: "2rem" }}>
-          <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.recvReqs}</p>
+      {/* ── Received Tab ── */}
+      {activeTab === "received" && <>
+        <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.recvReqs}</p>
+        {receivedRequests.length === 0 ? (
+          <div style={S.emptyBox}>{Tr.noReceivedRequests}</div>
+        ) : (
           <div style={S.myReqGrid}>
             {receivedRequests.map((r) => (
               <div key={r.id} style={S.receivedReqCard}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <p style={S.myReqName}>{r.fromUserName || "—"}</p>
+                  <div>
+                    <p style={S.myReqName}>{r.fromUserName || "—"}</p>
+                    {r.fromUserProfession && (
+                      <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: "2px 0 0" }}>{r.fromUserProfession}</p>
+                    )}
+                  </div>
                   <button title={Tr.delete}
                     style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex", alignItems:"center" }}
                     onClick={() => handleDeleteReceivedRequest(r.id)}
@@ -1219,12 +1227,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}
                   >{deleteIconSvg}</button>
                 </div>
-                {r.fromUserProfession && (
-                  <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: 0 }}>{r.fromUserProfession}</p>
-                )}
-                {r.fromUserEmail && (
-                  <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>{r.fromUserEmail}</p>
-                )}
                 {r.requestMessage && (
                   <div style={{ background:"#f5f8ff", border:"1.5px solid #daeaf8", borderInlineStart:"3px solid #4472b8", borderRadius:"10px", padding:"8px 12px", margin:"4px 0" }}>
                     <p style={{ fontSize:"10px", fontWeight:"700", color:"#4472b8", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 4px" }}>{Tr.reqMsgReceived}</p>
@@ -1233,26 +1235,24 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 )}
                 {!r.status ? (
                   <div style={S.receivedReqActions}>
-                    <button style={S.acceptBtn} onClick={() => handleRespondRequest(r.id, "accepted")}>
-                      {Tr.accept}
-                    </button>
-                    <button style={S.declineBtn} onClick={() => handleRespondRequest(r.id, "declined")}>
-                      {Tr.decline}
-                    </button>
+                    <button style={S.acceptBtn} onClick={() => handleRespondRequest(r.id, "accepted")}>{Tr.accept}</button>
+                    <button style={S.declineBtn} onClick={() => handleRespondRequest(r.id, "declined")}>{Tr.decline}</button>
                   </div>
                 ) : (
-                  <StatusPill status={r.status} />
+                  <StatusPill status={r.status} Tr={Tr} />
                 )}
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </> /* end received tab */}
 
-      {/* ── Recommended — at bottom ── */}
-      {recommended.length > 0 && (
-        <div ref={recommendedRef} style={{ marginTop: "1rem" }}>
-          <p style={S.sectionLabel}>{Tr.recommended}</p>
+      {/* ── Recommended Tab ── */}
+      {activeTab === "recommended" && <>
+        <p style={S.sectionLabel}>{Tr.recommended}</p>
+        {recommended.length === 0 ? (
+          <div style={S.emptyBox}>{Tr.noResults}</div>
+        ) : (
           <div style={S.recGrid}>
             {recommended.map((u) => (
               <div key={u.id}
@@ -1289,8 +1289,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </> /* end recommended tab */}
 
       {/* Profile modal */}
       {selectedUser && (

@@ -46,7 +46,8 @@
       "Bash(awk 'NR>=704 && NR<=790' /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/ProfilePage.jsx)",
       "Bash(npx --no-install react-scripts build)",
       "Bash(node_modules/.bin/react-scripts build *)",
-      "Bash(node_modules/.bin/babel src/ProfilePage.jsx --presets @babel/preset-react)"
+      "Bash(node_modules/.bin/babel src/ProfilePage.jsx --presets @babel/preset-react)",
+      "Bash(npx tsc *)"
     ],
     "additionalDirectories": [
       "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src"
