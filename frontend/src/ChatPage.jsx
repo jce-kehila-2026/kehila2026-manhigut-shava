@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { collection, getDocs, doc, updateDoc, addDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { useLang } from "./LanguageContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import {
   useConversations, useMessages,
@@ -15,12 +16,12 @@ function formatTime(ts) {
   if (!ts) return "";
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
-function formatDateLabel(ts) {
+function formatDateLabel(ts, t) {
   if (!ts) return "";
   const d = new Date(ts), today = new Date(), yest = new Date();
   yest.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === yest.toDateString()) return "Yesterday";
+  if (d.toDateString() === today.toDateString()) return t?.chat?.today ?? "Today";
+  if (d.toDateString() === yest.toDateString()) return t?.chat?.yesterday ?? "Yesterday";
   return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
 }
 function getInitials(name) {
@@ -83,6 +84,7 @@ function Avatar({ url, name, size = 40, online = false, ring = false, onClick })
 
 /* ── Conversation list item ── */
 function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
+  const { t } = useLang();
   const otherId = conv.participants?.find((p) => p !== currentUid);
   const otherName = conv.participantNames?.[otherId] || "Unknown";
   const otherAvatar = conv.participantAvatars?.[otherId] || null;
@@ -126,7 +128,7 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
               </svg>
             )}
-            {lastMsg?.type === "image" ? "Photo" : (lastMsg?.text || "Start a conversation…")}
+            {lastMsg?.type === "image" ? t.chat.photo : (lastMsg?.text || t.chat.startConvo)}
           </p>
           {unread > 0 && (
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#e8735a", flexShrink: 0, marginLeft: 4 }} />
@@ -139,6 +141,7 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
 
 /* ── Message bubble with swipe-to-reply + long-press context menu ── */
 function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup, onReply, onViewImage, conversationId, currentUserId }) {
+  const { t } = useLang();
   const EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🎉"];
   const [hovering, setHovering] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
@@ -236,7 +239,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
       setSwipeX(isMe ? -clamped : clamped);
       if (allowed >= SWIPE_THRESHOLD && !swipeTriggered.current) {
         swipeTriggered.current = true;
-        onReply?.({ id: msg.id, text: isImage ? "Photo" : msg.text, senderName: isMe ? "You" : senderName });
+        onReply?.({ id: msg.id, text: isImage ? t.chat.photo : msg.text, senderName: isMe ? t.chat.you : senderName });
       }
     } else {
       setSwipeX(0);
@@ -403,12 +406,12 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                 ...hoverLift,
               }}>
                 <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, opacity: 0.85 }}>
-                  Help request
+                  {t.chat.helpRequest}
                 </div>
                 {msg.text && (
                   <p style={{ margin: "0 0 8px", fontStyle: "italic" }}>{msg.text}</p>
                 )}
-                <p style={{ margin: "0 0 8px" }}>Want to engage in conversation and help out?</p>
+                <p style={{ margin: "0 0 8px" }}>{t.chat.helpPrompt}</p>
                 {!isMe && !msg.responded && (
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
@@ -420,7 +423,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                         cursor: responding ? "default" : "pointer", opacity: responding ? 0.7 : 1,
                         fontFamily: "var(--font)",
                       }}
-                    >Yes</button>
+                    >{t.chat.yes}</button>
                     <button
                       disabled={responding}
                       onClick={() => handleHelpRequestResponse("no")}
@@ -432,7 +435,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                         cursor: responding ? "default" : "pointer", opacity: responding ? 0.7 : 1,
                         fontFamily: "var(--font)",
                       }}
-                    >No</button>
+                    >{t.chat.no}</button>
                   </div>
                 )}
                 {msg.responded && (
@@ -488,18 +491,18 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                   <button
                     onClick={() => setEditing(false)}
                     style={{ padding: "5px 13px", borderRadius: 99, fontSize: 12, fontWeight: 600, background: "var(--bg-tertiary)", color: "var(--text-secondary)", border: "none", cursor: "pointer" }}
-                  >Cancel</button>
+                  >{t.chat.cancel}</button>
                   <button
                     onClick={handleSaveEdit}
                     style={{ padding: "5px 13px", borderRadius: 99, fontSize: 12, fontWeight: 700, background: "var(--brand)", color: "#fff", border: "none", cursor: "pointer" }}
-                  >Save</button>
+                  >{t.chat.save}</button>
                 </div>
               </div>
             ) : (
               <div style={isMe ? myBubble : theirBubble}>
                 {msg.deleted
-                  ? <em style={{ opacity: 0.5, fontSize: 13 }}>Message deleted</em>
-                  : <>{msg.text}{msg.edited && <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 6, fontStyle: "italic" }}>(edited)</span>}</>
+                  ? <em style={{ opacity: 0.5, fontSize: 13 }}>{t.chat.msgDeleted}</em>
+                  : <>{msg.text}{msg.edited && <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 6, fontStyle: "italic" }}>{t.chat.edited}</span>}</>
                 }
               </div>
             )}
@@ -628,7 +631,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
         {hovering && !msg.deleted && absSwipe < 5 && (
           <div style={{ alignSelf: "center" }}>
             <button
-              onClick={() => onReply?.({ id: msg.id, text: isImage ? "Photo" : msg.text, senderName: isMe ? "You" : senderName })}
+              onClick={() => onReply?.({ id: msg.id, text: isImage ? t.chat.photo : msg.text, senderName: isMe ? t.chat.you : senderName })}
               style={{
                 background: "none", border: "none", cursor: "pointer",
                 color: "var(--text-muted)", padding: 4, borderRadius: "50%",
@@ -652,6 +655,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
 /* ── Main ChatPage ── */
 export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUserId }) {
   const { user, profile } = useAuth();
+  const { t } = useLang();
   const isMobile = useIsMobile();
   const { conversations } = useConversations(user?.uid);
   const [activeConvId, setActiveConvId] = useState(null);
@@ -865,8 +869,8 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
   }, [openChatWithUserId, allUsers]);
 
   const getDateLabel = (msg, prev) => {
-    if (!prev) return formatDateLabel(msg.createdAt);
-    if (formatDateLabel(msg.createdAt) !== formatDateLabel(prev.createdAt)) return formatDateLabel(msg.createdAt);
+    if (!prev) return formatDateLabel(msg.createdAt, t);
+    if (formatDateLabel(msg.createdAt, t) !== formatDateLabel(prev.createdAt, t)) return formatDateLabel(msg.createdAt, t);
     return null;
   };
 
@@ -931,10 +935,10 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
         {/* Header */}
         <div style={{ padding: "1rem 1rem 0.5rem", borderBottom: "1px solid var(--border)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-            <p style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>Direct Messages</p>
+            <p style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>{t.chat.directMessages}</p>
             <button
               onClick={() => setShowNewChat(!showNewChat)}
-              title="New conversation"
+              title={t.chat.newConvo}
               style={{
                 width: 34, height: 34, borderRadius: "50%",
                 background: showNewChat ? "var(--brand)" : "var(--bg-tertiary)",
@@ -958,7 +962,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             </svg>
             <input
               value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search…"
+              placeholder={t.chat.search}
               style={{
                 width: "100%", padding: "8px 12px 8px 32px",
                 border: "none", borderRadius: 99,
@@ -989,7 +993,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
               </svg>
               <input
                 value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Search people…"
+                placeholder={t.chat.searchPeople}
                 style={{
                   width: "100%", padding: "7px 10px 7px 28px",
                   border: "none", borderRadius: 99,
@@ -1023,7 +1027,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
         <div style={{ flex: 1, overflow: "auto" }}>
           {filteredConvs.length === 0 && (
             <div style={{ padding: "2.5rem 1rem", textAlign: "center" }}>
-              <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>No conversations yet.</p>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>{t.chat.noConvos}</p>
               <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Tap + to start messaging.</p>
             </div>
           )}
@@ -1088,7 +1092,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", lineHeight: 1.2 }}>{otherName || "…"}</p>
               <p style={{ fontSize: 11, color: isActuallyOnline(otherUser) ? "#7ba87a" : "var(--text-muted)", marginTop: 1 }}>
-                {isActuallyOnline(otherUser) ? "Active now" : otherUser?.profession || "Offline"}
+                {isActuallyOnline(otherUser) ? t.chat.activeNow : otherUser?.profession || t.chat.offline}
               </p>
             </div>
             {/* Conversation actions menu */}
@@ -1221,7 +1225,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                       display: "flex", justifyContent: "flex-end", alignItems: "center",
                       gap: 4, paddingInlineEnd: "0.85rem", marginBottom: 6, marginTop: -4,
                     }}>
-                      <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }}>Seen</span>
+                      <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }}>{t.chat.seen}</span>
                       <Avatar url={otherAvatar} name={otherName} size={14} />
                     </div>
                   )}
@@ -1260,7 +1264,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
               animation: "slideUp 0.15s ease",
             }}>
               <div style={{ overflow: "hidden" }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 2 }}>Replying to {replyTo.senderName}</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--brand)", marginBottom: 2 }}>{t.chat.replyingTo(replyTo.senderName)}</p>
                 <p style={{ fontSize: 12, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 280 }}>{replyTo.text}</p>
               </div>
               <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}>×</button>
@@ -1289,13 +1293,13 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           {/* Blocked state bar — replaces input */}
           {iBlockedThem && (
             <div style={{ padding:"0.85rem 1rem", borderTop:"1px solid var(--border)", background:"var(--bg-secondary)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
-              <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>You blocked <strong>{otherName}</strong>. They can't message you.</p>
-              <button onClick={unblockUser} style={{ fontSize:12, fontWeight:700, color:"var(--brand)", background:"none", border:"1px solid var(--brand)", borderRadius:99, padding:"5px 14px", cursor:"pointer", whiteSpace:"nowrap" }}>Unblock</button>
+              <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>{t.chat.youBlocked(otherName)}</p>
+              <button onClick={unblockUser} style={{ fontSize:12, fontWeight:700, color:"var(--brand)", background:"none", border:"1px solid var(--brand)", borderRadius:99, padding:"5px 14px", cursor:"pointer", whiteSpace:"nowrap" }}>{t.chat.unblock}</button>
             </div>
           )}
           {theyBlockedMe && !iBlockedThem && (
             <div style={{ padding:"0.85rem 1rem", borderTop:"1px solid var(--border)", background:"var(--bg-secondary)", textAlign:"center" }}>
-              <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>This person is not available for messaging.</p>
+              <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>{t.chat.notAvailable}</p>
             </div>
           )}
 
@@ -1338,7 +1342,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                 value={text}
                 onChange={handleTyping}
                 onKeyDown={handleKeyDown}
-                placeholder={`Message ${otherName || ""}…`}
+                placeholder={t.chat.messagePlaceholder(otherName || "")}
                 rows={1}
                 style={{
                   width: "100%", padding: "10px 16px",
@@ -1416,9 +1420,9 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>Your Messages</p>
+          <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{t.chat.yourMessages}</p>
           <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", maxWidth: 240, lineHeight: 1.6 }}>
-            Send a message to start a private conversation.
+            {t.chat.yourMessagesSub}
           </p>
           <button onClick={() => setShowNewChat(true)} style={{
             marginTop: 4, padding: "9px 22px", borderRadius: 99,
@@ -1444,18 +1448,18 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             {reportSent ? (
               <div style={{ textAlign:"center", padding:"1rem 0" }}>
                 <div style={{ fontSize:36, marginBottom:8 }}>✅</div>
-                <p style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>Report submitted</p>
-                <p style={{ fontSize:13, color:"var(--text-muted)", marginTop:4 }}>Our admins will review it soon.</p>
+                <p style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>{t.chat.reportSubmitted}</p>
+                <p style={{ fontSize:13, color:"var(--text-muted)", marginTop:4 }}>{t.chat.reportReview}</p>
               </div>
             ) : (
               <>
-                <p style={{ fontSize:16, fontWeight:800, color:"var(--text-primary)", margin:"0 0 4px" }}>Report {otherName}</p>
-                <p style={{ fontSize:13, color:"var(--text-muted)", margin:"0 0 1rem" }}>Tell us what's happening. Admins will review this report.</p>
+                <p style={{ fontSize:16, fontWeight:800, color:"var(--text-primary)", margin:"0 0 4px" }}>{t.chat.reportTitle(otherName)}</p>
+                <p style={{ fontSize:13, color:"var(--text-muted)", margin:"0 0 1rem" }}>{t.chat.reportSub}</p>
                 <textarea
                   autoFocus
                   value={reportReason}
                   onChange={e => { setReportReason(e.target.value); setReportError(""); }}
-                  placeholder="Describe the issue…"
+                  placeholder={t.chat.describeIssue}
                   disabled={reportSubmitting}
                   style={{ width:"100%", padding:"10px 14px", border:`1.5px solid ${reportError ? "#e9415b" : "var(--border)"}`, borderRadius:12, fontSize:13, fontFamily:"var(--font)", resize:"none", minHeight:90, outline:"none", boxSizing:"border-box", color:"var(--text-primary)", background:"var(--bg-secondary)", opacity: reportSubmitting ? 0.7 : 1 }}
                   onFocus={e => e.target.style.borderColor = reportError ? "#e9415b" : "var(--brand)"}
@@ -1463,9 +1467,9 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                 />
                 {reportError && <p style={{ fontSize:12, color:"#e9415b", margin:"4px 0 0", fontWeight:500 }}>{reportError}</p>}
                 <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:"1rem" }}>
-                  <button onClick={() => setReportModal(false)} disabled={reportSubmitting} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:600, background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", cursor:"pointer" }}>Cancel</button>
+                  <button onClick={() => setReportModal(false)} disabled={reportSubmitting} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:600, background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", cursor:"pointer" }}>{t.chat.cancel}</button>
                   <button onClick={submitReport} disabled={!reportReason.trim() || reportSubmitting} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:700, background:"#e9415b", color:"#fff", border:"none", cursor: (!reportReason.trim() || reportSubmitting) ? "not-allowed" : "pointer", opacity: (!reportReason.trim() || reportSubmitting) ? 0.5 : 1 }}>
-                    {reportSubmitting ? "Sending…" : "Submit Report"}
+                    {reportSubmitting ? t.chat.sending : t.chat.submitReport}
                   </button>
                 </div>
               </>
@@ -1480,13 +1484,13 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           onClick={() => setBlockConfirm(false)}>
           <div style={{ background:"var(--bg-primary,#fff)", borderRadius:20, padding:"1.5rem 1.75rem", maxWidth:380, width:"90%", boxShadow:"0 8px 40px rgba(0,0,0,0.22)" }}
             onClick={e => e.stopPropagation()}>
-            <p style={{ fontSize:16, fontWeight:800, color:"#c25c5c", margin:"0 0 8px" }}>Block {otherName}?</p>
+            <p style={{ fontSize:16, fontWeight:800, color:"#c25c5c", margin:"0 0 8px" }}>{t.chat.blockTitle(otherName)}</p>
             <p style={{ fontSize:13, color:"var(--text-muted)", margin:"0 0 1.25rem", lineHeight:1.6 }}>
               They won't be able to message you, see your posts, or send you help requests. Admins are not affected by blocks. You can unblock them any time.
             </p>
             <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
-              <button onClick={() => setBlockConfirm(false)} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:600, background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", cursor:"pointer" }}>Cancel</button>
-              <button onClick={blockUser} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:700, background:"#c25c5c", color:"#fff", border:"none", cursor:"pointer" }}>Yes, Block</button>
+              <button onClick={() => setBlockConfirm(false)} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:600, background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", cursor:"pointer" }}>{t.chat.cancel}</button>
+              <button onClick={blockUser} style={{ padding:"8px 18px", borderRadius:99, fontSize:13, fontWeight:700, background:"#c25c5c", color:"#fff", border:"none", cursor:"pointer" }}>{t.chat.yesBlock}</button>
             </div>
           </div>
         </div>
