@@ -8,6 +8,12 @@ service firebase.storage {
       allow write: if request.auth.uid == userId;
     }
 
+    // Allow authenticated users to upload cover photos
+    match /covers/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+
     // Allow authenticated users to upload post media; only uploader can delete
     match /posts/{fileName} {
       allow read:   if request.auth != null;
