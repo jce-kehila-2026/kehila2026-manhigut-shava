@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
 import {
   updateEmail,
+  updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from "firebase/auth";
@@ -472,6 +473,13 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [emailError,     setEmailError]     = useState("");
   const [emailSuccess,   setEmailSuccess]   = useState("");
 
+  const [showPasswordModal,      setShowPasswordModal]      = useState(false);
+  const [currentPasswordForPwd,  setCurrentPasswordForPwd]  = useState("");
+  const [newPassword,            setNewPassword]            = useState("");
+  const [confirmNewPassword,     setConfirmNewPassword]     = useState("");
+  const [passwordError,          setPasswordError]          = useState("");
+  const [passwordSuccess,        setPasswordSuccess]        = useState("");
+
   /* Raw birthday value, kept separate from form.birthDate so legacy
      "DD/MM/YYYY" free-text birthdays (saved via CompleteProfilePage)
      still trigger the birthday banner even if they don't match the
@@ -551,6 +559,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   form.helpAreas?.length > 0, form.languages?.length > 0, form.experience, form.goals];
   const pct    = Math.round((fields.filter(Boolean).length / fields.length) * 100);
   const isOwner = !viewUserId || viewUserId === user?.uid;
+  const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
   const isReadOnly = !isOwner;
   const profileHeading = isOwner
     ? (form.firstName ? t.profile.greeting(form.firstName) : t.profile.myProfile)
@@ -618,6 +627,25 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       if (err.code === "auth/wrong-password")   setEmailError("Incorrect password.");
       else if (err.code === "auth/invalid-email") setEmailError("Invalid email address.");
       else setEmailError(t.profile.errorGeneral);
+    }
+  };
+
+  /* ── Password change ── */
+  const handlePasswordChange = async () => {
+    if (!isOwner || !user) return;
+    setPasswordError(""); setPasswordSuccess("");
+    if (newPassword.length < 6) { setPasswordError(t.profile.passwordTooShort); return; }
+    if (newPassword !== confirmNewPassword) { setPasswordError(t.profile.passwordMismatch); return; }
+    try {
+      const cred = EmailAuthProvider.credential(user.email, currentPasswordForPwd);
+      await reauthenticateWithCredential(auth.currentUser, cred);
+      await updatePassword(auth.currentUser, newPassword);
+      setPasswordSuccess(t.profile.passwordSuccess);
+      setCurrentPasswordForPwd(""); setNewPassword(""); setConfirmNewPassword("");
+    } catch (err) {
+      if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential")
+        setPasswordError("Incorrect current password.");
+      else setPasswordError(t.profile.errorGeneral);
     }
   };
 
@@ -899,6 +927,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa", marginBottom:0 }}>
               <SectionTitle label={t.profile.emailAddress} />
               {emailSuccess && <div style={S.emailSuccessMsg}>{emailSuccess}</div>}
+              {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
               <div style={S.emailRow}>
                 <div style={{ ...S.group, flex:1, marginBottom:0 }}>
                   <label style={S.label}>{t.profile.currentEmail}</label>
@@ -910,6 +939,18 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   </button>
                 )}
               </div>
+              {isOwner && !isGoogleUser && (
+                <div style={{ marginTop:"0.85rem" }}>
+                  <button className="change-btn" style={S.changeBtn} onClick={() => { setPasswordError(""); setPasswordSuccess(""); setShowPasswordModal(true); }}>
+                    {t.profile.changePassword}
+                  </button>
+                </div>
+              )}
+              {isOwner && isGoogleUser && (
+                <p style={{ fontSize:"12px", color:T.sub, marginTop:"0.75rem", margin:"0.75rem 0 0" }}>
+                  {t.profile.passwordManagedByGoogle}
+                </p>
+              )}
             </div>
           </div>
 
@@ -1292,6 +1333,38 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             <div style={S.modalActions}>
               <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowEmailModal(false)}>{t.profile.cancel}</button>
               <button style={S.confirmBtn} onClick={handleEmailChange}>{t.profile.confirm}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Change Modal */}
+      {showPasswordModal && isOwner && !isGoogleUser && (
+        <div style={S.modal} onClick={() => setShowPasswordModal(false)}>
+          <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
+            <p style={S.modalTitle}>{t.profile.changePassword}</p>
+            <p style={S.modalSub}>{t.profile.passwordModalSub}</p>
+            {passwordError && <div style={S.errorMsg}>{passwordError}</div>}
+            {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
+
+            <div style={S.group}>
+              <label style={S.label}>{t.profile.currentPassword}</label>
+              <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
+                value={currentPasswordForPwd} onChange={(e) => setCurrentPasswordForPwd(e.target.value)} />
+            </div>
+            <div style={S.group}>
+              <label style={S.label}>{t.profile.newPassword}</label>
+              <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
+                value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+            <div style={S.group}>
+              <label style={S.label}>{t.profile.confirmNewPassword}</label>
+              <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
+                value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} />
+            </div>
+            <div style={S.modalActions}>
+              <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowPasswordModal(false)}>{t.profile.cancel}</button>
+              <button style={S.confirmBtn} onClick={handlePasswordChange}>{t.profile.confirm}</button>
             </div>
           </div>
         </div>

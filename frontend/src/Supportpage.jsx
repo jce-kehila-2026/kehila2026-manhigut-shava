@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, query, where, doc, deleteDoc, updateDoc } 
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
+import { useTheme } from "./ThemeContext";
 import { logActivity } from "./activityLogger";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { getOrCreateConversation, sendHelpRequestPrompt } from "./hooks/useMessages";
@@ -262,7 +263,7 @@ styleTag.textContent = `
   .support-input:focus {
     border-color: #4472b8 !important;
     box-shadow: 0 0 0 3px rgba(68,114,184,0.16) !important;
-    background: #fff !important;
+    background: var(--bg-primary) !important;
     outline: none;
   }
   .result-card:hover {
@@ -272,9 +273,9 @@ styleTag.textContent = `
   .prof-pill { transition: all 0.14s ease; cursor: pointer; }
   .prof-pill:hover { transform: translateY(-1px); }
   .search-btn:hover    { background: #1d4896 !important; }
-  .view-btn:hover      { background: #f0f6fb !important; }
-  .req-btn:hover       { background: #daeaf8 !important; }
-  .suggest-item:hover  { background: #f0f7ff !important; }
+  .view-btn:hover      { background: var(--bg-hover) !important; }
+  .req-btn:hover       { background: var(--bg-hover) !important; }
+  .suggest-item:hover  { background: var(--bg-hover) !important; }
   .req-msg-textarea:focus {
     border-color: #4472b8 !important;
     box-shadow: 0 0 0 3px rgba(68,114,184,0.14) !important;
@@ -292,6 +293,7 @@ if (!document.head.querySelector("#support-styles")) {
 
 /* ─── AreaDropdown — compact single-select replacing the pill grid ─── */
 function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
+  const { dark } = useTheme();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -304,6 +306,8 @@ function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
   }, [open]);
 
   const selected = areas.find(a => a.key === value);
+  const isActive = value && value !== "OTHER";
+  const activeBg = dark ? "rgba(68,114,184,0.22)" : "#eef4ff";
 
   return (
     <div ref={wrapRef} style={{ position: "relative" }}>
@@ -314,10 +318,10 @@ function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
           width: "100%", display: "flex", alignItems: "center",
           justifyContent: "space-between", gap: 8,
           padding: "11px 14px", borderRadius: "13px",
-          border: `1.5px solid ${value && value !== "OTHER" ? "#4472b8" : "#daeaf8"}`,
-          background: value && value !== "OTHER" ? "#eef4ff" : "#fdf8f6",
-          color: value && value !== "OTHER" ? "#1d4896" : "#6b7280",
-          fontSize: "14px", fontWeight: value && value !== "OTHER" ? 600 : 400,
+          border: `1.5px solid ${isActive ? "#4472b8" : "var(--border)"}`,
+          background: isActive ? activeBg : "var(--bg-secondary)",
+          color: isActive ? (dark ? "#7aaecc" : "#1d4896") : "var(--text-muted)",
+          fontSize: "14px", fontWeight: isActive ? 600 : 400,
           cursor: "pointer", fontFamily: "inherit",
           direction: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left",
           transition: "border-color 0.2s",
@@ -326,12 +330,12 @@ function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
         <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selected ? selected.label : placeholder}
         </span>
-        {value && value !== "OTHER" ? (
+        {isActive ? (
           <span
             role="button"
             tabIndex={0}
             onMouseDown={e => { e.stopPropagation(); onChange(""); setOpen(false); }}
-            style={{ fontSize: 18, lineHeight: 1, color: "#9ca3af", cursor: "pointer", flexShrink: 0 }}
+            style={{ fontSize: 18, lineHeight: 1, color: "var(--text-muted)", cursor: "pointer", flexShrink: 0 }}
           >×</span>
         ) : (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.18s" }}>
@@ -358,17 +362,17 @@ function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
               style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 8,
                 padding: "9px 14px",
-                background: value === key ? "#eef4ff" : "transparent",
+                background: value === key ? activeBg : "transparent",
                 border: "none",
                 borderBottom: idx < areas.length - 1 ? "1px solid var(--border)" : "none",
-                color: value === key ? "#1d4896" : "var(--text-primary)",
+                color: value === key ? (dark ? "#7aaecc" : "#1d4896") : "var(--text-primary)",
                 fontSize: "13px", fontWeight: value === key ? 700 : 400,
                 cursor: "pointer", textAlign: isRTL ? "right" : "left",
                 direction: isRTL ? "rtl" : "ltr",
                 fontFamily: "inherit",
               }}
             >
-              {value === key && <span style={{ fontSize: 11, color: "#4472b8" }}>✓</span>}
+              {value === key && <span style={{ fontSize: 11, color: dark ? "#7aaecc" : "#4472b8" }}>✓</span>}
               {label}
             </button>
           ))}
@@ -380,10 +384,11 @@ function AreaDropdown({ value, onChange, areas, placeholder, isRTL }) {
 
 /* ─── StatusPill ─── */
 function StatusPill({ status, Tr }) {
+  const { dark } = useTheme();
   const map = {
-    accepted: { bg: "#f0fdf4", color: "#3f6a3e", border: "#cfe4ce" },
-    declined:  { bg: "#fff0f0", color: "#9a4545", border: "#d99090" },
-    null:      { bg: "#f0f6fb", color: "#4472b8",  border: "#daeaf8" },
+    accepted: { bg: dark ? "rgba(127,168,122,0.14)" : "#f0fdf4", color: dark ? "#9ecb94" : "#3f6a3e", border: dark ? "rgba(127,168,122,0.3)" : "#cfe4ce" },
+    declined:  { bg: dark ? "rgba(155,75,75,0.14)"  : "#fff0f0", color: dark ? "#d4a0a0" : "#9a4545", border: dark ? "rgba(155,75,75,0.3)"  : "#d99090" },
+    null:      { bg: dark ? "rgba(68,114,184,0.14)"  : "#f0f6fb", color: dark ? "#7aaecc" : "#4472b8", border: dark ? "rgba(68,114,184,0.3)"  : "#daeaf8" },
   };
   const s = map[status] ?? map["null"];
   const label = status === "accepted" ? (Tr?.statusAccepted ?? "Accepted")
@@ -470,6 +475,7 @@ function MemberAvatar({ user, size = 46, fontSize = 15 }) {
 export default function SupportPage({ onViewProfile, onMessage }) {
   const { user } = useAuth();
   const { lang, isRTL } = useLang();
+  const { dark } = useTheme();
   const Tr = T[lang] || T.he;
   const isMobile = useIsMobile();
 
@@ -715,7 +721,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     pill: (active) => ({
       padding: "6px 14px", borderRadius: "99px", fontSize: "12px", fontWeight: "600",
       border: `1.5px solid ${active ? "#4472b8" : "var(--border)"}`,
-      background: active ? "#daeaf8" : "var(--bg-secondary)",
+      background: active ? (dark ? "rgba(68,114,184,0.18)" : "#daeaf8") : "var(--bg-secondary)",
       color: active ? "#1d4896" : "var(--text-secondary)",
       cursor: "pointer", userSelect: "none",
     }),
@@ -750,8 +756,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     name:       { fontSize: "15px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
     profession: { fontSize: "13px", color: "var(--text-secondary)", margin: 0 },
     cityTag: {
-      fontSize: "12px", color: "#1d4896",
-      background: "#daeaf8", border: "1px solid #c8e0f4",
+      fontSize: "12px", color: dark ? "#7aaecc" : "#1d4896",
+      background: dark ? "rgba(68,114,184,0.16)" : "#daeaf8",
+      border: `1px solid ${dark ? "rgba(68,114,184,0.3)" : "#c8e0f4"}`,
       borderRadius: "99px", padding: "2px 10px",
       display: "inline-block", alignSelf: "flex-start",
     },
@@ -763,14 +770,18 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       cursor: "pointer", transition: "background 0.15s, border-color 0.15s",
     },
     reqBtn: {
-      flex: 1, padding: "9px 0", background: "#eff6ff", color: "#1d4896",
-      border: "1.5px solid #bfdbfe", borderRadius: "12px",
-      fontSize: "13px", fontWeight: "600", cursor: "pointer",
+      flex: 1, padding: "9px 0",
+      background: dark ? "rgba(68,114,184,0.14)" : "#eff6ff",
+      color: dark ? "#7aaecc" : "#1d4896",
+      border: `1.5px solid ${dark ? "rgba(68,114,184,0.3)" : "#bfdbfe"}`,
+      borderRadius: "12px", fontSize: "13px", fontWeight: "600", cursor: "pointer",
     },
     reqDoneBtn: {
-      flex: 1, padding: "9px 0", background: "#f0fdf4", color: "#3f6a3e",
-      border: "1.5px solid #cfe4ce", borderRadius: "12px",
-      fontSize: "13px", fontWeight: "600", cursor: "default",
+      flex: 1, padding: "9px 0",
+      background: dark ? "rgba(127,168,122,0.14)" : "#f0fdf4",
+      color: dark ? "#9ecb94" : "#3f6a3e",
+      border: `1.5px solid ${dark ? "rgba(127,168,122,0.3)" : "#cfe4ce"}`,
+      borderRadius: "12px", fontSize: "13px", fontWeight: "600", cursor: "default",
     },
     emptyBox: { textAlign: "center", padding: "3rem 2rem", color: "var(--text-muted)", fontSize: "14px" },
     overlay: {
@@ -808,9 +819,11 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
     },
     modalReqDoneBtn: {
-      flex: 1, padding: "12px", background: "#f0fdf4", color: "#3f6a3e",
-      border: "1.5px solid #cfe4ce", borderRadius: "12px",
-      fontSize: "14px", fontWeight: "700", cursor: "default",
+      flex: 1, padding: "12px",
+      background: dark ? "rgba(127,168,122,0.14)" : "#f0fdf4",
+      color: dark ? "#9ecb94" : "#3f6a3e",
+      border: `1.5px solid ${dark ? "rgba(127,168,122,0.3)" : "#cfe4ce"}`,
+      borderRadius: "12px", fontSize: "14px", fontWeight: "700", cursor: "default",
     },
     myReqSection: { marginTop: "2.5rem" },
     myReqGrid: {
@@ -832,14 +845,18 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     },
     receivedReqActions: { display: "flex", gap: 8, marginTop: 4 },
     acceptBtn: {
-      flex: 1, padding: "8px 0", background: "#f0fdf4", color: "#3f6a3e",
-      border: "1.5px solid #cfe4ce", borderRadius: "12px",
-      fontSize: "13px", fontWeight: "700", cursor: "pointer",
+      flex: 1, padding: "8px 0",
+      background: dark ? "rgba(127,168,122,0.14)" : "#f0fdf4",
+      color: dark ? "#9ecb94" : "#3f6a3e",
+      border: `1.5px solid ${dark ? "rgba(127,168,122,0.3)" : "#cfe4ce"}`,
+      borderRadius: "12px", fontSize: "13px", fontWeight: "700", cursor: "pointer",
     },
     declineBtn: {
-      flex: 1, padding: "8px 0", background: "#fff5f5", color: "#9a4545",
-      border: "1.5px solid #f5c6c6", borderRadius: "12px",
-      fontSize: "13px", fontWeight: "700", cursor: "pointer",
+      flex: 1, padding: "8px 0",
+      background: dark ? "rgba(155,75,75,0.14)" : "#fff5f5",
+      color: dark ? "#d4a0a0" : "#9a4545",
+      border: `1.5px solid ${dark ? "rgba(155,75,75,0.3)" : "#f5c6c6"}`,
+      borderRadius: "12px", fontSize: "13px", fontWeight: "700", cursor: "pointer",
     },
   };
 
@@ -1147,7 +1164,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 {u.helpAreas?.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                     {u.helpAreas.slice(0, 3).map(a => (
-                      <span key={a} style={{ fontSize: 10, background: "#f0f6fb", color: "#4472b8", borderRadius: 99, padding: "2px 8px", border: "1px solid #daeaf8" }}>{a}</span>
+                      <span key={a} style={{ fontSize: 10, background: dark ? "rgba(68,114,184,0.14)" : "#f0f6fb", color: dark ? "#7aaecc" : "#4472b8", borderRadius: 99, padding: "2px 8px", border: `1px solid ${dark ? "rgba(68,114,184,0.28)" : "#daeaf8"}` }}>{a}</span>
                     ))}
                   </div>
                 )}
@@ -1228,8 +1245,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   >{deleteIconSvg}</button>
                 </div>
                 {r.requestMessage && (
-                  <div style={{ background:"#f5f8ff", border:"1.5px solid #daeaf8", borderInlineStart:"3px solid #4472b8", borderRadius:"10px", padding:"8px 12px", margin:"4px 0" }}>
-                    <p style={{ fontSize:"10px", fontWeight:"700", color:"#4472b8", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 4px" }}>{Tr.reqMsgReceived}</p>
+                  <div style={{ background: dark ? "rgba(68,114,184,0.1)" : "#f5f8ff", border: `1.5px solid ${dark ? "rgba(68,114,184,0.25)" : "#daeaf8"}`, borderInlineStart:"3px solid #4472b8", borderRadius:"10px", padding:"8px 12px", margin:"4px 0" }}>
+                    <p style={{ fontSize:"10px", fontWeight:"700", color: dark ? "#7aaecc" : "#4472b8", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 4px" }}>{Tr.reqMsgReceived}</p>
                     <p style={{ fontSize:"13px", color:"var(--text-primary)", margin:0, lineHeight:"1.55" }}>{r.requestMessage}</p>
                   </div>
                 )}
@@ -1272,7 +1289,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.currentRole || u.profession}</p>
                 )}
                 {(u.region || u.city) && (
-                  <span style={{ fontSize: "11px", color: "#1d4896", background: "#daeaf8", borderRadius: "99px", padding: "2px 9px" }}>
+                  <span style={{ fontSize: "11px", color: dark ? "#7aaecc" : "#1d4896", background: dark ? "rgba(68,114,184,0.16)" : "#daeaf8", borderRadius: "99px", padding: "2px 9px" }}>
                     {u.region || u.city}
                   </span>
                 )}
