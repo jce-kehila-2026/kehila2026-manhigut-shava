@@ -47,7 +47,14 @@
       "Bash(npx --no-install react-scripts build)",
       "Bash(node_modules/.bin/react-scripts build *)",
       "Bash(node_modules/.bin/babel src/ProfilePage.jsx --presets @babel/preset-react)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(node --input-type=module --eval ' *)",
+      "Bash(timeout 30 node_modules/.bin/vite build --mode development)",
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash('button:has-text\\(\\\\\"Google\\\\\"\\)')",
+      "Bash(pkill -f \"vite --host\")",
+      "Bash(node /tmp/check_google_click.mjs)"
     ],
     "additionalDirectories": [
       "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src"

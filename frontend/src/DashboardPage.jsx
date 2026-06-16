@@ -25,6 +25,7 @@ const Icon = {
   back: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>,
   sun: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
   moon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+  bell: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
 };
 
 function useTimeAgo() {
@@ -686,6 +687,9 @@ export default function DashboardPage() {
   const [section,    setSection]    = useState(() => localStorage.getItem("section") || "home");
   const [navHistory, setNavHistory] = useState(() => [localStorage.getItem("section") || "home"]);
   const [unreadDMs,  setUnreadDMs]  = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifs,    setShowNotifs]    = useState(false);
+  const notifBellRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
 
@@ -749,6 +753,38 @@ export default function DashboardPage() {
       offline();
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, "notifications"),
+      where("toUserId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(30)
+    );
+    return onSnapshot(q, (snap) => {
+      setNotifications(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (!showNotifs) return;
+    const handler = (e) => {
+      if (notifBellRef.current && !notifBellRef.current.contains(e.target)) {
+        setShowNotifs(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showNotifs]);
+
+  const markNotifsRead = useCallback(() => {
+    notifications.filter(n => !n.read).forEach(n => {
+      updateDoc(doc(db, "notifications", n.id), { read: true }).catch(() => {});
+    });
+  }, [notifications]);
+
+  const unreadNotifs = notifications.filter(n => !n.read).length;
 
   const initials = profile
     ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
@@ -1010,6 +1046,99 @@ export default function DashboardPage() {
               <div style={{ flex: 1 }} />
 
               {!isMobile && <LangSwitcher lang={lang} setLang={setLang} />}
+
+              {/* Notification bell */}
+              <div ref={notifBellRef} style={{ position: "relative" }}>
+                <button
+                  onClick={() => { setShowNotifs(v => !v); if (!showNotifs) markNotifsRead(); }}
+                  title={t.community?.notificationsTitle || "Notifications"}
+                  style={{
+                    width: 34, height: 34, borderRadius: 99,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "transparent", border: "1px solid var(--border)",
+                    color: "var(--text-secondary)", cursor: "pointer", position: "relative",
+                    transition: "all var(--t-fast)",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--brand)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+                >
+                  {Icon.bell}
+                  {unreadNotifs > 0 && (
+                    <span style={{
+                      position: "absolute", top: 2, right: 2,
+                      width: 16, height: 16, borderRadius: "50%",
+                      background: "var(--brand)", color: "#fff",
+                      fontSize: 9, fontWeight: 800,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      border: "1.5px solid var(--bg-primary)",
+                    }}>
+                      {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                    </span>
+                  )}
+                </button>
+
+                {showNotifs && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 8px)",
+                    right: isRTL ? "auto" : 0, left: isRTL ? 0 : "auto",
+                    width: 300, maxHeight: 360,
+                    background: "var(--bg-primary)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--r-xl)",
+                    boxShadow: "var(--shadow-xl)",
+                    overflowY: "auto", zIndex: 200,
+                  }}>
+                    <div style={{
+                      padding: "0.75rem 1rem",
+                      borderBottom: "1px solid var(--border)",
+                      fontSize: 12, fontWeight: 700,
+                      color: "var(--text-primary)",
+                      textTransform: "uppercase", letterSpacing: "0.08em",
+                    }}>
+                      {t.community?.notificationsTitle || "Notifications"}
+                    </div>
+                    {notifications.length === 0 ? (
+                      <p style={{ padding: "1rem", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
+                        {t.community?.notificationsEmpty || "No new notifications."}
+                      </p>
+                    ) : (
+                      notifications.slice(0, 20).map((n) => (
+                        <div key={n.id} style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "0.65rem 1rem",
+                          borderBottom: "1px solid var(--border)",
+                          background: n.read ? "transparent" : "rgba(68,114,184,0.06)",
+                          transition: "background 0.2s",
+                        }}>
+                          {n.fromUserAvatar ? (
+                            <img src={n.fromUserAvatar} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="" />
+                          ) : (
+                            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#4472b8,#6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                              {(n.fromUserName || "?")[0].toUpperCase()}
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 12, color: "var(--text-primary)", lineHeight: 1.4 }}>
+                              {n.type === "birthday_wish"
+                                ? (t.community?.birthdayWishNotif ? t.community.birthdayWishNotif(n.fromUserName) : `${n.fromUserName} sent you a birthday balloon!`)
+                                : n.message || "New notification"}
+                            </p>
+                            <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+                              {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                            </p>
+                          </div>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0, color: "#4472b8" }}>
+                            <ellipse cx="12" cy="9" rx="7" ry="8.5" fill="currentColor"/>
+                            <path d="M10.5 17.5Q12 19.5 13.5 17.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                            <path d="M12 19.5Q13 21 12 22.5" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round"/>
+                            <ellipse cx="9.5" cy="6.5" rx="1.5" ry="2" fill="rgba(255,255,255,0.4)"/>
+                          </svg>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Logout — mobile only */}
               {isMobile && (

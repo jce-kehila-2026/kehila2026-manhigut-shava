@@ -4,7 +4,7 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import {
   collection, addDoc, query, orderBy, onSnapshot,
   doc, updateDoc, deleteDoc, arrayUnion, arrayRemove,
-  getDoc, getDocs, where,
+  getDoc, getDocs, where, setDoc,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
@@ -246,11 +246,11 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
           display: "flex", alignItems: "center", gap: 8,
           borderBottom: "1px solid #6da3d4",
         }}>
-          🎂 Birthday Celebration
+          <CakeIcon size={15} color="#fff" /> {t.community.birthdayCelebration}
           {post.birthdayUserAvatar ? (
             <img src={post.birthdayUserAvatar} style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", marginLeft: "auto", border: "1.5px solid rgba(255,255,255,0.6)" }} alt="" />
           ) : (
-            <span style={{ marginLeft: "auto", fontSize: 18 }}>🎉</span>
+            <span style={{ marginLeft: "auto", display: "flex" }}><SparkleIcon size={18} color="rgba(255,255,255,0.9)" /></span>
           )}
         </div>
       )}
@@ -504,7 +504,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
         {/* Happy Birthday quick reply — only on birthday auto-posts */}
         {post.birthdayAutoPost && currentUser && (
           <button
-            onClick={() => { setCommentText("Happy Birthday! 🎂🎉"); setShowComments(true); }}
+            onClick={() => { setCommentText(t.community.happyBirthday); setShowComments(true); }}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "7px 16px", borderRadius: "var(--r-full)",
@@ -517,7 +517,7 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
             onMouseEnter={(e) => { e.currentTarget.style.background = "#dbeafe"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(68,114,184,0.2)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #dbeafe, #eff6ff)"; e.currentTarget.style.boxShadow = "none"; }}
           >
-            🎂 Happy Birthday!
+            <CakeIcon size={14} color="#1d4896" /> {t.community.happyBirthday}
           </button>
         )}
       </div>
@@ -756,8 +756,104 @@ function ComposeBox({ currentUser, profile, onPost }) {
   );
 }
 
+const CakeIcon = ({ size = 20, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
+    <path d="M12 2.5a.75.75 0 0 0-.75.75c0 .64.75 1.25.75 1.25s.75-.61.75-1.25A.75.75 0 0 0 12 2.5zM8 5.5a.75.75 0 0 0-.75.75c0 .64.75 1.25.75 1.25s.75-.61.75-1.25A.75.75 0 0 0 8 5.5zm8 0a.75.75 0 0 0-.75.75c0 .64.75 1.25.75 1.25s.75-.61.75-1.25A.75.75 0 0 0 16 5.5zM4 10a1 1 0 0 0-1 1v3h18v-3a1 1 0 0 0-1-1H4zm-1 5v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6H3z"/>
+  </svg>
+);
+
+const SparkleIcon = ({ size = 18, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
+    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+  </svg>
+);
+
+const BalloonSVG = ({ size = 22, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <ellipse cx="12" cy="9" rx="7" ry="8.5" fill={color}/>
+    <path d="M10.5 17.5Q12 19.5 13.5 17.5" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M12 19.5Q13 21 12 22.5" stroke={color} strokeWidth="1" fill="none" strokeLinecap="round"/>
+    <ellipse cx="9.5" cy="6.5" rx="1.5" ry="2" fill="rgba(255,255,255,0.4)"/>
+  </svg>
+);
+
+function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile }) {
+  const { t } = useLang();
+  const [wishData, setWishData] = useState(null);
+  const [clicking, setClicking] = useState(false);
+  const [justSent, setJustSent] = useState(false);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const docId = `${birthdayUserId}_${todayStr}`;
+
+  useEffect(() => {
+    const ref = doc(db, "birthdayWishes", docId);
+    return onSnapshot(ref, (snap) => {
+      setWishData(snap.exists() ? snap.data() : { count: 0, wishers: [] });
+    });
+  }, [docId]);
+
+  const hasWished = wishData?.wishers?.includes(currentUser?.uid);
+  const count = wishData?.count || 0;
+
+  const handleClick = async () => {
+    if (hasWished || clicking || !currentUser || !wishData) return;
+    setClicking(true);
+    try {
+      const ref = doc(db, "birthdayWishes", docId);
+      await setDoc(ref, {
+        birthdayUserId,
+        date: todayStr,
+        count: (wishData.count || 0) + 1,
+        wishers: arrayUnion(currentUser.uid),
+      }, { merge: true });
+      const fromName = `${currentUserProfile?.firstName || ""} ${currentUserProfile?.lastName || ""}`.trim() || currentUser.email || "";
+      await addDoc(collection(db, "notifications"), {
+        toUserId: birthdayUserId,
+        fromUserId: currentUser.uid,
+        fromUserName: fromName,
+        fromUserAvatar: currentUserProfile?.photoURL || currentUserProfile?.avatarUrl || null,
+        type: "birthday_wish",
+        createdAt: new Date().toISOString(),
+        read: false,
+      });
+      setJustSent(true);
+      setTimeout(() => setJustSent(false), 2000);
+    } finally {
+      setClicking(false);
+    }
+  };
+
+  if (!currentUser || currentUser.uid === birthdayUserId) return null;
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={hasWished || clicking}
+      title={hasWished ? t.community.birthdayWishSent : t.community.birthdayBalloonTooltip}
+      style={{
+        flex: 1,
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        padding: "7px 0",
+        borderRadius: "var(--r-full)",
+        background: hasWished
+          ? "linear-gradient(135deg, #4472b8, #6da3d4)"
+          : "linear-gradient(135deg, rgba(68,114,184,0.12), rgba(109,163,212,0.12))",
+        color: hasWished ? "#fff" : "#4472b8",
+        border: hasWished ? "none" : "1.5px solid rgba(68,114,184,0.35)",
+        fontSize: 12, fontWeight: 700, cursor: hasWished ? "default" : "pointer",
+        transition: "all 0.2s",
+        transform: justSent ? "scale(1.06)" : "scale(1)",
+      }}
+    >
+      <BalloonSVG size={15} color={hasWished ? "#fff" : "#4472b8"} />
+      {justSent ? t.community.birthdayWishSent : count > 0 ? count : ""}
+    </button>
+  );
+}
+
 /* ── Birthday hero card ── */
-function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
+function BirthdaysCard({ birthdays, onViewProfile, currentUserUid, currentUser, currentUserProfile }) {
+  const { t } = useLang();
   if (birthdays.length === 0) {
     return (
       <div
@@ -770,8 +866,8 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
           textAlign: "center",
         }}
       >
-        <div style={{ fontSize: 28, marginBottom: 6 }}>🎂</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No birthdays this week.</p>
+        <div style={{ marginBottom: 6, display: "flex", justifyContent: "center" }}><CakeIcon size={32} color="var(--text-muted)" /></div>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.community.birthdayNoneThisWeek}</p>
       </div>
     );
   }
@@ -813,18 +909,18 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
               backdropFilter: "blur(4px)",
               fontSize: 20,
             }}
-          >🎂</div>
+          ><CakeIcon size={22} color="#fff" /></div>
           <div>
             <p style={{
               fontSize: 10, fontWeight: 700,
               textTransform: "uppercase", letterSpacing: "0.12em",
               opacity: 0.85,
-            }}>This week</p>
+            }}>{t.community.birthdayThisWeek}</p>
             <p style={{
               fontSize: 17, fontWeight: 700,
               fontFamily: "var(--font-display)",
               lineHeight: 1.1, marginTop: 2,
-            }}>Birthdays</p>
+            }}>{t.community.birthdaysTitle}</p>
           </div>
         </div>
       </div>
@@ -859,8 +955,10 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
                   />
                   <span style={{
                     position: "absolute", bottom: -2, right: -2,
-                    fontSize: 14, lineHeight: 1,
-                  }}>🎂</span>
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 16, height: 16, borderRadius: "50%",
+                    background: "var(--brand)", lineHeight: 1,
+                  }}><CakeIcon size={10} color="#fff" /></span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p
@@ -883,30 +981,36 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
                     marginTop: 3,
                     letterSpacing: "0.08em",
                     boxShadow: "0 4px 12px var(--brand-glow)",
-                  }}>TODAY</span>
+                  }}>{t.community.today.toUpperCase()}</span>
                 </div>
               </div>
-              {canSend && (
-                <button
-                  onClick={() => onViewProfile(u.id)}
-                  style={{
-                    width: "100%",
-                    marginTop: 10,
-                    padding: "7px 0",
-                    borderRadius: "var(--r-full)",
-                    background: "linear-gradient(135deg, var(--brand), var(--brand-dark))",
-                    color: "#fff",
-                    border: "none",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    boxShadow: "0 4px 12px var(--brand-glow)",
-                    letterSpacing: "0.03em",
-                  }}
-                >
-                  Send wishes
-                </button>
-              )}
+              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                <BirthdayWishButton
+                  birthdayUserId={u.id}
+                  currentUser={currentUser}
+                  currentUserProfile={currentUserProfile}
+                />
+                {canSend && (
+                  <button
+                    onClick={() => onViewProfile(u.id)}
+                    style={{
+                      flex: 1,
+                      padding: "7px 0",
+                      borderRadius: "var(--r-full)",
+                      background: "linear-gradient(135deg, var(--brand), var(--brand-dark))",
+                      color: "#fff",
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      boxShadow: "0 4px 12px var(--brand-glow)",
+                      letterSpacing: "0.03em",
+                    }}
+                  >
+                    {t.community.birthdaySendWishes}
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
@@ -916,7 +1020,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
             fontSize: 9.5, fontWeight: 700, color: "var(--text-muted)",
             textTransform: "uppercase", letterSpacing: "0.1em",
             marginBottom: 6, paddingLeft: 4,
-          }}>Coming up</p>
+          }}>{t.community.birthdayComingUp}</p>
         )}
 
         {upcoming.map((u) => {
@@ -942,7 +1046,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>{name}</p>
                 <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-                  {formatBirthday(u.birthDate ?? u.birthdate)} · in {u.daysUntil} day{u.daysUntil > 1 ? "s" : ""}
+                  {formatBirthday(u.birthDate ?? u.birthdate)} · {t.community.inDays(u.daysUntil)}
                 </p>
               </div>
               <span style={{
@@ -952,7 +1056,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid }) {
                 padding: "2px 8px",
                 borderRadius: "var(--r-full)",
               }}>
-                {u.daysUntil}d
+                {t.community.birthdayDaysShort(u.daysUntil)}
               </span>
             </div>
           );
@@ -969,7 +1073,6 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   const isMobile = useIsMobile();
   const [posts, setPosts]           = useState([]);
   const [birthdays, setBirthdays]   = useState([]);
-  const [requests, setRequests]     = useState([]);
   const [profile, setProfile]       = useState(null);
   const [loading, setLoading]       = useState(true);
   const [showMobileBdays, setShowMobileBdays] = useState(false);
@@ -1023,7 +1126,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
 
       const name = `${bdayUser.firstName || ""} ${bdayUser.lastName || ""}`.trim() || "a member";
       await addDoc(collection(db, "posts"), {
-        text: `Happy Birthday ${name}! 🎂🎉\nToday is ${name}'s birthday — drop a birthday wish in the comments below! 👇`,
+        text: t.community.birthdayAutoPostText(name),
         media: [],
         authorId: "system",
         authorName: "BogrotNet",
@@ -1039,15 +1142,6 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
       });
     });
   }, [birthdays, loading, user, profile]);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, "helpRequests"), where("toUserId", "==", user.uid));
-    const unsub = onSnapshot(q, (snap) =>
-      setRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    return unsub;
-  }, [user]);
 
   const handleDeletePost = async (postId) => {
     if (!window.confirm(t?.community?.confirmDelete || "Delete this post?")) return;
@@ -1079,11 +1173,6 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
         authorAvatar: originalPost.authorAvatar || null,
       },
     });
-  };
-
-  const handleRequest = async (reqId, status) => {
-    const responderName = profile ? `${profile.firstName} ${profile.lastName}` : user.email;
-    await updateDoc(doc(db, "helpRequests", reqId), { status, responderName });
   };
 
   const blockedIds = authProfile?.isAdmin ? [] : (authProfile?.blockedUsers || []);
@@ -1157,11 +1246,11 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
                 }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span>🎂</span>
+                  <CakeIcon size={16} color="#fff" />
                   <span>
                     {birthdays.filter((b) => b.daysUntil === 0).length > 0
-                      ? `Today: ${birthdays.filter((b) => b.daysUntil === 0).map((b) => `${b.firstName || ""} ${b.lastName || ""}`.trim()).join(", ")}`
-                      : `${birthdays.length} upcoming birthday${birthdays.length > 1 ? "s" : ""} this week`}
+                      ? t.community.birthdayBannerToday(birthdays.filter((b) => b.daysUntil === 0).map((b) => `${b.firstName || ""} ${b.lastName || ""}`.trim()).join(", "))
+                      : t.community.birthdayBannerUpcoming(birthdays.length)}
                   </span>
                 </span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -1175,6 +1264,8 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
                     birthdays={birthdays}
                     onViewProfile={onViewProfile}
                     currentUserUid={user?.uid}
+                    currentUser={user}
+                    currentUserProfile={profile}
                   />
                 </div>
               )}
@@ -1248,65 +1339,10 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             birthdays={birthdays}
             onViewProfile={onViewProfile}
             currentUserUid={user?.uid}
+            currentUser={user}
+            currentUserProfile={profile}
           />
 
-          <div className="card" style={{ padding: "1.1rem", borderRadius: "var(--r-xl)", border: "1px solid var(--border)" }}>
-            <p style={{
-              fontSize: 11, fontWeight: 700, color: "var(--brand-dark)",
-              textTransform: "uppercase", letterSpacing: "0.1em",
-              marginBottom: "0.85rem",
-              display: "flex", alignItems: "center", gap: 6,
-            }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              Help Requests
-            </p>
-            {requests.length === 0 && (
-              <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "0.5rem 0" }}>
-                Nothing new — you're all caught up.
-              </p>
-            )}
-            {requests.map((r) => (
-              <div key={r.id} style={{
-                paddingBottom: 12, marginBottom: 12,
-                borderBottom: "1px solid var(--border)",
-              }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 2, wordBreak: "break-word", fontFamily: "var(--font-display)" }}>{r.fromUserName}</p>
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>{r.fromUserProfession}</p>
-                {!r.status && (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => handleRequest(r.id, "accepted")} style={{
-                      flex: 1, padding: "6px 0", fontSize: 11, fontWeight: 700,
-                      background: "rgba(123,168,122,0.12)", color: "var(--success)",
-                      border: "1px solid rgba(123,168,122,0.35)",
-                      borderRadius: "var(--r-full)", cursor: "pointer",
-                    }}>Accept</button>
-                    <button onClick={() => handleRequest(r.id, "declined")} style={{
-                      flex: 1, padding: "6px 0", fontSize: 11, fontWeight: 700,
-                      background: "rgba(194,92,92,0.10)", color: "var(--danger)",
-                      border: "1px solid rgba(194,92,92,0.30)",
-                      borderRadius: "var(--r-full)", cursor: "pointer",
-                    }}>Decline</button>
-                  </div>
-                )}
-                {r.status && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700,
-                    padding: "3px 10px", borderRadius: "var(--r-full)",
-                    background: r.status === "accepted" ? "rgba(123,168,122,0.15)" : "rgba(194,92,92,0.12)",
-                    color: r.status === "accepted" ? "var(--success)" : "var(--danger)",
-                    border: `1px solid ${r.status === "accepted" ? "rgba(123,168,122,0.35)" : "rgba(194,92,92,0.30)"}`,
-                  }}>
-                    {r.status === "accepted" ? "Accepted" : "Declined"}
-                  </span>
-                )}
-                <button onClick={async () => { await deleteDoc(doc(db, "helpRequests", r.id)); }}
-                  style={{ marginTop: 6, marginLeft: 4, fontSize: 10, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                  onMouseEnter={(e) => e.target.style.color = "var(--danger)"}
-                  onMouseLeave={(e) => e.target.style.color = "var(--text-muted)"}
-                >Remove</button>
-              </div>
-            ))}
-          </div>
         </aside>
       </div>
     </div>
