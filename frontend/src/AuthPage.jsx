@@ -16,13 +16,13 @@ const AUTH_T = {
   he: {
     loginTab:"כניסה", signupTab:"הרשמה",
     loginH:"ברוכה הבאה", loginSub:"היכנסי לרשת הבוגרות שלך",
-    emailLbl:"אימייל", passLbl:"סיסמה",
+    emailLbl:"דוא״ל", passLbl:"סיסמה",
     rememberMe:"זכרי אותי", forgotPass:"שכחתי סיסמה",
     loginBtn:"כניסה לחשבון →", loginLoading:"מתחברת...",
     noAccount:"עוד לא רשומה?", registerNow:"הרשמי עכשיו",
     googleLogin:"המשכי עם Google", googleSignup:"הרשמי עם Google",
-    orEmail:"או המשכי עם אימייל", orEmailSignup:"או הרשמי עם אימייל",
-    resetSent:"נשלח אימייל לאיפוס סיסמה ✓",
+    orEmail:"או המשכי עם דוא״ל", orEmailSignup:"או הרשמי עם דוא״ל",
+    resetSent:"נשלח דוא״ל לאיפוס סיסמה ✓",
     step1H:"הרשמה לרשת", step1Sub:"מלאי את הפרטים האישיים שלך",
     firstNameLbl:"שם פרטי *", lastNameLbl:"שם משפחה *",
     phoneLbl:"טלפון *",
@@ -39,7 +39,7 @@ const AUTH_T = {
     submitBtn:"הרשמה →", submitting:"יוצרת חשבון...",
     alreadyHave:"כבר יש לך חשבון?", loginLink:"כניסה",
     errFill:"מלאי את כל השדות הנדרשים.",
-    errEmail:"כתובת אימייל לא תקינה.",
+    errEmail:"כתובת דוא״ל לא תקינה.",
     errPhone:"מספר טלפון לא תקין. השתמשי בפורמט: 05X-XXXXXXX",
     errAgree:"יש לאשר את הסכמת שיתוף הפרטים.",
     errPassMatch:"הסיסמאות אינן תואמות.",
@@ -154,12 +154,12 @@ function normalizePhone(raw) {
 
 function firebaseMsg(code) {
   const m = {
-    "auth/invalid-credential":   "אימייל או סיסמה שגויים.",
-    "auth/user-not-found":       "לא נמצא חשבון עם אימייל זה.",
+    "auth/invalid-credential":   "דוא״ל או סיסמה שגויים.",
+    "auth/user-not-found":       "לא נמצא חשבון עם דוא״ל זה.",
     "auth/wrong-password":       "סיסמה שגויה.",
-    "auth/email-already-in-use": "קיים כבר חשבון עם אימייל זה.",
+    "auth/email-already-in-use": "קיים כבר חשבון עם דוא״ל זה.",
     "auth/weak-password":        "הסיסמה חייבת לכלול לפחות 6 תווים.",
-    "auth/invalid-email":        "כתובת אימייל לא תקינה.",
+    "auth/invalid-email":        "כתובת דוא״ל לא תקינה.",
     "auth/too-many-requests":    "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
     "auth/popup-closed-by-user": "הכניסה בוטלה.",
   };
@@ -271,7 +271,7 @@ function LoginForm({ onSwitchTab, Tr, dir }) {
   };
 
   const forgot = async () => {
-    if (!form.email) { setError("הכניסי אימייל למעלה לפני איפוס הסיסמה."); return; }
+    if (!form.email) { setError("הכניסי דוא״ל למעלה לפני איפוס הסיסמה."); return; }
     try { await sendPasswordResetEmail(auth, form.email); setResetSent(true); setError(""); }
     catch (e) { setError(firebaseMsg(e.code)); }
   };
@@ -287,8 +287,8 @@ function LoginForm({ onSwitchTab, Tr, dir }) {
         {Tr?.loginSub||"היכנסי לרשת הבוגרות שלך"}
       </p>
       {error    && <div style={errBox}>{error}</div>}
-      {resetSent && <div style={okBox}>{Tr?.resetSent||"נשלח אימייל לאיפוס סיסמה ✓"}</div>}
-      <Fld label={Tr?.emailLbl||"אימייל"}>
+      {resetSent && <div style={okBox}>{Tr?.resetSent||"נשלח דוא״ל לאיפוס סיסמה ✓"}</div>}
+      <Fld label={Tr?.emailLbl||"דוא״ל"}>
         <input style={inp} type="email" name="email" placeholder={Tr?.passEmailPh||"your@email.com"} dir="ltr"
           value={form.email} onChange={set} required autoComplete="off"
           onFocus={focusOn} onBlur={focusOff}/>
@@ -346,7 +346,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
   const touch = field => () => setTouched(p => ({ ...p, [field]: true }));
 
   const emailErr = touched.email && form.email && !EMAIL_RE.test(form.email)
-    ? (Tr?.errEmail || "כתובת אימייל לא תקינה.") : "";
+    ? (Tr?.errEmail || "כתובת דוא״ל לא תקינה.") : "";
   const phoneErr = touched.phone && form.phone && !validPhone(form.phone)
     ? (Tr?.errPhone || "מספר טלפון לא תקין.") : "";
 
@@ -421,7 +421,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
               <input style={inputStyle("lastName")} name="lastName" value={form.lastName} onChange={set} placeholder="משפחה" required onFocus={focusOn} onBlur={focusOff}/>
             </Fld>
           </div>
-          <Fld label={Tr?.emailLbl||"אימייל *"}>
+          <Fld label={Tr?.emailLbl||"דוא״ל *"}>
             <input
               style={errStyle("email")} type="email" name="email"
               value={form.email} onChange={set} placeholder="your@email.com"
@@ -444,7 +444,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
           <button style={primaryBtn} onClick={()=>{
             setTouched({ email:true, phone:true });
             if (!form.firstName||!form.lastName||!form.email||!form.phone) { setError(Tr?.errFill||"מלאי את כל השדות הנדרשים."); return; }
-            if (!EMAIL_RE.test(form.email)) { setError(Tr?.errEmail||"כתובת אימייל לא תקינה."); return; }
+            if (!EMAIL_RE.test(form.email)) { setError(Tr?.errEmail||"כתובת דוא״ל לא תקינה."); return; }
             if (!validPhone(form.phone)) { setError(Tr?.errPhone||"מספר טלפון לא תקין."); return; }
             setError(""); setStep(2);
           }}>{Tr?.nextBtn||"המשך →"}</button>

@@ -33,7 +33,11 @@
       "Bash(firebase --version)",
       "Bash(firebase projects:list)",
       "Bash(node -e 'console.log\\(new Date\\(\\).toString\\(\\)\\)')",
-      "Bash(npx firebase-tools *)"
+      "Bash(npx firebase-tools *)",
+      "Bash(LC_ALL=C sed -i '' 's/אימייל/דוא״ל/g' \\\\ *)"
+    ],
+    "additionalDirectories": [
+      "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src"
     ]
   }
 }

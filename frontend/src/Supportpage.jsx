@@ -30,7 +30,7 @@ const T = {
     myReqs: "הבקשות שלי",
     memberProfile: "פרופיל חברה",
     close: "סגרי",
-    emailLbl: "אימייל",
+    emailLbl: "דוא״ל",
     phoneLbl: "טלפון",
     regionLabel: "אזור",
     campusLabel: "קמפוס",
