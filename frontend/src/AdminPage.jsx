@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  collection, getDocs, addDoc, deleteDoc, doc, query,
+  collection, getDocs, deleteDoc, doc, query,
   orderBy, updateDoc, limit, where,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -26,11 +26,6 @@ const AT = {
     adminPriv:"הרשאות מנהל", cancel:"ביטול", save:"שמרי שינויים", saving:"שומרת...",
     deleteLbl:"מחקי", editLbl:"ערכי", makeAdmin:"הפכי למנהלת", revokeAdmin:"הסרת הרשאות מנהל", editPermsBtn:"ערכי הרשאות",
     refresh:"רענון", filterByActor:"חפשי לפי שם...", filterByType:"סוג:",
-    dataManage:"ניהול נתונים", downloadBtn:"הורדת אקסל", uploadBtn:"העלאת אקסל", importing:"מייבאת...",
-    dirNote:"ייבוא יוצר רשומות מדריך בלבד (ללא חשבון התחברות).",
-    created:"נוצרו", skippedDup:"דולגו (כפילות)", errorsLbl:"שגיאות", rowLbl:"שורה",
-    exportTitle:"ייצוא חברות לאקסל", exportSub:"בחרי אילו שדות לכלול בקובץ.", selectAll:"בחרי הכל", clearAll:"נקי",
-    importBadType:"קובץ לא תקין — רק ‎.xlsx‎ או ‎.xls‎.", importEmpty:"הגיליון ריק.", importMissing:"שדות חסרים", importBadEmail:"אימייל לא תקין",
     noLogs:"אין רשומות עדיין.",
     confirmDeleteTitle:"מחיקת משתמשת", confirmDeleteMsg:(n)=>`האם את בטוחה שברצונך למחוק את ${n}? פעולה זו בלתי הפיכה.`,
     confirmDeleteBtn:"כן, מחקי", confirmMakeAdminTitle:"הוספת הרשאות מנהל",
@@ -88,11 +83,6 @@ const AT = {
     adminPriv:"Admin privileges", cancel:"Cancel", save:"Save Changes", saving:"Saving…",
     deleteLbl:"Delete", editLbl:"Edit", makeAdmin:"Make Admin", revokeAdmin:"Revoke Admin", editPermsBtn:"Edit Permissions",
     refresh:"Refresh", filterByActor:"Filter by name...", filterByType:"Type:",
-    dataManage:"Data Management", downloadBtn:"Download Excel", uploadBtn:"Upload Excel", importing:"Importing...",
-    dirNote:"Import creates directory records only (no login account).",
-    created:"Created", skippedDup:"Skipped (duplicate)", errorsLbl:"Errors", rowLbl:"Row",
-    exportTitle:"Export Members to Excel", exportSub:"Choose which fields to include in the file.", selectAll:"Select all", clearAll:"Clear",
-    importBadType:"Invalid file — only .xlsx or .xls.", importEmpty:"The sheet is empty.", importMissing:"missing fields", importBadEmail:"invalid email",
     noLogs:"No logs yet.",
     confirmDeleteTitle:"Delete User", confirmDeleteMsg:(n)=>`Are you sure you want to permanently delete ${n}? This cannot be undone.`,
     confirmDeleteBtn:"Yes, Delete", confirmMakeAdminTitle:"Grant Admin Access",
@@ -150,11 +140,6 @@ const AT = {
     adminPriv:"صلاحيات المشرف", cancel:"إلغاء", save:"حفظ التغييرات", saving:"جارٍ الحفظ...",
     deleteLbl:"حذف", editLbl:"تعديل", makeAdmin:"تعيين مشرفة", revokeAdmin:"إلغاء صلاحيات المشرف", editPermsBtn:"تعديل الصلاحيات",
     refresh:"تحديث", filterByActor:"ابحثي بالاسم...", filterByType:"النوع:",
-    dataManage:"إدارة البيانات", downloadBtn:"تنزيل Excel", uploadBtn:"رفع Excel", importing:"جارٍ الاستيراد...",
-    dirNote:"الاستيراد ينشئ سجلات دليل فقط (بدون حساب دخول).",
-    created:"تم الإنشاء", skippedDup:"تم التخطي (مكرر)", errorsLbl:"أخطاء", rowLbl:"صف",
-    exportTitle:"تصدير الأعضاء إلى Excel", exportSub:"اختاري الحقول المراد تضمينها في الملف.", selectAll:"تحديد الكل", clearAll:"مسح",
-    importBadType:"ملف غير صالح — فقط .xlsx أو .xls.", importEmpty:"الورقة فارغة.", importMissing:"حقول ناقصة", importBadEmail:"بريد غير صالح",
     noLogs:"لا توجد سجلات بعد.",
     confirmDeleteTitle:"حذف المستخدمة", confirmDeleteMsg:(n)=>`هل أنت متأكدة من حذف ${n}؟ لا يمكن التراجع عن هذا الإجراء.`,
     confirmDeleteBtn:"نعم، احذفي", confirmMakeAdminTitle:"منح صلاحيات المشرف",
@@ -484,26 +469,6 @@ function formatAbsoluteTime(ts) {
 
 /* ─── Permission keys ─── */
 const PERM_KEYS = ["canManageUsers","canManageContent","canViewLogs","canManageAdmins","canViewStats","canSendAnnouncements","canExportData"];
-
-/* ── Excel export/import: the label is also the column header, so an exported
-   sheet round-trips cleanly back through import. ── */
-const EXPORT_FIELDS = [
-  { key: "firstName",         label: "First Name" },
-  { key: "lastName",          label: "Last Name" },
-  { key: "email",             label: "Email" },
-  { key: "phone",             label: "Phone" },
-  { key: "region",            label: "Region" },
-  { key: "campus",            label: "Campus" },
-  { key: "currentRole",       label: "Current Role" },
-  { key: "employmentSectors", label: "Employment Sectors" },
-  { key: "helpAreas",         label: "Help Areas" },
-  { key: "bio",               label: "Bio" },
-  { key: "linkedin",          label: "LinkedIn" },
-  { key: "createdAt",         label: "Joined" },
-];
-const ARRAY_FIELDS = new Set(["employmentSectors", "helpAreas"]);
-const REQUIRED_IMPORT = ["email", "firstName"];   // a row missing these is reported, not created
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_PERMS = Object.fromEntries(PERM_KEYS.map(k => [k, false]));
 
 /* ── Simple confirm modal ── */
@@ -703,13 +668,6 @@ export default function AdminPage() {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchUser, setSearchUser] = useState("");
-
-  /* ── Excel export / import (Data tab) ── */
-  const [exportOpen, setExportOpen]     = useState(false);
-  const [selFields, setSelFields]       = useState(() => EXPORT_FIELDS.map(f => f.key));
-  const [importBusy, setImportBusy]     = useState(false);
-  const [importResult, setImportResult] = useState(null);
-  const fileRef = useRef(null);
 
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
@@ -953,105 +911,6 @@ export default function AdminPage() {
     const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
     return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
   });
-
-  /* ── Export members to a real .xlsx (selected columns only) ── */
-  const exportExcel = async () => {
-    const fields = EXPORT_FIELDS.filter(f => selFields.includes(f.key));
-    if (fields.length === 0) return;
-    const rows = users.map(u => {
-      const row = {};
-      fields.forEach(({ key, label }) => {
-        const v = u[key];
-        row[label] = Array.isArray(v) ? v.join("; ") : (v ?? "");
-      });
-      return row;
-    });
-    const XLSX = await import("xlsx");   // lazy — keep xlsx out of the main bundle
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Members");
-    XLSX.writeFile(wb, `members_${new Date().toISOString().slice(0, 10)}.xlsx`, { bookType: "xlsx" });
-    logActivity({ type: "admin_export_data", actorId: user.uid, actorName: adminName, details: { count: users.length, fields: selFields } });
-    setExportOpen(false);
-  };
-
-  /* ── Import members from .xlsx/.xls → directory records (no login) ── */
-  const importExcel = async (e) => {
-    const file = e.target.files?.[0];
-    if (fileRef.current) fileRef.current.value = "";   // allow re-selecting the same file
-    if (!file) return;
-    setImportResult(null);
-
-    /* Gate 1: extension must be .xlsx/.xls */
-    const ext = (file.name.split(".").pop() || "").toLowerCase();
-    if (ext !== "xlsx" && ext !== "xls") { setImportResult({ error: Tr.importBadType }); return; }
-
-    setImportBusy(true);
-    try {
-      const buf = await file.arrayBuffer();
-      /* Gate 2: binary signature — a real .xlsx is a ZIP ("PK"), a real .xls is
-         OLE2 (D0 CF 11 E0). Rejects a CSV/other file renamed to .xlsx. */
-      const sig = new Uint8Array(buf.slice(0, 4));
-      const isXlsx = sig[0] === 0x50 && sig[1] === 0x4b;
-      const isXls  = sig[0] === 0xd0 && sig[1] === 0xcf && sig[2] === 0x11 && sig[3] === 0xe0;
-      if (!isXlsx && !isXls) { setImportResult({ error: Tr.importBadType }); setImportBusy(false); return; }
-
-      const XLSX = await import("xlsx");
-      const wb = XLSX.read(buf, { type: "array" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
-      if (rows.length === 0) { setImportResult({ error: Tr.importEmpty }); setImportBusy(false); return; }
-
-      /* Column header (label) → field key */
-      const labelToKey = {};
-      EXPORT_FIELDS.forEach(({ key, label }) => { labelToKey[label.toLowerCase()] = key; });
-
-      const existing = new Set(users.map(u => (u.email || "").toLowerCase().trim()).filter(Boolean));
-      const seen = new Set();
-      const toCreate = [];
-      let skipped = 0;
-      const errors = [];
-
-      rows.forEach((raw, i) => {
-        const rowNo = i + 2;   // +1 header row, +1 to be 1-based
-        const profile = {};
-        Object.entries(raw).forEach(([header, val]) => {
-          const key = labelToKey[String(header).toLowerCase().trim()];
-          if (!key) return;
-          if (ARRAY_FIELDS.has(key)) {
-            profile[key] = typeof val === "string" ? val.split(";").map(s => s.trim()).filter(Boolean) : [];
-          } else {
-            profile[key] = typeof val === "string" ? val.trim() : val;
-          }
-        });
-
-        const email = (profile.email || "").toString().toLowerCase().trim();
-        const missing = REQUIRED_IMPORT.filter(k => !String(profile[k] ?? "").trim());
-        if (missing.length) { errors.push(`${Tr.rowLbl} ${rowNo}: ${Tr.importMissing} (${missing.join(", ")})`); return; }
-        if (!EMAIL_RE.test(email)) { errors.push(`${Tr.rowLbl} ${rowNo}: ${Tr.importBadEmail}`); return; }
-        if (existing.has(email) || seen.has(email)) { skipped++; return; }
-        seen.add(email);
-        toCreate.push({ ...profile, email, hasAccount: false, source: "excel-import", emailVerified: false, createdAt: new Date().toISOString() });
-      });
-
-      let created = 0;
-      for (const d of toCreate) {
-        try { await addDoc(collection(db, "users"), d); created++; }
-        catch (err) { errors.push(`${d.email}: ${err.message}`); }
-      }
-
-      if (created > 0) {
-        const snap = await getDocs(collection(db, "users"));
-        setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }
-      setImportResult({ created, skipped, errors });
-      logActivity({ type: "admin_import_data", actorId: user.uid, actorName: adminName, details: { created, skipped, errors: errors.length } });
-    } catch (err) {
-      setImportResult({ error: err.message });
-    } finally {
-      setImportBusy(false);
-    }
-  };
 
   /* ── TABS config ── */
   const TABS = [
@@ -1475,70 +1334,6 @@ export default function AdminPage() {
       {/* ══ DATA TAB ══ */}
       {!loading && tab === "data" && (
         <>
-          {/* Export / import members */}
-          <div className="card" style={{ padding:"1.25rem", marginBottom:"1.5rem" }}>
-            <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 0.85rem" }}>{Tr.dataManage}</p>
-            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
-              <button onClick={() => setExportOpen(true)}
-                style={{ padding:"10px 20px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
-                ⬇ {Tr.downloadBtn}
-              </button>
-              <button onClick={() => fileRef.current?.click()} disabled={importBusy}
-                style={{ padding:"10px 20px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, fontSize:14, fontWeight:700, cursor: importBusy ? "wait" : "pointer", opacity: importBusy ? 0.6 : 1 }}>
-                ⬆ {importBusy ? Tr.importing : Tr.uploadBtn}
-              </button>
-              <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={importExcel} style={{ display:"none" }} />
-            </div>
-            <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"0.75rem 0 0" }}>{Tr.dirNote}</p>
-
-            {importResult && (
-              <div style={{ marginTop:"1rem", padding:"0.85rem 1rem", borderRadius:10, background:"var(--bg-tertiary,#f0f6fb)", border:"1px solid var(--border,#daeaf8)" }}>
-                {importResult.error ? (
-                  <p style={{ margin:0, fontSize:13, color:"#c25c5c", fontWeight:600 }}>⚠ {importResult.error}</p>
-                ) : (
-                  <>
-                    <p style={{ margin:"0 0 4px", fontSize:13, color:"var(--text-primary,#111827)", fontWeight:700 }}>
-                      ✓ {Tr.created}: {importResult.created} · {Tr.skippedDup}: {importResult.skipped} · {Tr.errorsLbl}: {importResult.errors.length}
-                    </p>
-                    {importResult.errors.length > 0 && (
-                      <ul style={{ margin:"6px 0 0", paddingInlineStart:18, fontSize:12, color:"var(--text-muted,#6b7280)", maxHeight:140, overflowY:"auto" }}>
-                        {importResult.errors.slice(0, 50).map((er, i) => <li key={i}>{er}</li>)}
-                      </ul>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Field-selection modal for export */}
-          {exportOpen && (
-            <div style={S.overlay} onClick={() => setExportOpen(false)}>
-              <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
-                <p style={S.modalTitle}>{Tr.exportTitle}</p>
-                <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", margin:"4px 0 0" }}>{Tr.exportSub}</p>
-                <div style={{ display:"flex", gap:10, margin:"0.85rem 0 0.4rem" }}>
-                  <button onClick={() => setSelFields(EXPORT_FIELDS.map(f => f.key))} style={{ background:"none", border:"none", color:"var(--brand,#4472b8)", fontSize:12, fontWeight:700, cursor:"pointer", padding:0 }}>{Tr.selectAll}</button>
-                  <button onClick={() => setSelFields([])} style={{ background:"none", border:"none", color:"var(--text-muted,#6b7280)", fontSize:12, fontWeight:700, cursor:"pointer", padding:0 }}>{Tr.clearAll}</button>
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, margin:"0.5rem 0 1rem" }}>
-                  {EXPORT_FIELDS.map(f => (
-                    <label key={f.key} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, cursor:"pointer", color:"var(--text-secondary,#374151)" }}>
-                      <input type="checkbox" checked={selFields.includes(f.key)}
-                        onChange={() => setSelFields(prev => prev.includes(f.key) ? prev.filter(k => k !== f.key) : [...prev, f.key])}
-                        style={{ width:15, height:15, cursor:"pointer" }} />
-                      {f.label}
-                    </label>
-                  ))}
-                </div>
-                <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
-                  <button onClick={() => setExportOpen(false)} style={{ padding:"9px 18px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1px solid var(--border,#daeaf8)", borderRadius:9, fontSize:13, fontWeight:700, cursor:"pointer" }}>{Tr.cancel}</button>
-                  <button onClick={exportExcel} disabled={selFields.length === 0} style={{ padding:"9px 18px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:9, fontSize:13, fontWeight:700, cursor: selFields.length === 0 ? "not-allowed" : "pointer", opacity: selFields.length === 0 ? 0.5 : 1 }}>{Tr.downloadBtn}</button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Stat summary row */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:"1rem", marginBottom:"1.5rem" }}>
             {[

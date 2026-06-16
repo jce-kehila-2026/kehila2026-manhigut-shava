@@ -1024,7 +1024,7 @@ export default function DashboardPage() {
               {canGoBack && (
                 <button
                   onClick={goBack}
-                  title={t.nav.goBack}
+                  title="Go back"
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center",
                     width: isMobile ? 30 : 34, height: isMobile ? 30 : 34, borderRadius: 10,

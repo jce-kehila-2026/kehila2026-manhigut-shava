@@ -2,7 +2,6 @@ import { useState } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
-import { useLang } from "./LanguageContext";
 
 const styles = {
   page: {
@@ -138,7 +137,6 @@ const styles = {
 
 export default function TermsPage() {
   const { user, logout, refreshProfile } = useAuth();
-  const { t, isRTL } = useLang();
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -154,7 +152,7 @@ export default function TermsPage() {
       }, { merge: true });
       await refreshProfile();
     } catch (err) {
-      setError(t.terms.saveFailed + (err.message || t.terms.tryAgain));
+      setError("Failed to save: " + (err.message || "Please try again."));
       console.error("Terms accept error:", err);
     } finally {
       setLoading(false);
@@ -163,38 +161,49 @@ export default function TermsPage() {
 
   return (
     <div style={styles.page}>
-      <div style={{ ...styles.card, direction: isRTL ? "rtl" : "ltr" }}>
-          <div style={styles.icon}>{t.terms.title}</div>
+      <div style={styles.card}>
+          <div style={styles.icon}>Terms</div>
         <p style={styles.subtitle}>
-          {t.terms.subtitle}
+          Please read and accept our community guidelines before continuing.
         </p>
 
         {error && <div style={styles.error}>{error}</div>}
 
         <div style={styles.termsBox}>
-          <p style={styles.sectionTitle}>{t.terms.respectTitle}</p>
+          <p style={styles.sectionTitle}>Respect & Community</p>
           <p style={styles.sectionText}>
-            {t.terms.respectText}
+            Our community is built on mutual respect, trust, and collaboration.
+            Every member is expected to treat others with dignity and
+            professionalism at all times.
           </p>
 
-          <p style={styles.sectionTitle}>{t.terms.privacyTitle}</p>
+          <p style={styles.sectionTitle}>Privacy & Data Protection</p>
           <ul style={styles.list}>
-            {t.terms.privacyList.map((item, i) => <li key={i}>{item}</li>)}
+            <li>Your personal information (email, phone) is only shared when you explicitly approve a connection request.</li>
+            <li>You may not share another member's contact information with third parties without their permission.</li>
+            <li>Profile data is stored securely and used solely for community networking purposes.</li>
           </ul>
 
-          <p style={styles.sectionTitle}>{t.terms.commTitle}</p>
+          <p style={styles.sectionTitle}>Communication Guidelines</p>
           <ul style={styles.list}>
-            {t.terms.commList.map((item, i) => <li key={i}>{item}</li>)}
+            <li>Be professional and considerate in all messages and posts.</li>
+            <li>Do not use the platform for spam, advertising, or any commercial solicitation.</li>
+            <li>Help requests should be genuine and relevant to the community.</li>
           </ul>
 
-          <p style={styles.sectionTitle}>{t.terms.prohibitedTitle}</p>
+          <p style={styles.sectionTitle}>Prohibited Behavior</p>
           <ul style={styles.list}>
-            {t.terms.prohibitedList.map((item, i) => <li key={i}>{item}</li>)}
+            <li>Misuse of other members' contact information or platform access.</li>
+            <li>Posting inappropriate, offensive, or misleading content.</li>
+            <li>Impersonation or unauthorized access to other accounts.</li>
+            <li>Any form of harassment, discrimination, or bullying.</li>
           </ul>
 
-          <p style={styles.sectionTitle}>{t.terms.adminTitle}</p>
+          <p style={styles.sectionTitle}>Administration</p>
           <p style={styles.sectionText}>
-            {t.terms.adminText}
+            Platform administrators reserve the right to remove posts, restrict
+            access, or revoke membership for violations of these guidelines.
+            Decisions by administrators are final.
           </p>
         </div>
 
@@ -207,7 +216,9 @@ export default function TermsPage() {
             onChange={(e) => setAgreed(e.target.checked)}
           />
           <label htmlFor="terms-agree" style={styles.agreeText}>
-            {t.terms.agreeLabel}
+            I have read and agree to the Community Code of Values. I understand
+            that violating these guidelines may result in removal from the
+            platform.
           </label>
         </div>
 
@@ -218,11 +229,11 @@ export default function TermsPage() {
           onMouseOver={(e) => agreed && !loading && (e.target.style.background = "#122d47")}
           onMouseOut={(e) => (e.target.style.background = "#1a3c5e")}
         >
-          {loading ? t.terms.saving : t.terms.accept}
+          {loading ? "Saving…" : "Accept & Continue"}
         </button>
 
         <button style={styles.logoutLink} onClick={logout}>
-          {t.terms.signOut}
+          Sign out
         </button>
       </div>
     </div>
