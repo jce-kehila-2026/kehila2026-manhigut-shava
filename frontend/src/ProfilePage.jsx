@@ -9,6 +9,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
+import { useTheme } from "./ThemeContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { isBirthdayToday } from "./utils/birthday";
 
@@ -71,9 +72,23 @@ styleTag.textContent = `
     background: #fff !important;
     outline: none;
   }
+  .dark-mode .profile-input:focus {
+    border-color: #4472b8 !important;
+    box-shadow: 0 0 0 3.5px rgba(68, 114, 184, 0.28) !important;
+    background: #0f172a !important;
+    outline: none;
+  }
+  .dark-mode .profile-textarea:focus {
+    border-color: #4472b8 !important;
+    box-shadow: 0 0 0 3.5px rgba(68, 114, 184, 0.28) !important;
+    background: #0f172a !important;
+    outline: none;
+  }
   .upload-btn:hover  { background: rgba(255,255,255,1) !important; border-color: rgba(255,255,255,0.9) !important; }
   .change-btn:hover  { background: #f0f6fb !important; border-color: #daeaf8 !important; }
+  .dark-mode .change-btn:hover { background: #1e293b !important; border-color: #4472b8 !important; }
   .cancel-btn:hover  { background: #daeaf8 !important; }
+  .dark-mode .cancel-btn:hover { background: #334155 !important; }
   .save-btn-shimmer {
     background: linear-gradient(90deg, #111827 0%, #2a4a8e 40%, #111827 60%, #111827 100%);
     background-size: 400px 100%;
@@ -96,12 +111,13 @@ function CheckMark() {
 }
 
 function CompletenessBadge({ pct }) {
+  const { T } = useTheme();
   const color  = pct >= 80 ? "#7ba87a" : pct >= 50 ? "#b8895a" : "#c25c5c";
   const bg     = pct >= 80 ? "#f0fdf4" : pct >= 50 ? "#fffbeb" : "#fff5f5";
   const border = pct >= 80 ? "#cfe4ce" : pct >= 50 ? "#fde68a" : "#d99090";
   return (
     <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"1.75rem" }}>
-      <div style={{ flex:1, height:"6px", background:"#daeaf8", borderRadius:"99px", overflow:"hidden" }}>
+      <div style={{ flex:1, height:"6px", background:T.inputBorder, borderRadius:"99px", overflow:"hidden" }}>
         <div style={{
           width:`${pct}%`, height:"100%",
           background:`linear-gradient(90deg, ${color}, ${color}bb)`,
@@ -120,9 +136,10 @@ function CompletenessBadge({ pct }) {
 }
 
 function SectionTitle({ label }) {
+  const { T } = useTheme();
   return (
     <p style={{
-      fontSize:"11px", fontWeight:"700", color:"#111827",
+      fontSize:"11px", fontWeight:"700", color:T.text,
       textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 1.25rem",
     }}>
       {label}
@@ -131,6 +148,7 @@ function SectionTitle({ label }) {
 }
 
 function SelectInput({ value, onChange, options, disabled, placeholder }) {
+  const { T } = useTheme();
   return (
     <select
       className="profile-input"
@@ -140,9 +158,9 @@ function SelectInput({ value, onChange, options, disabled, placeholder }) {
       style={{
         width:"100%", boxSizing:"border-box",
         padding:"12px 14px", fontSize:"14px",
-        border:"1.5px solid #daeaf8", borderRadius:"13px",
-        color: value ? "#1a2e42" : "#6b7280",
-        background:"#fdf8f6", fontFamily:"inherit",
+        border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+        color: value ? T.text : T.sub,
+        background:T.inputBg, fontFamily:"inherit",
         transition:"border-color 0.2s, box-shadow 0.2s",
         appearance:"none",
       }}
@@ -154,6 +172,7 @@ function SelectInput({ value, onChange, options, disabled, placeholder }) {
 }
 
 function MultiChips({ selectedValues, options, onChange, disabled }) {
+  const { T } = useTheme();
   const toggle = (opt) => {
     if (disabled) return;
     const next = selectedValues.includes(opt)
@@ -168,9 +187,9 @@ function MultiChips({ selectedValues, options, onChange, disabled }) {
         return (
           <button key={i} type="button" onClick={() => toggle(opt)} disabled={disabled} style={{
             padding:"5px 12px", borderRadius:99, fontSize:12, fontWeight:600, cursor: disabled?"default":"pointer",
-            background: active ? "#4472b8" : "#f0f6fb",
+            background: active ? "#4472b8" : T.tagBg,
             color: active ? "#fff" : "#4472b8",
-            border: `1.5px solid ${active ? "#4472b8" : "#daeaf8"}`,
+            border: `1.5px solid ${active ? "#4472b8" : T.inputBorder}`,
             transition:"all 0.15s ease",
           }}>
             {opt}
@@ -182,14 +201,15 @@ function MultiChips({ selectedValues, options, onChange, disabled }) {
 }
 
 function PlainInput(props) {
+  const { T } = useTheme();
   return (
     <input
       className="profile-input"
       style={{
         width:"100%", boxSizing:"border-box",
         padding:"12px 14px", fontSize:"14px",
-        border:"1.5px solid #daeaf8", borderRadius:"13px",
-        color:"#1a2e42", background:"#fdf8f6", fontFamily:"inherit",
+        border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+        color:T.text, background:T.inputBg, fontFamily:"inherit",
         transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
       }}
       {...props}
@@ -227,6 +247,7 @@ function Balloon({ color, left, delay, size, duration }) {
 
 /* ─── Birthday banner — balloons + greeting, shown when it's the profile owner's birthday ─── */
 function BirthdayBanner({ name, isOwner, isMobile, t }) {
+  const { T, dark } = useTheme();
   const balloons = useMemo(() => {
     const count = isMobile ? 5 : 8;
     return Array.from({ length: count }).map((_, i) => ({
@@ -251,8 +272,10 @@ function BirthdayBanner({ name, isOwner, isMobile, t }) {
     <div className="profile-card" style={{
       position:"relative", overflow:"hidden",
       borderRadius:20, marginBottom:"1.25rem",
-      background:"linear-gradient(135deg,#fdf8f6 0%,#f0f6fb 55%,#fdf1f6 100%)",
-      border:"1.5px solid #f0d9e4",
+      background: dark
+        ? "linear-gradient(135deg,#1e293b 0%,#0f172a 55%,#1e1a2e 100%)"
+        : "linear-gradient(135deg,#fdf8f6 0%,#f0f6fb 55%,#fdf1f6 100%)",
+      border:`1.5px solid ${T.cardBorder}`,
       padding: isMobile ? "1.5rem 1.25rem" : "2rem 2.25rem",
       minHeight: isMobile ? 110 : 130,
       display:"flex", alignItems:"center",
@@ -270,10 +293,10 @@ function BirthdayBanner({ name, isOwner, isMobile, t }) {
       ))}
       {balloons.map((b, i) => <Balloon key={i} {...b} />)}
       <div style={{ position:"relative", zIndex:1, maxWidth:"70%" }}>
-        <h2 style={{ fontSize: isMobile ? 19 : 24, fontWeight:800, margin:"0 0 4px", color:"#111827", fontFamily:"'Outfit', sans-serif" }}>
+        <h2 style={{ fontSize: isMobile ? 19 : 24, fontWeight:800, margin:"0 0 4px", color:T.text, fontFamily:"'Outfit', sans-serif" }}>
           {isOwner ? t.profile.birthdayOwnerTitle : t.profile.birthdayVisitorTitle(name)}
         </h2>
-        <p style={{ fontSize:13, color:"#6b7280", margin:0 }}>
+        <p style={{ fontSize:13, color:T.sub, margin:0 }}>
           {isOwner ? t.profile.birthdayOwnerSubtitle : t.profile.birthdayVisitorSubtitle}
         </p>
       </div>
@@ -283,6 +306,7 @@ function BirthdayBanner({ name, isOwner, isMobile, t }) {
 
 /* ─── Birthday wishes — read + leave a message on someone's birthday ─── */
 function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, relativeTime, isMobile }) {
+  const { T } = useTheme();
   const [wishes, setWishes] = useState([]);
   const [wishText, setWishText] = useState("");
   const [sending, setSending] = useState(false);
@@ -321,8 +345,8 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
 
   return (
     <div className="profile-card" style={{
-      background:"#fff", borderRadius:"20px",
-      border:"1.5px solid #f0f6fb", boxShadow:"0 4px 24px rgba(29,72,150,0.06)",
+      background:T.card, borderRadius:"20px",
+      border:`1.5px solid ${T.cardBorder}`, boxShadow:"0 4px 24px rgba(29,72,150,0.06)",
       padding:"1.75rem", marginBottom:"1.25rem", borderLeft:"4px solid #d4a574",
     }}>
       <SectionTitle label={t.profile.birthdayWishesTitle} />
@@ -339,8 +363,8 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
             style={{
               flex:1, width:"100%", boxSizing:"border-box",
               padding:"12px 14px", fontSize:"14px",
-              border:"1.5px solid #daeaf8", borderRadius:"13px",
-              color:"#1a2e42", background:"#fdf8f6", fontFamily:"inherit",
+              border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+              color:T.text, background:T.inputBg, fontFamily:"inherit",
               resize:"vertical", minHeight:"46px",
             }}
             value={wishText}
@@ -366,8 +390,8 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
       {wishes.length === 0 ? (
         <div style={{
           textAlign:"center", padding:"1.5rem",
-          background:"#fdf8f6", borderRadius:"14px",
-          border:"1.5px dashed #daeaf8", color:"#6b7280", fontSize:"13px",
+          background:T.inputBg, borderRadius:"14px",
+          border:`1.5px dashed ${T.inputBorder}`, color:T.sub, fontSize:"13px",
         }}>
           {t.profile.birthdayNoWishes}
         </div>
@@ -376,13 +400,13 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
           {wishes.map((w) => (
             <div key={w.id} style={{
               display:"flex", gap:"10px", alignItems:"flex-start",
-              padding:"12px 14px", background:"#fdf8f6",
-              border:"1px solid #f0f6fb", borderRadius:"13px",
+              padding:"12px 14px", background:T.inputBg,
+              border:`1px solid ${T.cardBorder}`, borderRadius:"13px",
               animation:"wishCardIn 0.3s ease both",
             }}>
               <div style={{
                 width:32, height:32, borderRadius:"50%", flexShrink:0,
-                background:"#daeaf8", color:"#1d4896",
+                background:T.tagBg, color:"#1d4896",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 fontSize:13, fontWeight:700, overflow:"hidden",
               }}>
@@ -392,10 +416,10 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
               </div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
-                  <span style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{w.fromName}</span>
-                  <span style={{ fontSize:11, color:"#6b7280", flexShrink:0 }}>{relativeTime(w.createdAt)}</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:T.text }}>{w.fromName}</span>
+                  <span style={{ fontSize:11, color:T.sub, flexShrink:0 }}>{relativeTime(w.createdAt)}</span>
                 </div>
-                <p style={{ fontSize:13, color:"#1a2e42", margin:"3px 0 0", lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                <p style={{ fontSize:13, color:T.text, margin:"3px 0 0", lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
                   {w.message}
                 </p>
               </div>
@@ -420,6 +444,7 @@ const INSTITUTIONS = [
 export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommunity }) {
   const { user, profile: authProfile, refreshProfile, logout } = useAuth();
   const { t, isRTL } = useLang();
+  const { T, dark } = useTheme();
   const isMobile = useIsMobile();
   const fileRef = useRef();
 
@@ -621,6 +646,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       padding:"0 0 3rem",
       boxSizing:"border-box",
       direction: isRTL ? "rtl" : "ltr",
+      background: T.bg,
     },
     banner: {
       width:"100%", background:"linear-gradient(135deg, #0b1f52 0%, #1d4896 60%, #2f5fd4 100%)",
@@ -641,24 +667,24 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     avatarHint: { fontSize:"10px", color:"rgba(255,255,255,0.5)", margin:0 },
     body: { padding: isMobile ? "0.75rem 1rem 0" : "1rem 2rem 0" },
     twoCol: { display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"1.25rem", alignItems:"start" },
-    greeting:    { fontSize:"23px", fontWeight:"700", color:"#111827", margin:"0 0 4px" },
-    greetingSub: { fontSize:"13px", color:"#6b7280", margin:"0 0 1rem" },
+    greeting:    { fontSize:"23px", fontWeight:"700", color:T.text, margin:"0 0 4px" },
+    greetingSub: { fontSize:"13px", color:T.sub, margin:"0 0 1rem" },
     card: {
-      background:"#fff", borderRadius:"20px",
-      border:"1.5px solid #f0f6fb",
+      background:T.card, borderRadius:"20px",
+      border:`1.5px solid ${T.cardBorder}`,
       boxShadow:"0 4px 24px rgba(29, 72, 150,0.06)",
       padding:"1.75rem", marginBottom:"1.25rem",
       borderLeft:"4px solid #4472b8",
     },
     row:   { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:"1rem", marginBottom:"1rem" },
     group: { display:"flex", flexDirection:"column", gap:"7px" },
-    label: { fontSize:"11px", fontWeight:"700", color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.08em" },
+    label: { fontSize:"11px", fontWeight:"700", color:T.sub, textTransform:"uppercase", letterSpacing:"0.08em" },
     bioWrap: { position:"relative" },
     textarea: {
       width:"100%", boxSizing:"border-box",
       padding:"12px 14px", fontSize:"14px",
-      border:"1.5px solid #daeaf8", borderRadius:"13px",
-      color:"#1a2e42", background:"#fdf8f6",
+      border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+      color:T.text, background:T.inputBg,
       fontFamily:"inherit", resize:"vertical", minHeight:"100px",
       transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
     },
@@ -673,19 +699,19 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       boxShadow:"0 2px 8px rgba(29, 72, 150,0.1)",
       display:"flex", alignItems:"center", gap:"7px",
     },
-    errorMsg:       { fontSize:"13px", color:"#9a4545", background:"#fff0f0", border:"1px solid #d99090", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
+    errorMsg:       { fontSize:"13px", color:"#9a4545", background: dark ? "#3b1f1f" : "#fff0f0", border:"1px solid #d99090", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
     emailRow:       { display:"flex", gap:"10px", alignItems:"flex-end" },
-    inputDisabled:  { padding:"12px 14px", fontSize:"14px", border:"1.5px solid #daeaf8", borderRadius:"13px", color:"#6b7280", background:"#f0f6fb", width:"100%", boxSizing:"border-box", fontFamily:"inherit" },
-    changeBtn:      { padding:"10px 16px", background:"#eff6ff", color:"#1d4896", border:"1.5px solid #bfdbfe", borderRadius: "12px", fontSize:"13px", fontWeight:"600", cursor:"pointer", whiteSpace:"nowrap", transition:"background 0.2s, border-color 0.2s" },
-    emailSuccessMsg:{ fontSize:"13px", color:"#3f6a3e", background:"#f0fdf4", border:"1px solid #cfe4ce", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
+    inputDisabled:  { padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.sub, background:T.tagBg, width:"100%", boxSizing:"border-box", fontFamily:"inherit" },
+    changeBtn:      { padding:"10px 16px", background: dark ? T.tagBg : "#eff6ff", color:"#1d4896", border:`1.5px solid ${dark ? T.cardBorderL : "#bfdbfe"}`, borderRadius: "12px", fontSize:"13px", fontWeight:"600", cursor:"pointer", whiteSpace:"nowrap", transition:"background 0.2s, border-color 0.2s" },
+    emailSuccessMsg:{ fontSize:"13px", color:"#3f6a3e", background: dark ? "#1a2e1a" : "#f0fdf4", border:"1px solid #cfe4ce", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
     modal:    { position:"fixed", inset:0, background:"rgba(29, 72, 150,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:"1.25rem", backdropFilter:"blur(4px)" },
-    modalBox: { background:"#fff", borderRadius:"22px", padding:"2rem", width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"1rem", boxShadow:"0 32px 70px rgba(29, 72, 150,0.18)", animation:"modalPop 0.28s cubic-bezier(.34,1.56,.64,1) both" },
-    modalTitle:   { fontSize:"17px", fontWeight:"700", color:"#111827", margin:0 },
-    modalSub:     { fontSize:"13px", color:"#7a5868", margin:0 },
-    modalInput:   { width:"100%", boxSizing:"border-box", padding:"11px 14px", fontSize:"14px", border:"1.5px solid #daeaf8", borderRadius:"12px", color:"#1a2e42", background:"#fdf8f6", fontFamily:"inherit" },
+    modalBox: { background:T.card, borderRadius:"22px", padding:"2rem", width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"1rem", boxShadow:"0 32px 70px rgba(29, 72, 150,0.18)", animation:"modalPop 0.28s cubic-bezier(.34,1.56,.64,1) both" },
+    modalTitle:   { fontSize:"17px", fontWeight:"700", color:T.text, margin:0 },
+    modalSub:     { fontSize:"13px", color:T.sub, margin:0 },
+    modalInput:   { width:"100%", boxSizing:"border-box", padding:"11px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"12px", color:T.text, background:T.inputBg, fontFamily:"inherit" },
     modalActions: { display:"flex", gap:"8px", marginTop:"0.25rem" },
     confirmBtn:   { flex:1, padding:"11px", background:"#111827", color:"#fff", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"700", cursor:"pointer" },
-    cancelBtn:    { flex:1, padding:"11px", background:"#f0f6fb", color:"#7a5868", border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"600", cursor:"pointer", transition:"background 0.2s" },
+    cancelBtn:    { flex:1, padding:"11px", background:T.tagBg, color:T.sub, border:"none", borderRadius:"11px", fontSize:"14px", fontWeight:"600", cursor:"pointer", transition:"background 0.2s" },
   };
 
   const getSaveBtnStyle = (key) => ({
@@ -840,7 +866,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.bioWrap}>
                 <textarea
                   className="profile-textarea"
-                  style={{ ...S.textarea, minHeight:"148px", background: isReadOnly ? "#f0f6fb" : "#fdf8f6", color: isReadOnly ? "#7a5868" : "#1a2e42" }}
+                  style={{ ...S.textarea, minHeight:"148px", background: isReadOnly ? T.tagBg : T.inputBg, color: isReadOnly ? T.sub : T.text }}
                   name="bio"
                   value={form.bio}
                   onChange={(e) => { if (!isReadOnly && e.target.value.length <= BIO_LIMIT) handleChange(e); }}
@@ -959,7 +985,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 onClick={() => window.history.back()}
                 style={{
                   padding:"12px 20px", borderRadius:"14px",
-                  background:"#fdf8f6", color:"#1d4896", border:"1px solid #bfdbfe",
+                  background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`,
                   fontSize:"14px", fontWeight:700, cursor:"pointer",
                 }}
               >
@@ -972,7 +998,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {/* Additional Details — owner always editable; admins can view+edit any profile; others never see */}
         <div className="profile-card" style={{ ...S.card, borderLeftColor:"#e8735a", marginTop:"1.25rem" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:"1.25rem" }}>
-              <p style={{ fontSize:"11px", fontWeight:"700", color:"#111827", textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
+              <p style={{ fontSize:"11px", fontWeight:"700", color:T.text, textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
                 {t.profile.additionalDetails}
               </p>
               {!isOwner && authProfile?.isAdmin && (
@@ -1003,7 +1029,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     if (e.target.value === "OTHER") { setForm(p => ({ ...p, institution:"OTHER" })); setInstitutionOther(""); }
                     else { handleChange({ target:{ name:"institution", value:e.target.value } }); setInstitutionOther(""); }
                   }}
-                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:"1.5px solid #daeaf8", borderRadius:"13px", color:"#1a2e42", background: isReadOnly ? "#f0f6fb" : "#fdf8f6", fontFamily:"inherit", appearance:"none" }}
+                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.text, background: isReadOnly ? T.tagBg : T.inputBg, fontFamily:"inherit", appearance:"none" }}
                 >
                   <option value="">{t.profile.institutionPlaceholder || "בחרי מוסד..."}</option>
                   {INSTITUTIONS.map((inst, i) => <option key={i} value={inst}>{inst}</option>)}
@@ -1029,13 +1055,13 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
             <div style={{ ...S.group, marginBottom:"1rem" }}>
               <label style={S.label}>{t.profile.experience}</label>
-              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px", background: isReadOnly ? "#f0f6fb" : undefined }}
+              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px", background: isReadOnly ? T.tagBg : T.inputBg }}
                 name="experience" value={form.experience} onChange={handleChange}
                 placeholder={t.profile.experiencePlaceholder} disabled={isReadOnly} />
             </div>
             <div style={{ ...S.group, marginBottom:"1rem" }}>
               <label style={S.label}>{t.profile.goals}</label>
-              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px", background: isReadOnly ? "#f0f6fb" : undefined }}
+              <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"90px", background: isReadOnly ? T.tagBg : T.inputBg }}
                 name="goals" value={form.goals} onChange={handleChange}
                 placeholder={t.profile.goalsPlaceholder} disabled={isReadOnly} />
             </div>
@@ -1044,7 +1070,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
                   <label style={S.label}>{t.profile.ethnicity}</label>
                   {isOwner && (
-                    <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:"#6b7280", cursor:"pointer", userSelect:"none" }}>
+                    <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:T.sub, cursor:"pointer", userSelect:"none" }}>
                       <input
                         type="checkbox"
                         checked={!!form.ethnicityPrivate}
@@ -1084,21 +1110,21 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {/* ── My Posts ── */}
         <div style={{ marginTop: "2rem" }}>
           <p style={{
-            fontSize: "11px", fontWeight: "700", color: "#111827",
+            fontSize: "11px", fontWeight: "700", color: T.text,
             textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 1.25rem",
           }}>
             {postsTitle}
           </p>
 
           {postsLoading && (
-            <p style={{ color: "#6b7280", fontSize: "14px" }}>…</p>
+            <p style={{ color: T.sub, fontSize: "14px" }}>…</p>
           )}
 
           {!postsLoading && myPosts.length === 0 && (
             <div style={{
               textAlign: "center", padding: "2.5rem",
-              background: "#fdf8f6", borderRadius: "16px",
-              border: "1.5px dashed #daeaf8", color: "#6b7280", fontSize: "14px",
+              background: T.inputBg, borderRadius: "16px",
+              border: `1.5px dashed ${T.inputBorder}`, color: T.sub, fontSize: "14px",
             }}>
               {noPostsMessage}
             </div>
@@ -1113,8 +1139,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               {myPosts.map((post) => (
                 <div key={post.id} className="profile-card" onClick={() => onNavigateToCommunity?.()}
                   style={{
-                  background: "#fff", borderRadius: "18px",
-                  border: "1.5px solid #f0f6fb", borderLeft: "4px solid #4472b8",
+                  background: T.card, borderRadius: "18px",
+                  border: `1.5px solid ${T.cardBorder}`, borderLeft: "4px solid #4472b8",
                   boxShadow: "0 2px 8px rgba(29, 72, 150,0.05)",
                   padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem",
                   cursor: onNavigateToCommunity ? "pointer" : "default",
@@ -1126,7 +1152,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   {/* Post text */}
                   {post.text && (
                     <p style={{
-                      fontSize: "14px", color: "#1a2e42", margin: 0,
+                      fontSize: "14px", color: T.text, margin: 0,
                       lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-word",
                       display: "-webkit-box", WebkitLineClamp: 4,
                       WebkitBoxOrient: "vertical", overflow: "hidden",
@@ -1138,8 +1164,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   {/* Repost badge */}
                   {post.repostOf && (
                     <span style={{
-                      fontSize: "11px", color: "#7a5868",
-                      background: "#f0f6fb", borderRadius: "6px",
+                      fontSize: "11px", color: T.sub,
+                      background: T.tagBg, borderRadius: "6px",
                       padding: "3px 8px", display: "inline-block", alignSelf: "flex-start",
                     }}>
                       ↺ {t.community.repostedBy} {post.repostOf.authorName ?? ""}
@@ -1181,8 +1207,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                         {postMedia.length > 4 && (
                           <div style={{
                             display: "grid", placeItems: "center",
-                            borderRadius: "12px", background: "#f0f6fb",
-                            color: "#7a5868", fontSize: "13px", fontWeight: 700,
+                            borderRadius: "12px", background: T.tagBg,
+                            color: T.sub, fontSize: "13px", fontWeight: 700,
                           }}>
                             +{postMedia.length - 4}
                           </div>
@@ -1195,19 +1221,19 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
                     <div style={{ display: "flex", gap: "12px" }}>
                       {(post.likes?.length ?? post.likesCount ?? 0) > 0 && (
-                        <span style={{ fontSize: "12px", color: "#7a5868", display: "flex", alignItems: "center", gap: 3 }}>
+                        <span style={{ fontSize: "12px", color: T.sub, display: "flex", alignItems: "center", gap: 3 }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                           {post.likes?.length ?? post.likesCount}
                         </span>
                       )}
                       {(post.commentsCount ?? 0) > 0 && (
-                        <span style={{ fontSize: "12px", color: "#7a5868", display: "flex", alignItems: "center", gap: 3 }}>
+                        <span style={{ fontSize: "12px", color: T.sub, display: "flex", alignItems: "center", gap: 3 }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                           {post.commentsCount}
                         </span>
                       )}
                     </div>
-                    <span style={{ fontSize: "11px", color: "#6b7280" }}>
+                    <span style={{ fontSize: "11px", color: T.muted }}>
                       {relativeTime(post.createdAt)}
                     </span>
                   </div>
@@ -1226,14 +1252,14 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             style={{
               display: "flex", alignItems: "center", gap: 8,
               padding: "11px 28px", borderRadius: 99,
-              background: "#fff0f0", color: "#c25c5c",
+              background: dark ? "#3b1f1f" : "#fff0f0", color: "#c25c5c",
               border: "1.5px solid #e8b8b8",
               fontSize: 14, fontWeight: 700, cursor: "pointer",
               transition: "all 0.15s",
               fontFamily: "var(--font)",
             }}
             onMouseEnter={e => { e.currentTarget.style.background = "#c25c5c"; e.currentTarget.style.color = "#fff"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#fff0f0"; e.currentTarget.style.color = "#c25c5c"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = dark ? "#3b1f1f" : "#fff0f0"; e.currentTarget.style.color = "#c25c5c"; }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
