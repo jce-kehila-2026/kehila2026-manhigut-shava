@@ -20,12 +20,6 @@ service cloud.firestore {
             request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['networksCount', 'isMentor', 'isMentee']));
 
-      /* ── Birthday wishes left on a user's profile ── */
-      match /birthdayWishes/{wishId} {
-        allow read:   if isAuth();
-        allow create: if isAuth() && request.resource.data.fromUserId == request.auth.uid;
-        allow delete: if isAuth() && (resource.data.fromUserId == request.auth.uid || isOwner(userId) || isAdmin());
-      }
     }
 
     /* ── Posts ── */
@@ -94,11 +88,18 @@ service cloud.firestore {
     }
 
     /* ── Notifications ── */
-    match /notifications/{userId}/items/{notifId} {
-      allow read:   if isAuth() && isOwner(userId);
+    match /notifications/{notifId} {
+      allow read:   if isAuth() && resource.data.toUserId == request.auth.uid;
       allow create: if isAuth();
-      allow update: if isAuth() && (isOwner(userId) || isAdmin());
-      allow delete: if isAuth() && (isOwner(userId) || isAdmin());
+      allow update: if isAuth() && (resource.data.toUserId == request.auth.uid || isAdmin());
+      allow delete: if isAuth() && (resource.data.toUserId == request.auth.uid || isAdmin());
+    }
+
+    /* ── Birthday wishes (aggregate per person per day) ── */
+    match /birthdayWishes/{docId} {
+      allow read:   if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth();
     }
 
     /* ── Events ── */
