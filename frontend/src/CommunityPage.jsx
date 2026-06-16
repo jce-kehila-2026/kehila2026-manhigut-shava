@@ -787,23 +787,29 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
 
   useEffect(() => {
     const ref = doc(db, "birthdayWishes", docId);
-    return onSnapshot(ref, (snap) => {
-      setWishData(snap.exists() ? snap.data() : { count: 0, wishers: [] });
-    });
+    return onSnapshot(
+      ref,
+      (snap) => {
+        setWishData(snap.exists() ? snap.data() : { count: 0, wishers: [] });
+      },
+      () => {
+        setWishData({ count: 0, wishers: [] });
+      }
+    );
   }, [docId]);
 
   const hasWished = wishData?.wishers?.includes(currentUser?.uid);
   const count = wishData?.count || 0;
 
   const handleClick = async () => {
-    if (hasWished || clicking || !currentUser || !wishData) return;
+    if (hasWished || clicking || !currentUser) return;
     setClicking(true);
     try {
       const ref = doc(db, "birthdayWishes", docId);
       await setDoc(ref, {
         birthdayUserId,
         date: todayStr,
-        count: (wishData.count || 0) + 1,
+        count: (wishData?.count || 0) + 1,
         wishers: arrayUnion(currentUser.uid),
       }, { merge: true });
       const fromName = `${currentUserProfile?.firstName || ""} ${currentUserProfile?.lastName || ""}`.trim() || currentUser.email || "";
@@ -818,6 +824,8 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
       });
       setJustSent(true);
       setTimeout(() => setJustSent(false), 2000);
+    } catch (e) {
+      console.error("Birthday wish failed:", e);
     } finally {
       setClicking(false);
     }
