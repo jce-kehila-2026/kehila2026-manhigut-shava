@@ -7,6 +7,7 @@ import { useTheme } from "./ThemeContext";
 import { logActivity } from "./activityLogger";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { getOrCreateConversation, sendHelpRequestPrompt } from "./hooks/useMessages";
+import { SlideshowBanner } from "./components/SlideshowBanner";
 
 /* ─── Translation ─── */
 const T = {
@@ -555,7 +556,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     const areaQ   = (overrideArea   !== undefined ? overrideArea   : effectiveArea).trim();
     const filtered = allUsers.filter((u) => {
       const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-      const matchName   = memberName ? fullName.includes(memberName.toLowerCase()) : true;
+      const nameQ = memberName.toLowerCase();
+      const matchName   = memberName
+        ? fullName.includes(nameQ)
+          || (u.profession ?? "").toLowerCase().includes(nameQ)
+          || (u.currentRole ?? "").toLowerCase().includes(nameQ)
+          || (u.bio ?? "").toLowerCase().includes(nameQ)
+        : true;
       const matchRegion = regionQ
         ? (() => {
             const variants = REGION_ALL_LANGS[regionQ] || [regionQ];
@@ -583,7 +590,11 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     const id = setTimeout(() => {
       const filtered = allUsers.filter((u) => {
         const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-        const matchName   = !name   || fullName.includes(name);
+        const matchName   = !name
+          || fullName.includes(name)
+          || (u.profession ?? "").toLowerCase().includes(name)
+          || (u.currentRole ?? "").toLowerCase().includes(name)
+          || (u.bio ?? "").toLowerCase().includes(name);
         const matchRegion = !region || (() => {
           const variants = REGION_ALL_LANGS[region] || [region];
           return variants.some(v => (u.region ?? "").includes(v) || (u.city ?? "").includes(v));
@@ -869,6 +880,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   return (
     <div style={S.page}>
 
+      <SlideshowBanner />
       <p style={{ ...S.pageTitle, marginBottom: "1rem" }}>{Tr.title}</p>
 
       {/* ── Tab bar ── */}

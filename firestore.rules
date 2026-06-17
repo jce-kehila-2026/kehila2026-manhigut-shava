@@ -154,6 +154,12 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    /* ── Site settings (slideshow, etc.) ── */
+    match /siteSettings/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
     /* ── Default: deny all ── */
     match /{document=**} {
       allow read, write: if false;

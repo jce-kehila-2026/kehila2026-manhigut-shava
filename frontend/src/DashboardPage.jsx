@@ -11,6 +11,7 @@ import ProfilePage   from "./ProfilePage";
 import AdminPage     from "./AdminPage";
 import ChatPage      from "./ChatPage";
 import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
+import { SlideshowBanner } from "./components/SlideshowBanner";
 
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
@@ -188,7 +189,7 @@ const eyebrow = {
 function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const size = isMobile ? 64 : 160;
+  const size = isMobile ? 88 : 180;
   const ringInset = 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
@@ -219,7 +220,7 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) 
           boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform: isMobile ? "scale(0.95)" : "scale(1.5)" }}>{icon}</div>
+          <div style={{ transform: isMobile ? "scale(1.1)" : "scale(1.6)" }}>{icon}</div>
         </div>
       </div>
       <p style={{ fontSize: isMobile ? 10 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? 72 : 110, lineHeight: 1.2 }}>{title}</p>
@@ -336,74 +337,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           </div>
         </div>
       )}
-      {/* Welcome banner — redesigned */}
-      {(() => {
-        const hr = new Date().getHours();
-        const greetKey = hr < 12 ? "goodMorning" : hr < 18 ? "goodAfternoon" : "goodEvening";
-        const greeting = t.dash[greetKey] || t.dash.welcomeBack;
-        return (
-          <div style={{
-            marginBottom: isMobile ? "0.9rem" : "2rem",
-            borderRadius: isMobile ? 14 : 20,
-            padding: isMobile ? "0.7rem 0.85rem" : "1.5rem 1.75rem",
-            background:"var(--bg-primary,#fff)",
-            position:"relative", overflow:"hidden",
-            boxShadow:"0 2px 18px rgba(29,72,150,0.08), 0 0 0 1px rgba(29,72,150,0.07)",
-            display:"flex", alignItems:"center", gap: isMobile ? 10 : 18,
-          }}>
-            <div style={{ position:"absolute", left:0, top:0, bottom:0, width: isMobile ? 3 : 4,
-              background:"linear-gradient(to bottom,#4472b8 0%,#e8735a 100%)",
-              borderRadius:"99px 0 0 99px", pointerEvents:"none" }} />
-            <div style={{ flexShrink:0, marginLeft: isMobile ? 6 : 10, position:"relative" }}>
-              <div style={{
-                width: isMobile ? 42 : 60, height: isMobile ? 42 : 60, borderRadius:"50%",
-                background:"linear-gradient(135deg,#4472b8 0%,#e8735a 100%)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                overflow:"hidden",
-                boxShadow:"0 4px 16px rgba(68,114,184,0.22)",
-              }}>
-                {profile?.photoURL
-                  ? <img src={profile.photoURL} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  : <span style={{ color:"#fff", fontSize: isMobile ? 15 : 19, fontWeight:800, fontFamily:"'Outfit',sans-serif" }}>{initials}</span>
-                }
-              </div>
-              <div style={{
-                position:"absolute", bottom:1, right:1,
-                width: isMobile ? 11 : 14, height: isMobile ? 11 : 14, borderRadius:"50%",
-                background:"#4ade80", border:"2px solid var(--bg-primary,#fff)",
-              }} />
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <p style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, color:"var(--brand,#4472b8)", margin:"0 0 1px",
-                textTransform:"uppercase", letterSpacing:"0.08em" }}>
-                {greeting}
-              </p>
-              <h2 style={{ fontSize: isMobile ? 16 : 21, fontWeight:800, color:"var(--text-primary,#111827)", margin:"0 0 2px",
-                lineHeight:1.2, fontFamily:"'Outfit',sans-serif" }}>
-                {profile?.firstName || ""}
-              </h2>
-              {(profile?.profession || profile?.city) && (
-                <p style={{ fontSize: isMobile ? 10 : 12, color:"var(--text-muted,#6b7280)", margin:0, fontWeight:400, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                  {[profile?.profession, profile?.city].filter(Boolean).join(" · ")}
-                </p>
-              )}
-            </div>
-            {!isMobile && (
-              <div style={{
-                flexShrink:0, display:"flex", alignItems:"center", gap:6,
-                padding:"5px 13px", borderRadius:99,
-                background:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.28)",
-              }}>
-                <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80",
-                  boxShadow:"0 0 0 2px rgba(74,222,128,0.25)" }} />
-                <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>
-                  {t.common?.online || "Online"}
-                </span>
-              </div>
-            )}
-          </div>
-        );
-      })()}
       {/* Profile completion nudge */}
       {(() => {
         const fields = [
@@ -494,12 +427,15 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
         @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
       `}</style>
-      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "0.75rem" : "1.5rem",
-        marginBottom:"2rem", padding: isMobile ? "0.5rem 0 1.25rem" : "0.5rem 0 2rem" }}>
+      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "1rem" : "2rem",
+        marginBottom:"2rem", padding: isMobile ? "1rem 0 1.5rem" : "1rem 0 2.5rem",
+        placeItems:"center" }}>
         {quickCircles.map((item, i) => (
           <QuickCircle key={item.action} {...item} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
         ))}
       </div>
+
+      <SlideshowBanner />
 
       {/* Help Requests */}
       {pendingRequests.length > 0 && (
