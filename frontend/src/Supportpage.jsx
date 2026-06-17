@@ -675,7 +675,23 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       setRequested((prev) => ({ ...prev, [targetUser.id]: true }));
       logActivity({ type: "request_sent", actorId: user.uid, actorName: getFullName(senderProfile), targetId: targetUser.id, targetType: "user", details: { toName: getFullName(targetUser) } });
 
-      // ── NEW: also deliver the request as an interactive DM prompt ──
+      try {
+        await addDoc(collection(db, "notifications"), {
+          toUserId: targetUser.id,
+          fromUserId: user.uid,
+          fromUserName: getFullName(senderProfile),
+          fromUserAvatar: avatarUrl(senderProfile),
+          type: "help_request",
+          helpRequestId: reqRef.id,
+          message: requestMessage || null,
+          createdAt: new Date().toISOString(),
+          read: false,
+        });
+      } catch (notifErr) {
+        console.error("Help request notification write failed:", notifErr);
+      }
+
+      // ── also deliver the request as an interactive DM prompt ──
       try {
         const convId = await getOrCreateConversation(user.uid, targetUser.id, senderProfile, targetUser);
         await sendHelpRequestPrompt(convId, user.uid, getFullName(senderProfile), reqRef.id, requestMessage, [targetUser.id]);

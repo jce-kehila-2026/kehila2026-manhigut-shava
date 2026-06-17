@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { doc, updateDoc, collection, getDocs, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, writeBatch, collection, getDocs, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -694,13 +694,24 @@ export default function DashboardPage() {
     if (!user) return;
     const q = query(
       collection(db, "notifications"),
-      where("toUserId", "==", user.uid),
-      orderBy("createdAt", "desc"),
-      limit(30)
+      where("toUserId", "==", user.uid)
     );
-    return onSnapshot(q, (snap) => {
-      setNotifications(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
+    return onSnapshot(q,
+      (snap) => {
+        const toStr = (v) => {
+          if (!v) return "";
+          if (typeof v === "string") return v;
+          if (typeof v.toDate === "function") return v.toDate().toISOString();
+          return String(v);
+        };
+        const items = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => toStr(b.createdAt).localeCompare(toStr(a.createdAt)))
+          .slice(0, 50);
+        setNotifications(items);
+      },
+      (err) => console.error("notifications listener:", err)
+    );
   }, [user]);
 
   useEffect(() => {
@@ -714,11 +725,37 @@ export default function DashboardPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showNotifs]);
 
-  const markNotifsRead = useCallback(() => {
-    notifications.filter(n => !n.read).forEach(n => {
-      updateDoc(doc(db, "notifications", n.id), { read: true }).catch(() => {});
-    });
+  const markNotifsRead = useCallback(async () => {
+    const unread = notifications.filter(n => !n.read);
+    if (!unread.length) return;
+    const batch = writeBatch(db);
+    unread.forEach(n => batch.update(doc(db, "notifications", n.id), { read: true }));
+    await batch.commit().catch(console.error);
   }, [notifications]);
+
+  const clearAllNotifs = useCallback(async () => {
+    if (!notifications.length) return;
+    const batch = writeBatch(db);
+    notifications.forEach(n => batch.delete(doc(db, "notifications", n.id)));
+    await batch.commit().catch(console.error);
+    setShowNotifs(false);
+  }, [notifications]);
+
+  const handleNotifClick = useCallback((n) => {
+    if (!n.read) {
+      updateDoc(doc(db, "notifications", n.id), { read: true }).catch(() => {});
+    }
+    setShowNotifs(false);
+    if (n.type === "new_message") {
+      navigate("chat", { userId: n.fromUserId });
+    } else if (n.type === "help_request") {
+      switchTab("members");
+    } else if (n.type === "post_like" || n.type === "post_comment") {
+      switchTab("community");
+    } else if (n.type === "birthday_wish") {
+      navigate("profile", { userId: n.fromUserId });
+    }
+  }, [navigate, switchTab]);
 
   const unreadNotifs = notifications.filter(n => !n.read).length;
 
@@ -841,7 +878,7 @@ export default function DashboardPage() {
             <NavBtn
               key={item.id} item={item}
               active={section === item.id}
-              badge={item.id === "chat" ? unreadDMs : 0}
+              badge={0}
               onClick={() => switchTab(item.id)}
               expanded={sidebarExpanded}
             />
@@ -986,7 +1023,7 @@ export default function DashboardPage() {
               {/* Notification bell */}
               <div ref={notifBellRef} style={{ position: "relative" }}>
                 <button
-                  onClick={() => { setShowNotifs(v => !v); if (!showNotifs) markNotifsRead(); }}
+                  onClick={() => setShowNotifs(v => !v)}
                   title={t.community?.notificationsTitle || "Notifications"}
                   style={{
                     width: 34, height: 34, borderRadius: 99,
@@ -1017,60 +1054,134 @@ export default function DashboardPage() {
                   <div style={{
                     position: "absolute", top: "calc(100% + 8px)",
                     right: isRTL ? "auto" : 0, left: isRTL ? 0 : "auto",
-                    width: 300, maxHeight: 360,
+                    width: 320, maxHeight: 420,
                     background: "var(--bg-primary)",
                     border: "1px solid var(--border)",
                     borderRadius: "var(--r-xl)",
                     boxShadow: "var(--shadow-xl)",
                     overflowY: "auto", zIndex: 200,
+                    display: "flex", flexDirection: "column",
                   }}>
                     <div style={{
-                      padding: "0.75rem 1rem",
+                      padding: "0.65rem 1rem",
                       borderBottom: "1px solid var(--border)",
-                      fontSize: 12, fontWeight: 700,
-                      color: "var(--text-primary)",
-                      textTransform: "uppercase", letterSpacing: "0.08em",
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      position: "sticky", top: 0,
+                      background: "var(--bg-primary)", zIndex: 1,
                     }}>
-                      {t.community?.notificationsTitle || "Notifications"}
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                        {t.community?.notificationsTitle || "Notifications"}
+                      </span>
+                      {notifications.length > 0 && (
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {notifications.some(n => !n.read) && (
+                            <button
+                              onClick={markNotifsRead}
+                              style={{
+                                fontSize: 11, fontWeight: 600, color: "var(--brand)",
+                                background: "none", border: "none", cursor: "pointer",
+                                padding: "2px 6px", borderRadius: 6,
+                                transition: "background 0.15s",
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = "var(--brand-pale)"}
+                              onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                            >
+                              Read all
+                            </button>
+                          )}
+                          <button
+                            onClick={clearAllNotifs}
+                            style={{
+                              fontSize: 11, fontWeight: 600, color: "var(--text-muted)",
+                              background: "none", border: "none", cursor: "pointer",
+                              padding: "2px 6px", borderRadius: 6,
+                              transition: "background 0.15s",
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(220,50,50,0.08)"; e.currentTarget.style.color = "#c0392b"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                          >
+                            Clear all
+                          </button>
+                        </div>
+                      )}
                     </div>
                     {notifications.length === 0 ? (
-                      <p style={{ padding: "1rem", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
+                      <p style={{ padding: "1.25rem 1rem", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
                         {t.community?.notificationsEmpty || "No new notifications."}
                       </p>
                     ) : (
-                      notifications.slice(0, 20).map((n) => (
-                        <div key={n.id} style={{
-                          display: "flex", alignItems: "center", gap: 10,
-                          padding: "0.65rem 1rem",
-                          borderBottom: "1px solid var(--border)",
-                          background: n.read ? "transparent" : "rgba(68,114,184,0.06)",
-                          transition: "background 0.2s",
-                        }}>
-                          {n.fromUserAvatar ? (
-                            <img src={n.fromUserAvatar} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="" />
-                          ) : (
-                            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#4472b8,#6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                              {(n.fromUserName || "?")[0].toUpperCase()}
+                      notifications.slice(0, 30).map((n) => {
+                        const typeIcon = n.type === "new_message"
+                          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#4472b8" }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          : n.type === "help_request"
+                          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#e07b39" }}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                          : n.type === "post_like"
+                          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="#e05b5b" stroke="#e05b5b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                          : n.type === "post_comment"
+                          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#4ca87b" }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ color: "#4472b8" }}><ellipse cx="12" cy="9" rx="7" ry="8.5" fill="currentColor"/><path d="M10.5 17.5Q12 19.5 13.5 17.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M12 19.5Q13 21 12 22.5" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round"/><ellipse cx="9.5" cy="6.5" rx="1.5" ry="2" fill="rgba(255,255,255,0.4)"/></svg>;
+
+                        const bodyText = n.type === "birthday_wish"
+                          ? (t.community?.birthdayWishNotif ? t.community.birthdayWishNotif(n.fromUserName) : `${n.fromUserName} sent you a birthday balloon!`)
+                          : n.type === "new_message"
+                          ? `${n.fromUserName}: ${n.message || "sent you a message"}`
+                          : n.type === "help_request"
+                          ? `${n.fromUserName} sent you a help request${n.message ? `: ${n.message.slice(0, 60)}` : ""}`
+                          : n.type === "post_like"
+                          ? `${n.fromUserName} liked your post`
+                          : n.type === "post_comment"
+                          ? `${n.fromUserName} commented: ${n.message || ""}`
+                          : n.message || "New notification";
+
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={() => handleNotifClick(n)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === "Enter" && handleNotifClick(n)}
+                            onMouseEnter={(e) => e.currentTarget.style.background = n.read ? "var(--bg-hover)" : "rgba(68,114,184,0.12)"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = n.read ? "transparent" : "rgba(68,114,184,0.06)"}
+                            style={{
+                              display: "flex", alignItems: "flex-start", gap: 10,
+                              padding: "0.65rem 1rem",
+                              borderBottom: "1px solid var(--border)",
+                              background: n.read ? "transparent" : "rgba(68,114,184,0.06)",
+                              transition: "background 0.15s",
+                              cursor: "pointer",
+                            }}>
+                            <div style={{ position: "relative", flexShrink: 0 }}>
+                              {n.fromUserAvatar ? (
+                                <img src={n.fromUserAvatar} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} alt="" />
+                              ) : (
+                                <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#4472b8,#6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                                  {(n.fromUserName || "?")[0].toUpperCase()}
+                                </div>
+                              )}
+                              <span style={{
+                                position: "absolute", bottom: -2, right: -2,
+                                width: 18, height: 18, borderRadius: "50%",
+                                background: "var(--bg-primary)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                border: "1.5px solid var(--border)",
+                              }}>
+                                {typeIcon}
+                              </span>
                             </div>
-                          )}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontSize: 12, color: "var(--text-primary)", lineHeight: 1.4 }}>
-                              {n.type === "birthday_wish"
-                                ? (t.community?.birthdayWishNotif ? t.community.birthdayWishNotif(n.fromUserName) : `${n.fromUserName} sent you a birthday balloon!`)
-                                : n.message || "New notification"}
-                            </p>
-                            <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
-                              {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
-                            </p>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 12, color: "var(--text-primary)", lineHeight: 1.4, margin: 0 }}>
+                                {bodyText}
+                              </p>
+                              <p style={{ fontSize: 10, color: "var(--text-muted)", margin: "2px 0 0" }}>
+                                {n.createdAt ? new Date(n.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}
+                              </p>
+                            </div>
+                            {!n.read && (
+                              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", flexShrink: 0, marginTop: 5 }} />
+                            )}
                           </div>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0, color: "#4472b8" }}>
-                            <ellipse cx="12" cy="9" rx="7" ry="8.5" fill="currentColor"/>
-                            <path d="M10.5 17.5Q12 19.5 13.5 17.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                            <path d="M12 19.5Q13 21 12 22.5" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round"/>
-                            <ellipse cx="9.5" cy="6.5" rx="1.5" ry="2" fill="rgba(255,255,255,0.4)"/>
-                          </svg>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}
@@ -1175,7 +1286,7 @@ export default function DashboardPage() {
         }}>
           {navItems.map((item) => {
             const isActive = section === item.id;
-            const hasBadge = item.id === "chat" && unreadDMs > 0;
+            const hasBadge = false;
             return (
               <button
                 key={item.id}

@@ -805,12 +805,30 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
     const t = text, r = replyTo, f = imgFile;
     setText(""); setReplyTo(null); setImgFile(null); setImgPreview(null);
     try {
+      let url = null;
       if (f) {
-        const url = await uploadChatImage(f, activeConvId);
+        url = await uploadChatImage(f, activeConvId);
         await sendMessage(activeConvId, user.uid, t, r, url, recipientIds);
       } else {
         await sendMessage(activeConvId, user.uid, t, r, null, recipientIds);
       }
+      const senderName = profile
+        ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || user.email
+        : user.email;
+      const preview = url ? "📷 Photo" : t.trim().slice(0, 80);
+      recipientIds.forEach((recipientId) => {
+        addDoc(collection(db, "notifications"), {
+          toUserId: recipientId,
+          fromUserId: user.uid,
+          fromUserName: senderName,
+          fromUserAvatar: profile?.avatarUrl || null,
+          type: "new_message",
+          conversationId: activeConvId,
+          message: preview,
+          createdAt: new Date().toISOString(),
+          read: false,
+        }).catch(() => {});
+      });
     } finally { setSending(false); }
     inputRef.current?.focus();
   };

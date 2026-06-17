@@ -136,7 +136,7 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
 }
 
 /* ── Post card ── */
-function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfile, onMessage, onPin }) {
+function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, onRepost, onViewProfile, onMessage, onPin }) {
   const { t } = useLang();
   const [liked,    setLiked]    = useState((post.likedBy || []).includes(currentUser?.uid));
   const [likes,    setLikes]    = useState(post.likesCount || (post.likedBy?.length || 0));
@@ -176,6 +176,21 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
         likedBy: arrayUnion(currentUser.uid),
         likesCount: likes + 1,
       });
+      if (post.authorId && post.authorId !== currentUser.uid) {
+        const fromName = currentUserProfile
+          ? `${currentUserProfile.firstName || ""} ${currentUserProfile.lastName || ""}`.trim()
+          : currentUser.email;
+        addDoc(collection(db, "notifications"), {
+          toUserId: post.authorId,
+          fromUserId: currentUser.uid,
+          fromUserName: fromName,
+          fromUserAvatar: currentUserProfile?.avatarUrl || null,
+          type: "post_like",
+          postId: post.id,
+          createdAt: new Date().toISOString(),
+          read: false,
+        }).catch(() => {});
+      }
     }
   };
 
@@ -196,6 +211,19 @@ function PostCard({ post, currentUser, isAdmin, onDelete, onRepost, onViewProfil
       commentCount: (post.commentCount || 0) + 1,
     });
     logActivity({ type: "comment", actorId: currentUser.uid, actorName, targetId: post.id, targetType: "post", details: { text: commentText.trim().slice(0, 150) } });
+    if (post.authorId && post.authorId !== currentUser.uid) {
+      addDoc(collection(db, "notifications"), {
+        toUserId: post.authorId,
+        fromUserId: currentUser.uid,
+        fromUserName: actorName,
+        fromUserAvatar: u.avatarUrl || null,
+        type: "post_comment",
+        postId: post.id,
+        message: commentText.trim().slice(0, 100),
+        createdAt: new Date().toISOString(),
+        read: false,
+      }).catch(() => {});
+    }
     setCommentText("");
     setPostingComment(false);
   };
@@ -1319,7 +1347,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
           ))}
 
           {pinnedPosts.map((p) => (
-            <PostCard key={p.id} post={p} currentUser={user} isAdmin={authProfile?.isAdmin}
+            <PostCard key={p.id} post={p} currentUser={user} currentUserProfile={authProfile} isAdmin={authProfile?.isAdmin}
               onDelete={handleDeletePost} onRepost={handleRepost}
               onViewProfile={onViewProfile} onMessage={onMessage}
               onPin={handlePinPost}
@@ -1349,7 +1377,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             </div>
           )}
           {regularPosts.map((p) => (
-            <PostCard key={p.id} post={p} currentUser={user} isAdmin={authProfile?.isAdmin}
+            <PostCard key={p.id} post={p} currentUser={user} currentUserProfile={authProfile} isAdmin={authProfile?.isAdmin}
               onDelete={handleDeletePost} onRepost={handleRepost}
               onViewProfile={onViewProfile} onMessage={onMessage}
               onPin={handlePinPost}
