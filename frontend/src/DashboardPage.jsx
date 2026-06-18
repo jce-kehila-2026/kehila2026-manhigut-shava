@@ -620,8 +620,8 @@ export default function DashboardPage() {
   const { dark, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
 
-  const [section,    setSection]    = useState(() => localStorage.getItem("section") || "home");
-  const [navHistory, setNavHistory] = useState(() => [localStorage.getItem("section") || "home"]);
+  const [section,    setSection]    = useState(() => sessionStorage.getItem("section") || "home");
+  const [navHistory, setNavHistory] = useState(() => [sessionStorage.getItem("section") || "home"]);
   const [unreadDMs,  setUnreadDMs]  = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showNotifs,    setShowNotifs]    = useState(false);
@@ -631,7 +631,7 @@ export default function DashboardPage() {
 
   /* Tab switch — resets back-history so pressing back never returns to a random tab */
   const switchTab = useCallback((s) => {
-    localStorage.setItem("section", s);
+    sessionStorage.setItem("section", s);
     setSection(s);
     setProfileTarget(null);
     setChatTarget(null);
@@ -640,7 +640,7 @@ export default function DashboardPage() {
 
   /* Deep navigation — view profile, open specific chat, etc. — pushes history */
   const navigate = useCallback((s, options = {}) => {
-    localStorage.setItem("section", s);
+    sessionStorage.setItem("section", s);
     setSection(s);
     if (s === "profile") {
       setProfileTarget(options.userId || null);
@@ -663,7 +663,7 @@ export default function DashboardPage() {
       if (prev.length <= 1) return prev;
       const next = prev.slice(0, -1);
       const prevSection = next[next.length - 1];
-      localStorage.setItem("section", prevSection);
+      sessionStorage.setItem("section", prevSection);
       setSection(prevSection);
       setProfileTarget(null);
       setChatTarget(null);

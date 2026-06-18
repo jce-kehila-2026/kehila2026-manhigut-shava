@@ -80,6 +80,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = async () => {
+    sessionStorage.removeItem("section");
     await signOut(auth);
     setProfile(null);
   };
