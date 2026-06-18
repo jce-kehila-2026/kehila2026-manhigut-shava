@@ -91,83 +91,90 @@ export default function ImageEditorModal({ imageSrc, onClose, onApply }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.92)", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 18px", background: "rgba(0,0,0,0.5)", flexShrink: 0 }}>
-        <span style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>Edit Image</span>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1, padding: "0 2px" }}>×</button>
-      </div>
+    /* Backdrop */
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {/* Dialog */}
+      <div style={{ width: "100%", maxWidth: 520, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column", background: "#1a1a1a", boxShadow: "0 24px 60px rgba(0,0,0,0.6)" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#111", flexShrink: 0 }}>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Edit Image</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "0 2px" }}>×</button>
+        </div>
 
-      {/* Crop viewport */}
-      <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
-        <Cropper
-          image={imageSrc}
-          crop={crop}
-          zoom={zoom}
-          rotation={rotation}
-          aspect={aspect}
-          onCropChange={setCrop}
-          onZoomChange={setZoom}
-          onCropComplete={onCropComplete}
-        />
-      </div>
+        {/* Crop viewport — fixed height so the dialog doesn't grow huge */}
+        <div style={{ position: "relative", height: 320, background: "#000" }}>
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            rotation={rotation}
+            aspect={aspect}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={onCropComplete}
+          />
+        </div>
 
-      {/* Controls */}
-      <div style={{ background: "#111", padding: "14px 18px 18px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 11 }}>
-        {/* Aspect ratio */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: "#888", fontSize: 11, width: 48, flexShrink: 0 }}>Aspect</span>
-          <div style={{ display: "flex", gap: 5 }}>
-            {ASPECTS.map((a) => (
-              <button
-                key={a.label}
-                onClick={() => setAspect(a.value)}
-                style={{
-                  padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                  border: "1px solid",
-                  background: aspect === a.value ? "#4472b8" : "transparent",
-                  borderColor: aspect === a.value ? "#4472b8" : "#444",
-                  color: aspect === a.value ? "#fff" : "#aaa",
-                  transition: "all 0.15s",
-                }}
-              >{a.label}</button>
-            ))}
+        {/* Controls */}
+        <div style={{ background: "#1a1a1a", padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Aspect ratio */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ color: "#888", fontSize: 11, width: 44, flexShrink: 0 }}>Aspect</span>
+            <div style={{ display: "flex", gap: 5 }}>
+              {ASPECTS.map((a) => (
+                <button
+                  key={a.label}
+                  onClick={() => setAspect(a.value)}
+                  style={{
+                    padding: "3px 9px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    border: "1px solid",
+                    background: aspect === a.value ? "#4472b8" : "transparent",
+                    borderColor: aspect === a.value ? "#4472b8" : "#444",
+                    color: aspect === a.value ? "#fff" : "#aaa",
+                    transition: "all 0.15s",
+                  }}
+                >{a.label}</button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Zoom */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: "#888", fontSize: 11, width: 48, flexShrink: 0 }}>Zoom</span>
-          <input
-            type="range" min={1} max={3} step={0.01} value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            style={{ flex: 1, accentColor: "#4472b8" }}
-          />
-          <span style={{ color: "#888", fontSize: 11, width: 34, textAlign: "right" }}>{zoom.toFixed(1)}×</span>
-        </div>
+          {/* Zoom */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ color: "#888", fontSize: 11, width: 44, flexShrink: 0 }}>Zoom</span>
+            <input
+              type="range" min={1} max={3} step={0.01} value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              style={{ flex: 1, accentColor: "#4472b8" }}
+            />
+            <span style={{ color: "#888", fontSize: 11, width: 30, textAlign: "right" }}>{zoom.toFixed(1)}×</span>
+          </div>
 
-        {/* Rotation */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: "#888", fontSize: 11, width: 48, flexShrink: 0 }}>Rotate</span>
-          <input
-            type="range" min={-180} max={180} step={1} value={rotation}
-            onChange={(e) => setRotation(Number(e.target.value))}
-            style={{ flex: 1, accentColor: "#4472b8" }}
-          />
-          <span style={{ color: "#888", fontSize: 11, width: 34, textAlign: "right" }}>{rotation}°</span>
-        </div>
+          {/* Rotation */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ color: "#888", fontSize: 11, width: 44, flexShrink: 0 }}>Rotate</span>
+            <input
+              type="range" min={-180} max={180} step={1} value={rotation}
+              onChange={(e) => setRotation(Number(e.target.value))}
+              style={{ flex: 1, accentColor: "#4472b8" }}
+            />
+            <span style={{ color: "#888", fontSize: 11, width: 30, textAlign: "right" }}>{rotation}°</span>
+          </div>
 
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 2 }}>
-          <button
-            onClick={onClose}
-            style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #444", background: "transparent", color: "#ccc", fontSize: 13, cursor: "pointer" }}
-          >Cancel</button>
-          <button
-            onClick={handleApply}
-            disabled={applying}
-            style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#4472b8", color: "#fff", fontSize: 13, fontWeight: 700, cursor: applying ? "not-allowed" : "pointer", opacity: applying ? 0.7 : 1 }}
-          >{applying ? "Applying…" : "Apply"}</button>
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 2 }}>
+            <button
+              onClick={onClose}
+              style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #444", background: "transparent", color: "#ccc", fontSize: 13, cursor: "pointer" }}
+            >Cancel</button>
+            <button
+              onClick={handleApply}
+              disabled={applying}
+              style={{ padding: "7px 18px", borderRadius: 8, border: "none", background: "#4472b8", color: "#fff", fontSize: 13, fontWeight: 700, cursor: applying ? "not-allowed" : "pointer", opacity: applying ? 0.7 : 1 }}
+            >{applying ? "Applying…" : "Apply"}</button>
+          </div>
         </div>
       </div>
     </div>
