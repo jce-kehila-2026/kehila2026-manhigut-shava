@@ -6,12 +6,13 @@ import {
   doc, updateDoc, deleteDoc, arrayUnion, arrayRemove,
   getDoc, getDocs, where, setDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { logActivity } from "./activityLogger";
 import { deletePostWithCleanup } from "./utils/deletePost";
 import { daysUntilBirthday, formatBirthday } from "./utils/birthday";
+import ImageEditorModal from "./ImageEditorModal";
 
 /* ── Helpers ── */
 function timeAgo(ts, t) {
@@ -149,6 +150,12 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
   const [postingComment, setPostingComment] = useState(false);
   const [showRepostModal, setShowRepostModal] = useState(false);
   const [repostThoughts, setRepostThoughts]   = useState("");
+  const [editMedia, setEditMedia]             = useState([]);
+  const [editNewFiles, setEditNewFiles]       = useState([]);
+  const [savingEdit, setSavingEdit]           = useState(false);
+  const editFileInputRef = useRef(null);
+  const [imgEditorSrc, setImgEditorSrc]       = useState(null);
+  const [imgEditorTarget, setImgEditorTarget] = useState(null);
 
   useEffect(() => {
     if (!showComments || comments.length > 0) return;
@@ -245,9 +252,47 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
   };
 
   const handleSaveEdit = async () => {
-    if (!editText.trim()) return;
-    await updateDoc(doc(db, "posts", post.id), { text: editText.trim(), editedAt: new Date().toISOString() });
-    setEditingId(null);
+    if (savingEdit) return;
+    setSavingEdit(true);
+    try {
+      const removedMedia = (post.media || []).filter(
+        orig => !editMedia.some(m => m.url === orig.url)
+      );
+      for (const m of removedMedia) {
+        if (m.storagePath) {
+          try { await deleteObject(ref(storage, m.storagePath)); } catch (_) {}
+        }
+      }
+      const uploadedMedia = [];
+      for (const file of editNewFiles) {
+        const storagePath = `posts/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        uploadedMedia.push({ url, storagePath, type: file.type.startsWith("video") ? "video" : "image" });
+      }
+      await updateDoc(doc(db, "posts", post.id), {
+        text: editText.trim(),
+        media: [...editMedia, ...uploadedMedia],
+        editedAt: new Date().toISOString(),
+      });
+      setEditingId(null);
+      setEditNewFiles([]);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleApplyImageEdit = (blob) => {
+    const file = new File([blob], "edited.jpg", { type: "image/jpeg" });
+    if (imgEditorTarget.kind === "existing") {
+      setEditMedia(prev => prev.filter((_, i) => i !== imgEditorTarget.index));
+      setEditNewFiles(prev => [...prev, file]);
+    } else {
+      setEditNewFiles(prev => prev.map((f, i) => i === imgEditorTarget.index ? file : f));
+    }
+    setImgEditorSrc(null);
+    setImgEditorTarget(null);
   };
 
   const canEdit   = currentUser?.uid === post.authorId || isAdmin;
@@ -338,7 +383,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
             )}
             {canEdit && (
               <button
-                onClick={() => { setEditingId(post.id); setEditText(post.text || ""); }}
+                onClick={() => { setEditingId(post.id); setEditText(post.text || ""); setEditMedia(post.media || []); setEditNewFiles([]); }}
                 style={{ padding: "5px 11px", borderRadius: "var(--r-sm)", fontSize: 11, fontWeight: 600, background: "none", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--brand-pale)"; e.currentTarget.style.color = "var(--brand-dark)"; e.currentTarget.style.borderColor = "var(--brand-light)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "var(--border)"; }}
@@ -371,9 +416,79 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
                 background: "var(--bg-secondary)", outline: "none", color: "var(--text-primary)",
               }}
             />
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => setEditingId(null)} style={{ padding: "7px 16px", borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "none", fontSize: 12, cursor: "pointer", color: "var(--text-secondary)" }}>Cancel</button>
-              <button onClick={handleSaveEdit} style={{ padding: "7px 16px", borderRadius: "var(--r-sm)", background: "var(--brand)", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+            {(editMedia.length > 0 || editNewFiles.length > 0) && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {editMedia.map((m, i) => (
+                  <div key={i} style={{ position: "relative", width: 80, height: 80 }}>
+                    {m.type === "image" ? (
+                      <img src={m.url} alt="" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: "var(--r-sm)" }} />
+                    ) : (
+                      <video src={m.url} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: "var(--r-sm)" }} />
+                    )}
+                    {m.type === "image" && (
+                      <button
+                        onClick={() => { setImgEditorSrc(m.url); setImgEditorTarget({ kind: "existing", index: i }); }}
+                        title="Edit image"
+                        style={{ position: "absolute", bottom: 2, left: 2, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.65)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setEditMedia(prev => prev.filter((_, j) => j !== i))}
+                      style={{ position: "absolute", top: 2, right: 2, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.65)", color: "#fff", border: "none", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+                    >×</button>
+                  </div>
+                ))}
+                {editNewFiles.map((file, i) => (
+                  <div key={`new-${i}`} style={{ position: "relative", width: 80, height: 80 }}>
+                    {file.type.startsWith("video") ? (
+                      <div style={{ width: 80, height: 80, borderRadius: "var(--r-sm)", background: "var(--bg-secondary)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                      </div>
+                    ) : (
+                      <img src={URL.createObjectURL(file)} alt="" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: "var(--r-sm)" }} />
+                    )}
+                    {!file.type.startsWith("video") && (
+                      <button
+                        onClick={() => { setImgEditorSrc(URL.createObjectURL(file)); setImgEditorTarget({ kind: "new", index: i }); }}
+                        title="Edit image"
+                        style={{ position: "absolute", bottom: 2, left: 2, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.65)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setEditNewFiles(prev => prev.filter((_, j) => j !== i))}
+                      style={{ position: "absolute", top: 2, right: 2, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.65)", color: "#fff", border: "none", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <button
+                onClick={() => editFileInputRef.current?.click()}
+                style={{ padding: "6px 12px", borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "var(--bg-secondary)", fontSize: 12, cursor: "pointer", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 5 }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Add media
+              </button>
+              <input
+                ref={editFileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  setEditNewFiles(prev => [...prev, ...Array.from(e.target.files || [])]);
+                  e.target.value = "";
+                }}
+              />
+              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                <button onClick={() => { setEditingId(null); setEditNewFiles([]); }} style={{ padding: "7px 16px", borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "none", fontSize: 12, cursor: "pointer", color: "var(--text-secondary)" }}>Cancel</button>
+                <button onClick={handleSaveEdit} disabled={savingEdit} style={{ padding: "7px 16px", borderRadius: "var(--r-sm)", background: "var(--brand)", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: savingEdit ? "not-allowed" : "pointer", opacity: savingEdit ? 0.7 : 1 }}>{savingEdit ? "Saving…" : "Save"}</button>
+              </div>
             </div>
           </div>
         ) : (
@@ -405,8 +520,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
                 {post.repostOf.media.map((m, i) =>
                   m.type === "image" ? (
                     <img key={i} src={m.url} alt="" style={{
-                      width: "100%", maxHeight: post.repostOf.media.length === 1 ? 480 : 240,
-                      objectFit: "cover", cursor: "pointer", borderRadius: "var(--r-sm)",
+                      width: "100%", height: "auto", display: "block", cursor: "pointer", borderRadius: "var(--r-sm)",
                     }} onClick={() => window.open(m.url, "_blank")} />
                   ) : (
                     <video key={i} src={m.url} controls style={{ width: "100%", maxHeight: 360, borderRadius: "var(--r-sm)" }} />
@@ -422,7 +536,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
       </div>
 
       {/* Media */}
-      {post.media?.length > 0 && (
+      {editingId !== post.id && post.media?.length > 0 && (
         <div style={{
           display: "grid",
           gridTemplateColumns: post.media.length === 1 ? "1fr" : "repeat(2, 1fr)",
@@ -431,8 +545,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
           {post.media.map((m, i) =>
             m.type === "image" ? (
               <img key={i} src={m.url} alt="" style={{
-                width: "100%", maxHeight: post.media.length === 1 ? 480 : 240,
-                objectFit: "cover", cursor: "pointer",
+                width: "100%", height: "auto", display: "block", cursor: "pointer",
               }} onClick={() => window.open(m.url, "_blank")} />
             ) : (
               <video key={i} src={m.url} controls style={{ width: "100%", maxHeight: 360 }} />
@@ -641,6 +754,14 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
           )}
         </div>
       )}
+
+      {imgEditorSrc && (
+        <ImageEditorModal
+          imageSrc={imgEditorSrc}
+          onClose={() => { setImgEditorSrc(null); setImgEditorTarget(null); }}
+          onApply={handleApplyImageEdit}
+        />
+      )}
     </article>
   );
 }
@@ -648,10 +769,12 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
 /* ── Compose box ── */
 function ComposeBox({ currentUser, profile, onPost }) {
   const { t } = useLang();
-  const [text, setText]       = useState("");
-  const [files, setFiles]     = useState([]);
-  const [posting, setPosting] = useState(false);
-  const [focused, setFocused] = useState(false);
+  const [text, setText]                       = useState("");
+  const [files, setFiles]                     = useState([]);
+  const [posting, setPosting]                 = useState(false);
+  const [focused, setFocused]                 = useState(false);
+  const [imgEditorSrc, setImgEditorSrc]       = useState(null);
+  const [imgEditorIndex, setImgEditorIndex]   = useState(null);
   const fileRef = useRef();
 
   const handlePost = async () => {
@@ -726,8 +849,15 @@ function ComposeBox({ currentUser, profile, onPost }) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
               {files.map((f, i) =>
                 f.type.startsWith("image") ? (
-                  <div key={i} style={{ position: "relative" }}>
+                  <div key={i} style={{ position: "relative", width: 76, height: 76 }}>
                     <img src={URL.createObjectURL(f)} alt="" style={{ width: 76, height: 76, borderRadius: "var(--r-md)", objectFit: "cover", border: "1px solid var(--border)" }} />
+                    <button
+                      onClick={() => { setImgEditorSrc(URL.createObjectURL(f)); setImgEditorIndex(i); }}
+                      title="Edit image"
+                      style={{ position: "absolute", bottom: 2, left: 2, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.65)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
                     <button onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
                       style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "var(--danger)", color: "#fff", border: "none", cursor: "pointer", fontSize: 12, lineHeight: 1, boxShadow: "var(--shadow-sm)" }}>×</button>
                   </div>
@@ -740,6 +870,19 @@ function ComposeBox({ currentUser, profile, onPost }) {
                 )
               )}
             </div>
+          )}
+
+          {imgEditorSrc && (
+            <ImageEditorModal
+              imageSrc={imgEditorSrc}
+              onClose={() => { setImgEditorSrc(null); setImgEditorIndex(null); }}
+              onApply={(blob) => {
+                const file = new File([blob], "edited.jpg", { type: "image/jpeg" });
+                setFiles((p) => p.map((f, i) => i === imgEditorIndex ? file : f));
+                setImgEditorSrc(null);
+                setImgEditorIndex(null);
+              }}
+            />
           )}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>

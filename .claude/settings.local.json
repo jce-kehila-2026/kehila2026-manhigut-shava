@@ -62,7 +62,8 @@
       "Bash(grep -nE 'placeholder=\"[A-Z]|>[A-Z][a-z]+\\( [a-zA-Z]+\\){1,}[.!?]?<' AuthPage.jsx)",
       "Bash(grep -nE 'placeholder=\"[A-Z]|>[A-Z][a-z]+\\( [a-zA-Z]+\\){1,}[.!?]?<' LandingPage.jsx)",
       "Bash(awk 'NR>=413 && NR<=991 && \\(/^function [A-Z]/ || /^const [A-Z][a-zA-Z]+ = \\\\\\(/ || /^export default function/\\)' DashboardPage.jsx)",
-      "Bash(git revert *)"
+      "Bash(git revert *)",
+      "Bash(xargs ls -la)"
     ],
     "additionalDirectories": [
       "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src"
