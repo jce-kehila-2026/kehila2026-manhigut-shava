@@ -1052,13 +1052,9 @@ export const RTL_LANGS = ["he", "ar"];
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  /* Persist language selection; fall back to Hebrew on first visit */
-  const [lang, setLangState] = useState(
-    () => localStorage.getItem("lang") ?? "he"
-  );
+  const [lang, setLangState] = useState("he");
 
   const setLang = (code) => {
-    localStorage.setItem("lang", code);
     setLangState(code);
   };
 
