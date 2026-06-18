@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import Cropper from "react-easy-crop";
 import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
 import {
   updateEmail,
@@ -15,6 +16,50 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { isBirthdayToday } from "./utils/birthday";
 
 const storage = getStorage();
+
+/* ─── Canvas utility: apply crop + rotation, return a Blob ─── */
+function createImageEl(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.addEventListener("load", () => resolve(img));
+    img.addEventListener("error", reject);
+    img.setAttribute("crossOrigin", "anonymous");
+    img.src = url;
+  });
+}
+
+async function getCroppedBlob(imageSrc, pixelCrop, rotation = 0) {
+  const image = await createImageEl(imageSrc);
+  const maxSize = Math.max(image.width, image.height);
+  const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = safeArea;
+  canvas.height = safeArea;
+  const ctx = canvas.getContext("2d");
+
+  ctx.translate(safeArea / 2, safeArea / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.translate(-safeArea / 2, -safeArea / 2);
+  ctx.drawImage(image, safeArea / 2 - image.width / 2, safeArea / 2 - image.height / 2);
+
+  const data = ctx.getImageData(0, 0, safeArea, safeArea);
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  ctx.putImageData(
+    data,
+    Math.round(0 - safeArea / 2 + image.width / 2 - pixelCrop.x),
+    Math.round(0 - safeArea / 2 + image.height / 2 - pixelCrop.y),
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Canvas is empty"))),
+      "image/jpeg",
+      0.92,
+    );
+  });
+}
 
 /* ─── Inject keyframe animations once ─── */
 let styleTag = document.head.querySelector("#profile-styles");
@@ -102,6 +147,17 @@ styleTag.textContent = `
   }
   .check-svg { animation: checkPop 0.35s ease both; }
   .cover-edit-btn:hover { background: rgba(0,0,0,0.65) !important; }
+  /* react-easy-crop required styles */
+  .reactEasyCrop_Container { position:absolute; top:0; left:0; right:0; bottom:0; overflow:hidden; user-select:none; touch-action:none; cursor:move; }
+  .reactEasyCrop_Image, .reactEasyCrop_Video { max-width:100%; max-height:100%; margin:auto; position:absolute; top:0; bottom:0; left:0; right:0; will-change:transform; }
+  .reactEasyCrop_CropArea { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border:2px solid rgba(255,255,255,0.7); box-sizing:border-box; box-shadow:0 0 0 9999em rgba(0,0,0,0.55); overflow:hidden; }
+  .reactEasyCrop_CropAreaRound { border-radius:50%; }
+  .reactEasyCrop_CropAreaGrid::before { content:""; box-sizing:border-box; position:absolute; border:1px solid rgba(255,255,255,0.4); top:0; bottom:0; left:33.33%; right:33.33%; border-top:0; border-bottom:0; }
+  .reactEasyCrop_CropAreaGrid::after { content:""; box-sizing:border-box; position:absolute; border:1px solid rgba(255,255,255,0.4); top:33.33%; bottom:33.33%; left:0; right:0; border-left:0; border-right:0; }
+  /* range sliders in crop modal */
+  .crop-slider { -webkit-appearance:none; appearance:none; height:4px; border-radius:99px; background:#374151; outline:none; cursor:pointer; }
+  .crop-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:#4472b8; cursor:pointer; border:2px solid #fff; }
+  .crop-slider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:#4472b8; cursor:pointer; border:2px solid #fff; }
   .avatar-edit-btn:hover { background: #1d4896 !important; color: #fff !important; border-color: #1d4896 !important; }
   .profile-tab-btn { background: none; border: none; cursor: pointer; white-space: nowrap; }
 `;
@@ -454,6 +510,16 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const fileRef = useRef();
   const coverFileRef = useRef();
 
+  /* ── Cover crop modal state ── */
+  const [coverCropOpen, setCoverCropOpen] = useState(false);
+  const [coverRawSrc, setCoverRawSrc] = useState(null);
+  const [coverCrop, setCoverCrop] = useState({ x: 0, y: 0 });
+  const [coverZoom, setCoverZoom] = useState(1);
+  const [coverRotation, setCoverRotation] = useState(0);
+  const [coverCroppedPixels, setCoverCroppedPixels] = useState(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const onCoverCropComplete = useCallback((_, pixels) => setCoverCroppedPixels(pixels), []);
+
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
     ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"",
@@ -607,21 +673,41 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     refreshProfile();
   };
 
-  /* ── Cover photo upload ── */
-  const handleCoverUpload = async (e) => {
+  /* ── Cover photo: open crop modal ── */
+  const handleCoverUpload = (e) => {
     if (!isOwner || !user) return;
     const file = e.target.files[0];
     if (!file) return;
     e.target.value = "";
+    const objectUrl = URL.createObjectURL(file);
+    setCoverRawSrc(objectUrl);
+    setCoverCrop({ x: 0, y: 0 });
+    setCoverZoom(1);
+    setCoverRotation(0);
+    setCoverCroppedPixels(null);
+    setCoverCropOpen(true);
+  };
+
+  /* ── Cover photo: apply crop then upload ── */
+  const handleCoverCropConfirm = async () => {
+    if (!coverCroppedPixels || !coverRawSrc || !user) return;
+    setUploadingCover(true);
+    setError("");
     try {
+      const blob = await getCroppedBlob(coverRawSrc, coverCroppedPixels, coverRotation);
       const storageRef = ref(storage, `covers/${user.uid}`);
-      await uploadBytes(storageRef, file);
+      await uploadBytes(storageRef, blob);
       const url = await getDownloadURL(storageRef);
       setCoverURL(url);
       await updateDoc(doc(db, "users", user.uid), { coverPhotoURL: url });
+      setCoverCropOpen(false);
+      URL.revokeObjectURL(coverRawSrc);
+      setCoverRawSrc(null);
     } catch (err) {
-      console.error("Cover upload failed:", err);
+      console.error("Cover crop/upload failed:", err);
       setError(t.profile.errorGeneral);
+    } finally {
+      setUploadingCover(false);
     }
   };
 
@@ -1402,6 +1488,81 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             <div style={S.modalActions}>
               <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowEmailModal(false)}>{t.profile.cancel}</button>
               <button style={S.confirmBtn} onClick={handleEmailChange}>{t.profile.confirm}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cover Crop Modal ── */}
+      {coverCropOpen && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.88)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}>
+          <div style={{ background:"#111827", borderRadius:22, width:"100%", maxWidth:660, display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 32px 80px rgba(0,0,0,0.5)", animation:"modalPop 0.28s cubic-bezier(.34,1.56,.64,1) both" }}>
+
+            {/* Header */}
+            <div style={{ padding:"1.1rem 1.5rem 0.75rem", borderBottom:"1px solid #1f2937", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <span style={{ color:"#f9fafb", fontSize:15, fontWeight:700 }}>
+                {coverURL ? "Edit Cover Photo" : "Add Cover Photo"}
+              </span>
+              <button
+                onClick={() => { setCoverCropOpen(false); URL.revokeObjectURL(coverRawSrc); setCoverRawSrc(null); }}
+                style={{ background:"none", border:"none", color:"#9ca3af", cursor:"pointer", fontSize:20, lineHeight:1, padding:"2px 6px" }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Crop area */}
+            <div style={{ position:"relative", height:260, background:"#000" }}>
+              <Cropper
+                image={coverRawSrc}
+                crop={coverCrop}
+                zoom={coverZoom}
+                rotation={coverRotation}
+                aspect={3}
+                onCropChange={setCoverCrop}
+                onZoomChange={setCoverZoom}
+                onRotationChange={setCoverRotation}
+                onCropComplete={onCoverCropComplete}
+                showGrid={true}
+              />
+            </div>
+
+            {/* Controls */}
+            <div style={{ padding:"1.1rem 1.5rem 1.5rem", display:"flex", flexDirection:"column", gap:"0.85rem" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ color:"#9ca3af", fontSize:12, fontWeight:600, width:52 }}>Zoom</span>
+                <input className="crop-slider" type="range" min={1} max={3} step={0.01}
+                  value={coverZoom} onChange={e => setCoverZoom(Number(e.target.value))}
+                  style={{ flex:1 }} />
+                <span style={{ color:"#6b7280", fontSize:11, minWidth:32, textAlign:"right" }}>
+                  {Math.round(coverZoom * 100)}%
+                </span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ color:"#9ca3af", fontSize:12, fontWeight:600, width:52 }}>Rotate</span>
+                <input className="crop-slider" type="range" min={-180} max={180} step={1}
+                  value={coverRotation} onChange={e => setCoverRotation(Number(e.target.value))}
+                  style={{ flex:1 }} />
+                <span style={{ color:"#6b7280", fontSize:11, minWidth:32, textAlign:"right" }}>
+                  {coverRotation}°
+                </span>
+              </div>
+
+              <div style={{ display:"flex", gap:10, marginTop:"0.25rem" }}>
+                <button
+                  onClick={() => { setCoverCropOpen(false); URL.revokeObjectURL(coverRawSrc); setCoverRawSrc(null); }}
+                  style={{ flex:1, padding:"11px", background:"#374151", color:"#d1d5db", border:"none", borderRadius:12, fontSize:14, fontWeight:600, cursor:"pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCoverCropConfirm}
+                  disabled={uploadingCover || !coverCroppedPixels}
+                  style={{ flex:2, padding:"11px", background:uploadingCover ? "#1d3a6e" : "#4472b8", color:"#fff", border:"none", borderRadius:12, fontSize:14, fontWeight:700, cursor: uploadingCover ? "not-allowed" : "pointer", opacity: (!coverCroppedPixels && !uploadingCover) ? 0.5 : 1, transition:"background 0.2s" }}
+                >
+                  {uploadingCover ? "Uploading…" : "Apply & Save"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
