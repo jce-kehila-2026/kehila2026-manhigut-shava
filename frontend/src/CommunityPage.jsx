@@ -832,15 +832,39 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
   );
 }
 
+/* ── Gemini rewrite helper ── */
+async function geminiRewrite(text, lang = "he") {
+  const key = import.meta.env.VITE_GEMINI_KEY;
+  if (!key || !text?.trim()) return null;
+  const prompt = lang === "he"
+    ? `שפר את הטקסט הבא לפוסט מקצועי ברשת עמיתות. שמור על הטון האישי. החזר רק את הטקסט המשופר, ללא הסברים:\n\n${text}`
+    : lang === "ar"
+    ? `حسّن النص التالي ليكون منشوراً مهنياً. احتفظ بالأسلوب الشخصي. أعد النص المحسّن فقط:\n\n${text}`
+    : `Improve the following text for a professional alumni network post. Keep the personal tone. Return only the improved text:\n\n${text}`;
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      }
+    );
+    const data = await res.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  } catch { return null; }
+}
+
 /* ── Compose box ── */
 function ComposeBox({ currentUser, profile, onPost }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [text, setText]                       = useState("");
   const [files, setFiles]                     = useState([]);
   const [posting, setPosting]                 = useState(false);
   const [focused, setFocused]                 = useState(false);
   const [imgEditorSrc, setImgEditorSrc]       = useState(null);
   const [imgEditorIndex, setImgEditorIndex]   = useState(null);
+  const [aiRewriting, setAiRewriting]         = useState(false);
   const fileRef = useRef();
 
   const handlePost = async () => {
@@ -910,6 +934,30 @@ function ComposeBox({ currentUser, profile, onPost }) {
               transition: "min-height 0.2s",
             }}
           />
+
+          {import.meta.env.VITE_GEMINI_KEY && text?.trim()?.length > 10 && (
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:4 }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  setAiRewriting(true);
+                  const improved = await geminiRewrite(text, lang);
+                  if (improved) setText(improved);
+                  setAiRewriting(false);
+                }}
+                disabled={aiRewriting}
+                style={{
+                  fontSize:11, fontWeight:700, padding:"5px 12px",
+                  borderRadius:99, border:"1.5px solid var(--brand,#4472b8)",
+                  background:"none", color:"var(--brand,#4472b8)",
+                  cursor:"pointer", display:"flex", alignItems:"center", gap:5,
+                  opacity: aiRewriting ? 0.6 : 1,
+                }}
+              >
+                {aiRewriting ? "✨ Rewriting..." : "✨ Improve with AI"}
+              </button>
+            </div>
+          )}
 
           {files.length > 0 && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
