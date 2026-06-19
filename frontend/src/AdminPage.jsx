@@ -674,7 +674,8 @@ export default function AdminPage() {
   const [userSearch, setUserSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
 
-  /* ── Posts: expanded comments ── */
+  /* ── Posts: search + expanded comments ── */
+  const [postSearch, setPostSearch] = useState("");
   const [expandedPostComments, setExpandedPostComments] = useState({});
   const [postCommentsList, setPostCommentsList]         = useState({});
 
@@ -959,7 +960,6 @@ export default function AdminPage() {
   const TABS = [
     { id: "overview",  label: Tr.tabs.overview },
     { id: "users",     label: `${Tr.tabs.users} (${users.length})` },
-    { id: "editUsers", label: Tr.tabs.editUsers },
     { id: "posts",     label: `${Tr.tabs.posts} (${posts.length})` },
     { id: "data",      label: Tr.showDataTab },
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}` },
@@ -1151,6 +1151,10 @@ export default function AdminPage() {
                     <td style={{ padding:"11px 14px" }}>
                       {u.id !== user?.uid && (
                         <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                          <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
+                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)",color:"var(--text-primary,#111827)",cursor:"pointer",whiteSpace:"nowrap" }}>
+                            {Tr.editUser || "Edit"}
+                          </button>
                           {u.isAdmin ? (<>
                             <button onClick={() => setEditPermsTarget(u)}
                               style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer",whiteSpace:"nowrap" }}>
@@ -1273,7 +1277,26 @@ export default function AdminPage() {
       {/* ══ POSTS TAB ══ */}
       {!loading && tab === "posts" && (
         <>
-          <SectionHeader title="All Posts" count={posts.length} />
+          {(() => {
+            const filteredPosts = posts.filter(p =>
+              !postSearch ||
+              (p.text || "").toLowerCase().includes(postSearch.toLowerCase()) ||
+              (p.authorName || "").toLowerCase().includes(postSearch.toLowerCase())
+            );
+            return (
+          <>
+          <SectionHeader title="All Posts" count={filteredPosts.length} />
+          <input
+            value={postSearch}
+            onChange={e => setPostSearch(e.target.value)}
+            placeholder={Tr.searchPh || "Search posts..."}
+            style={{
+              width:"100%", maxWidth:340, padding:"7px 12px", marginBottom:"1rem",
+              border:"1px solid var(--border,#daeaf8)", borderRadius:10, fontSize:13,
+              background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+              boxSizing:"border-box",
+            }}
+          />
           <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
               <thead>
@@ -1284,7 +1307,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {posts.map(p => (
+                {filteredPosts.map(p => (
                   <>
                     <tr key={p.id}
                       style={{ borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)",transition:"background 0.12s" }}
@@ -1299,8 +1322,8 @@ export default function AdminPage() {
                           <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)" }}>{p.authorName}</p>
                         </div>
                       </td>
-                      <td style={{ padding:"11px 14px",maxWidth:280 }}>
-                        <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:260 }}>
+                      <td style={{ padding:"11px 14px",maxWidth:320 }}>
+                        <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:0 }}>
                           {p.text || <em style={{color:"var(--text-muted,#6b7280)"}}>Media post</em>}
                         </p>
                       </td>
@@ -1369,8 +1392,11 @@ export default function AdminPage() {
                 ))}
               </tbody>
             </table>
-            {posts.length === 0 && <div className="empty-state"><p>No posts yet.</p></div>}
+            {filteredPosts.length === 0 && <div className="empty-state"><p>No posts yet.</p></div>}
           </div>
+          </>
+            );
+          })()}
         </>
       )}
 

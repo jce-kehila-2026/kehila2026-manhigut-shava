@@ -7,7 +7,7 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from "firebase/auth";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, auth } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -711,6 +711,16 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     }
   };
 
+  const handleDeleteCover = async () => {
+    if (!user || !coverURL) return;
+    try {
+      const fileRef = ref(storage, `covers/${user.uid}`);
+      await deleteObject(fileRef);
+    } catch {}
+    await updateDoc(doc(db, "users", user.uid), { coverPhotoURL: null });
+    setCoverURL(null);
+  };
+
   /* ── Save (per-section) ── */
   const handleSaveSection = async (sectionKey, fields) => {
     if (!user) return;
@@ -1063,6 +1073,15 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               </svg>
               {coverURL ? t.profile.editCover : t.profile.addCover}
             </button>
+            {coverURL && (
+              <button
+                className="cover-edit-btn"
+                style={{ ...S.coverEditBtn, right: "auto", left: 10, background: "rgba(220,38,38,0.65)" }}
+                onClick={handleDeleteCover}
+              >
+                × {t.profile.removeCover || "Remove"}
+              </button>
+            )}
           </>
         )}
       </div>

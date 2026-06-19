@@ -1350,7 +1350,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
         authorAvatar: "/NewLogoNGO.png",
         authorProfession: "Community",
         likesCount: 0, likedBy: [], commentCount: 0,
-        isPinned: true,
+        isPinned: false,
         birthdayAutoPost: true,
         birthdayUserId: bdayUser.id,
         birthdayUserName: name,

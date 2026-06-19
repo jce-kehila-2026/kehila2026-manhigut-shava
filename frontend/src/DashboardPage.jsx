@@ -337,176 +337,151 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           </div>
         </div>
       )}
-      {/* Profile completion nudge */}
-      {(() => {
-        const fields = [
-          profile?.firstName, profile?.lastName, profile?.phone, profile?.city, profile?.profession,
-          profile?.bio, profile?.birthDate, profile?.ethnicity, profile?.region, profile?.institution,
-          profile?.linkedIn, profile?.helpAreas?.length > 0, profile?.languages?.length > 0,
-          profile?.experience, profile?.goals,
-        ];
-        const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
-        if (pct >= 100) return null;
-        return (
-          <div
-            onClick={() => onNavigate("profile")}
-            style={{
-              marginBottom: isMobile ? "0.9rem" : "1.5rem",
-              borderRadius: isMobile ? 14 : 18,
-              padding: isMobile ? "0.7rem 0.85rem" : "1.1rem 1.5rem",
-              background: "var(--bg-primary,#fff)",
-              border: "1px solid rgba(232,115,90,0.22)",
-              boxShadow: "0 2px 14px rgba(232,115,90,0.08)",
-              cursor: "pointer",
-              display: "flex", alignItems: "center", gap: isMobile ? "0.7rem" : "1.1rem",
-              transition: "transform 0.2s, box-shadow 0.2s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 22px rgba(232,115,90,0.16)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 14px rgba(232,115,90,0.08)"; }}
-          >
-            <div style={{
-              flexShrink: 0, width: isMobile ? 36 : 46, height: isMobile ? 36 : 46, borderRadius: "50%",
-              background: "rgba(232,115,90,0.12)", display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#e8735a",
-            }}>
-              {Icon.profile}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: isMobile ? 12 : 14, fontWeight: 700, color: "var(--text-primary,#111827)", margin: "0 0 2px", fontFamily: "'Outfit',sans-serif" }}>
-                {t.dash.completeProfileTitle}
-              </p>
-              {!isMobile && (
-                <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)", margin: "0 0 8px", lineHeight: 1.5 }}>
-                  {t.dash.completeProfileDesc}
-                </p>
-              )}
-              <div style={{ height: 6, borderRadius: 99, background: "rgba(68,114,184,0.14)", overflow: "hidden", marginTop: isMobile ? 6 : 0 }}>
-                <div style={{
-                  height: "100%", width: `${pct}%`, borderRadius: 99,
-                  background: "linear-gradient(90deg,#4472b8,#e8735a)",
-                  transition: "width 0.6s ease",
-                }} />
-              </div>
-            </div>
-            <div style={{ flexShrink: 0, textAlign: "center" }}>
-              <div style={{ fontSize: isMobile ? 14 : 17, fontWeight: 800, color: "#e8735a", fontFamily: "'Outfit',sans-serif" }}>{pct}%</div>
-              {!isMobile && (
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--brand,#4472b8)", whiteSpace: "nowrap" }}>
-                  {t.dash.completeProfileCta}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
+      {/* Two-column layout: left = circles+slideshow, right = sidebar */}
+      <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: isMobile ? undefined : "1fr 300px", gap: "1.5rem", alignItems: "start" }}>
 
-      {bdayStatus?.type === "soon" && (
-        <div style={{
-          marginBottom:"1rem", borderRadius:14,
-          background:"var(--brand-pale)",
-          border:"1px solid var(--blush)",
-          padding:"0.75rem 1.1rem",
-          display:"flex", alignItems:"center", gap:10,
-          animation:"bday-banner-in 0.4s ease both",
-        }}>
-          <span style={{fontSize:20, flexShrink:0}}>🎂</span>
-          <p style={{fontSize:13,color:"var(--brand-dark)",fontWeight:600,margin:0}}>
-            {t.dash?.birthdaySoon
-              ? t.dash.birthdaySoon.replace("{n}", bdayStatus.days)
-              : `Your birthday is coming in ${bdayStatus.days} day${bdayStatus.days > 1 ? "s" : ""}!`}
-          </p>
-        </div>
-      )}
-
-      {/* Quick-access circles */}
-      <style>{`
-        @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-        @keyframes qc-float-1{0%,100%{transform:translateY(-5px)}50%{transform:translateY(8px)}}
-        @keyframes qc-float-2{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-        @keyframes qc-float-3{0%,100%{transform:translateY(-4px)}50%{transform:translateY(9px)}}
-        @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
-        @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
-      `}</style>
-      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "1rem" : "2rem",
-        marginBottom:"2rem", padding: isMobile ? "1rem 0 1.5rem" : "1rem 0 2.5rem",
-        placeItems:"center" }}>
-        {quickCircles.map((item, i) => (
-          <QuickCircle key={item.action} {...item} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
-        ))}
-      </div>
-
-      <SlideshowBanner />
-
-      {/* Help Requests */}
-      {pendingRequests.length > 0 && (
-        <div style={{ marginBottom: "2.25rem" }}>
-          <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {pendingRequests.slice(0, 3).map((r) => (
-              <div key={r.id} className="card" style={{ padding: "0.95rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem", borderLeft: "3px solid #e8735a", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }}>{r.fromUserName}</p>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>
-                </div>
-                <button onClick={() => onNavigate("members")} style={{ padding: "6px 16px", borderRadius: 99, background: "var(--brand)", color: "#fff", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  {t.dash.viewReq}
-                </button>
-              </div>
+        {/* LEFT: circles + birthday soon + slideshow */}
+        <div>
+          {/* Quick-access circles */}
+          <style>{`
+            @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+            @keyframes qc-float-1{0%,100%{transform:translateY(-5px)}50%{transform:translateY(8px)}}
+            @keyframes qc-float-2{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+            @keyframes qc-float-3{0%,100%{transform:translateY(-4px)}50%{transform:translateY(9px)}}
+            @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
+            @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
+          `}</style>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "1rem" : "1.5rem",
+            marginBottom:"1.5rem", padding: isMobile ? "0.5rem 0 1rem" : "0.5rem 0 1.5rem",
+            placeItems:"center" }}>
+            {quickCircles.map((item, i) => (
+              <QuickCircle key={item.action} {...item} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
             ))}
-            {pendingRequests.length > 3 && (
-              <button onClick={() => onNavigate("members")} style={{ fontSize: 12, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontWeight: 600, padding: "4px 0" }}>
-                {t.dash.moreReqs(pendingRequests.length - 3)}
-              </button>
-            )}
           </div>
-        </div>
-      )}
 
-      {/* Suggested members */}
-      {suggested.length > 0 && (
-        <div style={{ marginBottom: isMobile ? "1rem" : "2.25rem" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.6rem" }}>
-            <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
-            <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
-          </div>
-          <div style={{
-            display:"grid",
-            gridTemplateColumns: isMobile ? "repeat(2,minmax(0,1fr))" : "repeat(auto-fill, minmax(220px, 1fr))",
-            gap: isMobile ? "0.5rem" : "0.75rem",
-          }}>
-            {suggested.map((u) => {
-              const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
-              const online = isActuallyOnline(u);
-              return (
-                <div key={u.id} className="card card-hover" style={{
-                  padding: isMobile ? "0.55rem 0.65rem" : "1rem 1.1rem",
-                  cursor:"pointer", display:"flex", alignItems:"center",
-                  gap: isMobile ? "0.55rem" : "0.85rem",
-                  background:"var(--bg-primary)", border:"1px solid var(--border)",
-                  borderRadius: isMobile ? 12 : 14,
-                  transition:"border-color 0.2s, transform 0.2s",
-                }}
-                  onClick={() => onViewProfile ? onViewProfile(u.id) : onNavigate("members")}>
-                  <div style={{ position:"relative", flexShrink:0 }}>
-                    {avatarUrl(u) ? (
-                      <img src={avatarUrl(u)} style={{ width: isMobile ? 32 : 42, height: isMobile ? 32 : 42, borderRadius:"50%", objectFit:"cover" }} alt="" />
-                    ) : (
-                      <div style={{ width: isMobile ? 32 : 42, height: isMobile ? 32 : 42, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#6da3d4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize: isMobile ? 11 : 13, fontWeight:600, color:"#fff", fontFamily:"'Outfit',sans-serif" }}>
-                        {name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
-                      </div>
-                    )}
-                    {online && <span style={{ position:"absolute", bottom:0, right:0, width: isMobile ? 8 : 10, height: isMobile ? 8 : 10, borderRadius:"50%", background:"#7cb88f", border:"2px solid var(--bg-primary)" }} />}
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <p style={{ fontSize: isMobile ? 11 : 13, fontWeight:600, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
-                    <p style={{ fontSize: isMobile ? 10 : 11, color:"var(--text-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {bdayStatus?.type === "soon" && (
+            <div style={{
+              marginBottom:"1rem", borderRadius:14,
+              background:"var(--brand-pale)",
+              border:"1px solid var(--blush)",
+              padding:"0.75rem 1.1rem",
+              display:"flex", alignItems:"center", gap:10,
+              animation:"bday-banner-in 0.4s ease both",
+            }}>
+              <span style={{fontSize:20, flexShrink:0}}>🎂</span>
+              <p style={{fontSize:13,color:"var(--brand-dark)",fontWeight:600,margin:0}}>
+                {t.dash?.birthdaySoon
+                  ? t.dash.birthdaySoon.replace("{n}", bdayStatus.days)
+                  : `Your birthday is coming in ${bdayStatus.days} day${bdayStatus.days > 1 ? "s" : ""}!`}
+              </p>
+            </div>
+          )}
+
+          <SlideshowBanner />
         </div>
-      )}
+
+        {/* RIGHT: sidebar — profile nudge + help requests + suggestions */}
+        <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+
+          {/* Compact profile nudge */}
+          {(() => {
+            const fields = [
+              profile?.firstName, profile?.lastName, profile?.phone,
+              profile?.city || profile?.region,
+              profile?.profession || profile?.currentRole,
+              profile?.bio,
+              profile?.birthDate || profile?.birthdate,
+              profile?.helpAreas?.length > 0,
+            ];
+            const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+            if (pct >= 100) return null;
+            return (
+              <div onClick={() => onNavigate("profile")} style={{
+                background: "var(--bg-primary,#fff)",
+                border: "1px solid rgba(232,115,90,0.22)",
+                borderRadius: 14, padding: "0.9rem 1rem",
+                cursor: "pointer",
+                boxShadow: "0 2px 10px rgba(232,115,90,0.07)",
+                transition: "transform 0.18s, box-shadow 0.18s",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 6px 18px rgba(232,115,90,0.14)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow="0 2px 10px rgba(232,115,90,0.07)"; }}
+              >
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:"var(--text-primary,#111827)" }}>
+                    {t.dash?.completeProfileTitle || "Complete Your Profile"}
+                  </span>
+                  <span style={{ fontSize:16, fontWeight:800, color:"#e8735a", fontFamily:"'Outfit',sans-serif" }}>{pct}%</span>
+                </div>
+                <div style={{ height:5, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${pct}%`, borderRadius:99,
+                    background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
+                </div>
+                <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"5px 0 0", fontWeight:500 }}>
+                  {t.dash?.completeProfileCta || "Tap to complete →"}
+                </p>
+              </div>
+            );
+          })()}
+
+          {/* Help Requests */}
+          {pendingRequests.length > 0 && (
+            <div>
+              <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {pendingRequests.slice(0, 3).map((r) => (
+                  <div key={r.id} style={{ padding: "0.85rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 12, borderLeft: "3px solid #e8735a" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginBottom: 1 }}>{r.fromUserName}</p>
+                      <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>
+                    </div>
+                    <button onClick={() => onNavigate("members")} style={{ padding: "5px 12px", borderRadius: 99, background: "var(--brand)", color: "#fff", border: "none", fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      {t.dash.viewReq}
+                    </button>
+                  </div>
+                ))}
+                {pendingRequests.length > 3 && (
+                  <button onClick={() => onNavigate("members")} style={{ fontSize: 12, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontWeight: 600, padding: "2px 0" }}>
+                    {t.dash.moreReqs(pendingRequests.length - 3)}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Suggested members */}
+          {suggested.length > 0 && (
+            <div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.6rem" }}>
+                <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
+                <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+                {suggested.map((u) => {
+                  const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
+                  const online = isActuallyOnline(u);
+                  const av = avatarUrl(u);
+                  return (
+                    <div key={u.id} onClick={() => onViewProfile(u.id)} style={{ display:"flex", alignItems:"center", gap:"0.65rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:12, padding:"0.65rem 0.85rem", cursor:"pointer", transition:"box-shadow 0.18s" }}
+                      onMouseEnter={e => e.currentTarget.style.boxShadow="0 4px 14px rgba(68,114,184,0.12)"}
+                      onMouseLeave={e => e.currentTarget.style.boxShadow=""}>
+                      <div style={{ position:"relative", flexShrink:0, width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#e8735a)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                        {av ? <img src={av} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{name[0]?.toUpperCase()}</span>}
+                        {online && <div style={{ position:"absolute", bottom:1, right:1, width:8, height:8, borderRadius:"50%", background:"#4ade80", border:"1.5px solid var(--bg-primary)" }} />}
+                      </div>
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                        {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+        </div>{/* end right sidebar */}
+      </div>{/* end two-column grid */}
 
     </div>
   );
