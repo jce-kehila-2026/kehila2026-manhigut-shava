@@ -171,6 +171,15 @@ function CheckMark() {
   );
 }
 
+function RequiredHint({ show }) {
+  if (!show) return null;
+  return <span style={{ fontSize:11, color:"#dc2626", marginTop:3, display:"block", fontWeight:600 }}>← מלאי שדה זה</span>;
+}
+
+function OptionalTag() {
+  return <span style={{ fontSize:10, fontWeight:500, color:"var(--text-muted,#9ca3af)", marginRight:4, marginLeft:4 }}>(רשות)</span>;
+}
+
 function CompletenessBadge({ pct }) {
   const { T } = useTheme();
   const color  = pct >= 80 ? "#7ba87a" : pct >= 50 ? "#b8895a" : "#c25c5c";
@@ -492,6 +501,37 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
   );
 }
 
+/* ─── AI Help Area Suggestion (keyword matching) ─── */
+const PROFESSION_HELP_MAP = [
+  { keywords: ["רופ","doctor","physic","medical","רפו","בריאות","health","nurse","אח","אחות"], areas: ["בריאות","רפואה","רווחה"] },
+  { keywords: ["עורך","עורכת","lawyer","law","legal","משפט","עו\"ד"], areas: ["משפט","ייעוץ"] },
+  { keywords: ["מורה","teacher","מחנך","מחנכת","professor","lecture","הוראה","חינוך","education","pedagog"], areas: ["חינוך","הדרכה","הוראה"] },
+  { keywords: ["מהנדס","מהנדסת","engineer","software","developer","תוכנה","היי-טק","hi-tech","tech","טכנולוגי","data","cyber","קוד"], areas: ["טכנולוגיה","היי-טק","חדשנות"] },
+  { keywords: ["כלכל","economist","finance","פינ","accountant","רואה חשבון","בנק","השקע","invest"], areas: ["כלכלה","עסקים","השקעות","ייעוץ"] },
+  { keywords: ["עיתונ","journal","media","תקשורת","journalist","כתב","news","content","תוכן"], areas: ["תקשורת","מדיה","כתיבה"] },
+  { keywords: ["ניהול","manage","ceo","director","מנהל","מנהלת","executive","מנכ"], areas: ["מנהיגות","ניהול","עסקים"] },
+  { keywords: ["שיווק","market","מכיר","sales","פרסום","brand","pr","יחסי ציבור"], areas: ["שיווק","עסקים","תקשורת"] },
+  { keywords: ["ארכיטקט","architect","design","מעצב","מעצבת","graphic","ui","ux","creati"], areas: ["עיצוב","אדריכלות","יצירתיות"] },
+  { keywords: ["פסיכ","psycholog","therapist","counselor","social worker","עו\"ס","רגש","נפש"], areas: ["בריאות הנפש","רווחה","ייעוץ"] },
+  { keywords: ["מדינ","politic","govern","ממשל","diplomat","public service","שירות ציבורי"], areas: ["מדיניות","מנהיגות","שירות ציבורי"] },
+  { keywords: ["סטארט","startup","entrepreneur","יזם","יזמת","venture","business own"], areas: ["יזמות","עסקים","חדשנות"] },
+  { keywords: ["חוקר","researcher","research","מחקר","academic","scientist","מדע"], areas: ["מחקר","אקדמיה","חינוך"] },
+  { keywords: ["צבא","military","army","security","ביטחון","officer","קצין"], areas: ["ביטחון","מנהיגות","שירות ציבורי"] },
+  { keywords: ["אמנות","art","music","מוסיקאי","musician","actor","שחקן","תיאטרון","film","קולנוע"], areas: ["אמנות","תרבות","יצירתיות"] },
+];
+
+function suggestHelpAreas(profession) {
+  if (!profession?.trim()) return [];
+  const lower = profession.toLowerCase();
+  const matches = new Set();
+  for (const { keywords, areas } of PROFESSION_HELP_MAP) {
+    if (keywords.some(k => lower.includes(k))) {
+      areas.forEach(a => matches.add(a));
+    }
+  }
+  return [...matches];
+}
+
 const INSTITUTIONS = [
   "אוניברסיטת תל אביב","האוניברסיטה העברית","הטכניון","אוניברסיטת חיפה",
   "אוניברסיטת בן גוריון","אוניברסיטת בר אילן","המכון הבינתחומי הרצליה (IDC)",
@@ -522,7 +562,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
-    ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"",
+    ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
   const [institutionOther, setInstitutionOther] = useState("");
@@ -554,6 +594,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [birthdayValue, setBirthdayValue] = useState("");
   const [activeTab, setActiveTab] = useState(null);
+  const [bioRewriting, setBioRewriting] = useState(false);
 
   /* ── Load profile + network count ── */
   useEffect(() => {
@@ -575,6 +616,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           institution:    d.institution    ?? "",
           graduationYear: d.graduationYear ?? "",
           linkedIn:       d.linkedIn       ?? "",
+          facebookURL:    d.facebookURL    ?? "",
+          contactEmail:   d.contactEmail   ?? "",
           helpAreas:      d.helpAreas      ?? [],
           languages:      d.languages      ?? [],
           experience:     d.experience     ?? "",
@@ -591,7 +634,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           setInstitutionOther(inst);
         }
       } else {
-        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
+        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
         setCoverURL(null);
         setNetworksCount(0);
@@ -599,7 +642,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setBirthdayValue("");
       }
     }).catch(() => {
-      setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
+      setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
       setPhotoURL(null);
       setCoverURL(null);
       setNetworksCount(0);
@@ -626,10 +669,17 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const fields = [form.firstName, form.lastName, form.phone, form.profession, form.bio, form.birthDate,
-                  form.ethnicity, form.region, form.institution, form.linkedIn,
-                  form.helpAreas?.length > 0, form.languages?.length > 0, form.experience, form.goals];
-  const pct    = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  const fields = [
+    form.firstName,
+    form.lastName,
+    form.phone,
+    form.city || form.region,
+    form.profession || form.currentRole,
+    form.bio,
+    form.birthDate || form.birthdate,
+    form.helpAreas?.length > 0,
+  ];
+  const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
   const isOwner = !viewUserId || viewUserId === user?.uid;
   const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
   const isReadOnly = !isOwner;
@@ -726,6 +776,18 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     if (!user) return;
     const targetId = isOwner ? user.uid : (authProfile?.isAdmin && viewUserId ? viewUserId : null);
     if (!targetId) return;
+
+    // Validation
+    const phoneVal = form.phone?.trim();
+    if (phoneVal && !/^[\d\s\-+()/]+$/.test(phoneVal)) {
+      alert(t.profile?.invalidPhone || "Phone number should contain digits only.");
+      return;
+    }
+    if (form.firstName && form.firstName.trim() && form.firstName.trim().length < 2) {
+      alert(t.profile?.nameTooShort || "First name must be at least 2 characters.");
+      return;
+    }
+
     setSavingKey(sectionKey); setError("");
     try {
       const saveData = { ...fields };
@@ -1076,7 +1138,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             {coverURL && (
               <button
                 className="cover-edit-btn"
-                style={{ ...S.coverEditBtn, right: "auto", left: 10, background: "rgba(220,38,38,0.65)" }}
+                style={{ ...S.coverEditBtn, ...(isRTL ? { right: 10, left: "auto" } : { right: "auto", left: 10 }), background: "rgba(220,38,38,0.65)" }}
                 onClick={handleDeleteCover}
               >
                 × {t.profile.removeCover || "Remove"}
@@ -1160,8 +1222,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         </div>
       )}
 
-      {/* Completeness badge — only for owner, pushes tab bar down when visible */}
-      {isOwner && (
+      {/* Completeness badge — only for owner when not yet complete */}
+      {isOwner && pct < 100 && (
         <div style={{ padding: isMobile ? "0.5rem 1rem 0" : "0.5rem 2rem 0" }}>
           <CompletenessBadge pct={pct} />
         </div>
@@ -1195,10 +1257,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.firstName}</label>
                   <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} />
+                  {isOwner && <RequiredHint show={!form.firstName?.trim()} />}
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.lastName}</label>
                   <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} />
+                  {isOwner && <RequiredHint show={!form.lastName?.trim()} />}
                 </div>
               </div>
 
@@ -1206,10 +1270,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.phone}</label>
                   <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} />
+                  {isOwner && <RequiredHint show={!form.phone?.trim()} />}
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.birthDate ?? "Birth Date"}</label>
                   <PlainInput type="date" name="birthDate" value={form.birthDate} onChange={handleChange} />
+                  {isOwner && <RequiredHint show={!form.birthDate} />}
                 </div>
               </div>
 
@@ -1217,17 +1283,19 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.professionJob}</label>
                   <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} />
+                  {isOwner && <RequiredHint show={!form.profession?.trim()} />}
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.region}</label>
                   <SelectInput value={form.region} placeholder="—" options={t.profile.regionOptions}
                     onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
+                  {isOwner && <RequiredHint show={!form.region} />}
                 </div>
               </div>
 
               <div style={S.row}>
                 <div style={S.group}>
-                  <label style={S.label}>{t.profile.institution}</label>
+                  <label style={S.label}>{t.profile.institution}<OptionalTag /></label>
                   <select
                     className="profile-input"
                     value={INSTITUTIONS.includes(form.institution) ? form.institution : (form.institution ? "OTHER" : "")}
@@ -1247,19 +1315,58 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   )}
                 </div>
                 <div style={S.group}>
-                  <label style={S.label}>{t.profile.graduationYear}</label>
+                  <label style={S.label}>{t.profile.graduationYear}<OptionalTag /></label>
                   <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
                     placeholder={t.profile.graduationYearPlaceholder} />
                 </div>
               </div>
 
               <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile.linkedIn}</label>
+                <label style={S.label}>{t.profile.linkedIn}<OptionalTag /></label>
                 <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder={t.profile.linkedInPlaceholder} />
+              </div>
+
+              {/* Facebook */}
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <label style={S.label}>{t.profile?.facebook || "Facebook"}<OptionalTag /></label>
+                <input
+                  className="profile-input"
+                  name="facebookURL" value={form.facebookURL || ""}
+                  onChange={handleChange}
+                  placeholder="https://facebook.com/..."
+                  style={{
+                    width:"100%", boxSizing:"border-box",
+                    padding:"12px 14px", fontSize:"14px",
+                    border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+                    color:T.text, background:T.inputBg, fontFamily:"inherit",
+                    transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
+                  }}
+                  disabled={isReadOnly}
+                />
+              </div>
+              {/* Contact email */}
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <label style={S.label}>{t.profile?.contactEmail || "אימייל ליצירת קשר"}<OptionalTag /></label>
+                <input
+                  className="profile-input"
+                  name="contactEmail" value={form.contactEmail || ""}
+                  onChange={handleChange}
+                  placeholder="email@example.com"
+                  style={{
+                    width:"100%", boxSizing:"border-box",
+                    padding:"12px 14px", fontSize:"14px",
+                    border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+                    color:T.text, background:T.inputBg, fontFamily:"inherit",
+                    transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
+                  }}
+                  disabled={isReadOnly}
+                  type="email"
+                />
               </div>
 
               <div style={{ ...S.group, marginBottom:"1rem" }}>
                 <label style={S.label}>{t.profile.bio}</label>
+                {isOwner && <RequiredHint show={!form.bio?.trim()} />}
                 <div style={S.bioWrap}>
                   <textarea
                     className="profile-textarea"
@@ -1273,17 +1380,43 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     {form.bio.length}/{BIO_LIMIT}
                   </span>
                 </div>
+                {import.meta.env.VITE_GEMINI_KEY && form.bio?.trim()?.length > 10 && isOwner && (
+                  <div style={{ display:"flex", justifyContent:"flex-end", marginTop:4 }}>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setBioRewriting(true);
+                        const key = import.meta.env.VITE_GEMINI_KEY;
+                        const prompt = `שפר את הביוגרפיה הבאה לפרופיל מקצועי ברשת עמיתות. שמור על קול אישי ואמין. החזר רק את הטקסט המשופר:\n\n${form.bio}`;
+                        try {
+                          const res = await fetch(
+                            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`,
+                            { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] }) }
+                          );
+                          const data = await res.json();
+                          const improved = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                          if (improved) setForm(p => ({ ...p, bio: improved.slice(0, BIO_LIMIT) }));
+                        } catch {}
+                        setBioRewriting(false);
+                      }}
+                      disabled={bioRewriting}
+                      style={{ fontSize:11, fontWeight:700, padding:"5px 12px", borderRadius:99, border:"1.5px solid var(--brand,#4472b8)", background:"none", color:"var(--brand,#4472b8)", cursor:"pointer", display:"flex", alignItems:"center", gap:5, opacity: bioRewriting ? 0.6 : 1 }}
+                    >
+                      {bioRewriting ? "✨ כותב..." : "✨ שפר עם AI"}
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div style={S.row}>
                 <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <label style={S.label}>{t.profile.experience}</label>
+                  <label style={S.label}>{t.profile.experience}<OptionalTag /></label>
                   <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
                     name="experience" value={form.experience} onChange={handleChange}
                     placeholder={t.profile.experiencePlaceholder} />
                 </div>
                 <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <label style={S.label}>{t.profile.goals}</label>
+                  <label style={S.label}>{t.profile.goals}<OptionalTag /></label>
                   <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
                     name="goals" value={form.goals} onChange={handleChange}
                     placeholder={t.profile.goalsPlaceholder} />
@@ -1293,7 +1426,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               {/* Ethnicity — only this field has a privacy toggle */}
               <div style={{ ...S.group, marginBottom:"1rem" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
-                  <label style={S.label}>{t.profile.ethnicity}</label>
+                  <label style={S.label}>{t.profile.ethnicity}<OptionalTag /></label>
                   <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:T.sub, cursor:"pointer", userSelect:"none" }}>
                     <input
                       type="checkbox"
@@ -1308,6 +1441,42 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
               </div>
 
+              {/* Help Areas */}
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
+                  <label style={S.label}>{t.profile.helpAreas}</label>
+                  {isOwner && (
+                    <button
+                      type="button"
+                      disabled={!form.profession?.trim()}
+                      onClick={() => {
+                        const suggestions = suggestHelpAreas(form.profession);
+                        if (!suggestions.length) return;
+                        setForm(p => ({
+                          ...p,
+                          helpAreas: [...new Set([...(p.helpAreas || []), ...suggestions])],
+                        }));
+                      }}
+                      style={{
+                        fontSize:11, fontWeight:700, padding:"4px 10px",
+                        borderRadius:99, border:"1.5px solid var(--brand,#4472b8)",
+                        background:"none", color:"var(--brand,#4472b8)",
+                        cursor: form.profession?.trim() ? "pointer" : "not-allowed",
+                        opacity: form.profession?.trim() ? 1 : 0.4,
+                        display:"flex", alignItems:"center", gap:4,
+                      }}
+                    >✨ {t.profile?.aiSuggest || "AI Suggest"}</button>
+                  )}
+                </div>
+                <MultiChips
+                  selectedValues={form.helpAreas || []}
+                  options={t.profile.helpAreaOptions || []}
+                  onChange={vals => setForm(p => ({ ...p, helpAreas: vals }))}
+                  disabled={isReadOnly}
+                />
+                {isOwner && <RequiredHint show={!(form.helpAreas?.length > 0)} />}
+              </div>
+
               <div style={S.actionRow}>
                 <button
                   style={getSaveBtnStyle("profile")}
@@ -1316,8 +1485,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     firstName:form.firstName, lastName:form.lastName, phone:form.phone,
                     profession:form.profession, birthDate:form.birthDate, bio:form.bio,
                     region:form.region, institution:form.institution, graduationYear:form.graduationYear,
-                    linkedIn:form.linkedIn, experience:form.experience, goals:form.goals,
+                    linkedIn: form.linkedIn && !form.linkedIn.startsWith("http") ? "https://" + form.linkedIn : form.linkedIn,
+                    facebookURL: form.facebookURL && !form.facebookURL.startsWith("http") ? "https://" + form.facebookURL : (form.facebookURL || ""),
+                    contactEmail: form.contactEmail || "",
+                    experience:form.experience, goals:form.goals,
                     ethnicity:form.ethnicity, ethnicityPrivate:form.ethnicityPrivate,
+                    helpAreas: form.helpAreas || [],
                   })}
                   disabled={!!savingKey}
                   onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
@@ -1422,6 +1595,24 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     target="_blank" rel="noopener noreferrer"
                     style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
                     {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
+                  </a>
+                </div>
+              )}
+              {form.facebookURL && (
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>{t.profile?.facebook || "Facebook"}</p>
+                  <a href={form.facebookURL} target="_blank" rel="noopener noreferrer" style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    Facebook
+                  </a>
+                </div>
+              )}
+              {form.contactEmail && (
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>{t.profile?.contactEmail || "אימייל ליצירת קשר"}</p>
+                  <a href={`mailto:${form.contactEmail}`} style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+                    {form.contactEmail}
                   </a>
                 </div>
               )}

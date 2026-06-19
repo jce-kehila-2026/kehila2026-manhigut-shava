@@ -12,6 +12,7 @@ import AdminPage     from "./AdminPage";
 import ChatPage      from "./ChatPage";
 import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 import { SlideshowBanner } from "./components/SlideshowBanner";
+import { TutorialPopup } from "./components/TutorialPopup";
 
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
@@ -158,12 +159,12 @@ function BottomTabs({ items, section, navigate, unreadDMs }) {
 }
 
 /* ── Language switcher ── */
-function LangSwitcher({ lang, setLang }) {
-  const langs = [{ code: "en", label: "EN" }, { code: "he", label: "HE" }, { code: "ar", label: "AR" }];
+function LangSwitcher({ lang, onChangeLang }) {
+  const langs = [{ code: "en", label: "EN" }, { code: "he", label: "עב" }, { code: "ar", label: "عر" }];
   return (
     <div style={{ display: "flex", gap: 2, background: "var(--bg-tertiary)", borderRadius: 99, padding: 3 }}>
       {langs.map(({ code, label }) => (
-        <button key={code} onClick={() => setLang(code)} style={{
+        <button key={code} onClick={() => onChangeLang(code)} style={{
           padding: "4px 9px", borderRadius: 99, border: "none",
           background: lang === code ? "var(--brand)" : "transparent",
           color: lang === code ? "#fff" : "var(--text-muted)",
@@ -186,14 +187,15 @@ const eyebrow = {
 };
 
 /* ── Quick-access circle with sonar rings ── */
-function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) {
+function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tutId }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const size = isMobile ? 88 : 180;
+  // On mobile, fill the grid cell (25vw minus gaps); cap at 90px. Desktop stays fixed.
+  const size = isMobile ? "min(90px, calc(25vw - 14px))" : "120px";
   const ringInset = 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
+    <div id={tutId} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
       animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
@@ -220,10 +222,10 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) 
           boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform: isMobile ? "scale(1.1)" : "scale(1.6)" }}>{icon}</div>
+          <div style={{ transform: isMobile ? "scale(0.9)" : "scale(1.2)" }}>{icon}</div>
         </div>
       </div>
-      <p style={{ fontSize: isMobile ? 10 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? 72 : 110, lineHeight: 1.2 }}>{title}</p>
+      <p style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(25vw - 8px)" : 110, lineHeight: 1.2 }}>{title}</p>
       {!isMobile && (
         <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
           lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
@@ -238,7 +240,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [suggested, setSuggested]       = useState([]);
   const [helpRequests, setHelpRequests] = useState([]);
   const { t } = useLang();
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(1024); // single-column below 1024px (covers split-screen & tablets)
 
   useEffect(() => {
     if (!user) return;
@@ -337,39 +339,76 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           </div>
         </div>
       )}
-      {/* Two-column layout: left = circles+slideshow, right = sidebar */}
+      {/* Shared keyframes */}
+      <style>{`
+        @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        @keyframes qc-float-1{0%,100%{transform:translateY(-5px)}50%{transform:translateY(8px)}}
+        @keyframes qc-float-2{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        @keyframes qc-float-3{0%,100%{transform:translateY(-4px)}50%{transform:translateY(9px)}}
+        @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
+        @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
+      `}</style>
+
+      {/* Profile nudge — slim strip at top on mobile, sidebar card on desktop */}
+      {(() => {
+        const fields = [
+          profile?.firstName, profile?.lastName, profile?.phone,
+          profile?.city || profile?.region,
+          profile?.profession || profile?.currentRole,
+          profile?.bio,
+          profile?.birthDate || profile?.birthdate,
+          profile?.helpAreas?.length > 0,
+        ];
+        const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+        if (pct >= 100) return null;
+        if (isMobile) return (
+          <div onClick={() => onNavigate("profile")} style={{
+            display:"flex", alignItems:"center", gap:10,
+            background:"var(--bg-primary,#fff)",
+            border:"1px solid rgba(232,115,90,0.2)",
+            borderRadius:10, padding:"8px 12px",
+            cursor:"pointer", marginBottom:"0.75rem",
+          }}>
+            <div style={{ flex:1 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:"var(--text-primary,#111827)" }}>
+                  {t.dash?.completeProfileTitle || "Complete your profile"}
+                </span>
+                <span style={{ fontSize:13, fontWeight:800, color:"#e8735a" }}>{pct}%</span>
+              </div>
+              <div style={{ height:4, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${pct}%`, borderRadius:99, background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
+              </div>
+            </div>
+            <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", whiteSpace:"nowrap" }}>→</span>
+          </div>
+        );
+        return null; // desktop version rendered inside right sidebar below
+      })()}
+
+      {/* Two-column layout on desktop, single column on mobile */}
       <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: isMobile ? undefined : "1fr 300px", gap: "1.5rem", alignItems: "start" }}>
 
-        {/* LEFT: circles + birthday soon + slideshow */}
+        {/* LEFT (desktop) / TOP (mobile): circles + birthday soon + slideshow */}
         <div>
-          {/* Quick-access circles */}
-          <style>{`
-            @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-            @keyframes qc-float-1{0%,100%{transform:translateY(-5px)}50%{transform:translateY(8px)}}
-            @keyframes qc-float-2{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-            @keyframes qc-float-3{0%,100%{transform:translateY(-4px)}50%{transform:translateY(9px)}}
-            @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
-            @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
-          `}</style>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "1rem" : "1.5rem",
-            marginBottom:"1.5rem", padding: isMobile ? "0.5rem 0 1rem" : "0.5rem 0 1.5rem",
+          <div style={{ display:"grid", gridTemplateColumns: "repeat(4,1fr)", gap: isMobile ? "0.4rem" : "1rem",
+            marginBottom:"1rem", padding: isMobile ? "0 0 0.25rem" : "0.25rem 0 0.75rem",
             placeItems:"center" }}>
             {quickCircles.map((item, i) => (
-              <QuickCircle key={item.action} {...item} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
+              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
             ))}
           </div>
 
           {bdayStatus?.type === "soon" && (
             <div style={{
-              marginBottom:"1rem", borderRadius:14,
+              marginBottom:"0.75rem", borderRadius:12,
               background:"var(--brand-pale)",
               border:"1px solid var(--blush)",
-              padding:"0.75rem 1.1rem",
-              display:"flex", alignItems:"center", gap:10,
-              animation:"bday-banner-in 0.4s ease both",
+              padding:"0.6rem 1rem",
+              display:"flex", alignItems:"center", gap:8,
             }}>
-              <span style={{fontSize:20, flexShrink:0}}>🎂</span>
-              <p style={{fontSize:13,color:"var(--brand-dark)",fontWeight:600,margin:0}}>
+              <span style={{fontSize:18, flexShrink:0}}>🎂</span>
+              <p style={{fontSize:12, color:"var(--brand-dark)", fontWeight:600, margin:0}}>
                 {t.dash?.birthdaySoon
                   ? t.dash.birthdaySoon.replace("{n}", bdayStatus.days)
                   : `Your birthday is coming in ${bdayStatus.days} day${bdayStatus.days > 1 ? "s" : ""}!`}
@@ -378,110 +417,182 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           )}
 
           <SlideshowBanner />
+
+          {/* On mobile: help requests + suggestions appear below slideshow */}
+          {isMobile && (
+            <>
+              {pendingRequests.length > 0 && (
+                <div style={{ marginTop:"0.75rem" }}>
+                  <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
+                  <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+                    {pendingRequests.slice(0, 2).map((r) => (
+                      <div key={r.id} style={{ padding:"0.7rem 0.85rem", display:"flex", alignItems:"center", gap:"0.65rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:10, borderLeft:"3px solid #e8735a" }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0 }}>{r.fromUserName}</p>
+                          <p style={{ fontSize:10, color:"var(--text-muted)", margin:0 }}>{r.fromUserProfession || r.fromUserEmail}</p>
+                        </div>
+                        <button onClick={() => onNavigate("members")} style={{ padding:"4px 10px", borderRadius:99, background:"var(--brand)", color:"#fff", border:"none", fontSize:10, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+                          {t.dash.viewReq}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {suggested.length > 0 && (
+                <div style={{ marginTop:"0.75rem" }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.5rem" }}>
+                    <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
+                    <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:"0.4rem" }}>
+                    {suggested.slice(0, 3).map((u) => {
+                      const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
+                      const online = isActuallyOnline(u);
+                      const av = avatarUrl(u);
+                      return (
+                        <div key={u.id} onClick={() => onViewProfile(u.id)} style={{ display:"flex", alignItems:"center", gap:"0.6rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:10, padding:"0.55rem 0.75rem", cursor:"pointer" }}>
+                          <div style={{ position:"relative", flexShrink:0, width:30, height:30, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#e8735a)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                            {av ? <img src={av} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{name[0]?.toUpperCase()}</span>}
+                            {online && <div style={{ position:"absolute", bottom:0, right:0, width:7, height:7, borderRadius:"50%", background:"#4ade80", border:"1.5px solid var(--bg-primary)" }} />}
+                          </div>
+                          <div style={{ minWidth:0 }}>
+                            <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                            {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
-        {/* RIGHT: sidebar — profile nudge + help requests + suggestions */}
-        <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+        {/* RIGHT sidebar — desktop only */}
+        {!isMobile && (
+          <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
 
-          {/* Compact profile nudge */}
-          {(() => {
-            const fields = [
-              profile?.firstName, profile?.lastName, profile?.phone,
-              profile?.city || profile?.region,
-              profile?.profession || profile?.currentRole,
-              profile?.bio,
-              profile?.birthDate || profile?.birthdate,
-              profile?.helpAreas?.length > 0,
-            ];
-            const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
-            if (pct >= 100) return null;
-            return (
-              <div onClick={() => onNavigate("profile")} style={{
-                background: "var(--bg-primary,#fff)",
-                border: "1px solid rgba(232,115,90,0.22)",
-                borderRadius: 14, padding: "0.9rem 1rem",
-                cursor: "pointer",
-                boxShadow: "0 2px 10px rgba(232,115,90,0.07)",
-                transition: "transform 0.18s, box-shadow 0.18s",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 6px 18px rgba(232,115,90,0.14)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow="0 2px 10px rgba(232,115,90,0.07)"; }}
-              >
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                  <span style={{ fontSize:12, fontWeight:700, color:"var(--text-primary,#111827)" }}>
-                    {t.dash?.completeProfileTitle || "Complete Your Profile"}
-                  </span>
-                  <span style={{ fontSize:16, fontWeight:800, color:"#e8735a", fontFamily:"'Outfit',sans-serif" }}>{pct}%</span>
-                </div>
-                <div style={{ height:5, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
-                  <div style={{ height:"100%", width:`${pct}%`, borderRadius:99,
-                    background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
-                </div>
-                <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"5px 0 0", fontWeight:500 }}>
-                  {t.dash?.completeProfileCta || "Tap to complete →"}
-                </p>
-              </div>
-            );
-          })()}
-
-          {/* Help Requests */}
-          {pendingRequests.length > 0 && (
-            <div>
-              <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {pendingRequests.slice(0, 3).map((r) => (
-                  <div key={r.id} style={{ padding: "0.85rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: 12, borderLeft: "3px solid #e8735a" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginBottom: 1 }}>{r.fromUserName}</p>
-                      <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>
-                    </div>
-                    <button onClick={() => onNavigate("members")} style={{ padding: "5px 12px", borderRadius: 99, background: "var(--brand)", color: "#fff", border: "none", fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                      {t.dash.viewReq}
-                    </button>
+            {/* Compact profile nudge (desktop sidebar) */}
+            {(() => {
+              const fields = [
+                profile?.firstName, profile?.lastName, profile?.phone,
+                profile?.city || profile?.region,
+                profile?.profession || profile?.currentRole,
+                profile?.bio,
+                profile?.birthDate || profile?.birthdate,
+                profile?.helpAreas?.length > 0,
+              ];
+              const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+              if (pct >= 100) return null;
+              return (
+                <div onClick={() => onNavigate("profile")} style={{
+                  background:"var(--bg-primary,#fff)",
+                  border:"1px solid rgba(232,115,90,0.22)",
+                  borderRadius:14, padding:"0.9rem 1rem",
+                  cursor:"pointer",
+                  boxShadow:"0 2px 10px rgba(232,115,90,0.07)",
+                  transition:"transform 0.18s, box-shadow 0.18s",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 6px 18px rgba(232,115,90,0.14)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow="0 2px 10px rgba(232,115,90,0.07)"; }}
+                >
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:"var(--text-primary,#111827)" }}>
+                      {t.dash?.completeProfileTitle || "Complete Your Profile"}
+                    </span>
+                    <span style={{ fontSize:16, fontWeight:800, color:"#e8735a" }}>{pct}%</span>
                   </div>
-                ))}
-                {pendingRequests.length > 3 && (
-                  <button onClick={() => onNavigate("members")} style={{ fontSize: 12, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontWeight: 600, padding: "2px 0" }}>
-                    {t.dash.moreReqs(pendingRequests.length - 3)}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+                  <div style={{ height:5, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${pct}%`, borderRadius:99, background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
+                  </div>
+                  <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"5px 0 0", fontWeight:500 }}>
+                    {t.dash?.completeProfileCta || "Tap to complete →"}
+                  </p>
+                </div>
+              );
+            })()}
 
-          {/* Suggested members */}
-          {suggested.length > 0 && (
-            <div>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.6rem" }}>
-                <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
-                <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
-                {suggested.map((u) => {
-                  const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
-                  const online = isActuallyOnline(u);
-                  const av = avatarUrl(u);
-                  return (
-                    <div key={u.id} onClick={() => onViewProfile(u.id)} style={{ display:"flex", alignItems:"center", gap:"0.65rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:12, padding:"0.65rem 0.85rem", cursor:"pointer", transition:"box-shadow 0.18s" }}
-                      onMouseEnter={e => e.currentTarget.style.boxShadow="0 4px 14px rgba(68,114,184,0.12)"}
-                      onMouseLeave={e => e.currentTarget.style.boxShadow=""}>
-                      <div style={{ position:"relative", flexShrink:0, width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#e8735a)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                        {av ? <img src={av} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{name[0]?.toUpperCase()}</span>}
-                        {online && <div style={{ position:"absolute", bottom:1, right:1, width:8, height:8, borderRadius:"50%", background:"#4ade80", border:"1.5px solid var(--bg-primary)" }} />}
+            {/* Help Requests */}
+            {pendingRequests.length > 0 && (
+              <div>
+                <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+                  {pendingRequests.slice(0, 3).map((r) => (
+                    <div key={r.id} style={{ padding:"0.85rem 1rem", display:"flex", alignItems:"center", gap:"0.75rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:12, borderLeft:"3px solid #e8735a" }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", marginBottom:1 }}>{r.fromUserName}</p>
+                        <p style={{ fontSize:10, color:"var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>
                       </div>
-                      <div style={{ minWidth:0 }}>
-                        <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
-                        {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>}
-                      </div>
+                      <button onClick={() => onNavigate("members")} style={{ padding:"5px 12px", borderRadius:99, background:"var(--brand)", color:"#fff", border:"none", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+                        {t.dash.viewReq}
+                      </button>
                     </div>
-                  );
-                })}
+                  ))}
+                  {pendingRequests.length > 3 && (
+                    <button onClick={() => onNavigate("members")} style={{ fontSize:12, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontWeight:600, padding:"2px 0" }}>
+                      {t.dash.moreReqs(pendingRequests.length - 3)}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-        </div>{/* end right sidebar */}
+            {/* Suggested members */}
+            {suggested.length > 0 && (
+              <div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.6rem" }}>
+                  <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
+                  <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+                  {suggested.map((u) => {
+                    const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
+                    const online = isActuallyOnline(u);
+                    const av = avatarUrl(u);
+                    return (
+                      <div key={u.id} onClick={() => onViewProfile(u.id)} style={{ display:"flex", alignItems:"center", gap:"0.65rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:12, padding:"0.65rem 0.85rem", cursor:"pointer", transition:"box-shadow 0.18s" }}
+                        onMouseEnter={e => e.currentTarget.style.boxShadow="0 4px 14px rgba(68,114,184,0.12)"}
+                        onMouseLeave={e => e.currentTarget.style.boxShadow=""}>
+                        <div style={{ position:"relative", flexShrink:0, width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#e8735a)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                          {av ? <img src={av} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{name[0]?.toUpperCase()}</span>}
+                          {online && <div style={{ position:"absolute", bottom:1, right:1, width:8, height:8, borderRadius:"50%", background:"#4ade80", border:"1.5px solid var(--bg-primary)" }} />}
+                        </div>
+                        <div style={{ minWidth:0 }}>
+                          <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                          {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}{/* end right sidebar */}
       </div>{/* end two-column grid */}
+
+      {/* Tutorial replay button */}
+      <button
+        onClick={() => {
+          try { localStorage.removeItem("tutorial_done"); } catch {}
+          window.location.reload();
+        }}
+        title="Show tutorial"
+        style={{
+          position: "fixed", bottom: isMobile ? 72 : 24, right: 16,
+          width: 38, height: 38, borderRadius: "50%",
+          background: "var(--brand,#4472b8)", color: "#fff",
+          border: "none", cursor: "pointer",
+          fontSize: 18, fontWeight: 700,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 14px rgba(68,114,184,0.35)",
+          zIndex: 100,
+          opacity: 0.85,
+        }}
+      >?</button>
 
     </div>
   );
@@ -591,18 +702,27 @@ function WelcomeOverlay({ profile, initials, onDone }) {
 /* ── Main dashboard shell ── */
 export default function DashboardPage() {
   const { user, profile, logout } = useAuth();
-  const { lang, setLang, t, isRTL } = useLang();
+  const { lang, setLang, setLangPermanent, t, isRTL } = useLang();
   const { dark, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
 
-  const [section,    setSection]    = useState(() => sessionStorage.getItem("section") || "home");
-  const [navHistory, setNavHistory] = useState(() => [sessionStorage.getItem("section") || "home"]);
+  const [section,    setSection]    = useState("home");
+  const [navHistory, setNavHistory] = useState(["home"]);
   const [unreadDMs,  setUnreadDMs]  = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showNotifs,    setShowNotifs]    = useState(false);
   const notifBellRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
+  const [langChangeCode, setLangChangeCode] = useState(null); // pending lang change confirmation
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  useEffect(() => {
+    const goOnline  = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online",  goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => { window.removeEventListener("online", goOnline); window.removeEventListener("offline", goOffline); };
+  }, []);
 
   /* Tab switch — resets back-history so pressing back never returns to a random tab */
   const switchTab = useCallback((s) => {
@@ -759,6 +879,10 @@ export default function DashboardPage() {
     }
   }, [profile]);
 
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try { return !localStorage.getItem("tutorial_done"); } catch { return false; }
+  });
+
   return (
     <div style={{
       display: "flex", flexDirection: "column",
@@ -775,6 +899,12 @@ export default function DashboardPage() {
           initials={initials}
           onDone={() => { sessionStorage.setItem("welcomed", "1"); setShowWelcome(false); }}
         />
+      )}
+      {showTutorial && (
+        <TutorialPopup onClose={() => {
+          try { localStorage.setItem("tutorial_done", "1"); } catch {}
+          setShowTutorial(false);
+        }} />
       )}
       {/* ── Row that holds sidebar + main (fills all space above bottom nav) ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden", minHeight: 0 }}>
@@ -960,6 +1090,18 @@ export default function DashboardPage() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 1 }}>
 
           {/* Top bar */}
+          {isOffline && (
+            <div style={{
+              background: "#7f1d1d", color: "#fca5a5",
+              fontSize: 12, fontWeight: 600,
+              padding: "8px 16px",
+              display: "flex", alignItems: "center", gap: 8,
+              flexShrink: 0,
+            }}>
+              <span>⚠</span>
+              <span>No internet connection — some features may not work. Check your connection and refresh.</span>
+            </div>
+          )}
           {section !== "chat" && (
             <header style={{
               height: isMobile ? 48 : 60, minHeight: isMobile ? 48 : 60,
@@ -972,7 +1114,7 @@ export default function DashboardPage() {
               {canGoBack && (
                 <button
                   onClick={goBack}
-                  title="Go back"
+                  title={t.nav.goBack}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center",
                     width: isMobile ? 30 : 34, height: isMobile ? 30 : 34, borderRadius: 10,
@@ -993,7 +1135,10 @@ export default function DashboardPage() {
               }}>{pageTitle}</span>
               <div style={{ flex: 1 }} />
 
-              {!isMobile && <LangSwitcher lang={lang} setLang={setLang} />}
+              <LangSwitcher lang={lang} onChangeLang={(code) => {
+                if (code === lang) return;
+                setLangChangeCode(code);
+              }} />
 
               {/* Notification bell */}
               <div ref={notifBellRef} style={{ position: "relative" }}>
@@ -1305,6 +1450,45 @@ export default function DashboardPage() {
           })}
         </nav>
       )}
+
+        {/* Language change confirmation popup */}
+        {langChangeCode && (
+          <div style={{ position:"fixed", inset:0, zIndex:99997, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(15,25,50,0.4)", backdropFilter:"blur(3px)" }}>
+            <div style={{ background:"var(--bg-primary)", borderRadius:18, padding:"1.5rem 1.75rem", width:280, boxShadow:"0 16px 48px rgba(15,25,50,0.22)", textAlign:"center" }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>🌐</div>
+              <h3 style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", margin:"0 0 6px", fontFamily:"'Outfit',sans-serif" }}>
+                {langChangeCode === "en" ? "Switch to English?" : langChangeCode === "ar" ? "التبديل إلى العربية؟" : "עבור לעברית?"}
+              </h3>
+              <p style={{ fontSize:12, color:"var(--text-secondary)", margin:"0 0 1.25rem", lineHeight:1.6 }}>
+                {langChangeCode === "en"
+                  ? "Save English as your default language preference?"
+                  : langChangeCode === "ar"
+                  ? "هل تريد حفظ العربية كلغتك الافتراضية؟"
+                  : "לשמור עברית כשפת ברירת המחדל שלך?"}
+              </p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <button
+                  onClick={() => { setLangPermanent(langChangeCode); setLangChangeCode(null); }}
+                  style={{ width:"100%", padding:"10px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:12, fontSize:13, fontWeight:700, cursor:"pointer" }}
+                >
+                  {langChangeCode === "en" ? "Yes, always use English" : langChangeCode === "ar" ? "نعم، استخدم العربية دائماً" : "כן, השתמש תמיד בעברית"}
+                </button>
+                <button
+                  onClick={() => { setLang(langChangeCode); setLangChangeCode(null); }}
+                  style={{ width:"100%", padding:"10px", background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", borderRadius:12, fontSize:13, fontWeight:600, cursor:"pointer" }}
+                >
+                  {langChangeCode === "en" ? "Just this session" : langChangeCode === "ar" ? "فقط هذه الجلسة" : "רק להפעלה זו"}
+                </button>
+                <button
+                  onClick={() => setLangChangeCode(null)}
+                  style={{ width:"100%", padding:"10px", background:"none", color:"var(--text-muted)", border:"none", fontSize:12, cursor:"pointer" }}
+                >
+                  {langChangeCode === "en" ? "Cancel" : langChangeCode === "ar" ? "إلغاء" : "ביטול"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }

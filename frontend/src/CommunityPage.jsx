@@ -13,6 +13,7 @@ import { logActivity } from "./activityLogger";
 import { deletePostWithCleanup } from "./utils/deletePost";
 import { daysUntilBirthday, formatBirthday } from "./utils/birthday";
 import ImageEditorModal from "./ImageEditorModal";
+import { SlideshowBanner } from "./components/SlideshowBanner";
 
 /* ── Helpers ── */
 function timeAgo(ts, t) {
@@ -146,6 +147,50 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
   );
 }
 
+/* ── Translate button ── */
+function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
+  const [busy, setBusy] = useState(false);
+
+  const handleClick = async () => {
+    if (isTranslated) { onReverted(); return; }
+    if (!text?.trim()) return;
+    setBusy(true);
+    try {
+      const tl = (navigator.language || "en").split("-")[0];
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const translated = data[0]?.map(s => s[0]).join("") || text;
+      onTranslated(translated);
+    } catch {
+      // silently fail — button just does nothing
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={busy}
+      style={{
+        background: "none", border: "none", cursor: busy ? "wait" : "pointer",
+        fontSize: 11, color: "var(--text-muted,#6b7280)", padding: "2px 6px",
+        display: "flex", alignItems: "center", gap: 4, borderRadius: 6,
+        opacity: busy ? 0.6 : 1,
+        transition: "color 0.15s",
+      }}
+      onMouseEnter={e => e.currentTarget.style.color = "var(--brand,#4472b8)"}
+      onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted,#6b7280)"}
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/>
+      </svg>
+      {busy ? "..." : isTranslated ? "Original" : "Translate"}
+    </button>
+  );
+}
+
 /* ── Post card ── */
 function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, onRepost, onViewProfile, onMessage, onPin }) {
   const { t } = useLang();
@@ -166,6 +211,8 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
   const editFileInputRef = useRef(null);
   const [imgEditorSrc, setImgEditorSrc]       = useState(null);
   const [imgEditorTarget, setImgEditorTarget] = useState(null);
+  const [translatedText, setTranslatedText]   = useState(null);
+  const displayText = translatedText ?? post.text;
 
   useEffect(() => {
     if (!showComments || comments.length > 0) return;
@@ -502,7 +549,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
             </div>
           </div>
         ) : (
-          post.text && <p style={{ fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{renderTextWithLinks(post.text)}</p>
+          post.text && <p style={{ fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{renderTextWithLinks(displayText)}</p>
         )}
 
         {post.repostOf && (
@@ -671,6 +718,15 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
             <CakeIcon size={14} color="#1d4896" /> {t.community.happyBirthday}
           </button>
         )}
+
+        {post.text && (
+          <TranslateButton
+            text={post.text}
+            isTranslated={!!translatedText}
+            onTranslated={t => setTranslatedText(t)}
+            onReverted={() => setTranslatedText(null)}
+          />
+        )}
       </div>
 
       {/* Repost modal */}
@@ -776,15 +832,39 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
   );
 }
 
+/* ── Gemini rewrite helper ── */
+async function geminiRewrite(text, lang = "he") {
+  const key = import.meta.env.VITE_GEMINI_KEY;
+  if (!key || !text?.trim()) return null;
+  const prompt = lang === "he"
+    ? `שפר את הטקסט הבא לפוסט מקצועי ברשת עמיתות. שמור על הטון האישי. החזר רק את הטקסט המשופר, ללא הסברים:\n\n${text}`
+    : lang === "ar"
+    ? `حسّن النص التالي ليكون منشوراً مهنياً. احتفظ بالأسلوب الشخصي. أعد النص المحسّن فقط:\n\n${text}`
+    : `Improve the following text for a professional alumni network post. Keep the personal tone. Return only the improved text:\n\n${text}`;
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      }
+    );
+    const data = await res.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  } catch { return null; }
+}
+
 /* ── Compose box ── */
 function ComposeBox({ currentUser, profile, onPost }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [text, setText]                       = useState("");
   const [files, setFiles]                     = useState([]);
   const [posting, setPosting]                 = useState(false);
   const [focused, setFocused]                 = useState(false);
   const [imgEditorSrc, setImgEditorSrc]       = useState(null);
   const [imgEditorIndex, setImgEditorIndex]   = useState(null);
+  const [aiRewriting, setAiRewriting]         = useState(false);
   const fileRef = useRef();
 
   const handlePost = async () => {
@@ -854,6 +934,30 @@ function ComposeBox({ currentUser, profile, onPost }) {
               transition: "min-height 0.2s",
             }}
           />
+
+          {import.meta.env.VITE_GEMINI_KEY && text?.trim()?.length > 10 && (
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:4 }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  setAiRewriting(true);
+                  const improved = await geminiRewrite(text, lang);
+                  if (improved) setText(improved);
+                  setAiRewriting(false);
+                }}
+                disabled={aiRewriting}
+                style={{
+                  fontSize:11, fontWeight:700, padding:"5px 12px",
+                  borderRadius:99, border:"1.5px solid var(--brand,#4472b8)",
+                  background:"none", color:"var(--brand,#4472b8)",
+                  cursor:"pointer", display:"flex", alignItems:"center", gap:5,
+                  opacity: aiRewriting ? 0.6 : 1,
+                }}
+              >
+                {aiRewriting ? "✨ Rewriting..." : "✨ Improve with AI"}
+              </button>
+            </div>
+          )}
 
           {files.length > 0 && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
@@ -1559,6 +1663,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             currentUser={user}
             currentUserProfile={profile}
           />
+          <SlideshowBanner />
 
         </aside>
       </div>

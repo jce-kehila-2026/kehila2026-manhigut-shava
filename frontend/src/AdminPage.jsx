@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  collection, getDocs, deleteDoc, doc, query,
+  collection, getDocs, addDoc, deleteDoc, doc, query,
   orderBy, updateDoc, limit, where, setDoc, getDoc,
 } from "firebase/firestore";
+import { SlideshowBanner } from "./components/SlideshowBanner";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { httpsCallable } from "firebase/functions";
 import { db, functions, storage } from "./firebase";
@@ -27,6 +28,11 @@ const AT = {
     adminPriv:"הרשאות מנהל", cancel:"ביטול", save:"שמרי שינויים", saving:"שומרת...",
     deleteLbl:"מחקי", editLbl:"ערכי", makeAdmin:"הפכי למנהלת", revokeAdmin:"הסרת הרשאות מנהל", editPermsBtn:"ערכי הרשאות",
     refresh:"רענון", filterByActor:"חפשי לפי שם...", filterByType:"סוג:",
+    dataManage:"ניהול נתונים", downloadBtn:"הורדת אקסל", uploadBtn:"העלאת אקסל", importing:"מייבאת...",
+    dirNote:"ייבוא יוצר רשומות מדריך בלבד (ללא חשבון התחברות).",
+    created:"נוצרו", skippedDup:"דולגו (כפילות)", errorsLbl:"שגיאות", rowLbl:"שורה",
+    exportTitle:"ייצוא חברות לאקסל", exportSub:"בחרי אילו שדות לכלול בקובץ.", selectAll:"בחרי הכל", clearAll:"נקי",
+    importBadType:"קובץ לא תקין — רק .xlsx או .xls.", importEmpty:"הגיליון ריק.", importMissing:"שדות חסרים", importBadEmail:"אימייל לא תקין",
     noLogs:"אין רשומות עדיין.",
     confirmDeleteTitle:"מחיקת משתמשת", confirmDeleteMsg:(n)=>`האם את בטוחה שברצונך למחוק את ${n}? פעולה זו בלתי הפיכה.`,
     confirmDeleteBtn:"כן, מחקי", confirmMakeAdminTitle:"הוספת הרשאות מנהל",
@@ -84,6 +90,11 @@ const AT = {
     adminPriv:"Admin privileges", cancel:"Cancel", save:"Save Changes", saving:"Saving…",
     deleteLbl:"Delete", editLbl:"Edit", makeAdmin:"Make Admin", revokeAdmin:"Revoke Admin", editPermsBtn:"Edit Permissions",
     refresh:"Refresh", filterByActor:"Filter by name...", filterByType:"Type:",
+    dataManage:"Data Management", downloadBtn:"Download Excel", uploadBtn:"Upload Excel", importing:"Importing...",
+    dirNote:"Import creates directory records only (no login account).",
+    created:"Created", skippedDup:"Skipped (duplicate)", errorsLbl:"Errors", rowLbl:"Row",
+    exportTitle:"Export Members to Excel", exportSub:"Choose which fields to include.", selectAll:"Select all", clearAll:"Clear",
+    importBadType:"Invalid file — only .xlsx or .xls.", importEmpty:"The sheet is empty.", importMissing:"missing fields", importBadEmail:"invalid email",
     noLogs:"No logs yet.",
     confirmDeleteTitle:"Delete User", confirmDeleteMsg:(n)=>`Are you sure you want to permanently delete ${n}? This cannot be undone.`,
     confirmDeleteBtn:"Yes, Delete", confirmMakeAdminTitle:"Grant Admin Access",
@@ -377,13 +388,19 @@ function avatarColor(name) {
 }
 
 /* ── Stat card ── */
-function StatCard({ label, value, sub, color, icon }) {
+function StatCard({ label, value, sub, color, icon, onClick }) {
   return (
     <div className="card slide-up" style={{
       padding: "1.25rem 1.5rem",
       borderLeft: `4px solid ${color}`,
       display: "flex", alignItems: "center", gap: "1rem",
-    }}>
+      cursor: onClick ? "pointer" : "default",
+      transition: "box-shadow 0.18s, transform 0.18s",
+    }}
+      onMouseEnter={e => { if (onClick) { e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,0.1)"; e.currentTarget.style.transform="translateY(-2px)"; }}}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow=""; e.currentTarget.style.transform=""; }}
+      onClick={onClick}
+    >
       <div style={{
         width: 44, height: 44, borderRadius: "var(--r-md,10px)",
         background: `${color}18`, display: "flex",
@@ -467,6 +484,25 @@ function formatAbsoluteTime(ts) {
   if (!ts) return "";
   try { return new Date(ts).toLocaleString(); } catch { return ts; }
 }
+
+/* ── Excel export/import ── */
+const EXPORT_FIELDS = [
+  { key: "firstName",   label: "First Name" },
+  { key: "lastName",    label: "Last Name" },
+  { key: "email",       label: "Email" },
+  { key: "phone",       label: "Phone" },
+  { key: "region",      label: "Region" },
+  { key: "city",        label: "City" },
+  { key: "profession",  label: "Profession" },
+  { key: "ethnicity",   label: "Ethnicity" },
+  { key: "helpAreas",   label: "Help Areas" },
+  { key: "bio",         label: "Bio" },
+  { key: "linkedIn",    label: "LinkedIn" },
+  { key: "createdAt",   label: "Joined" },
+];
+const ARRAY_FIELDS = new Set(["helpAreas"]);
+const REQUIRED_IMPORT = ["email", "firstName"];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /* ─── Permission keys ─── */
 const PERM_KEYS = ["canManageUsers","canManageContent","canViewLogs","canManageAdmins","canViewStats","canSendAnnouncements","canExportData"];
@@ -656,6 +692,188 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
   );
 }
 
+/* ── Stat detail slide-in panel ── */
+function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnline }) {
+  let title = "";
+  let items = [];
+
+  if (type === "members") {
+    title = Tr.totalMembers;
+    items = users.map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.profession || u.email || "",
+      avatar: u.photoURL || u.avatarUrl,
+      badge: u.emailVerified ? "✓" : null,
+    }));
+  } else if (type === "online") {
+    title = Tr.onlineNow;
+    items = users.filter(isActuallyOnline).map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.profession || u.email || "",
+      avatar: u.photoURL || u.avatarUrl,
+    }));
+  } else if (type === "verified") {
+    title = Tr.verified;
+    items = users.filter(u => u.emailVerified).map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.profession || u.email || "",
+      avatar: u.photoURL || u.avatarUrl,
+    }));
+  } else if (type === "admins") {
+    title = Tr.admins;
+    items = users.filter(u => u.isAdmin).map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.email || "",
+      avatar: u.photoURL || u.avatarUrl,
+    }));
+  } else if (type === "helpAreas") {
+    title = Tr.withHelpAreas || "With Help Areas";
+    items = users.filter(u => u.helpAreas?.length > 0).map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.helpAreas?.join(", ") || "",
+      avatar: u.photoURL || u.avatarUrl,
+    }));
+  } else if (type === "posts") {
+    title = Tr.totalPosts;
+    items = posts.slice(0, 50).map(p => ({
+      id: p.id,
+      name: p.authorName || "Unknown",
+      sub: (p.text || "(media)").slice(0, 80),
+      avatar: p.authorAvatar,
+    }));
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      display: "flex", alignItems: "stretch", justifyContent: "flex-end",
+    }}
+      onClick={onClose}
+    >
+      <div style={{
+        width: 360, maxWidth: "100vw",
+        background: "var(--bg-primary,#fff)", boxShadow: "-8px 0 40px rgba(0,0,0,0.16)",
+        display: "flex", flexDirection: "column", animation: "slideInRight 0.22s ease",
+        borderLeft: "1px solid var(--border,#e5e7eb)",
+      }}
+        onClick={e => e.stopPropagation()}
+      >
+        <style>{`@keyframes slideInRight { from { transform: translateX(60px); opacity:0; } to { transform:none; opacity:1; } }`}</style>
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--border,#e5e7eb)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary,#111827)", margin:0 }}>{title} ({items.length})</h3>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:"var(--text-muted,#6b7280)", lineHeight:1 }}>×</button>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"0.75rem 1rem" }}>
+          {items.map(item => (
+            <div key={item.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"0.55rem 0.5rem", borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", flexShrink:0, background:"var(--bg-tertiary,#f0f6fb)", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)" }}>
+                {item.avatar ? <img src={item.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (item.name?.[0] || "?")}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <p style={{ fontSize:13, fontWeight:600, color:"var(--text-primary,#111827)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.name}</p>
+                {item.sub && <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.sub}</p>}
+              </div>
+              {item.badge && <span style={{ fontSize:10, background:"#d1fae5", color:"#065f46", borderRadius:99, padding:"1px 6px", fontWeight:700 }}>{item.badge}</span>}
+            </div>
+          ))}
+          {items.length === 0 && <p style={{ fontSize:13, color:"var(--text-muted,#6b7280)", textAlign:"center", marginTop:"2rem" }}>No data</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   SLIDESHOW ADMIN COMPONENT
+═══════════════════════════════════════════════════════ */
+function SlideshowAdmin() {
+  const [images, setImages]       = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    getDoc(doc(db, "siteSettings", "slideshow")).then((snap) => {
+      if (snap.exists()) setImages(snap.data().images || []);
+    });
+  }, []);
+
+  const persist = async (imgs) => {
+    await setDoc(doc(db, "siteSettings", "slideshow"), { images: imgs });
+    setImages(imgs);
+  };
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const path = `slideshow/${Date.now()}_${file.name}`;
+      const sRef = storageRef(storage, path);
+      await uploadBytes(sRef, file);
+      const url = await getDownloadURL(sRef);
+      await persist([...images, { url, storagePath: path, caption: "" }]);
+    } finally { setUploading(false); e.target.value = ""; }
+  };
+
+  const updateCaption = async (i, caption) => {
+    await persist(images.map((img, idx) => idx === i ? { ...img, caption } : img));
+  };
+
+  const remove = async (i) => {
+    try { await deleteObject(storageRef(storage, images[i].storagePath)); } catch {}
+    await persist(images.filter((_, idx) => idx !== i));
+  };
+
+  const moveUp = async (i) => {
+    if (i === 0) return;
+    const next = [...images];
+    [next[i-1], next[i]] = [next[i], next[i-1]];
+    await persist(next);
+  };
+
+  return (
+    <div style={{ maxWidth: 700 }}>
+      {images.length > 0 && (
+        <div style={{ marginBottom: "1.5rem", borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }}>
+          <SlideshowBanner />
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+        {images.map((img, i) => (
+          <div key={img.url} style={{ position:"relative", width:180, borderRadius:12, overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.1)", background:"var(--bg-secondary)" }}>
+            <img src={img.url} alt="" style={{ width:"100%", height:110, objectFit:"cover", display:"block" }} />
+            <div style={{ padding:"0.5rem", display:"flex", flexDirection:"column", gap:4 }}>
+              <input
+                value={img.caption || ""}
+                onChange={e => updateCaption(i, e.target.value)}
+                placeholder="Caption (optional)"
+                style={{ width:"100%", fontSize:12, padding:"4px 8px", borderRadius:6, border:"1px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", boxSizing:"border-box" }}
+              />
+              <button onClick={() => moveUp(i)} disabled={i === 0} style={{ fontSize:11, padding:"3px 0", background:"none", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", color:"var(--text-muted)" }}>↑ Move up</button>
+            </div>
+            <button onClick={() => remove(i)} style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.55)", color:"#fff", border:"none", borderRadius:"50%", width:26, height:26, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+          </div>
+        ))}
+
+        <label style={{ width:180, height:150, borderRadius:12, border:"2px dashed var(--border)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: uploading ? "wait" : "pointer", color:"var(--text-muted)", fontSize:13, gap:6, background:"var(--bg-secondary)" }}>
+          <span style={{ fontSize:28 }}>+</span>
+          <span>{uploading ? "Uploading..." : "Upload image"}</span>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
+        </label>
+      </div>
+      {images.length === 0 && !uploading && (
+        <p style={{ fontSize:13, color:"var(--text-muted)", textAlign:"center", padding:"1rem 0" }}>No slideshow images yet. Upload one above.</p>
+      )}
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════
    MAIN ADMIN PAGE
 ═══════════════════════════════════════════════════════ */
@@ -669,6 +887,7 @@ export default function AdminPage() {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchUser, setSearchUser] = useState("");
+  const [statDetailType, setStatDetailType] = useState(null); // "members"|"online"|"verified"|"admins"|"posts"|"convs"
 
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
@@ -700,47 +919,12 @@ export default function AdminPage() {
   const [permsTarget,          setPermsTarget]          = useState(null); // step 2: set perms (isNew=true)
   const [editPermsTarget,      setEditPermsTarget]      = useState(null); // edit existing admin perms
 
-  const [slideshowImages, setSlideshowImages] = useState([]);
-  const [slideshowUploading, setSlideshowUploading] = useState(false);
-  const slideshowFileRef = useRef(null);
-
-  useEffect(() => {
-    getDoc(doc(db, "siteSettings", "slideshow")).then(snap => {
-      if (snap.exists()) setSlideshowImages(snap.data().images || []);
-    });
-  }, []);
-
-  const saveSlideshowImages = async (imgs) => {
-    await setDoc(doc(db, "siteSettings", "slideshow"), { images: imgs });
-    setSlideshowImages(imgs);
-  };
-
-  const handleSlideshowUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSlideshowUploading(true);
-    try {
-      const path = `slideshow/${Date.now()}_${file.name}`;
-      const sRef = storageRef(storage, path);
-      await uploadBytes(sRef, file);
-      const url = await getDownloadURL(sRef);
-      await saveSlideshowImages([...slideshowImages, { url, storagePath: path, caption: "" }]);
-    } finally {
-      setSlideshowUploading(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleSlideshowCaption = async (i, caption) => {
-    const updated = slideshowImages.map((img, idx) => idx === i ? { ...img, caption } : img);
-    await saveSlideshowImages(updated);
-  };
-
-  const handleSlideshowDelete = async (i) => {
-    const img = slideshowImages[i];
-    try { await deleteObject(storageRef(storage, img.storagePath)); } catch {}
-    await saveSlideshowImages(slideshowImages.filter((_, idx) => idx !== i));
-  };
+  /* ── Excel export / import ── */
+  const [exportOpen, setExportOpen]     = useState(false);
+  const [selFields, setSelFields]       = useState(() => EXPORT_FIELDS.map(f => f.key));
+  const [importBusy, setImportBusy]     = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const fileRef = useRef(null);
 
   const adminName =
     profile?.firstName && profile?.lastName
@@ -839,8 +1023,8 @@ export default function AdminPage() {
   /* ── Private fields distributions (admin only) ── */
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
-    if (u._communityEthnicity) ethnicityMap[u._communityEthnicity] = (ethnicityMap[u._communityEthnicity] || 0) + 1;
-    if (u._religiousIdentity)  religionMap[u._religiousIdentity]   = (religionMap[u._religiousIdentity]   || 0) + 1;
+    if (u.ethnicity)  ethnicityMap[u.ethnicity]  = (ethnicityMap[u.ethnicity]  || 0) + 1;
+    if (u.identity)   religionMap[u.identity]    = (religionMap[u.identity]    || 0) + 1;
     if (u.region)               regionMap[u.region]                 = (regionMap[u.region]                 || 0) + 1;
   });
   const topEthnicities = Object.entries(ethnicityMap).sort((a,b) => b[1]-a[1]).slice(0,8);
@@ -956,6 +1140,88 @@ export default function AdminPage() {
     return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
   });
 
+  /* ── Excel export ── */
+  const exportExcel = async () => {
+    const fields = EXPORT_FIELDS.filter(f => selFields.includes(f.key));
+    if (!fields.length) return;
+    const rows = users.map(u => {
+      const row = {};
+      fields.forEach(({ key, label }) => {
+        const v = u[key];
+        row[label] = Array.isArray(v) ? v.join("; ") : (v ?? "");
+      });
+      return row;
+    });
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Members");
+    XLSX.writeFile(wb, `members_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    setExportOpen(false);
+  };
+
+  /* ── Excel import ── */
+  const importExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = "";
+    if (!file) return;
+    setImportResult(null);
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    if (ext !== "xlsx" && ext !== "xls") { setImportResult({ error: Tr.importBadType }); return; }
+    setImportBusy(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const sig = new Uint8Array(buf.slice(0, 4));
+      const isXlsx = sig[0] === 0x50 && sig[1] === 0x4b;
+      const isXls  = sig[0] === 0xd0 && sig[1] === 0xcf;
+      if (!isXlsx && !isXls) { setImportResult({ error: Tr.importBadType }); setImportBusy(false); return; }
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
+      if (!rows.length) { setImportResult({ error: Tr.importEmpty }); setImportBusy(false); return; }
+      const labelToKey = {};
+      EXPORT_FIELDS.forEach(({ key, label }) => { labelToKey[label.toLowerCase()] = key; });
+      const existing = new Set(users.map(u => (u.email || "").toLowerCase().trim()).filter(Boolean));
+      const seen = new Set();
+      const toCreate = [];
+      let skipped = 0;
+      const errors = [];
+      rows.forEach((raw, i) => {
+        const rowNo = i + 2;
+        const profile = {};
+        Object.entries(raw).forEach(([header, val]) => {
+          const key = labelToKey[String(header).toLowerCase().trim()];
+          if (!key) return;
+          profile[key] = ARRAY_FIELDS.has(key)
+            ? (typeof val === "string" ? val.split(";").map(s => s.trim()).filter(Boolean) : [])
+            : (typeof val === "string" ? val.trim() : val);
+        });
+        const email = (profile.email || "").toString().toLowerCase().trim();
+        const missing = REQUIRED_IMPORT.filter(k => !String(profile[k] ?? "").trim());
+        if (missing.length) { errors.push(`${Tr.rowLbl} ${rowNo}: ${Tr.importMissing} (${missing.join(", ")})`); return; }
+        if (!EMAIL_RE.test(email)) { errors.push(`${Tr.rowLbl} ${rowNo}: ${Tr.importBadEmail}`); return; }
+        if (existing.has(email) || seen.has(email)) { skipped++; return; }
+        seen.add(email);
+        toCreate.push({ ...profile, email, hasAccount: false, source: "excel-import", emailVerified: false, createdAt: new Date().toISOString() });
+      });
+      let created = 0;
+      for (const d of toCreate) {
+        try { await addDoc(collection(db, "users"), d); created++; }
+        catch (err) { errors.push(`${d.email}: ${err.message}`); }
+      }
+      if (created > 0) {
+        const snap = await getDocs(collection(db, "users"));
+        setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }
+      setImportResult({ created, skipped, errors });
+    } catch (err) {
+      setImportResult({ error: err.message });
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
   /* ── TABS config ── */
   const TABS = [
     { id: "overview",  label: Tr.tabs.overview },
@@ -964,6 +1230,7 @@ export default function AdminPage() {
     { id: "data",      label: Tr.showDataTab },
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}` },
     { id: "logs",      label: Tr.tabs.logs },
+    { id: "slideshow", label: Tr.admin?.slideshow || "Slideshow" },
   ];
 
   /* ─────────────────────────────────────── RENDER ─── */
@@ -995,17 +1262,22 @@ export default function AdminPage() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <StatCard label={Tr.totalMembers}  value={users.length}   color="#4472b8" sub={Tr.thisWeek(newThisWeek)}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+              onClick={() => setStatDetailType("members")} />
             <StatCard label={Tr.onlineNow}     value={onlineNow}      color="#7ba87a" sub={Tr.activeMembers}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>} />
-            <StatCard label={Tr.verified}       value={verifiedN}      color="#1d4896" sub={Tr.percentVerified(Math.round(verifiedN/Math.max(users.length,1)*100))}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>}
+              onClick={() => setStatDetailType("online")} />
+            <StatCard label={Tr.withHelpAreas || "With Help Areas"} value={users.filter(u => u.helpAreas?.length > 0).length} color="#1d4896" sub={`${Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1)*100)}%`}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+              onClick={() => setStatDetailType("helpAreas")} />
             <StatCard label={Tr.totalPosts}    value={posts.length}   color="#8b5cf6" sub={`${totalLikes} · ${totalComments}`}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
+              onClick={() => setStatDetailType("posts")} />
             <StatCard label={Tr.conversations}  value={convs.length}   color="#d4a574"
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} />
             <StatCard label={Tr.admins}         value={adminsN}        color="#c25c5c"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>}
+              onClick={() => setStatDetailType("admins")} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "1.25rem" }}>
@@ -1083,7 +1355,20 @@ export default function AdminPage() {
               ))}
               {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>No posts yet</p>}
             </div>
+
           </div>
+
+          {statDetailType && (
+            <StatDetailPanel
+              type={statDetailType}
+              users={users}
+              posts={posts}
+              convs={convs}
+              onClose={() => setStatDetailType(null)}
+              Tr={Tr}
+              isActuallyOnline={isActuallyOnline}
+            />
+          )}
         </>
       )}
 
@@ -1189,8 +1474,8 @@ export default function AdminPage() {
                             { label: Tr.campus,    val: u.campus },
                             { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
                             { label: Tr.birthdate, val: u.birthdate },
-                            { label: Tr.identity,  val: u._religiousIdentity },
-                            { label: Tr.ethnicity, val: u._communityEthnicity },
+                            { label: Tr.identity,  val: u.identity },
+                            { label: Tr.ethnicity, val: u.ethnicity },
                             { label: Tr.bio,       val: u.bio },
                           ].map(({ label, val }) => val ? (
                             <div key={label}>
@@ -1403,6 +1688,68 @@ export default function AdminPage() {
       {/* ══ DATA TAB ══ */}
       {!loading && tab === "data" && (
         <>
+          {/* Export / import members */}
+          <div className="card" style={{ padding:"1.25rem", marginBottom:"1.5rem" }}>
+            <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 0.85rem" }}>{Tr.dataManage}</p>
+            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+              <button onClick={() => setExportOpen(true)}
+                style={{ padding:"10px 20px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                ⬇ {Tr.downloadBtn}
+              </button>
+              <button onClick={() => fileRef.current?.click()} disabled={importBusy}
+                style={{ padding:"10px 20px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, fontSize:14, fontWeight:700, cursor: importBusy ? "wait" : "pointer", opacity: importBusy ? 0.6 : 1 }}>
+                ⬆ {importBusy ? Tr.importing : Tr.uploadBtn}
+              </button>
+              <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={importExcel} style={{ display:"none" }} />
+            </div>
+            <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"0.75rem 0 0" }}>{Tr.dirNote}</p>
+            {importResult && (
+              <div style={{ marginTop:"1rem", padding:"0.85rem 1rem", borderRadius:10, background:"var(--bg-tertiary,#f0f6fb)", border:"1px solid var(--border,#daeaf8)" }}>
+                {importResult.error ? (
+                  <p style={{ margin:0, fontSize:13, color:"#c25c5c", fontWeight:600 }}>⚠ {importResult.error}</p>
+                ) : (
+                  <>
+                    <p style={{ margin:"0 0 4px", fontSize:13, color:"var(--text-primary,#111827)", fontWeight:700 }}>
+                      ✓ {Tr.created}: {importResult.created} · {Tr.skippedDup}: {importResult.skipped} · {Tr.errorsLbl}: {importResult.errors.length}
+                    </p>
+                    {importResult.errors.length > 0 && (
+                      <ul style={{ margin:"6px 0 0", paddingInlineStart:18, fontSize:12, color:"var(--text-muted,#6b7280)", maxHeight:140, overflowY:"auto" }}>
+                        {importResult.errors.slice(0, 50).map((er, i) => <li key={i}>{er}</li>)}
+                      </ul>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Field-selection modal for export */}
+          {exportOpen && (
+            <div style={S.overlay} onClick={() => setExportOpen(false)}>
+              <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
+                <p style={S.modalTitle}>{Tr.exportTitle}</p>
+                <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", margin:"4px 0 0" }}>{Tr.exportSub}</p>
+                <div style={{ display:"flex", gap:10, margin:"0.85rem 0 0.4rem" }}>
+                  <button onClick={() => setSelFields(EXPORT_FIELDS.map(f => f.key))} style={{ background:"none", border:"none", color:"var(--brand,#4472b8)", fontSize:12, fontWeight:700, cursor:"pointer", padding:0 }}>{Tr.selectAll}</button>
+                  <button onClick={() => setSelFields([])} style={{ background:"none", border:"none", color:"var(--text-muted,#6b7280)", fontSize:12, fontWeight:700, cursor:"pointer", padding:0 }}>{Tr.clearAll}</button>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, margin:"0.5rem 0 1rem" }}>
+                  {EXPORT_FIELDS.map(f => (
+                    <label key={f.key} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, cursor:"pointer" }}>
+                      <input type="checkbox" checked={selFields.includes(f.key)}
+                        onChange={() => setSelFields(prev => prev.includes(f.key) ? prev.filter(k => k !== f.key) : [...prev, f.key])} />
+                      {f.label}
+                    </label>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                  <button onClick={() => setExportOpen(false)} style={{ padding:"9px 18px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1px solid var(--border,#daeaf8)", borderRadius:9, fontSize:13, fontWeight:700, cursor:"pointer" }}>{Tr.cancel}</button>
+                  <button onClick={exportExcel} disabled={!selFields.length} style={{ padding:"9px 18px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:9, fontSize:13, fontWeight:700, cursor: !selFields.length ? "not-allowed" : "pointer", opacity: !selFields.length ? 0.5 : 1 }}>{Tr.downloadBtn}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Stat summary row */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:"1rem", marginBottom:"1.5rem" }}>
             {[
@@ -1529,6 +1876,86 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Member breakdown donut */}
+          {(() => {
+            const verified = users.filter(u => u.emailVerified).length;
+            const adminCount = users.filter(u => u.isAdmin).length;
+            const online = users.filter(isActuallyOnline).length;
+            const total = users.length || 1;
+            const vPct = Math.round(verified / total * 100);
+            const aPct = Math.round(adminCount / total * 100);
+            const oPct = Math.round(online / total * 100);
+            const segments = [
+              { label: Tr.verified || "Verified", pct: vPct, color: "#4472b8" },
+              { label: Tr.admins || "Admins", pct: aPct, color: "#c25c5c" },
+              { label: Tr.onlineNow || "Online", pct: oPct, color: "#7ba87a" },
+              { label: "Others", pct: Math.max(0, 100 - vPct - aPct - oPct), color: "#e2e8f0" },
+            ];
+            let cumulative = 0;
+            const conicParts = segments.map(s => {
+              const start = cumulative;
+              cumulative += s.pct;
+              return `${s.color} ${start}% ${cumulative}%`;
+            }).join(", ");
+            return (
+              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                  Member Breakdown
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                  <div style={{ width: 100, height: 100, borderRadius: "50%", background: `conic-gradient(${conicParts})`, flexShrink: 0, position: "relative" }}>
+                    <div style={{ position:"absolute", inset: 16, borderRadius:"50%", background:"var(--bg-primary,#fff)" }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    {segments.filter(s => s.pct > 0).map(s => (
+                      <div key={s.label} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                        <div style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
+                        <span style={{ fontSize:11, color:"var(--text-secondary,#7a5868)", fontWeight:500 }}>{s.label}</span>
+                        <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", marginLeft:"auto", fontWeight:600 }}>{s.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Weekly signups bar chart */}
+          {(() => {
+            const days = Array.from({ length: 7 }, (_, i) => {
+              const d = new Date();
+              d.setDate(d.getDate() - (6 - i));
+              return d;
+            });
+            const counts = days.map(day => {
+              const dayStr = day.toISOString().slice(0, 10);
+              return users.filter(u => u.createdAt?.slice(0, 10) === dayStr).length;
+            });
+            const maxCount = Math.max(...counts, 1);
+            const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            return (
+              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                  New Members – Last 7 Days
+                </p>
+                <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80 }}>
+                  {counts.map((count, i) => (
+                    <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                      <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)", fontWeight:600, minHeight:14 }}>{count > 0 ? count : ""}</span>
+                      <div style={{
+                        width:"100%", borderRadius:"4px 4px 2px 2px",
+                        background: count > 0 ? "var(--brand,#4472b8)" : "var(--bg-tertiary,#f0f6fb)",
+                        height: `${Math.max(4, (count / maxCount) * 52)}px`,
+                        transition: "height 0.6s ease",
+                      }} />
+                      <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>{dayLabels[days[i].getDay()]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
 
@@ -1759,53 +2186,13 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ── Slideshow Management ── */}
-        <div style={{ marginTop: "2.5rem" }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: "1rem" }}>
-            ניהול שקופיות (Slideshow)
-          </h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
-            {slideshowImages.map((img, i) => (
-              <div key={img.url} style={{
-                position: "relative", width: 180, borderRadius: 12, overflow: "hidden",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.1)", background: "#f5f7fa",
-              }}>
-                <img src={img.url} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
-                <div style={{ padding: "0.5rem" }}>
-                  <input
-                    value={img.caption || ""}
-                    onChange={e => handleSlideshowCaption(i, e.target.value)}
-                    placeholder="Caption (optional)"
-                    style={{
-                      width: "100%", fontSize: 12, padding: "4px 8px", borderRadius: 6,
-                      border: "1px solid var(--border)", background: "var(--bg-secondary)",
-                      color: "var(--text-primary)", boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                <button onClick={() => handleSlideshowDelete(i)} style={{
-                  position: "absolute", top: 6, right: 6,
-                  background: "rgba(0,0,0,0.55)", color: "#fff",
-                  border: "none", borderRadius: "50%", width: 26, height: 26,
-                  cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
-                }}>×</button>
-              </div>
-            ))}
-            <label style={{
-              width: 180, height: 150, borderRadius: 12,
-              border: "2px dashed var(--border)", display: "flex",
-              flexDirection: "column", alignItems: "center", justifyContent: "center",
-              cursor: slideshowUploading ? "wait" : "pointer",
-              color: "var(--text-muted)", fontSize: 13, gap: 6,
-              background: "var(--bg-secondary)",
-            }}>
-              <span style={{ fontSize: 28 }}>+</span>
-              <span>{slideshowUploading ? "Uploading..." : "Add image"}</span>
-              <input ref={slideshowFileRef} type="file" accept="image/*" style={{ display: "none" }}
-                onChange={handleSlideshowUpload} disabled={slideshowUploading} />
-            </label>
-          </div>
+      {/* ══ SLIDESHOW TAB ══ */}
+      {tab === "slideshow" && (
+        <div>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", marginBottom:"1rem" }}>{Tr.admin?.slideshow || "Slideshow"}</h2>
+          <SlideshowAdmin />
         </div>
+      )}
 
       {/* ── Edit User Modal ── */}
       {editingUser && (

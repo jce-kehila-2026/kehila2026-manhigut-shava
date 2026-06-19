@@ -31,10 +31,10 @@ export function SlideshowBanner() {
 
   return (
     <div style={{
-      position: "relative", borderRadius: 18, overflow: "hidden",
-      marginBottom: "1.75rem", height: 200,
-      boxShadow: "0 4px 20px rgba(29,72,150,0.12)",
-      background: "#1a2f5e",
+      position: "relative", borderRadius: 16, overflow: "hidden",
+      boxShadow: "0 4px 24px rgba(29,72,150,0.18), inset 0 0 0 1px rgba(255,255,255,0.06)",
+      background: "#0d1a2e",
+      aspectRatio: "16/5",
     }}>
       {images.map((img, i) => (
         <img
@@ -43,7 +43,7 @@ export function SlideshowBanner() {
           alt={img.caption || ""}
           style={{
             position: "absolute", inset: 0,
-            width: "100%", height: "100%", objectFit: "cover",
+            width: "100%", height: "100%", objectFit: "contain",
             opacity: i === idx ? 1 : 0,
             transition: "opacity 0.7s ease",
           }}
@@ -52,7 +52,7 @@ export function SlideshowBanner() {
       {images[idx]?.caption && (
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(transparent, rgba(0,0,0,0.55))",
+          background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
           padding: "1.5rem 1rem 0.75rem",
           color: "#fff", fontSize: 13, fontWeight: 600,
           textAlign: "center",
