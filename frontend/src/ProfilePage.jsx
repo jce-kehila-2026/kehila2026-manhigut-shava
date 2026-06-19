@@ -638,7 +638,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   /* Tab definitions */
   const ownerTabs = [
-    { id: "profile", label: t.profile.personalInfo || "Profile" },
+    { id: "profile", label: t.profile.about || "About" },
     { id: "account", label: t.profile.emailAddress || "Account" },
     { id: "posts",   label: postsTitle             || "Posts" },
   ];

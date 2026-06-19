@@ -64,61 +64,6 @@ function CursorTrail() {
   return null;
 }
 
-function LoadingScreen() {
-  return (
-    <div style={{
-      minHeight:"100vh", display:"flex", overflow:"hidden",
-      background:"#f5f7fa", fontFamily:"'Figtree',system-ui,sans-serif",
-    }}>
-      <style>{`
-        @keyframes skel-shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
-        .skel{background:linear-gradient(90deg,#e8edf3 25%,#f0f4f8 50%,#e8edf3 75%);
-          background-size:600px 100%;animation:skel-shimmer 1.4s infinite linear;border-radius:8px;}
-      `}</style>
-      {/* Sidebar skeleton */}
-      <div style={{ width:68, background:"#1a2f5e", display:"flex", flexDirection:"column", alignItems:"center", padding:"1rem 0", gap:12 }}>
-        <div className="skel" style={{ width:38, height:38, borderRadius:12, opacity:0.18 }}/>
-        <div style={{ width:28, height:1, background:"rgba(255,255,255,0.1)", margin:"4px 0" }}/>
-        {[0,1,2,3,4].map(i=>(
-          <div key={i} className="skel" style={{ width:36, height:36, borderRadius:10, opacity:0.14 }}/>
-        ))}
-      </div>
-      {/* Main content skeleton */}
-      <div style={{ flex:1, padding:"2.25rem 2.75rem", display:"flex", flexDirection:"column", gap:"1.5rem" }}>
-        {/* Header bar */}
-        <div style={{ height:60, background:"#fff", borderRadius:12, marginBottom:4, display:"flex", alignItems:"center", padding:"0 1.5rem", gap:12, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-          <div className="skel" style={{ width:140, height:18 }}/>
-          <div style={{ flex:1 }}/>
-          <div className="skel" style={{ width:80, height:28, borderRadius:99 }}/>
-        </div>
-        {/* Welcome banner */}
-        <div className="skel" style={{ height:110, borderRadius:18 }}/>
-        {/* Quick action cards */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
-          {[0,1,2,3].map(i=>(
-            <div key={i} className="skel" style={{ height:140, borderRadius:16 }}/>
-          ))}
-        </div>
-        {/* Member rows */}
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          <div className="skel" style={{ width:180, height:14 }}/>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
-            {[0,1,2,3].map(i=>(
-              <div key={i} style={{ background:"#fff", borderRadius:14, padding:"1rem", display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
-                <div className="skel" style={{ width:42, height:42, borderRadius:"50%", flexShrink:0 }}/>
-                <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
-                  <div className="skel" style={{ width:"70%", height:12 }}/>
-                  <div className="skel" style={{ width:"50%", height:10 }}/>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* Fallback for Google users with no Firestore doc — create basic profile then reload */
 function GoogleProfileSetup() {
   const { user, refreshProfile } = useAuth();
@@ -136,14 +81,14 @@ function GoogleProfileSetup() {
       .then(() => refreshProfile())
       .catch(() => refreshProfile());
   }, [user]);
-  return <LoadingScreen />;
+  return null;
 }
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return null;
 
   if (!user) {
     if (showAuth) return <><CursorTrail /><AuthPage onBack={() => setShowAuth(false)} /></>;

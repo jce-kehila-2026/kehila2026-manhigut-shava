@@ -1048,8 +1048,8 @@ export default function LandingPage({ onLogin }) {
   const T   = LP[lang] ?? LP.he;
   const dir = isRTL ? "rtl" : "ltr";
 
-  const [introComplete, setIntroDone] = useState(false);
-  const [heroReady,     setHeroReady] = useState(false);
+  const [introComplete, setIntroDone] = useState(true);
+  const [heroReady,     setHeroReady] = useState(true);
   const [rippling,      setRippling]  = useState(false);
 
   const heroRef = useRef(null);

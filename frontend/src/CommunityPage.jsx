@@ -210,7 +210,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
     await addDoc(collection(db, "posts", post.id, "comments"), {
       authorId: currentUser.uid,
       authorName: actorName,
-      authorAvatar: u.avatarUrl || null,
+      authorAvatar: u.photoURL || u.avatarUrl || null,
       text: commentText.trim(),
       createdAt: new Date().toISOString(),
     });
@@ -223,7 +223,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
         toUserId: post.authorId,
         fromUserId: currentUser.uid,
         fromUserName: actorName,
-        fromUserAvatar: u.avatarUrl || null,
+        fromUserAvatar: u.photoURL || u.avatarUrl || null,
         type: "post_comment",
         postId: post.id,
         message: commentText.trim().slice(0, 100),
@@ -795,7 +795,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
         media: mediaUrls,
         authorId: currentUser.uid,
         authorName,
-        authorAvatar: profile?.avatarUrl || null,
+        authorAvatar: profile?.photoURL || profile?.avatarUrl || null,
         authorProfession: profile?.profession || null,
         likesCount: 0,
         likedBy: [],
@@ -1274,6 +1274,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   const isMobile = useIsMobile();
   const [posts, setPosts]           = useState([]);
   const [birthdays, setBirthdays]   = useState([]);
+  const [usersAvatarMap, setUsersAvatarMap] = useState({});
   const [profile, setProfile]       = useState(null);
   const [loading, setLoading]       = useState(true);
   const [showMobileBdays, setShowMobileBdays] = useState(false);
@@ -1297,8 +1298,13 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
 
   useEffect(() => {
     getDocs(collection(db, "users")).then((snap) => {
-      const upcoming = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
+      const users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const avatarMap = {};
+      users.forEach((u) => {
+        if (u.id) avatarMap[u.id] = u.photoURL || u.avatarUrl || null;
+      });
+      setUsersAvatarMap(avatarMap);
+      const upcoming = users
         .map((u) => ({ ...u, daysUntil: isBirthdaySoon(u.birthDate ?? u.birthdate) }))
         .filter((u) => u.daysUntil !== null)
         .sort((a, b) => a.daysUntil - b.daysUntil);
@@ -1490,7 +1496,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
           ))}
 
           {pinnedPosts.map((p) => (
-            <PostCard key={p.id} post={p} currentUser={user} currentUserProfile={authProfile} isAdmin={authProfile?.isAdmin}
+            <PostCard key={p.id} post={{ ...p, authorAvatar: p.authorAvatar || usersAvatarMap[p.authorId] || null }} currentUser={user} currentUserProfile={authProfile} isAdmin={authProfile?.isAdmin}
               onDelete={handleDeletePost} onRepost={handleRepost}
               onViewProfile={onViewProfile} onMessage={onMessage}
               onPin={handlePinPost}
@@ -1520,7 +1526,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             </div>
           )}
           {regularPosts.map((p) => (
-            <PostCard key={p.id} post={p} currentUser={user} currentUserProfile={authProfile} isAdmin={authProfile?.isAdmin}
+            <PostCard key={p.id} post={{ ...p, authorAvatar: p.authorAvatar || usersAvatarMap[p.authorId] || null }} currentUser={user} currentUserProfile={authProfile} isAdmin={authProfile?.isAdmin}
               onDelete={handleDeletePost} onRepost={handleRepost}
               onViewProfile={onViewProfile} onMessage={onMessage}
               onPin={handlePinPost}
