@@ -171,6 +171,15 @@ function CheckMark() {
   );
 }
 
+function RequiredHint({ show }) {
+  if (!show) return null;
+  return <span style={{ fontSize:11, color:"#dc2626", marginTop:3, display:"block", fontWeight:600 }}>← מלאי שדה זה</span>;
+}
+
+function OptionalTag() {
+  return <span style={{ fontSize:10, fontWeight:500, color:"var(--text-muted,#9ca3af)", marginRight:4, marginLeft:4 }}>(רשות)</span>;
+}
+
 function CompletenessBadge({ pct }) {
   const { T } = useTheme();
   const color  = pct >= 80 ? "#7ba87a" : pct >= 50 ? "#b8895a" : "#c25c5c";
@@ -1248,10 +1257,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.firstName}</label>
                   <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} />
+                  {isOwner && <RequiredHint show={!form.firstName?.trim()} />}
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.lastName}</label>
                   <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} />
+                  {isOwner && <RequiredHint show={!form.lastName?.trim()} />}
                 </div>
               </div>
 
@@ -1259,10 +1270,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.phone}</label>
                   <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} />
+                  {isOwner && <RequiredHint show={!form.phone?.trim()} />}
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.birthDate ?? "Birth Date"}</label>
                   <PlainInput type="date" name="birthDate" value={form.birthDate} onChange={handleChange} />
+                  {isOwner && <RequiredHint show={!form.birthDate} />}
                 </div>
               </div>
 
@@ -1270,17 +1283,19 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.professionJob}</label>
                   <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} />
+                  {isOwner && <RequiredHint show={!form.profession?.trim()} />}
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.region}</label>
                   <SelectInput value={form.region} placeholder="—" options={t.profile.regionOptions}
                     onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
+                  {isOwner && <RequiredHint show={!form.region} />}
                 </div>
               </div>
 
               <div style={S.row}>
                 <div style={S.group}>
-                  <label style={S.label}>{t.profile.institution}</label>
+                  <label style={S.label}>{t.profile.institution}<OptionalTag /></label>
                   <select
                     className="profile-input"
                     value={INSTITUTIONS.includes(form.institution) ? form.institution : (form.institution ? "OTHER" : "")}
@@ -1300,20 +1315,20 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   )}
                 </div>
                 <div style={S.group}>
-                  <label style={S.label}>{t.profile.graduationYear}</label>
+                  <label style={S.label}>{t.profile.graduationYear}<OptionalTag /></label>
                   <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
                     placeholder={t.profile.graduationYearPlaceholder} />
                 </div>
               </div>
 
               <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile.linkedIn}</label>
+                <label style={S.label}>{t.profile.linkedIn}<OptionalTag /></label>
                 <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder={t.profile.linkedInPlaceholder} />
               </div>
 
               {/* Facebook */}
               <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile?.facebook || "Facebook"}</label>
+                <label style={S.label}>{t.profile?.facebook || "Facebook"}<OptionalTag /></label>
                 <input
                   className="profile-input"
                   name="facebookURL" value={form.facebookURL || ""}
@@ -1331,7 +1346,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               </div>
               {/* Contact email */}
               <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile?.contactEmail || "אימייל ליצירת קשר"}</label>
+                <label style={S.label}>{t.profile?.contactEmail || "אימייל ליצירת קשר"}<OptionalTag /></label>
                 <input
                   className="profile-input"
                   name="contactEmail" value={form.contactEmail || ""}
@@ -1351,6 +1366,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
               <div style={{ ...S.group, marginBottom:"1rem" }}>
                 <label style={S.label}>{t.profile.bio}</label>
+                {isOwner && <RequiredHint show={!form.bio?.trim()} />}
                 <div style={S.bioWrap}>
                   <textarea
                     className="profile-textarea"
@@ -1394,13 +1410,13 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
               <div style={S.row}>
                 <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <label style={S.label}>{t.profile.experience}</label>
+                  <label style={S.label}>{t.profile.experience}<OptionalTag /></label>
                   <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
                     name="experience" value={form.experience} onChange={handleChange}
                     placeholder={t.profile.experiencePlaceholder} />
                 </div>
                 <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <label style={S.label}>{t.profile.goals}</label>
+                  <label style={S.label}>{t.profile.goals}<OptionalTag /></label>
                   <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
                     name="goals" value={form.goals} onChange={handleChange}
                     placeholder={t.profile.goalsPlaceholder} />
@@ -1410,7 +1426,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               {/* Ethnicity — only this field has a privacy toggle */}
               <div style={{ ...S.group, marginBottom:"1rem" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
-                  <label style={S.label}>{t.profile.ethnicity}</label>
+                  <label style={S.label}>{t.profile.ethnicity}<OptionalTag /></label>
                   <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:T.sub, cursor:"pointer", userSelect:"none" }}>
                     <input
                       type="checkbox"
@@ -1458,6 +1474,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   onChange={vals => setForm(p => ({ ...p, helpAreas: vals }))}
                   disabled={isReadOnly}
                 />
+                {isOwner && <RequiredHint show={!(form.helpAreas?.length > 0)} />}
               </div>
 
               <div style={S.actionRow}>
