@@ -13,7 +13,7 @@ service cloud.firestore {
     /* ── Users ── */
     match /users/{userId} {
       allow read: if isAuth();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin()
         || (isAuth() &&

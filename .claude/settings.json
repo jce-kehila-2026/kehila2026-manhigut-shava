@@ -6,7 +6,18 @@
       "PowerShell(firebase login 2>&1)",
       "Bash(node -e \"const fs = require\\('fs'\\); ['frontend/src/activityLogger.js','frontend/src/DashboardPage.jsx','frontend/src/ProfilePage.jsx','frontend/src/CommunityPage.jsx','frontend/src/Supportpage.jsx','frontend/src/AdminPage.jsx'].forEach\\(f => { try { fs.readFileSync\\(f\\); console.log\\('OK:', f\\); } catch\\(e\\) { console.log\\('MISSING:', f\\); } }\\);\")",
       "Bash(git merge *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(firebase deploy *)",
+      "Bash(git pull *)",
+      "Bash(grep -iv \"//\\\\|comment\\\\|deleted\\\\|isDelete\")",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git show *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\HP\\.claude\\projects\\c--Users-HP-Desktop-kehila2026-manhigut-shava\\memory"
     ]
   }
 }
