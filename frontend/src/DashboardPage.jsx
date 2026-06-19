@@ -189,7 +189,8 @@ const eyebrow = {
 function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const size = isMobile ? 76 : 120;
+  // On mobile, fill the grid cell (25vw minus gaps); cap at 90px. Desktop stays fixed.
+  const size = isMobile ? "min(90px, calc(25vw - 14px))" : "120px";
   const ringInset = 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
@@ -220,10 +221,10 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) 
           boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform: isMobile ? "scale(0.95)" : "scale(1.2)" }}>{icon}</div>
+          <div style={{ transform: isMobile ? "scale(0.9)" : "scale(1.2)" }}>{icon}</div>
         </div>
       </div>
-      <p style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? 80 : 110, lineHeight: 1.2 }}>{title}</p>
+      <p style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(25vw - 8px)" : 110, lineHeight: 1.2 }}>{title}</p>
       {!isMobile && (
         <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
           lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
@@ -238,7 +239,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [suggested, setSuggested]       = useState([]);
   const [helpRequests, setHelpRequests] = useState([]);
   const { t } = useLang();
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(1024); // single-column below 1024px (covers split-screen & tablets)
 
   useEffect(() => {
     if (!user) return;
