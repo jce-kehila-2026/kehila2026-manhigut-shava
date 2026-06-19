@@ -3,6 +3,7 @@ import {
   collection, getDocs, addDoc, deleteDoc, doc, query,
   orderBy, updateDoc, limit, where, setDoc, getDoc,
 } from "firebase/firestore";
+import { SlideshowBanner } from "./components/SlideshowBanner";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { httpsCallable } from "firebase/functions";
 import { db, functions, storage } from "./firebase";
@@ -788,6 +789,92 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
 }
 
 /* ══════════════════════════════════════════════════════
+   SLIDESHOW ADMIN COMPONENT
+═══════════════════════════════════════════════════════ */
+function SlideshowAdmin() {
+  const [images, setImages]       = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    getDoc(doc(db, "siteSettings", "slideshow")).then((snap) => {
+      if (snap.exists()) setImages(snap.data().images || []);
+    });
+  }, []);
+
+  const persist = async (imgs) => {
+    await setDoc(doc(db, "siteSettings", "slideshow"), { images: imgs });
+    setImages(imgs);
+  };
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const path = `slideshow/${Date.now()}_${file.name}`;
+      const sRef = storageRef(storage, path);
+      await uploadBytes(sRef, file);
+      const url = await getDownloadURL(sRef);
+      await persist([...images, { url, storagePath: path, caption: "" }]);
+    } finally { setUploading(false); e.target.value = ""; }
+  };
+
+  const updateCaption = async (i, caption) => {
+    await persist(images.map((img, idx) => idx === i ? { ...img, caption } : img));
+  };
+
+  const remove = async (i) => {
+    try { await deleteObject(storageRef(storage, images[i].storagePath)); } catch {}
+    await persist(images.filter((_, idx) => idx !== i));
+  };
+
+  const moveUp = async (i) => {
+    if (i === 0) return;
+    const next = [...images];
+    [next[i-1], next[i]] = [next[i], next[i-1]];
+    await persist(next);
+  };
+
+  return (
+    <div style={{ maxWidth: 700 }}>
+      {images.length > 0 && (
+        <div style={{ marginBottom: "1.5rem", borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }}>
+          <SlideshowBanner />
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+        {images.map((img, i) => (
+          <div key={img.url} style={{ position:"relative", width:180, borderRadius:12, overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.1)", background:"var(--bg-secondary)" }}>
+            <img src={img.url} alt="" style={{ width:"100%", height:110, objectFit:"cover", display:"block" }} />
+            <div style={{ padding:"0.5rem", display:"flex", flexDirection:"column", gap:4 }}>
+              <input
+                value={img.caption || ""}
+                onChange={e => updateCaption(i, e.target.value)}
+                placeholder="Caption (optional)"
+                style={{ width:"100%", fontSize:12, padding:"4px 8px", borderRadius:6, border:"1px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", boxSizing:"border-box" }}
+              />
+              <button onClick={() => moveUp(i)} disabled={i === 0} style={{ fontSize:11, padding:"3px 0", background:"none", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", color:"var(--text-muted)" }}>↑ Move up</button>
+            </div>
+            <button onClick={() => remove(i)} style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.55)", color:"#fff", border:"none", borderRadius:"50%", width:26, height:26, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+          </div>
+        ))}
+
+        <label style={{ width:180, height:150, borderRadius:12, border:"2px dashed var(--border)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: uploading ? "wait" : "pointer", color:"var(--text-muted)", fontSize:13, gap:6, background:"var(--bg-secondary)" }}>
+          <span style={{ fontSize:28 }}>+</span>
+          <span>{uploading ? "Uploading..." : "Upload image"}</span>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
+        </label>
+      </div>
+      {images.length === 0 && !uploading && (
+        <p style={{ fontSize:13, color:"var(--text-muted)", textAlign:"center", padding:"1rem 0" }}>No slideshow images yet. Upload one above.</p>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
    MAIN ADMIN PAGE
 ═══════════════════════════════════════════════════════ */
 export default function AdminPage() {
@@ -832,54 +919,12 @@ export default function AdminPage() {
   const [permsTarget,          setPermsTarget]          = useState(null); // step 2: set perms (isNew=true)
   const [editPermsTarget,      setEditPermsTarget]      = useState(null); // edit existing admin perms
 
-  const [slideshowImages, setSlideshowImages] = useState([]);
-  const [slideshowUploading, setSlideshowUploading] = useState(false);
-  const slideshowFileRef = useRef(null);
-
   /* ── Excel export / import ── */
   const [exportOpen, setExportOpen]     = useState(false);
   const [selFields, setSelFields]       = useState(() => EXPORT_FIELDS.map(f => f.key));
   const [importBusy, setImportBusy]     = useState(false);
   const [importResult, setImportResult] = useState(null);
   const fileRef = useRef(null);
-
-  useEffect(() => {
-    getDoc(doc(db, "siteSettings", "slideshow")).then(snap => {
-      if (snap.exists()) setSlideshowImages(snap.data().images || []);
-    });
-  }, []);
-
-  const saveSlideshowImages = async (imgs) => {
-    await setDoc(doc(db, "siteSettings", "slideshow"), { images: imgs });
-    setSlideshowImages(imgs);
-  };
-
-  const handleSlideshowUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSlideshowUploading(true);
-    try {
-      const path = `slideshow/${Date.now()}_${file.name}`;
-      const sRef = storageRef(storage, path);
-      await uploadBytes(sRef, file);
-      const url = await getDownloadURL(sRef);
-      await saveSlideshowImages([...slideshowImages, { url, storagePath: path, caption: "" }]);
-    } finally {
-      setSlideshowUploading(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleSlideshowCaption = async (i, caption) => {
-    const updated = slideshowImages.map((img, idx) => idx === i ? { ...img, caption } : img);
-    await saveSlideshowImages(updated);
-  };
-
-  const handleSlideshowDelete = async (i) => {
-    const img = slideshowImages[i];
-    try { await deleteObject(storageRef(storage, img.storagePath)); } catch {}
-    await saveSlideshowImages(slideshowImages.filter((_, idx) => idx !== i));
-  };
 
   const adminName =
     profile?.firstName && profile?.lastName
@@ -1185,6 +1230,7 @@ export default function AdminPage() {
     { id: "data",      label: Tr.showDataTab },
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}` },
     { id: "logs",      label: Tr.tabs.logs },
+    { id: "slideshow", label: Tr.admin?.slideshow || "Slideshow" },
   ];
 
   /* ─────────────────────────────────────── RENDER ─── */
@@ -2140,53 +2186,13 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ── Slideshow Management ── */}
-        <div style={{ marginTop: "2.5rem" }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: "1rem" }}>
-            ניהול שקופיות (Slideshow)
-          </h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
-            {slideshowImages.map((img, i) => (
-              <div key={img.url} style={{
-                position: "relative", width: 180, borderRadius: 12, overflow: "hidden",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.1)", background: "#f5f7fa",
-              }}>
-                <img src={img.url} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
-                <div style={{ padding: "0.5rem" }}>
-                  <input
-                    value={img.caption || ""}
-                    onChange={e => handleSlideshowCaption(i, e.target.value)}
-                    placeholder="Caption (optional)"
-                    style={{
-                      width: "100%", fontSize: 12, padding: "4px 8px", borderRadius: 6,
-                      border: "1px solid var(--border)", background: "var(--bg-secondary)",
-                      color: "var(--text-primary)", boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                <button onClick={() => handleSlideshowDelete(i)} style={{
-                  position: "absolute", top: 6, right: 6,
-                  background: "rgba(0,0,0,0.55)", color: "#fff",
-                  border: "none", borderRadius: "50%", width: 26, height: 26,
-                  cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
-                }}>×</button>
-              </div>
-            ))}
-            <label style={{
-              width: 180, height: 150, borderRadius: 12,
-              border: "2px dashed var(--border)", display: "flex",
-              flexDirection: "column", alignItems: "center", justifyContent: "center",
-              cursor: slideshowUploading ? "wait" : "pointer",
-              color: "var(--text-muted)", fontSize: 13, gap: 6,
-              background: "var(--bg-secondary)",
-            }}>
-              <span style={{ fontSize: 28 }}>+</span>
-              <span>{slideshowUploading ? "Uploading..." : "Add image"}</span>
-              <input ref={slideshowFileRef} type="file" accept="image/*" style={{ display: "none" }}
-                onChange={handleSlideshowUpload} disabled={slideshowUploading} />
-            </label>
-          </div>
+      {/* ══ SLIDESHOW TAB ══ */}
+      {tab === "slideshow" && (
+        <div>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", marginBottom:"1rem" }}>{Tr.admin?.slideshow || "Slideshow"}</h2>
+          <SlideshowAdmin />
         </div>
+      )}
 
       {/* ── Edit User Modal ── */}
       {editingUser && (

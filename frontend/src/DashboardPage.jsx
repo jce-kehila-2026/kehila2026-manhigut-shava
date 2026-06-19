@@ -159,12 +159,12 @@ function BottomTabs({ items, section, navigate, unreadDMs }) {
 }
 
 /* ── Language switcher ── */
-function LangSwitcher({ lang, setLang }) {
-  const langs = [{ code: "en", label: "EN" }, { code: "he", label: "HE" }, { code: "ar", label: "AR" }];
+function LangSwitcher({ lang, onChangeLang }) {
+  const langs = [{ code: "en", label: "EN" }, { code: "he", label: "עב" }, { code: "ar", label: "عر" }];
   return (
     <div style={{ display: "flex", gap: 2, background: "var(--bg-tertiary)", borderRadius: 99, padding: 3 }}>
       {langs.map(({ code, label }) => (
-        <button key={code} onClick={() => setLang(code)} style={{
+        <button key={code} onClick={() => onChangeLang(code)} style={{
           padding: "4px 9px", borderRadius: 99, border: "none",
           background: lang === code ? "var(--brand)" : "transparent",
           color: lang === code ? "#fff" : "var(--text-muted)",
@@ -702,7 +702,7 @@ function WelcomeOverlay({ profile, initials, onDone }) {
 /* ── Main dashboard shell ── */
 export default function DashboardPage() {
   const { user, profile, logout } = useAuth();
-  const { lang, setLang, t, isRTL } = useLang();
+  const { lang, setLang, setLangPermanent, t, isRTL } = useLang();
   const { dark, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
 
@@ -714,6 +714,7 @@ export default function DashboardPage() {
   const notifBellRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
+  const [langChangeCode, setLangChangeCode] = useState(null); // pending lang change confirmation
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   useEffect(() => {
     const goOnline  = () => setIsOffline(false);
@@ -1134,7 +1135,10 @@ export default function DashboardPage() {
               }}>{pageTitle}</span>
               <div style={{ flex: 1 }} />
 
-              <LangSwitcher lang={lang} setLang={setLang} />
+              <LangSwitcher lang={lang} onChangeLang={(code) => {
+                if (code === lang) return;
+                setLangChangeCode(code);
+              }} />
 
               {/* Notification bell */}
               <div ref={notifBellRef} style={{ position: "relative" }}>
@@ -1446,6 +1450,45 @@ export default function DashboardPage() {
           })}
         </nav>
       )}
+
+        {/* Language change confirmation popup */}
+        {langChangeCode && (
+          <div style={{ position:"fixed", inset:0, zIndex:99997, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(15,25,50,0.4)", backdropFilter:"blur(3px)" }}>
+            <div style={{ background:"var(--bg-primary)", borderRadius:18, padding:"1.5rem 1.75rem", width:280, boxShadow:"0 16px 48px rgba(15,25,50,0.22)", textAlign:"center" }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>🌐</div>
+              <h3 style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", margin:"0 0 6px", fontFamily:"'Outfit',sans-serif" }}>
+                {langChangeCode === "en" ? "Switch to English?" : langChangeCode === "ar" ? "التبديل إلى العربية؟" : "עבור לעברית?"}
+              </h3>
+              <p style={{ fontSize:12, color:"var(--text-secondary)", margin:"0 0 1.25rem", lineHeight:1.6 }}>
+                {langChangeCode === "en"
+                  ? "Save English as your default language preference?"
+                  : langChangeCode === "ar"
+                  ? "هل تريد حفظ العربية كلغتك الافتراضية؟"
+                  : "לשמור עברית כשפת ברירת המחדל שלך?"}
+              </p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <button
+                  onClick={() => { setLangPermanent(langChangeCode); setLangChangeCode(null); }}
+                  style={{ width:"100%", padding:"10px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:12, fontSize:13, fontWeight:700, cursor:"pointer" }}
+                >
+                  {langChangeCode === "en" ? "Yes, always use English" : langChangeCode === "ar" ? "نعم، استخدم العربية دائماً" : "כן, השתמש תמיד בעברית"}
+                </button>
+                <button
+                  onClick={() => { setLang(langChangeCode); setLangChangeCode(null); }}
+                  style={{ width:"100%", padding:"10px", background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", borderRadius:12, fontSize:13, fontWeight:600, cursor:"pointer" }}
+                >
+                  {langChangeCode === "en" ? "Just this session" : langChangeCode === "ar" ? "فقط هذه الجلسة" : "רק להפעלה זו"}
+                </button>
+                <button
+                  onClick={() => setLangChangeCode(null)}
+                  style={{ width:"100%", padding:"10px", background:"none", color:"var(--text-muted)", border:"none", fontSize:12, cursor:"pointer" }}
+                >
+                  {langChangeCode === "en" ? "Cancel" : langChangeCode === "ar" ? "إلغاء" : "ביטול"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }

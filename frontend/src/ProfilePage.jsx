@@ -522,7 +522,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
-    ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"",
+    ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
   const [institutionOther, setInstitutionOther] = useState("");
@@ -575,6 +575,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           institution:    d.institution    ?? "",
           graduationYear: d.graduationYear ?? "",
           linkedIn:       d.linkedIn       ?? "",
+          facebookURL:    d.facebookURL    ?? "",
+          contactEmail:   d.contactEmail   ?? "",
           helpAreas:      d.helpAreas      ?? [],
           languages:      d.languages      ?? [],
           experience:     d.experience     ?? "",
@@ -591,7 +593,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           setInstitutionOther(inst);
         }
       } else {
-        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
+        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
         setCoverURL(null);
         setNetworksCount(0);
@@ -599,7 +601,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setBirthdayValue("");
       }
     }).catch(() => {
-      setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", helpAreas:[], languages:[], experience:"", goals:"" });
+      setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
       setPhotoURL(null);
       setCoverURL(null);
       setNetworksCount(0);
@@ -733,12 +735,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       alert(t.profile?.invalidPhone || "Phone number should contain digits only.");
       return;
     }
-    const linkedInVal = form.linkedIn?.trim();
-    if (linkedInVal && !linkedInVal.startsWith("http") && !linkedInVal.includes("linkedin.com")) {
-      alert(t.profile?.invalidLinkedIn || "Please enter a valid LinkedIn URL.");
-      return;
-    }
-    if (form.firstName && form.firstName.trim().length < 2) {
+    if (form.firstName && form.firstName.trim() && form.firstName.trim().length < 2) {
       alert(t.profile?.nameTooShort || "First name must be at least 2 characters.");
       return;
     }
@@ -1093,7 +1090,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             {coverURL && (
               <button
                 className="cover-edit-btn"
-                style={{ ...S.coverEditBtn, right: "auto", left: 10, background: "rgba(220,38,38,0.65)" }}
+                style={{ ...S.coverEditBtn, ...(isRTL ? { right: 10, left: "auto" } : { right: "auto", left: 10 }), background: "rgba(220,38,38,0.65)" }}
                 onClick={handleDeleteCover}
               >
                 × {t.profile.removeCover || "Remove"}
@@ -1275,6 +1272,44 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder={t.profile.linkedInPlaceholder} />
               </div>
 
+              {/* Facebook */}
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <label style={S.label}>{t.profile?.facebook || "Facebook"}</label>
+                <input
+                  className="profile-input"
+                  name="facebookURL" value={form.facebookURL || ""}
+                  onChange={handleChange}
+                  placeholder="https://facebook.com/..."
+                  style={{
+                    width:"100%", boxSizing:"border-box",
+                    padding:"12px 14px", fontSize:"14px",
+                    border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+                    color:T.text, background:T.inputBg, fontFamily:"inherit",
+                    transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
+                  }}
+                  disabled={isReadOnly}
+                />
+              </div>
+              {/* Contact email */}
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <label style={S.label}>{t.profile?.contactEmail || "אימייל ליצירת קשר"}</label>
+                <input
+                  className="profile-input"
+                  name="contactEmail" value={form.contactEmail || ""}
+                  onChange={handleChange}
+                  placeholder="email@example.com"
+                  style={{
+                    width:"100%", boxSizing:"border-box",
+                    padding:"12px 14px", fontSize:"14px",
+                    border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+                    color:T.text, background:T.inputBg, fontFamily:"inherit",
+                    transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
+                  }}
+                  disabled={isReadOnly}
+                  type="email"
+                />
+              </div>
+
               <div style={{ ...S.group, marginBottom:"1rem" }}>
                 <label style={S.label}>{t.profile.bio}</label>
                 <div style={S.bioWrap}>
@@ -1333,7 +1368,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     firstName:form.firstName, lastName:form.lastName, phone:form.phone,
                     profession:form.profession, birthDate:form.birthDate, bio:form.bio,
                     region:form.region, institution:form.institution, graduationYear:form.graduationYear,
-                    linkedIn:form.linkedIn, experience:form.experience, goals:form.goals,
+                    linkedIn: form.linkedIn && !form.linkedIn.startsWith("http") ? "https://" + form.linkedIn : form.linkedIn,
+                    facebookURL: form.facebookURL && !form.facebookURL.startsWith("http") ? "https://" + form.facebookURL : (form.facebookURL || ""),
+                    contactEmail: form.contactEmail || "",
+                    experience:form.experience, goals:form.goals,
                     ethnicity:form.ethnicity, ethnicityPrivate:form.ethnicityPrivate,
                   })}
                   disabled={!!savingKey}
@@ -1439,6 +1477,24 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     target="_blank" rel="noopener noreferrer"
                     style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
                     {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
+                  </a>
+                </div>
+              )}
+              {form.facebookURL && (
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>{t.profile?.facebook || "Facebook"}</p>
+                  <a href={form.facebookURL} target="_blank" rel="noopener noreferrer" style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    Facebook
+                  </a>
+                </div>
+              )}
+              {form.contactEmail && (
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>{t.profile?.contactEmail || "אימייל ליצירת קשר"}</p>
+                  <a href={`mailto:${form.contactEmail}`} style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+                    {form.contactEmail}
                   </a>
                 </div>
               )}

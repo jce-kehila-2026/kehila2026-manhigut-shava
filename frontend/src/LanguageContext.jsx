@@ -15,6 +15,43 @@ const translations = {
       admin: "ניהול",
       logout: "התנתקות",
     },
+    chat: {
+      directMessages:     "הודעות ישירות",
+      newConvo:           "שיחה חדשה",
+      search:             "חיפוש שיחות...",
+      searchPeople:       "חיפוש אנשים...",
+      noConvos:           "אין שיחות עדיין",
+      startConvo:         "התחל שיחה",
+      photo:              "📷 תמונה",
+      you:                "אתה",
+      edited:             "(נערך)",
+      msgDeleted:         "ההודעה נמחקה",
+      seen:               "נראה ✓",
+      activeNow:          "פעיל עכשיו",
+      offline:            "לא מחובר",
+      messagePlaceholder: (name) => `הודעה ל${name}...`,
+      replyingTo:         (name) => `מגיב ל${name}`,
+      youBlocked:         (name) => `חסמת את ${name}`,
+      unblock:            "בטל חסימה",
+      notAvailable:       "השיחה אינה זמינה",
+      yourMessages:       "ההודעות שלי",
+      yourMessagesSub:    "בחר שיחה כדי להתחיל",
+      helpRequest:        "בקשת עזרה",
+      helpPrompt:         "האם תרצה לקבל את הבקשה?",
+      yes:                "כן",
+      no:                 "לא",
+      cancel:             "ביטול",
+      save:               "שמור",
+      reportTitle:        (name) => `דיווח על ${name}`,
+      reportSub:          "תאר את הבעיה כדי שנוכל לבדוק.",
+      describeIssue:      "תאר את הבעיה...",
+      reportSubmitted:    "הדיווח נשלח",
+      reportReview:       "הצוות שלנו יבדוק בקרוב.",
+      sending:            "שולח...",
+      submitReport:       "שלח דיווח",
+      blockTitle:         (name) => `לחסום את ${name}?`,
+      yesBlock:           "כן, חסום",
+    },
     dash: {
       member: "חבר/ה",
       org: "BogrotNet — מנהיגות שווה",
@@ -361,6 +398,43 @@ const translations = {
       messages: "Messages",
       admin: "Admin",
       logout: "Log Out",
+    },
+    chat: {
+      directMessages:     "Direct Messages",
+      newConvo:           "New Conversation",
+      search:             "Search conversations...",
+      searchPeople:       "Search people...",
+      noConvos:           "No conversations yet",
+      startConvo:         "Start a conversation",
+      photo:              "📷 Photo",
+      you:                "You",
+      edited:             "(edited)",
+      msgDeleted:         "Message deleted",
+      seen:               "Seen ✓",
+      activeNow:          "Active now",
+      offline:            "Offline",
+      messagePlaceholder: (name) => `Message ${name}...`,
+      replyingTo:         (name) => `Replying to ${name}`,
+      youBlocked:         (name) => `You blocked ${name}`,
+      unblock:            "Unblock",
+      notAvailable:       "Conversation unavailable",
+      yourMessages:       "Your Messages",
+      yourMessagesSub:    "Select a conversation to start chatting",
+      helpRequest:        "Help Request",
+      helpPrompt:         "Would you like to accept this request?",
+      yes:                "Yes",
+      no:                 "No",
+      cancel:             "Cancel",
+      save:               "Save",
+      reportTitle:        (name) => `Report ${name}`,
+      reportSub:          "Describe the issue so we can review it.",
+      describeIssue:      "Describe the issue...",
+      reportSubmitted:    "Report submitted",
+      reportReview:       "Our team will review it shortly.",
+      sending:            "Sending...",
+      submitReport:       "Submit Report",
+      blockTitle:         (name) => `Block ${name}?`,
+      yesBlock:           "Yes, Block",
     },
     dash: {
       member: "Member",
@@ -709,6 +783,43 @@ const translations = {
       admin: "إدارة",
       logout: "تسجيل الخروج",
     },
+    chat: {
+      directMessages:     "الرسائل المباشرة",
+      newConvo:           "محادثة جديدة",
+      search:             "بحث في المحادثات...",
+      searchPeople:       "البحث عن أشخاص...",
+      noConvos:           "لا توجد محادثات بعد",
+      startConvo:         "ابدأ محادثة",
+      photo:              "📷 صورة",
+      you:                "أنت",
+      edited:             "(تم التعديل)",
+      msgDeleted:         "تم حذف الرسالة",
+      seen:               "مُشاهَد ✓",
+      activeNow:          "نشط الآن",
+      offline:            "غير متصل",
+      messagePlaceholder: (name) => `رسالة إلى ${name}...`,
+      replyingTo:         (name) => `ردّاً على ${name}`,
+      youBlocked:         (name) => `لقد حظرت ${name}`,
+      unblock:            "إلغاء الحظر",
+      notAvailable:       "المحادثة غير متاحة",
+      yourMessages:       "رسائلك",
+      yourMessagesSub:    "اختر محادثة للبدء",
+      helpRequest:        "طلب مساعدة",
+      helpPrompt:         "هل تريد قبول هذا الطلب؟",
+      yes:                "نعم",
+      no:                 "لا",
+      cancel:             "إلغاء",
+      save:               "حفظ",
+      reportTitle:        (name) => `الإبلاغ عن ${name}`,
+      reportSub:          "صف المشكلة حتى نتمكن من مراجعتها.",
+      describeIssue:      "صف المشكلة...",
+      reportSubmitted:    "تم إرسال البلاغ",
+      reportReview:       "سيراجعه فريقنا قريباً.",
+      sending:            "جارٍ الإرسال...",
+      submitReport:       "إرسال البلاغ",
+      blockTitle:         (name) => `حظر ${name}؟`,
+      yesBlock:           "نعم، احظر",
+    },
     dash: {
       member: "عضو",
       org: "BogrotNet — مانهيجوت شافا",
@@ -1052,9 +1163,15 @@ export const RTL_LANGS = ["he", "ar"];
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  const [lang, setLangState] = useState("he");
+  const [lang, setLangState] = useState(() => {
+    try { return localStorage.getItem("lang_pref") || "he"; } catch { return "he"; }
+  });
 
   const setLang = (code) => {
+    setLangState(code);
+  };
+  const setLangPermanent = (code) => {
+    try { localStorage.setItem("lang_pref", code); } catch {}
     setLangState(code);
   };
 
@@ -1062,7 +1179,7 @@ export function LanguageProvider({ children }) {
   const isRTL = RTL_LANGS.includes(lang);
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t, isRTL }}>
+    <LanguageContext.Provider value={{ lang, setLang, setLangPermanent, t, isRTL }}>
       {children}
     </LanguageContext.Provider>
   );
