@@ -35,6 +35,16 @@ function isBirthdaySoon(birthdate) {
   const diff = daysUntilBirthday(birthdate);
   return diff !== null && diff <= 7 ? diff : null;
 }
+const URL_SPLIT_RE = /(https?:\/\/[^\s<>"]+)/g;
+const IS_URL_RE = /^https?:\/\//;
+function renderTextWithLinks(text) {
+  if (!text) return null;
+  return text.split(URL_SPLIT_RE).map((part, i) =>
+    IS_URL_RE.test(part)
+      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)", wordBreak: "break-all" }}>{part}</a>
+      : part
+  );
+}
 
 /* ── Avatar ── */
 function Avatar({ url, name, size = 40, ring, style: extraStyle }) {
@@ -107,8 +117,8 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
           padding: "9px 13px",
         }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{comment.authorName}</span>
-          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.55 }}>
-            {comment.text}
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.55, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+            {renderTextWithLinks(comment.text)}
             {comment.edited && <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 5 }}>(edited)</span>}
           </p>
         </div>
@@ -492,7 +502,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
             </div>
           </div>
         ) : (
-          post.text && <p style={{ fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{post.text}</p>
+          post.text && <p style={{ fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{renderTextWithLinks(post.text)}</p>
         )}
 
         {post.repostOf && (
@@ -508,7 +518,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
             </p>
             {post.repostOf.text && (
               <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
-                {post.repostOf.text}
+                {renderTextWithLinks(post.repostOf.text)}
               </p>
             )}
             {post.repostOf.media?.length > 0 && (
@@ -673,8 +683,8 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
 
             <div style={{ background: "var(--bg-secondary)", borderRadius: "var(--r-md)", padding: "0.85rem 1rem", border: "1px solid var(--border)", borderLeft: "3px solid var(--brand)" }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: "var(--brand-dark)", marginBottom: 4 }}>{post.authorName}</p>
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, wordBreak: "break-word" }}>
-                {post.text ? (post.text.length > 200 ? post.text.slice(0, 200) + "…" : post.text) : t.community.mediaPost}
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                {post.text ? renderTextWithLinks(post.text.length > 200 ? post.text.slice(0, 200) + "…" : post.text) : t.community.mediaPost}
               </p>
             </div>
 
