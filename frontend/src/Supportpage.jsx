@@ -7,7 +7,6 @@ import { useTheme } from "./ThemeContext";
 import { logActivity } from "./activityLogger";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { getOrCreateConversation, sendHelpRequestPrompt } from "./hooks/useMessages";
-import { SlideshowBanner } from "./components/SlideshowBanner";
 
 /* ─── Translation ─── */
 const T = {
@@ -896,7 +895,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   return (
     <div style={S.page}>
 
-      <SlideshowBanner />
       <p style={{ ...S.pageTitle, marginBottom: "1rem" }}>{Tr.title}</p>
 
       {/* ── Tab bar ── */}

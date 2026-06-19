@@ -187,7 +187,7 @@ const eyebrow = {
 };
 
 /* ── Quick-access circle with sonar rings ── */
-function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) {
+function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tutId }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
   // On mobile, fill the grid cell (25vw minus gaps); cap at 90px. Desktop stays fixed.
@@ -195,7 +195,7 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) 
   const ringInset = 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
+    <div id={tutId} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
       animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
@@ -395,7 +395,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             marginBottom:"1rem", padding: isMobile ? "0 0 0.25rem" : "0.25rem 0 0.75rem",
             placeItems:"center" }}>
             {quickCircles.map((item, i) => (
-              <QuickCircle key={item.action} {...item} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
+              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
             ))}
           </div>
 
@@ -574,6 +574,26 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         )}{/* end right sidebar */}
       </div>{/* end two-column grid */}
 
+      {/* Tutorial replay button */}
+      <button
+        onClick={() => {
+          try { localStorage.removeItem("tutorial_done"); } catch {}
+          window.location.reload();
+        }}
+        title="Show tutorial"
+        style={{
+          position: "fixed", bottom: isMobile ? 72 : 24, right: 16,
+          width: 38, height: 38, borderRadius: "50%",
+          background: "var(--brand,#4472b8)", color: "#fff",
+          border: "none", cursor: "pointer",
+          fontSize: 18, fontWeight: 700,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 14px rgba(68,114,184,0.35)",
+          zIndex: 100,
+          opacity: 0.85,
+        }}
+      >?</button>
+
     </div>
   );
 }
@@ -686,14 +706,22 @@ export default function DashboardPage() {
   const { dark, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
 
-  const [section,    setSection]    = useState(() => sessionStorage.getItem("section") || "home");
-  const [navHistory, setNavHistory] = useState(() => [sessionStorage.getItem("section") || "home"]);
+  const [section,    setSection]    = useState("home");
+  const [navHistory, setNavHistory] = useState(["home"]);
   const [unreadDMs,  setUnreadDMs]  = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showNotifs,    setShowNotifs]    = useState(false);
   const notifBellRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  useEffect(() => {
+    const goOnline  = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online",  goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => { window.removeEventListener("online", goOnline); window.removeEventListener("offline", goOffline); };
+  }, []);
 
   /* Tab switch — resets back-history so pressing back never returns to a random tab */
   const switchTab = useCallback((s) => {
@@ -1061,6 +1089,18 @@ export default function DashboardPage() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 1 }}>
 
           {/* Top bar */}
+          {isOffline && (
+            <div style={{
+              background: "#7f1d1d", color: "#fca5a5",
+              fontSize: 12, fontWeight: 600,
+              padding: "8px 16px",
+              display: "flex", alignItems: "center", gap: 8,
+              flexShrink: 0,
+            }}>
+              <span>⚠</span>
+              <span>No internet connection — some features may not work. Check your connection and refresh.</span>
+            </div>
+          )}
           {section !== "chat" && (
             <header style={{
               height: isMobile ? 48 : 60, minHeight: isMobile ? 48 : 60,
@@ -1094,7 +1134,7 @@ export default function DashboardPage() {
               }}>{pageTitle}</span>
               <div style={{ flex: 1 }} />
 
-              {!isMobile && <LangSwitcher lang={lang} setLang={setLang} />}
+              <LangSwitcher lang={lang} setLang={setLang} />
 
               {/* Notification bell */}
               <div ref={notifBellRef} style={{ position: "relative" }}>

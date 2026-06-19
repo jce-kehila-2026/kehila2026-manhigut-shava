@@ -726,6 +726,23 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     if (!user) return;
     const targetId = isOwner ? user.uid : (authProfile?.isAdmin && viewUserId ? viewUserId : null);
     if (!targetId) return;
+
+    // Validation
+    const phoneVal = form.phone?.trim();
+    if (phoneVal && !/^[\d\s\-+()/]+$/.test(phoneVal)) {
+      alert(t.profile?.invalidPhone || "Phone number should contain digits only.");
+      return;
+    }
+    const linkedInVal = form.linkedIn?.trim();
+    if (linkedInVal && !linkedInVal.startsWith("http") && !linkedInVal.includes("linkedin.com")) {
+      alert(t.profile?.invalidLinkedIn || "Please enter a valid LinkedIn URL.");
+      return;
+    }
+    if (form.firstName && form.firstName.trim().length < 2) {
+      alert(t.profile?.nameTooShort || "First name must be at least 2 characters.");
+      return;
+    }
+
     setSavingKey(sectionKey); setError("");
     try {
       const saveData = { ...fields };
