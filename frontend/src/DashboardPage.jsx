@@ -387,7 +387,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       })()}
 
       {/* Two-column layout on desktop, single column on mobile */}
-      <div style={{ display: isMobile ? "flex" : "grid", flexDirection: isMobile ? "column" : undefined, gridTemplateColumns: isMobile ? undefined : "1fr 300px", gap: "1.5rem", alignItems: "start" }}>
+      <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: isMobile ? undefined : "1fr 300px", gap: "1.5rem", alignItems: "start" }}>
 
         {/* LEFT (desktop) / TOP (mobile): circles + birthday soon + slideshow */}
         <div>

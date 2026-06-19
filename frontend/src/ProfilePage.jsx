@@ -628,10 +628,17 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const fields = [form.firstName, form.lastName, form.phone, form.profession, form.bio, form.birthDate,
-                  form.ethnicity, form.region, form.institution, form.linkedIn,
-                  form.helpAreas?.length > 0, form.languages?.length > 0, form.experience, form.goals];
-  const pct    = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  const fields = [
+    form.firstName,
+    form.lastName,
+    form.phone,
+    form.city || form.region,
+    form.profession || form.currentRole,
+    form.bio,
+    form.birthDate || form.birthdate,
+    form.helpAreas?.length > 0,
+  ];
+  const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
   const isOwner = !viewUserId || viewUserId === user?.uid;
   const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
   const isReadOnly = !isOwner;
@@ -1174,8 +1181,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         </div>
       )}
 
-      {/* Completeness badge — only for owner, pushes tab bar down when visible */}
-      {isOwner && (
+      {/* Completeness badge — only for owner when not yet complete */}
+      {isOwner && pct < 100 && (
         <div style={{ padding: isMobile ? "0.5rem 1rem 0" : "0.5rem 2rem 0" }}>
           <CompletenessBadge pct={pct} />
         </div>
