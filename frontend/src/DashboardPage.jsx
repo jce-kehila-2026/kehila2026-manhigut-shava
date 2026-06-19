@@ -189,7 +189,7 @@ const eyebrow = {
 function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const size = isMobile ? 88 : 180;
+  const size = isMobile ? 68 : 120;
   const ringInset = 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
@@ -220,10 +220,10 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile }) 
           boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform: isMobile ? "scale(1.1)" : "scale(1.6)" }}>{icon}</div>
+          <div style={{ transform: isMobile ? "scale(0.95)" : "scale(1.2)" }}>{icon}</div>
         </div>
       </div>
-      <p style={{ fontSize: isMobile ? 10 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? 72 : 110, lineHeight: 1.2 }}>{title}</p>
+      <p style={{ fontSize: isMobile ? 10 : 11, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? 72 : 110, lineHeight: 1.2 }}>{title}</p>
       {!isMobile && (
         <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
           lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
@@ -351,8 +351,8 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
             @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
           `}</style>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "1rem" : "1.5rem",
-            marginBottom:"1.5rem", padding: isMobile ? "0.5rem 0 1rem" : "0.5rem 0 1.5rem",
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "0.6rem" : "1rem",
+            marginBottom:"1.5rem", padding: isMobile ? "0.25rem 0 0.5rem" : "0.25rem 0 0.75rem",
             placeItems:"center" }}>
             {quickCircles.map((item, i) => (
               <QuickCircle key={item.action} {...item} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />

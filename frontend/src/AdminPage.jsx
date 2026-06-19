@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  collection, getDocs, deleteDoc, doc, query,
+  collection, getDocs, addDoc, deleteDoc, doc, query,
   orderBy, updateDoc, limit, where, setDoc, getDoc,
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -27,6 +27,11 @@ const AT = {
     adminPriv:"הרשאות מנהל", cancel:"ביטול", save:"שמרי שינויים", saving:"שומרת...",
     deleteLbl:"מחקי", editLbl:"ערכי", makeAdmin:"הפכי למנהלת", revokeAdmin:"הסרת הרשאות מנהל", editPermsBtn:"ערכי הרשאות",
     refresh:"רענון", filterByActor:"חפשי לפי שם...", filterByType:"סוג:",
+    dataManage:"ניהול נתונים", downloadBtn:"הורדת אקסל", uploadBtn:"העלאת אקסל", importing:"מייבאת...",
+    dirNote:"ייבוא יוצר רשומות מדריך בלבד (ללא חשבון התחברות).",
+    created:"נוצרו", skippedDup:"דולגו (כפילות)", errorsLbl:"שגיאות", rowLbl:"שורה",
+    exportTitle:"ייצוא חברות לאקסל", exportSub:"בחרי אילו שדות לכלול בקובץ.", selectAll:"בחרי הכל", clearAll:"נקי",
+    importBadType:"קובץ לא תקין — רק .xlsx או .xls.", importEmpty:"הגיליון ריק.", importMissing:"שדות חסרים", importBadEmail:"אימייל לא תקין",
     noLogs:"אין רשומות עדיין.",
     confirmDeleteTitle:"מחיקת משתמשת", confirmDeleteMsg:(n)=>`האם את בטוחה שברצונך למחוק את ${n}? פעולה זו בלתי הפיכה.`,
     confirmDeleteBtn:"כן, מחקי", confirmMakeAdminTitle:"הוספת הרשאות מנהל",
@@ -84,6 +89,11 @@ const AT = {
     adminPriv:"Admin privileges", cancel:"Cancel", save:"Save Changes", saving:"Saving…",
     deleteLbl:"Delete", editLbl:"Edit", makeAdmin:"Make Admin", revokeAdmin:"Revoke Admin", editPermsBtn:"Edit Permissions",
     refresh:"Refresh", filterByActor:"Filter by name...", filterByType:"Type:",
+    dataManage:"Data Management", downloadBtn:"Download Excel", uploadBtn:"Upload Excel", importing:"Importing...",
+    dirNote:"Import creates directory records only (no login account).",
+    created:"Created", skippedDup:"Skipped (duplicate)", errorsLbl:"Errors", rowLbl:"Row",
+    exportTitle:"Export Members to Excel", exportSub:"Choose which fields to include.", selectAll:"Select all", clearAll:"Clear",
+    importBadType:"Invalid file — only .xlsx or .xls.", importEmpty:"The sheet is empty.", importMissing:"missing fields", importBadEmail:"invalid email",
     noLogs:"No logs yet.",
     confirmDeleteTitle:"Delete User", confirmDeleteMsg:(n)=>`Are you sure you want to permanently delete ${n}? This cannot be undone.`,
     confirmDeleteBtn:"Yes, Delete", confirmMakeAdminTitle:"Grant Admin Access",
@@ -474,6 +484,25 @@ function formatAbsoluteTime(ts) {
   try { return new Date(ts).toLocaleString(); } catch { return ts; }
 }
 
+/* ── Excel export/import ── */
+const EXPORT_FIELDS = [
+  { key: "firstName",   label: "First Name" },
+  { key: "lastName",    label: "Last Name" },
+  { key: "email",       label: "Email" },
+  { key: "phone",       label: "Phone" },
+  { key: "region",      label: "Region" },
+  { key: "city",        label: "City" },
+  { key: "profession",  label: "Profession" },
+  { key: "ethnicity",   label: "Ethnicity" },
+  { key: "helpAreas",   label: "Help Areas" },
+  { key: "bio",         label: "Bio" },
+  { key: "linkedIn",    label: "LinkedIn" },
+  { key: "createdAt",   label: "Joined" },
+];
+const ARRAY_FIELDS = new Set(["helpAreas"]);
+const REQUIRED_IMPORT = ["email", "firstName"];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /* ─── Permission keys ─── */
 const PERM_KEYS = ["canManageUsers","canManageContent","canViewLogs","canManageAdmins","canViewStats","canSendAnnouncements","canExportData"];
 const DEFAULT_PERMS = Object.fromEntries(PERM_KEYS.map(k => [k, false]));
@@ -700,6 +729,14 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
       sub: u.email || "",
       avatar: u.photoURL || u.avatarUrl,
     }));
+  } else if (type === "helpAreas") {
+    title = Tr.withHelpAreas || "With Help Areas";
+    items = users.filter(u => u.helpAreas?.length > 0).map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.helpAreas?.join(", ") || "",
+      avatar: u.photoURL || u.avatarUrl,
+    }));
   } else if (type === "posts") {
     title = Tr.totalPosts;
     items = posts.slice(0, 50).map(p => ({
@@ -798,6 +835,13 @@ export default function AdminPage() {
   const [slideshowImages, setSlideshowImages] = useState([]);
   const [slideshowUploading, setSlideshowUploading] = useState(false);
   const slideshowFileRef = useRef(null);
+
+  /* ── Excel export / import ── */
+  const [exportOpen, setExportOpen]     = useState(false);
+  const [selFields, setSelFields]       = useState(() => EXPORT_FIELDS.map(f => f.key));
+  const [importBusy, setImportBusy]     = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const fileRef = useRef(null);
 
   useEffect(() => {
     getDoc(doc(db, "siteSettings", "slideshow")).then(snap => {
@@ -934,8 +978,8 @@ export default function AdminPage() {
   /* ── Private fields distributions (admin only) ── */
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
-    if (u._communityEthnicity) ethnicityMap[u._communityEthnicity] = (ethnicityMap[u._communityEthnicity] || 0) + 1;
-    if (u._religiousIdentity)  religionMap[u._religiousIdentity]   = (religionMap[u._religiousIdentity]   || 0) + 1;
+    if (u.ethnicity)  ethnicityMap[u.ethnicity]  = (ethnicityMap[u.ethnicity]  || 0) + 1;
+    if (u.identity)   religionMap[u.identity]    = (religionMap[u.identity]    || 0) + 1;
     if (u.region)               regionMap[u.region]                 = (regionMap[u.region]                 || 0) + 1;
   });
   const topEthnicities = Object.entries(ethnicityMap).sort((a,b) => b[1]-a[1]).slice(0,8);
@@ -1051,6 +1095,88 @@ export default function AdminPage() {
     return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
   });
 
+  /* ── Excel export ── */
+  const exportExcel = async () => {
+    const fields = EXPORT_FIELDS.filter(f => selFields.includes(f.key));
+    if (!fields.length) return;
+    const rows = users.map(u => {
+      const row = {};
+      fields.forEach(({ key, label }) => {
+        const v = u[key];
+        row[label] = Array.isArray(v) ? v.join("; ") : (v ?? "");
+      });
+      return row;
+    });
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Members");
+    XLSX.writeFile(wb, `members_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    setExportOpen(false);
+  };
+
+  /* ── Excel import ── */
+  const importExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = "";
+    if (!file) return;
+    setImportResult(null);
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    if (ext !== "xlsx" && ext !== "xls") { setImportResult({ error: Tr.importBadType }); return; }
+    setImportBusy(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const sig = new Uint8Array(buf.slice(0, 4));
+      const isXlsx = sig[0] === 0x50 && sig[1] === 0x4b;
+      const isXls  = sig[0] === 0xd0 && sig[1] === 0xcf;
+      if (!isXlsx && !isXls) { setImportResult({ error: Tr.importBadType }); setImportBusy(false); return; }
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
+      if (!rows.length) { setImportResult({ error: Tr.importEmpty }); setImportBusy(false); return; }
+      const labelToKey = {};
+      EXPORT_FIELDS.forEach(({ key, label }) => { labelToKey[label.toLowerCase()] = key; });
+      const existing = new Set(users.map(u => (u.email || "").toLowerCase().trim()).filter(Boolean));
+      const seen = new Set();
+      const toCreate = [];
+      let skipped = 0;
+      const errors = [];
+      rows.forEach((raw, i) => {
+        const rowNo = i + 2;
+        const profile = {};
+        Object.entries(raw).forEach(([header, val]) => {
+          const key = labelToKey[String(header).toLowerCase().trim()];
+          if (!key) return;
+          profile[key] = ARRAY_FIELDS.has(key)
+            ? (typeof val === "string" ? val.split(";").map(s => s.trim()).filter(Boolean) : [])
+            : (typeof val === "string" ? val.trim() : val);
+        });
+        const email = (profile.email || "").toString().toLowerCase().trim();
+        const missing = REQUIRED_IMPORT.filter(k => !String(profile[k] ?? "").trim());
+        if (missing.length) { errors.push(`${Tr.rowLbl} ${rowNo}: ${Tr.importMissing} (${missing.join(", ")})`); return; }
+        if (!EMAIL_RE.test(email)) { errors.push(`${Tr.rowLbl} ${rowNo}: ${Tr.importBadEmail}`); return; }
+        if (existing.has(email) || seen.has(email)) { skipped++; return; }
+        seen.add(email);
+        toCreate.push({ ...profile, email, hasAccount: false, source: "excel-import", emailVerified: false, createdAt: new Date().toISOString() });
+      });
+      let created = 0;
+      for (const d of toCreate) {
+        try { await addDoc(collection(db, "users"), d); created++; }
+        catch (err) { errors.push(`${d.email}: ${err.message}`); }
+      }
+      if (created > 0) {
+        const snap = await getDocs(collection(db, "users"));
+        setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }
+      setImportResult({ created, skipped, errors });
+    } catch (err) {
+      setImportResult({ error: err.message });
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
   /* ── TABS config ── */
   const TABS = [
     { id: "overview",  label: Tr.tabs.overview },
@@ -1095,9 +1221,9 @@ export default function AdminPage() {
             <StatCard label={Tr.onlineNow}     value={onlineNow}      color="#7ba87a" sub={Tr.activeMembers}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>}
               onClick={() => setStatDetailType("online")} />
-            <StatCard label={Tr.verified}       value={verifiedN}      color="#1d4896" sub={Tr.percentVerified(Math.round(verifiedN/Math.max(users.length,1)*100))}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-              onClick={() => setStatDetailType("verified")} />
+            <StatCard label={Tr.withHelpAreas || "With Help Areas"} value={users.filter(u => u.helpAreas?.length > 0).length} color="#1d4896" sub={`${Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1)*100)}%`}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+              onClick={() => setStatDetailType("helpAreas")} />
             <StatCard label={Tr.totalPosts}    value={posts.length}   color="#8b5cf6" sub={`${totalLikes} · ${totalComments}`}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
               onClick={() => setStatDetailType("posts")} />
@@ -1184,85 +1310,6 @@ export default function AdminPage() {
               {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>No posts yet</p>}
             </div>
 
-            {/* Member breakdown donut */}
-            {(() => {
-              const verified = users.filter(u => u.emailVerified).length;
-              const adminCount = users.filter(u => u.isAdmin).length;
-              const online = users.filter(isActuallyOnline).length;
-              const total = users.length || 1;
-              const vPct = Math.round(verified / total * 100);
-              const aPct = Math.round(adminCount / total * 100);
-              const oPct = Math.round(online / total * 100);
-              const segments = [
-                { label: Tr.verified || "Verified", pct: vPct, color: "#4472b8" },
-                { label: Tr.admins || "Admins", pct: aPct, color: "#c25c5c" },
-                { label: Tr.onlineNow || "Online", pct: oPct, color: "#7ba87a" },
-                { label: "Others", pct: Math.max(0, 100 - vPct - aPct - oPct), color: "#e2e8f0" },
-              ];
-              let cumulative = 0;
-              const conicParts = segments.map(s => {
-                const start = cumulative;
-                cumulative += s.pct;
-                return `${s.color} ${start}% ${cumulative}%`;
-              }).join(", ");
-              return (
-                <div className="card" style={{ padding: "1.25rem" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
-                    Member Breakdown
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-                    <div style={{ width: 100, height: 100, borderRadius: "50%", background: `conic-gradient(${conicParts})`, flexShrink: 0, position: "relative" }}>
-                      <div style={{ position:"absolute", inset: 16, borderRadius:"50%", background:"var(--bg-primary,#fff)" }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      {segments.filter(s => s.pct > 0).map(s => (
-                        <div key={s.label} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
-                          <div style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
-                          <span style={{ fontSize:11, color:"var(--text-secondary,#7a5868)", fontWeight:500 }}>{s.label}</span>
-                          <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", marginLeft:"auto", fontWeight:600 }}>{s.pct}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Weekly signups bar chart */}
-            {(() => {
-              const days = Array.from({ length: 7 }, (_, i) => {
-                const d = new Date();
-                d.setDate(d.getDate() - (6 - i));
-                return d;
-              });
-              const counts = days.map(day => {
-                const dayStr = day.toISOString().slice(0, 10);
-                return users.filter(u => u.createdAt?.slice(0, 10) === dayStr).length;
-              });
-              const maxCount = Math.max(...counts, 1);
-              const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-              return (
-                <div className="card" style={{ padding: "1.25rem" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
-                    New Members – Last 7 Days
-                  </p>
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80 }}>
-                    {counts.map((count, i) => (
-                      <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-                        <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)", fontWeight:600, minHeight:14 }}>{count > 0 ? count : ""}</span>
-                        <div style={{
-                          width:"100%", borderRadius:"4px 4px 2px 2px",
-                          background: count > 0 ? "var(--brand,#4472b8)" : "var(--bg-tertiary,#f0f6fb)",
-                          height: `${Math.max(4, (count / maxCount) * 52)}px`,
-                          transition: "height 0.6s ease",
-                        }} />
-                        <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>{dayLabels[days[i].getDay()]}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
           </div>
 
           {statDetailType && (
@@ -1381,8 +1428,8 @@ export default function AdminPage() {
                             { label: Tr.campus,    val: u.campus },
                             { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
                             { label: Tr.birthdate, val: u.birthdate },
-                            { label: Tr.identity,  val: u._religiousIdentity },
-                            { label: Tr.ethnicity, val: u._communityEthnicity },
+                            { label: Tr.identity,  val: u.identity },
+                            { label: Tr.ethnicity, val: u.ethnicity },
                             { label: Tr.bio,       val: u.bio },
                           ].map(({ label, val }) => val ? (
                             <div key={label}>
@@ -1595,6 +1642,68 @@ export default function AdminPage() {
       {/* ══ DATA TAB ══ */}
       {!loading && tab === "data" && (
         <>
+          {/* Export / import members */}
+          <div className="card" style={{ padding:"1.25rem", marginBottom:"1.5rem" }}>
+            <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 0.85rem" }}>{Tr.dataManage}</p>
+            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+              <button onClick={() => setExportOpen(true)}
+                style={{ padding:"10px 20px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                ⬇ {Tr.downloadBtn}
+              </button>
+              <button onClick={() => fileRef.current?.click()} disabled={importBusy}
+                style={{ padding:"10px 20px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, fontSize:14, fontWeight:700, cursor: importBusy ? "wait" : "pointer", opacity: importBusy ? 0.6 : 1 }}>
+                ⬆ {importBusy ? Tr.importing : Tr.uploadBtn}
+              </button>
+              <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={importExcel} style={{ display:"none" }} />
+            </div>
+            <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"0.75rem 0 0" }}>{Tr.dirNote}</p>
+            {importResult && (
+              <div style={{ marginTop:"1rem", padding:"0.85rem 1rem", borderRadius:10, background:"var(--bg-tertiary,#f0f6fb)", border:"1px solid var(--border,#daeaf8)" }}>
+                {importResult.error ? (
+                  <p style={{ margin:0, fontSize:13, color:"#c25c5c", fontWeight:600 }}>⚠ {importResult.error}</p>
+                ) : (
+                  <>
+                    <p style={{ margin:"0 0 4px", fontSize:13, color:"var(--text-primary,#111827)", fontWeight:700 }}>
+                      ✓ {Tr.created}: {importResult.created} · {Tr.skippedDup}: {importResult.skipped} · {Tr.errorsLbl}: {importResult.errors.length}
+                    </p>
+                    {importResult.errors.length > 0 && (
+                      <ul style={{ margin:"6px 0 0", paddingInlineStart:18, fontSize:12, color:"var(--text-muted,#6b7280)", maxHeight:140, overflowY:"auto" }}>
+                        {importResult.errors.slice(0, 50).map((er, i) => <li key={i}>{er}</li>)}
+                      </ul>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Field-selection modal for export */}
+          {exportOpen && (
+            <div style={S.overlay} onClick={() => setExportOpen(false)}>
+              <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
+                <p style={S.modalTitle}>{Tr.exportTitle}</p>
+                <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", margin:"4px 0 0" }}>{Tr.exportSub}</p>
+                <div style={{ display:"flex", gap:10, margin:"0.85rem 0 0.4rem" }}>
+                  <button onClick={() => setSelFields(EXPORT_FIELDS.map(f => f.key))} style={{ background:"none", border:"none", color:"var(--brand,#4472b8)", fontSize:12, fontWeight:700, cursor:"pointer", padding:0 }}>{Tr.selectAll}</button>
+                  <button onClick={() => setSelFields([])} style={{ background:"none", border:"none", color:"var(--text-muted,#6b7280)", fontSize:12, fontWeight:700, cursor:"pointer", padding:0 }}>{Tr.clearAll}</button>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, margin:"0.5rem 0 1rem" }}>
+                  {EXPORT_FIELDS.map(f => (
+                    <label key={f.key} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, cursor:"pointer" }}>
+                      <input type="checkbox" checked={selFields.includes(f.key)}
+                        onChange={() => setSelFields(prev => prev.includes(f.key) ? prev.filter(k => k !== f.key) : [...prev, f.key])} />
+                      {f.label}
+                    </label>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                  <button onClick={() => setExportOpen(false)} style={{ padding:"9px 18px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1px solid var(--border,#daeaf8)", borderRadius:9, fontSize:13, fontWeight:700, cursor:"pointer" }}>{Tr.cancel}</button>
+                  <button onClick={exportExcel} disabled={!selFields.length} style={{ padding:"9px 18px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:9, fontSize:13, fontWeight:700, cursor: !selFields.length ? "not-allowed" : "pointer", opacity: !selFields.length ? 0.5 : 1 }}>{Tr.downloadBtn}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Stat summary row */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:"1rem", marginBottom:"1.5rem" }}>
             {[
@@ -1721,6 +1830,86 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Member breakdown donut */}
+          {(() => {
+            const verified = users.filter(u => u.emailVerified).length;
+            const adminCount = users.filter(u => u.isAdmin).length;
+            const online = users.filter(isActuallyOnline).length;
+            const total = users.length || 1;
+            const vPct = Math.round(verified / total * 100);
+            const aPct = Math.round(adminCount / total * 100);
+            const oPct = Math.round(online / total * 100);
+            const segments = [
+              { label: Tr.verified || "Verified", pct: vPct, color: "#4472b8" },
+              { label: Tr.admins || "Admins", pct: aPct, color: "#c25c5c" },
+              { label: Tr.onlineNow || "Online", pct: oPct, color: "#7ba87a" },
+              { label: "Others", pct: Math.max(0, 100 - vPct - aPct - oPct), color: "#e2e8f0" },
+            ];
+            let cumulative = 0;
+            const conicParts = segments.map(s => {
+              const start = cumulative;
+              cumulative += s.pct;
+              return `${s.color} ${start}% ${cumulative}%`;
+            }).join(", ");
+            return (
+              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                  Member Breakdown
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                  <div style={{ width: 100, height: 100, borderRadius: "50%", background: `conic-gradient(${conicParts})`, flexShrink: 0, position: "relative" }}>
+                    <div style={{ position:"absolute", inset: 16, borderRadius:"50%", background:"var(--bg-primary,#fff)" }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    {segments.filter(s => s.pct > 0).map(s => (
+                      <div key={s.label} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                        <div style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
+                        <span style={{ fontSize:11, color:"var(--text-secondary,#7a5868)", fontWeight:500 }}>{s.label}</span>
+                        <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", marginLeft:"auto", fontWeight:600 }}>{s.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Weekly signups bar chart */}
+          {(() => {
+            const days = Array.from({ length: 7 }, (_, i) => {
+              const d = new Date();
+              d.setDate(d.getDate() - (6 - i));
+              return d;
+            });
+            const counts = days.map(day => {
+              const dayStr = day.toISOString().slice(0, 10);
+              return users.filter(u => u.createdAt?.slice(0, 10) === dayStr).length;
+            });
+            const maxCount = Math.max(...counts, 1);
+            const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            return (
+              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                  New Members – Last 7 Days
+                </p>
+                <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80 }}>
+                  {counts.map((count, i) => (
+                    <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                      <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)", fontWeight:600, minHeight:14 }}>{count > 0 ? count : ""}</span>
+                      <div style={{
+                        width:"100%", borderRadius:"4px 4px 2px 2px",
+                        background: count > 0 ? "var(--brand,#4472b8)" : "var(--bg-tertiary,#f0f6fb)",
+                        height: `${Math.max(4, (count / maxCount) * 52)}px`,
+                        transition: "height 0.6s ease",
+                      }} />
+                      <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>{dayLabels[days[i].getDay()]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
 

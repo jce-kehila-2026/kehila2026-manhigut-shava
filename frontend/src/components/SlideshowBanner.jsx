@@ -34,7 +34,7 @@ export function SlideshowBanner() {
       position: "relative", borderRadius: 16, overflow: "hidden",
       boxShadow: "0 4px 24px rgba(29,72,150,0.18), inset 0 0 0 1px rgba(255,255,255,0.06)",
       background: "#0d1a2e",
-      aspectRatio: "16/7",
+      aspectRatio: "16/5",
     }}>
       {images.map((img, i) => (
         <img

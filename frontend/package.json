@@ -13,7 +13,8 @@
     "firebase": "^12.13.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-easy-crop": "^6.0.2"
+    "react-easy-crop": "^6.0.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
