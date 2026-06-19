@@ -147,6 +147,50 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
   );
 }
 
+/* ── Translate button ── */
+function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
+  const [busy, setBusy] = useState(false);
+
+  const handleClick = async () => {
+    if (isTranslated) { onReverted(); return; }
+    if (!text?.trim()) return;
+    setBusy(true);
+    try {
+      const tl = (navigator.language || "en").split("-")[0];
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const translated = data[0]?.map(s => s[0]).join("") || text;
+      onTranslated(translated);
+    } catch {
+      // silently fail — button just does nothing
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={busy}
+      style={{
+        background: "none", border: "none", cursor: busy ? "wait" : "pointer",
+        fontSize: 11, color: "var(--text-muted,#6b7280)", padding: "2px 6px",
+        display: "flex", alignItems: "center", gap: 4, borderRadius: 6,
+        opacity: busy ? 0.6 : 1,
+        transition: "color 0.15s",
+      }}
+      onMouseEnter={e => e.currentTarget.style.color = "var(--brand,#4472b8)"}
+      onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted,#6b7280)"}
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/>
+      </svg>
+      {busy ? "..." : isTranslated ? "Original" : "Translate"}
+    </button>
+  );
+}
+
 /* ── Post card ── */
 function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, onRepost, onViewProfile, onMessage, onPin }) {
   const { t } = useLang();
@@ -167,6 +211,8 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
   const editFileInputRef = useRef(null);
   const [imgEditorSrc, setImgEditorSrc]       = useState(null);
   const [imgEditorTarget, setImgEditorTarget] = useState(null);
+  const [translatedText, setTranslatedText]   = useState(null);
+  const displayText = translatedText ?? post.text;
 
   useEffect(() => {
     if (!showComments || comments.length > 0) return;
@@ -503,7 +549,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
             </div>
           </div>
         ) : (
-          post.text && <p style={{ fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{renderTextWithLinks(post.text)}</p>
+          post.text && <p style={{ fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{renderTextWithLinks(displayText)}</p>
         )}
 
         {post.repostOf && (
@@ -671,6 +717,15 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
           >
             <CakeIcon size={14} color="#1d4896" /> {t.community.happyBirthday}
           </button>
+        )}
+
+        {post.text && (
+          <TranslateButton
+            text={post.text}
+            isTranslated={!!translatedText}
+            onTranslated={t => setTranslatedText(t)}
+            onReverted={() => setTranslatedText(null)}
+          />
         )}
       </div>
 

@@ -12,6 +12,7 @@ import AdminPage     from "./AdminPage";
 import ChatPage      from "./ChatPage";
 import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 import { SlideshowBanner } from "./components/SlideshowBanner";
+import { TutorialPopup } from "./components/TutorialPopup";
 
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
@@ -849,6 +850,10 @@ export default function DashboardPage() {
     }
   }, [profile]);
 
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try { return !localStorage.getItem("tutorial_done"); } catch { return false; }
+  });
+
   return (
     <div style={{
       display: "flex", flexDirection: "column",
@@ -865,6 +870,12 @@ export default function DashboardPage() {
           initials={initials}
           onDone={() => { sessionStorage.setItem("welcomed", "1"); setShowWelcome(false); }}
         />
+      )}
+      {showTutorial && (
+        <TutorialPopup onClose={() => {
+          try { localStorage.setItem("tutorial_done", "1"); } catch {}
+          setShowTutorial(false);
+        }} />
       )}
       {/* ── Row that holds sidebar + main (fills all space above bottom nav) ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden", minHeight: 0 }}>
