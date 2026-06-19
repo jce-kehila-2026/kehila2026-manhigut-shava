@@ -377,13 +377,19 @@ function avatarColor(name) {
 }
 
 /* ── Stat card ── */
-function StatCard({ label, value, sub, color, icon }) {
+function StatCard({ label, value, sub, color, icon, onClick }) {
   return (
     <div className="card slide-up" style={{
       padding: "1.25rem 1.5rem",
       borderLeft: `4px solid ${color}`,
       display: "flex", alignItems: "center", gap: "1rem",
-    }}>
+      cursor: onClick ? "pointer" : "default",
+      transition: "box-shadow 0.18s, transform 0.18s",
+    }}
+      onMouseEnter={e => { if (onClick) { e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,0.1)"; e.currentTarget.style.transform="translateY(-2px)"; }}}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow=""; e.currentTarget.style.transform=""; }}
+      onClick={onClick}
+    >
       <div style={{
         width: 44, height: 44, borderRadius: "var(--r-md,10px)",
         background: `${color}18`, display: "flex",
@@ -656,6 +662,94 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
   );
 }
 
+/* ── Stat detail slide-in panel ── */
+function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnline }) {
+  let title = "";
+  let items = [];
+
+  if (type === "members") {
+    title = Tr.totalMembers;
+    items = users.map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.profession || u.email || "",
+      avatar: u.photoURL || u.avatarUrl,
+      badge: u.emailVerified ? "✓" : null,
+    }));
+  } else if (type === "online") {
+    title = Tr.onlineNow;
+    items = users.filter(isActuallyOnline).map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.profession || u.email || "",
+      avatar: u.photoURL || u.avatarUrl,
+    }));
+  } else if (type === "verified") {
+    title = Tr.verified;
+    items = users.filter(u => u.emailVerified).map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.profession || u.email || "",
+      avatar: u.photoURL || u.avatarUrl,
+    }));
+  } else if (type === "admins") {
+    title = Tr.admins;
+    items = users.filter(u => u.isAdmin).map(u => ({
+      id: u.id,
+      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+      sub: u.email || "",
+      avatar: u.photoURL || u.avatarUrl,
+    }));
+  } else if (type === "posts") {
+    title = Tr.totalPosts;
+    items = posts.slice(0, 50).map(p => ({
+      id: p.id,
+      name: p.authorName || "Unknown",
+      sub: (p.text || "(media)").slice(0, 80),
+      avatar: p.authorAvatar,
+    }));
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      display: "flex", alignItems: "stretch", justifyContent: "flex-end",
+    }}
+      onClick={onClose}
+    >
+      <div style={{
+        width: 360, maxWidth: "100vw",
+        background: "var(--bg-primary,#fff)", boxShadow: "-8px 0 40px rgba(0,0,0,0.16)",
+        display: "flex", flexDirection: "column", animation: "slideInRight 0.22s ease",
+        borderLeft: "1px solid var(--border,#e5e7eb)",
+      }}
+        onClick={e => e.stopPropagation()}
+      >
+        <style>{`@keyframes slideInRight { from { transform: translateX(60px); opacity:0; } to { transform:none; opacity:1; } }`}</style>
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--border,#e5e7eb)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary,#111827)", margin:0 }}>{title} ({items.length})</h3>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:"var(--text-muted,#6b7280)", lineHeight:1 }}>×</button>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"0.75rem 1rem" }}>
+          {items.map(item => (
+            <div key={item.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"0.55rem 0.5rem", borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", flexShrink:0, background:"var(--bg-tertiary,#f0f6fb)", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)" }}>
+                {item.avatar ? <img src={item.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (item.name?.[0] || "?")}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <p style={{ fontSize:13, fontWeight:600, color:"var(--text-primary,#111827)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.name}</p>
+                {item.sub && <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.sub}</p>}
+              </div>
+              {item.badge && <span style={{ fontSize:10, background:"#d1fae5", color:"#065f46", borderRadius:99, padding:"1px 6px", fontWeight:700 }}>{item.badge}</span>}
+            </div>
+          ))}
+          {items.length === 0 && <p style={{ fontSize:13, color:"var(--text-muted,#6b7280)", textAlign:"center", marginTop:"2rem" }}>No data</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════
    MAIN ADMIN PAGE
 ═══════════════════════════════════════════════════════ */
@@ -669,6 +763,7 @@ export default function AdminPage() {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchUser, setSearchUser] = useState("");
+  const [statDetailType, setStatDetailType] = useState(null); // "members"|"online"|"verified"|"admins"|"posts"|"convs"
 
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
@@ -995,17 +1090,22 @@ export default function AdminPage() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <StatCard label={Tr.totalMembers}  value={users.length}   color="#4472b8" sub={Tr.thisWeek(newThisWeek)}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+              onClick={() => setStatDetailType("members")} />
             <StatCard label={Tr.onlineNow}     value={onlineNow}      color="#7ba87a" sub={Tr.activeMembers}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>}
+              onClick={() => setStatDetailType("online")} />
             <StatCard label={Tr.verified}       value={verifiedN}      color="#1d4896" sub={Tr.percentVerified(Math.round(verifiedN/Math.max(users.length,1)*100))}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              onClick={() => setStatDetailType("verified")} />
             <StatCard label={Tr.totalPosts}    value={posts.length}   color="#8b5cf6" sub={`${totalLikes} · ${totalComments}`}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
+              onClick={() => setStatDetailType("posts")} />
             <StatCard label={Tr.conversations}  value={convs.length}   color="#d4a574"
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} />
             <StatCard label={Tr.admins}         value={adminsN}        color="#c25c5c"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>}
+              onClick={() => setStatDetailType("admins")} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "1.25rem" }}>
@@ -1083,7 +1183,99 @@ export default function AdminPage() {
               ))}
               {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>No posts yet</p>}
             </div>
+
+            {/* Member breakdown donut */}
+            {(() => {
+              const verified = users.filter(u => u.emailVerified).length;
+              const adminCount = users.filter(u => u.isAdmin).length;
+              const online = users.filter(isActuallyOnline).length;
+              const total = users.length || 1;
+              const vPct = Math.round(verified / total * 100);
+              const aPct = Math.round(adminCount / total * 100);
+              const oPct = Math.round(online / total * 100);
+              const segments = [
+                { label: Tr.verified || "Verified", pct: vPct, color: "#4472b8" },
+                { label: Tr.admins || "Admins", pct: aPct, color: "#c25c5c" },
+                { label: Tr.onlineNow || "Online", pct: oPct, color: "#7ba87a" },
+                { label: "Others", pct: Math.max(0, 100 - vPct - aPct - oPct), color: "#e2e8f0" },
+              ];
+              let cumulative = 0;
+              const conicParts = segments.map(s => {
+                const start = cumulative;
+                cumulative += s.pct;
+                return `${s.color} ${start}% ${cumulative}%`;
+              }).join(", ");
+              return (
+                <div className="card" style={{ padding: "1.25rem" }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                    Member Breakdown
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                    <div style={{ width: 100, height: 100, borderRadius: "50%", background: `conic-gradient(${conicParts})`, flexShrink: 0, position: "relative" }}>
+                      <div style={{ position:"absolute", inset: 16, borderRadius:"50%", background:"var(--bg-primary,#fff)" }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      {segments.filter(s => s.pct > 0).map(s => (
+                        <div key={s.label} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                          <div style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
+                          <span style={{ fontSize:11, color:"var(--text-secondary,#7a5868)", fontWeight:500 }}>{s.label}</span>
+                          <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", marginLeft:"auto", fontWeight:600 }}>{s.pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Weekly signups bar chart */}
+            {(() => {
+              const days = Array.from({ length: 7 }, (_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (6 - i));
+                return d;
+              });
+              const counts = days.map(day => {
+                const dayStr = day.toISOString().slice(0, 10);
+                return users.filter(u => u.createdAt?.slice(0, 10) === dayStr).length;
+              });
+              const maxCount = Math.max(...counts, 1);
+              const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+              return (
+                <div className="card" style={{ padding: "1.25rem" }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                    New Members – Last 7 Days
+                  </p>
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80 }}>
+                    {counts.map((count, i) => (
+                      <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                        <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)", fontWeight:600, minHeight:14 }}>{count > 0 ? count : ""}</span>
+                        <div style={{
+                          width:"100%", borderRadius:"4px 4px 2px 2px",
+                          background: count > 0 ? "var(--brand,#4472b8)" : "var(--bg-tertiary,#f0f6fb)",
+                          height: `${Math.max(4, (count / maxCount) * 52)}px`,
+                          transition: "height 0.6s ease",
+                        }} />
+                        <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>{dayLabels[days[i].getDay()]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
+
+          {statDetailType && (
+            <StatDetailPanel
+              type={statDetailType}
+              users={users}
+              posts={posts}
+              convs={convs}
+              onClose={() => setStatDetailType(null)}
+              Tr={Tr}
+              isActuallyOnline={isActuallyOnline}
+            />
+          )}
         </>
       )}
 

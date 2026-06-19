@@ -13,6 +13,7 @@ import { logActivity } from "./activityLogger";
 import { deletePostWithCleanup } from "./utils/deletePost";
 import { daysUntilBirthday, formatBirthday } from "./utils/birthday";
 import ImageEditorModal from "./ImageEditorModal";
+import { SlideshowBanner } from "./components/SlideshowBanner";
 
 /* ── Helpers ── */
 function timeAgo(ts, t) {
@@ -1559,6 +1560,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             currentUser={user}
             currentUserProfile={profile}
           />
+          <SlideshowBanner />
 
         </aside>
       </div>
