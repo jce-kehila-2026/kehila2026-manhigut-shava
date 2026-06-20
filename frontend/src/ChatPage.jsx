@@ -3,6 +3,7 @@ import { collection, getDocs, doc, updateDoc, addDoc, arrayUnion, arrayRemove } 
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
+import { useTheme } from "./ThemeContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import {
   useConversations, useMessages,
@@ -142,6 +143,7 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
 /* ── Message bubble with swipe-to-reply + long-press context menu ── */
 function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTime, isLastInGroup, onReply, onViewImage, conversationId, currentUserId }) {
   const { t } = useLang();
+  const { dark } = useTheme();
   const EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🎉"];
   const [hovering, setHovering] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
@@ -294,8 +296,8 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
     : { transform: "scale(1) translateY(0)", transition: "transform 0.18s ease, box-shadow 0.18s ease" };
 
   const myBubble = {
-    background: "#fde8df",
-    color: "#2d1309",
+    background: dark ? "#2a1208" : "#fde8df",
+    color: dark ? "#f0c9b0" : "#2d1309",
     borderRadius: "22px 22px 6px 22px",
     padding: "10px 15px",
     fontSize: 14, lineHeight: 1.5,
@@ -307,8 +309,8 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
   };
 
   const theirBubble = {
-    background: "#dbeafe",
-    color: "#1e3a5f",
+    background: dark ? "#0d1f36" : "#dbeafe",
+    color: dark ? "#c0d4f0" : "#1e3a5f",
     borderRadius: "22px 22px 22px 6px",
     padding: "10px 15px",
     fontSize: 14, lineHeight: 1.5,
@@ -393,10 +395,10 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
           <div ref={bubbleRef} style={{ position: "relative" }}>
             {isHelpRequestPrompt ? (
               <div style={{
-                background: isMe ? "linear-gradient(135deg, #e8735a, #d15a43 50%, #c94e36)" : "#fff",
+                background: isMe ? "linear-gradient(135deg, #e8735a, #d15a43 50%, #c94e36)" : (dark ? "#0d1f36" : "#dbeafe"),
                 color: isMe ? "#fff" : "var(--text-primary)",
                 borderRadius: isMe ? "22px 22px 6px 22px" : "22px 22px 22px 6px",
-                border: isMe ? "none" : "1px solid #e5eaf2",
+                border: isMe ? "none" : `1px solid ${dark ? "#1a3a60" : "#bfdbfe"}`,
                 padding: "12px 15px",
                 fontSize: 14, lineHeight: 1.5,
                 maxWidth: 280, boxSizing: "border-box",
@@ -480,7 +482,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
                     width: "100%", padding: "9px 13px",
                     border: "2px solid var(--brand)", borderRadius: 14,
                     fontSize: 14, lineHeight: 1.5, resize: "none",
-                    fontFamily: "var(--font)", background: "#fff",
+                    fontFamily: "var(--font)", background: "var(--bg-primary)",
                     color: "var(--text-primary)", outline: "none",
                     minHeight: 60, maxHeight: 140, overflow: "auto",
                     boxSizing: "border-box",
@@ -512,7 +514,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
               <div style={{
                 position: "absolute", top: -40,
                 [isMe ? "right" : "left"]: 0,
-                background: "#fff", border: "1px solid #e5eaf2",
+                background: "var(--bg-primary)", border: "1px solid var(--border)",
                 borderRadius: 99, padding: "5px 10px",
                 display: "flex", gap: 2,
                 boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
@@ -602,7 +604,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
             <div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginTop: 2 }}>
               {reactionEntries.map(([emoji, users]) => (
                 <span key={emoji} style={{
-                  background: "#fff", border: "1px solid #e5eaf2",
+                  background: "var(--bg-primary)", border: "1px solid var(--border)",
                   borderRadius: 99, padding: "1px 6px",
                   fontSize: 12, display: "flex", alignItems: "center", gap: 3, cursor: currentUserId ? "pointer" : "default",
                 }}
@@ -656,6 +658,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
 export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUserId }) {
   const { user, profile } = useAuth();
   const { t } = useLang();
+  const { dark } = useTheme();
   const isMobile = useIsMobile();
   const { conversations } = useConversations(user?.uid);
   const [activeConvId, setActiveConvId] = useState(null);
@@ -1256,7 +1259,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, padding: "4px 0.75rem 10px" }}>
                 <Avatar url={otherAvatar} name={otherName} size={28} />
                 <div style={{
-                  background: "#fff", border: "1px solid #e5eaf2",
+                  background: "var(--bg-primary)", border: "1px solid var(--border)",
                   borderRadius: "22px 22px 22px 6px",
                   padding: "10px 16px", display: "flex", gap: 5, alignItems: "center",
                   boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
@@ -1275,7 +1278,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           {replyTo && (
             <div style={{
               margin: "0 0.75rem 4px",
-              background: "#f0f4fa",
+              background: "var(--bg-secondary)",
               borderLeft: "3px solid #e8735a",
               borderRadius: 10, padding: "6px 12px",
               display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -1430,7 +1433,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, background: "var(--bg-chat)" }}>
           <div style={{
             width: 80, height: 80, borderRadius: "50%",
-            background: "#fff", border: "1px solid #e5eaf2",
+            background: "var(--bg-primary)", border: "1px solid var(--border)",
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
           }}>

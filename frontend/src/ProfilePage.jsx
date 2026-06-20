@@ -869,7 +869,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       padding:"0 0 2rem",
       boxSizing:"border-box",
       direction: isRTL ? "rtl" : "ltr",
-      background: T.bg,
+      background: "var(--bg-primary)",
     },
     /* ── Cover photo (standalone, normal flow) ── */
     coverWrap: {
