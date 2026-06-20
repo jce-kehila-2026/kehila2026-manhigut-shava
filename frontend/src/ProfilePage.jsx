@@ -685,6 +685,14 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const isOwner = !viewUserId || viewUserId === user?.uid;
   const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
   const isReadOnly = !isOwner;
+
+  /* Admin edit permissions */
+  const _vap = authProfile?.adminPermissions;
+  const _hasExplicitPerms = _vap && Object.keys(_vap).length > 0;
+  const viewerCanManageUsers = authProfile?.isAdmin && (!_hasExplicitPerms || !!_vap?.canManageUsers);
+  const [adminEditOpen,   setAdminEditOpen]   = useState(false);
+  const [adminEditFields, setAdminEditFields] = useState({});
+  const [adminEditSaving, setAdminEditSaving] = useState(false);
   const postsTitle = isOwner ? t.profile.myPosts : t.profile.posts;
   const noPostsMessage = isOwner ? t.profile.noMyPosts : t.profile.noPosts;
 
@@ -1199,6 +1207,24 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           {!isOwner && onMessage && (
             <button onClick={handleMessageClick} style={{ padding:"10px 20px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:14, fontWeight:700, cursor:"pointer" }}>
               {t.profile.message || "Message"}
+            </button>
+          )}
+          {!isOwner && viewerCanManageUsers && (
+            <button
+              onClick={() => {
+                setAdminEditFields({
+                  firstName:  form.firstName  || "",
+                  lastName:   form.lastName   || "",
+                  city:       form.city       || "",
+                  profession: form.profession || "",
+                  bio:        form.bio        || "",
+                });
+                setAdminEditOpen(true);
+              }}
+              style={{ padding:"10px 16px", borderRadius:99, background:"rgba(68,114,184,0.1)", color:"var(--brand,#4472b8)", border:"1.5px solid var(--brand,#4472b8)", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              {t.profile?.adminEdit || "Admin: Edit"}
             </button>
           )}
         </div>
@@ -1774,6 +1800,74 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   {uploadingCover ? "Uploading…" : "Apply & Save"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Admin Edit Modal ── */}
+      {adminEditOpen && viewerCanManageUsers && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}
+          onClick={() => setAdminEditOpen(false)}>
+          <div style={{ background:"var(--bg-primary)", borderRadius:20, padding:"1.75rem", width:"100%", maxWidth:480, boxShadow:"0 24px 60px rgba(0,0,0,0.22)", animation:"modalPop 0.25s ease both" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1.25rem" }}>
+              <div>
+                <p style={{ fontSize:17, fontWeight:800, color:"var(--text-primary)", margin:0 }}>
+                  {t.profile?.adminEdit || "Admin: Edit Profile"}
+                </p>
+                <p style={{ fontSize:12, color:"var(--text-muted)", margin:"3px 0 0" }}>
+                  {form.firstName} {form.lastName}
+                </p>
+              </div>
+              <button onClick={() => setAdminEditOpen(false)}
+                style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"var(--text-muted)", lineHeight:1, padding:"2px 6px" }}>×</button>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.75rem", marginBottom:"0.75rem" }}>
+              {[
+                { key:"firstName", label: t.profile?.firstName || "First Name" },
+                { key:"lastName",  label: t.profile?.lastName  || "Last Name"  },
+                { key:"city",      label: t.profile?.city      || "City"       },
+                { key:"profession",label: t.profile?.profession|| "Profession" },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 4px" }}>{label}</p>
+                  <input
+                    value={adminEditFields[key] || ""}
+                    onChange={e => setAdminEditFields(prev => ({ ...prev, [key]: e.target.value }))}
+                    style={{ width:"100%", padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", boxSizing:"border-box", fontFamily:"var(--font)" }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ marginBottom:"1rem" }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 4px" }}>{t.profile?.bio || "Bio"}</p>
+              <textarea
+                value={adminEditFields.bio || ""}
+                onChange={e => setAdminEditFields(prev => ({ ...prev, bio: e.target.value }))}
+                rows={3}
+                style={{ width:"100%", padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", boxSizing:"border-box", fontFamily:"var(--font)", resize:"vertical" }}
+              />
+            </div>
+            <div style={{ display:"flex", gap:"0.75rem" }}>
+              <button onClick={() => setAdminEditOpen(false)}
+                style={{ flex:1, padding:"11px", background:"var(--bg-tertiary)", color:"var(--text-secondary)", border:"none", borderRadius:12, fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                {t.profile?.cancel || "Cancel"}
+              </button>
+              <button
+                disabled={adminEditSaving}
+                onClick={async () => {
+                  setAdminEditSaving(true);
+                  try {
+                    await updateDoc(doc(db, "users", viewUserId), adminEditFields);
+                    setForm(prev => ({ ...prev, ...adminEditFields }));
+                    setAdminEditOpen(false);
+                  } catch (e) { console.error(e); }
+                  finally { setAdminEditSaving(false); }
+                }}
+                style={{ flex:2, padding:"11px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:12, fontSize:13, fontWeight:700, cursor: adminEditSaving ? "not-allowed" : "pointer", opacity: adminEditSaving ? 0.7 : 1 }}>
+                {adminEditSaving ? (t.profile?.saving || "Saving…") : (t.profile?.saveChanges || "Save Changes")}
+              </button>
             </div>
           </div>
         </div>

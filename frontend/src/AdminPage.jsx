@@ -12,6 +12,7 @@ import { deletePostWithCleanup } from "./utils/deletePost";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
+import { getOrCreateConversation, sendMessage } from "./hooks/useMessages";
 
 /* ─── Admin translations ─── */
 const AT = {
@@ -819,15 +820,18 @@ function SlideshowAdmin() {
   };
 
   const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     setUploading(true);
     try {
-      const path = `slideshow/${Date.now()}_${file.name}`;
-      const sRef = storageRef(storage, path);
-      await uploadBytes(sRef, file);
-      const url = await getDownloadURL(sRef);
-      await persist([...images, { url, storagePath: path, caption: "" }]);
+      const newImgs = await Promise.all(files.map(async (file) => {
+        const path = `slideshow/${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name}`;
+        const sRef = storageRef(storage, path);
+        await uploadBytes(sRef, file);
+        const url = await getDownloadURL(sRef);
+        return { url, storagePath: path, caption: "" };
+      }));
+      await persist([...images, ...newImgs]);
     } finally { setUploading(false); e.target.value = ""; }
   };
 
@@ -874,8 +878,9 @@ function SlideshowAdmin() {
 
         <label style={{ width:180, height:150, borderRadius:12, border:"2px dashed var(--border)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: uploading ? "wait" : "pointer", color:"var(--text-muted)", fontSize:13, gap:6, background:"var(--bg-secondary)" }}>
           <span style={{ fontSize:28 }}>+</span>
-          <span>{uploading ? "Uploading..." : "Upload image"}</span>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
+          <span>{uploading ? "Uploading..." : "Upload images"}</span>
+          <span style={{ fontSize:10, color:"var(--text-muted)", marginTop:-4 }}>Select multiple</span>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
         </label>
       </div>
       {images.length === 0 && !uploading && (
@@ -903,9 +908,15 @@ export default function AdminPage() {
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
+  const [userSortBy, setUserSortBy] = useState("recent");   // recent | alpha | city | perms
+  const [userFilterAdmin, setUserFilterAdmin] = useState(false);
+  const [userFilterOnline, setUserFilterOnline] = useState(false);
 
-  /* ── Posts: search + expanded comments ── */
+  /* ── Posts: search + filter + expanded comments ── */
   const [postSearch, setPostSearch] = useState("");
+  const [postSortBy, setPostSortBy] = useState("recent");
+  const [postFilterPinned, setPostFilterPinned] = useState(false);
+  const [postFilterMedia,  setPostFilterMedia]  = useState(false);
   const [expandedPostComments, setExpandedPostComments] = useState({});
   const [postCommentsList, setPostCommentsList]         = useState({});
 
@@ -922,6 +933,8 @@ export default function AdminPage() {
   const [reportsLoading, setReportsLoading] = useState(false);
   const [expandedUserId,  setExpandedUserId]  = useState(null);
   const [expandedReportId, setExpandedReportId] = useState(null);
+  const [reportStatusFilter, setReportStatusFilter] = useState("all"); // "all"|"pending"|"resolved"|"dismissed"
+  const [reportSearch,       setReportSearch]       = useState("");
 
   /* ── Permission / confirm modals ── */
   const [confirmDeleteTarget,  setConfirmDeleteTarget]  = useState(null); // user to delete
@@ -995,8 +1008,22 @@ export default function AdminPage() {
   }, []);
 
   const updateReportStatus = async (id, status) => {
-    await updateDoc(doc(db, "reports", id), { status });
+    const report = reports.find(r => r.id === id);
+    await updateDoc(doc(db, "reports", id), { status, resolvedAt: status === "resolved" ? new Date().toISOString() : null });
     setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+
+    if (status === "resolved" && report?.reporterId && user?.uid && report.reporterId !== user.uid) {
+      try {
+        const adminProfile = { firstName: profile?.firstName || "Admin", lastName: profile?.lastName || "", avatarUrl: profile?.avatarUrl || null };
+        const reporterProfile = users.find(u => u.id === report.reporterId) || { firstName: report.reporterName || "User", lastName: "", avatarUrl: null };
+        const convId = await getOrCreateConversation(user.uid, report.reporterId, adminProfile, reporterProfile);
+        const resolvedDate = new Date().toLocaleDateString();
+        const dmText = `✓ Your report about ${report.reportedName || "a user"} has been reviewed and resolved (${resolvedDate}). Thank you for helping keep the community safe.`;
+        await sendMessage(convId, user.uid, dmText, null, null, [report.reporterId]);
+      } catch (e) {
+        console.error("Auto-DM failed:", e);
+      }
+    }
   };
 
   /* ── Access denied ── */
@@ -1154,12 +1181,24 @@ export default function AdminPage() {
   };
 
   /* ── Filtered users (shared between Users + EditUsers tabs) ── */
-  const filteredBySearch = users.filter(u => {
-    const s = (searchUser || userSearch).toLowerCase();
-    if (!s) return true;
-    const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-    return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
-  });
+  const filteredBySearch = users
+    .filter(u => {
+      const s = (searchUser || userSearch).toLowerCase();
+      const matchSearch = !s || (() => {
+        const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
+        return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
+      })();
+      const matchAdmin  = !userFilterAdmin  || !!u.isAdmin;
+      const matchOnline = !userFilterOnline || isActuallyOnline(u);
+      return matchSearch && matchAdmin && matchOnline;
+    })
+    .sort((a, b) => {
+      if (userSortBy === "alpha")  return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
+      if (userSortBy === "city")   return (a.city ?? "").localeCompare(b.city ?? "", "he");
+      if (userSortBy === "perms")  return (b.isAdmin ? 1 : 0) - (a.isAdmin ? 1 : 0);
+      // default: recent (createdAt desc)
+      return new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0);
+    });
 
   /* ── Excel export ── */
   const exportExcel = async () => {
@@ -1411,19 +1450,42 @@ export default function AdminPage() {
       {/* ══ USERS TAB ══ */}
       {!loading && tab === "users" && (
         <>
-          <SectionHeader
-            title="All Members"
-            count={filteredBySearch.length}
-            action={
-              <input
-                className="input"
-                placeholder="Search by name, email, profession…"
-                value={searchUser}
-                onChange={e => setSearchUser(e.target.value)}
-                style={{ fontSize: 12, width: 240 }}
-              />
-            }
-          />
+          {/* Members header + inline filter bar */}
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+              All Members <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredBySearch.length})</span>
+            </span>
+            <input
+              className="input"
+              placeholder="Search by name, email, profession…"
+              value={searchUser}
+              onChange={e => setSearchUser(e.target.value)}
+              style={{ fontSize:12, width:220, flexShrink:0 }}
+            />
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+              {[
+                { val:"recent", label:"Recent" },
+                { val:"alpha",  label:"A–Z" },
+                { val:"city",   label:"City" },
+                { val:"perms",  label:"Admins first" },
+              ].map(opt => (
+                <button key={opt.val} onClick={() => setUserSortBy(opt.val)}
+                  style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
+                    background: userSortBy===opt.val ? "var(--brand,#4472b8)" : "var(--bg-secondary,#f0f6fb)",
+                    color: userSortBy===opt.val ? "#fff" : "var(--text-secondary)" }}>
+                  {opt.label}
+                </button>
+              ))}
+              <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={userFilterAdmin} onChange={e => setUserFilterAdmin(e.target.checked)} style={{ cursor:"pointer" }} />
+                Admins only
+              </label>
+              <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={userFilterOnline} onChange={e => setUserFilterOnline(e.target.checked)} style={{ cursor:"pointer" }} />
+                Online now
+              </label>
+            </div>
+          </div>
           <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
               <thead>
@@ -1595,25 +1657,56 @@ export default function AdminPage() {
       {!loading && tab === "posts" && (
         <>
           {(() => {
-            const filteredPosts = posts.filter(p =>
-              !postSearch ||
-              (p.text || "").toLowerCase().includes(postSearch.toLowerCase()) ||
-              (p.authorName || "").toLowerCase().includes(postSearch.toLowerCase())
-            );
+            const filteredPosts = posts
+              .filter(p =>
+                (!postSearch ||
+                  (p.text || "").toLowerCase().includes(postSearch.toLowerCase()) ||
+                  (p.authorName || "").toLowerCase().includes(postSearch.toLowerCase())) &&
+                (!postFilterPinned || p.isPinned) &&
+                (!postFilterMedia  || (p.media?.length > 0))
+              )
+              .sort((a, b) => {
+                if (postSortBy === "alpha") return (a.authorName || "").localeCompare(b.authorName || "", "he");
+                if (postSortBy === "likes") return (b.likesCount || 0) - (a.likesCount || 0);
+                return new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0);
+              });
             return (
           <>
-          <SectionHeader title="All Posts" count={filteredPosts.length} />
-          <input
-            value={postSearch}
-            onChange={e => setPostSearch(e.target.value)}
-            placeholder={Tr.searchPh || "Search posts..."}
-            style={{
-              width:"100%", maxWidth:340, padding:"7px 12px", marginBottom:"1rem",
-              border:"1px solid var(--border,#daeaf8)", borderRadius:10, fontSize:13,
-              background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
-              boxSizing:"border-box",
-            }}
-          />
+          {/* Posts header + inline filter bar */}
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+              All Posts <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredPosts.length})</span>
+            </span>
+            <input
+              className="input"
+              value={postSearch}
+              onChange={e => setPostSearch(e.target.value)}
+              placeholder={Tr.searchPh || "Search posts..."}
+              style={{ fontSize:12, width:200, flexShrink:0 }}
+            />
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+              {[
+                { val:"recent", label:"Recent" },
+                { val:"alpha",  label:"A–Z" },
+                { val:"likes",  label:"Most liked" },
+              ].map(opt => (
+                <button key={opt.val} onClick={() => setPostSortBy(opt.val)}
+                  style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
+                    background: postSortBy===opt.val ? "var(--brand,#4472b8)" : "var(--bg-secondary,#f0f6fb)",
+                    color: postSortBy===opt.val ? "#fff" : "var(--text-secondary)" }}>
+                  {opt.label}
+                </button>
+              ))}
+              <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={postFilterPinned} onChange={e => setPostFilterPinned(e.target.checked)} style={{ cursor:"pointer" }} />
+                Pinned only
+              </label>
+              <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={postFilterMedia} onChange={e => setPostFilterMedia(e.target.checked)} style={{ cursor:"pointer" }} />
+                Has media
+              </label>
+            </div>
+          </div>
           <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
               <thead>
@@ -1640,9 +1733,24 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td style={{ padding:"11px 14px",maxWidth:320 }}>
-                        <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:0 }}>
-                          {p.text || <em style={{color:"var(--text-muted,#6b7280)"}}>Media post</em>}
-                        </p>
+                        {p.text ? (() => {
+                          const LIMIT = 120;
+                          const isLong = p.text.length > LIMIT;
+                          const isExpanded = expandedPostComments[`text-${p.id}`];
+                          return (
+                            <>
+                              <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:"0 0 2px" }}>
+                                {isExpanded || !isLong ? p.text : `${p.text.slice(0, LIMIT)}…`}
+                              </p>
+                              {isLong && (
+                                <button onClick={() => setExpandedPostComments(s => ({ ...s, [`text-${p.id}`]: !s[`text-${p.id}`] }))}
+                                  style={{ fontSize:10, color:"var(--brand,#4472b8)", background:"none", border:"none", cursor:"pointer", padding:0, fontWeight:600 }}>
+                                  {isExpanded ? "Show less" : "Show full post"}
+                                </button>
+                              )}
+                            </>
+                          );
+                        })() : <em style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>Media post</em>}
                       </td>
                       <td style={{ padding:"11px 14px" }}>
                         {p.media?.length > 0
@@ -1995,14 +2103,48 @@ export default function AdminPage() {
       {/* ══ REPORTS TAB ══ */}
       {tab === "reports" && (
         <div>
-          <SectionHeader title={Tr.reportsTab} count={reports.filter(r=>r.status==="pending").length} action={
-            <button style={S.refreshBtn} onClick={fetchReports}>{reportsLoading ? "…" : `↻ ${Tr.refresh}`}</button>
-          } />
-          {reportsLoading ? (
-            <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>Loading…</div>
-          ) : reports.length === 0 ? (
-            <div className="empty-state"><p>{Tr.noReports}</p></div>
-          ) : (
+          {/* Reports header + inline filter bar */}
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+              {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({reports.filter(r=>r.status==="pending").length} pending)</span>
+            </span>
+            <input
+              className="input"
+              value={reportSearch}
+              onChange={e => setReportSearch(e.target.value)}
+              placeholder="Search reporter or reported…"
+              style={{ fontSize:12, width:220, flexShrink:0 }}
+            />
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+              {[
+                { val:"all",       label:"All" },
+                { val:"pending",   label:"Pending" },
+                { val:"resolved",  label:"Resolved" },
+                { val:"dismissed", label:"Dismissed" },
+              ].map(opt => (
+                <button key={opt.val} onClick={() => setReportStatusFilter(opt.val)}
+                  style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
+                    background: reportStatusFilter===opt.val ? "var(--brand,#4472b8)" : "var(--bg-secondary,#f0f6fb)",
+                    color: reportStatusFilter===opt.val ? "#fff" : "var(--text-secondary)" }}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchReports}>{reportsLoading ? "…" : `↻ ${Tr.refresh}`}</button>
+          </div>
+          {(() => {
+            const filteredReports = reports.filter(r => {
+              const matchStatus = reportStatusFilter === "all" || r.status === reportStatusFilter;
+              const matchSearch = !reportSearch ||
+                (r.reporterName || "").toLowerCase().includes(reportSearch.toLowerCase()) ||
+                (r.reportedName || "").toLowerCase().includes(reportSearch.toLowerCase());
+              return matchStatus && matchSearch;
+            });
+            return reportsLoading ? (
+              <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>Loading…</div>
+            ) : filteredReports.length === 0 ? (
+              <div className="empty-state"><p>{reports.length === 0 ? Tr.noReports : "No reports match the filters."}</p></div>
+            ) : (
             <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
               <table style={{ ...S.table, minWidth: 560 }}>
                 <thead>
@@ -2013,7 +2155,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map(r => (
+                  {filteredReports.map(r => (
                     <React.Fragment key={r.id}>
                       <tr style={{ ...S.row, opacity: r.status !== "pending" ? 0.6 : 1, cursor:"pointer", borderBottom: expandedReportId === r.id ? "none" : undefined }}
                         onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
@@ -2104,7 +2246,8 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
-          )}
+            );
+          })()}
         </div>
       )}
 

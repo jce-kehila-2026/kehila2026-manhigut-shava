@@ -37,6 +37,14 @@ service cloud.firestore {
         allow read:  if isOwner(userId) || isAdmin();
         allow write: if isOwner(userId) || isAdmin();
       }
+
+      /* Birthday wishes — any signed-in user can send a wish; only the
+         sender or an admin can delete it. */
+      match /birthdayWishes/{wishId} {
+        allow read:   if isAuth();
+        allow create: if isAuth() && request.resource.data.fromUserId == request.auth.uid;
+        allow delete: if isAuth() && (resource.data.fromUserId == request.auth.uid || isAdmin());
+      }
     }
 
     /* ── Posts ── */
@@ -127,19 +135,6 @@ service cloud.firestore {
       allow create: if isAuth() && request.resource.data.fromUserId == request.auth.uid;
       allow update: if isAuth() && (resource.data.toUserId == request.auth.uid || isAdmin());
       allow delete: if isAuth() && (resource.data.toUserId == request.auth.uid || isAdmin());
-    }
-
-    /* ── Birthday wishes (aggregate per person per day) ── */
-    match /birthdayWishes/{docId} {
-      allow read:   if isAuth();
-      /* The wisher must include themselves in the wishers list. */
-      allow create: if isAuth() && request.auth.uid in request.resource.data.wishers;
-      /* Updates may only ADD the requester: existing wishers can't be removed,
-         and the doc can't be repurposed to a different birthday person. */
-      allow update: if isAuth()
-        && request.auth.uid in request.resource.data.wishers
-        && request.resource.data.wishers.hasAll(resource.data.wishers)
-        && request.resource.data.birthdayUserId == resource.data.birthdayUserId;
     }
 
     /* ── Events ── */
