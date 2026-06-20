@@ -152,7 +152,10 @@ service cloud.firestore {
 
     /* ── Activity logs ── */
     match /activityLogs/{logId} {
-      allow create: if isAuth();
+      /* The actor must be the writer — stops users forging log entries that
+         appear to come from someone else. (A fully tamper-proof audit trail
+         would be written server-side from Cloud Functions — follow-up task.) */
+      allow create: if isAuth() && request.resource.data.actorId == request.auth.uid;
       allow read:   if isAdmin();
     }
 
