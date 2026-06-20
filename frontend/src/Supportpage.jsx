@@ -534,6 +534,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     });
   }, [user]);
 
+  /* Pre-fill area from user's own profession/helpAreas when profile loads */
+  useEffect(() => {
+    if (!senderProfile || selectedArea) return;
+    const prof = senderProfile.helpAreas?.[0] || senderProfile.profession || senderProfile.currentRole;
+    if (prof) { setSelectedArea("OTHER"); setOtherArea(prof); }
+  }, [senderProfile]);
+
   const openSuggest = () => {
     if (nameInputRef.current) {
       const r = nameInputRef.current.getBoundingClientRect();

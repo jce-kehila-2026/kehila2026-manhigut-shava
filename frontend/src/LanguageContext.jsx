@@ -283,6 +283,9 @@ const translations = {
       birthdaySend: "שלח/י איחול",
       birthdaySending: "שולח…",
       birthdayNoWishes: "היו/הראשונים לאחל יום הולדת שמח!",
+      requiredHint: "← מלאי שדה זה",
+      optionalTag: "(רשות)",
+      contactEmail: "אימייל ליצירת קשר",
     },
     network: {
       joinNetwork: "הצטרף לרשת",
@@ -684,6 +687,9 @@ const translations = {
       birthdaySend: "Send Wish",
       birthdaySending: "Sending…",
       birthdayNoWishes: "Be the first to send a birthday wish!",
+      requiredHint: "← Fill this field",
+      optionalTag: "(optional)",
+      contactEmail: "Contact Email",
     },
     network: {
       joinNetwork: "Join Network",
@@ -1085,6 +1091,9 @@ const translations = {
       birthdaySend: "إرسال التهنئة",
       birthdaySending: "جارٍ الإرسال…",
       birthdayNoWishes: "كن/كوني أول من يرسل تهنئة بعيد الميلاد!",
+      requiredHint: "← أكملي هذا الحقل",
+      optionalTag: "(اختياري)",
+      contactEmail: "البريد الإلكتروني للتواصل",
     },
     network: {
       joinNetwork: "انضم للشبكة",

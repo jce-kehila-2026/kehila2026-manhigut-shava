@@ -506,27 +506,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         )}{/* end right sidebar */}
       </div>{/* end two-column grid */}
 
-      {/* Tutorial replay button */}
-      <style>{`
-        @keyframes tut-btn-pulse {
-          0%,100% { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 0   rgba(68,114,184,0.5); }
-          60%      { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 12px rgba(68,114,184,0); }
-        }
-      `}</style>
-      <button
-        onClick={() => setShowTutorial(true)}
-        title={t.tutorial?.howTo || "How to use the website"}
-        style={{
-          position: "fixed", bottom: isMobile ? 76 : 24, right: 16,
-          width: 40, height: 40, borderRadius: "50%",
-          background: "var(--brand,#4472b8)", color: "#fff",
-          border: "none", cursor: "pointer",
-          fontSize: 19, fontWeight: 800,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          animation: "tut-btn-pulse 2.4s ease-in-out infinite",
-          zIndex: 100,
-        }}
-      >?</button>
 
     </div>
   );
@@ -1286,6 +1265,28 @@ export default function DashboardPage() {
           })}
         </nav>
       )}
+
+        {/* Tutorial replay button — fixed, visible on every section */}
+        <style>{`
+          @keyframes tut-btn-pulse {
+            0%,100% { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 0   rgba(68,114,184,0.5); }
+            60%      { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 12px rgba(68,114,184,0); }
+          }
+        `}</style>
+        <button
+          onClick={() => setShowTutorial(true)}
+          title={t.tutorial?.howTo || "How to use the website"}
+          style={{
+            position: "fixed", bottom: isMobile ? 72 : 24, right: 16,
+            width: 40, height: 40, borderRadius: "50%",
+            background: "var(--brand,#4472b8)", color: "#fff",
+            border: "none", cursor: "pointer",
+            fontSize: 19, fontWeight: 800,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            animation: "tut-btn-pulse 2.4s ease-in-out infinite",
+            zIndex: 200,
+          }}
+        >?</button>
 
         {/* Language change confirmation popup */}
         {langChangeCode && (

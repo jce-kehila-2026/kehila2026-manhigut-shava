@@ -935,22 +935,28 @@ function ComposeBox({ currentUser, profile, onPost }) {
             }}
           />
 
-          {import.meta.env.VITE_GEMINI_KEY && text?.trim()?.length > 10 && (
+          {text?.trim()?.length > 10 && (
             <div style={{ display:"flex", justifyContent:"flex-end", marginTop:4 }}>
               <button
                 type="button"
                 onClick={async () => {
+                  if (!import.meta.env.VITE_GEMINI_KEY) {
+                    alert("AI rewriting requires a Gemini API key. Add VITE_GEMINI_KEY to your .env file.");
+                    return;
+                  }
                   setAiRewriting(true);
                   const improved = await geminiRewrite(text, lang);
                   if (improved) setText(improved);
                   setAiRewriting(false);
                 }}
                 disabled={aiRewriting}
+                title={!import.meta.env.VITE_GEMINI_KEY ? "Gemini API key not configured" : "Improve your post with AI"}
                 style={{
                   fontSize:11, fontWeight:700, padding:"5px 12px",
                   borderRadius:99, border:"1.5px solid var(--brand,#4472b8)",
                   background:"none", color:"var(--brand,#4472b8)",
-                  cursor:"pointer", display:"flex", alignItems:"center", gap:5,
+                  cursor: aiRewriting ? "wait" : "pointer",
+                  display:"flex", alignItems:"center", gap:5,
                   opacity: aiRewriting ? 0.6 : 1,
                 }}
               >

@@ -174,12 +174,14 @@ function CheckMark() {
 }
 
 function RequiredHint({ show }) {
+  const { t } = useLang();
   if (!show) return null;
-  return <span style={{ fontSize:11, color:"#dc2626", marginTop:3, display:"block", fontWeight:600 }}>← מלאי שדה זה</span>;
+  return <span style={{ fontSize:11, color:"#dc2626", marginTop:3, display:"block", fontWeight:600 }}>{t.profile?.requiredHint || "← מלאי שדה זה"}</span>;
 }
 
 function OptionalTag() {
-  return <span style={{ fontSize:10, fontWeight:500, color:"var(--text-muted,#9ca3af)", marginRight:4, marginLeft:4 }}>(רשות)</span>;
+  const { t } = useLang();
+  return <span style={{ fontSize:10, fontWeight:500, color:"var(--text-muted,#9ca3af)", marginRight:4, marginLeft:4 }}>{t.profile?.optionalTag || "(רשות)"}</span>;
 }
 
 function CompletenessBadge({ pct }) {
@@ -1347,7 +1349,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               </div>
               {/* Contact email */}
               <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile?.contactEmail || "אימייל ליצירת קשר"}<OptionalTag /></label>
+                <label style={S.label}>{t.profile?.contactEmail || "Contact Email"}<OptionalTag /></label>
                 <input
                   className="profile-input"
                   name="contactEmail" value={form.contactEmail || ""}
@@ -1601,7 +1603,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               )}
               {form.contactEmail && (
                 <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <p style={S.label}>{t.profile?.contactEmail || "אימייל ליצירת קשר"}</p>
+                  <p style={S.label}>{t.profile?.contactEmail || "Contact Email"}</p>
                   <a href={`mailto:${form.contactEmail}`} style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
                     {form.contactEmail}
@@ -1631,10 +1633,17 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
               </div>
 
-              {!form.ethnicityPrivate && (
+              {(!form.ethnicityPrivate || authProfile?.isAdmin) && form.ethnicity && (
                 <div style={S.group}>
-                  <p style={S.label}>{t.profile.ethnicity}</p>
-                  <div style={S.inputDisabled}>{form.ethnicity || "—"}</div>
+                  <p style={S.label}>
+                    {t.profile.ethnicity}
+                    {form.ethnicityPrivate && authProfile?.isAdmin && (
+                      <span style={{ fontSize:10, color:"var(--text-muted)", marginInlineStart:6, fontWeight:500 }}>
+                        (private — visible to admins only)
+                      </span>
+                    )}
+                  </p>
+                  <div style={S.inputDisabled}>{form.ethnicity}</div>
                 </div>
               )}
             </div>

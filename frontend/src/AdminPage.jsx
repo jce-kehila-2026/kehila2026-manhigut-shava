@@ -942,6 +942,16 @@ export default function AdminPage() {
       ? `${profile.firstName} ${profile.lastName}`
       : user?.email ?? "Admin";
 
+  /* ── Permission helpers — if no adminPermissions key exists, grant full access (original admin) ── */
+  const _ap = profile?.adminPermissions;
+  const hasExplicitPerms = _ap && Object.keys(_ap).length > 0;
+  const canManageUsers   = !hasExplicitPerms || !!_ap.canManageUsers;
+  const canManageContent = !hasExplicitPerms || !!_ap.canManageContent;
+  const canViewLogs      = !hasExplicitPerms || !!_ap.canViewLogs;
+  const canManageAdmins  = !hasExplicitPerms || !!_ap.canManageAdmins;
+  const canViewStats     = !hasExplicitPerms || !!_ap.canViewStats;
+  const canExportData    = !hasExplicitPerms || !!_ap.canExportData;
+
   useEffect(() => {
     if (!profile?.isAdmin) return;
     Promise.all([
@@ -1248,16 +1258,16 @@ export default function AdminPage() {
     }
   };
 
-  /* ── TABS config ── */
+  /* ── TABS config — filtered by permissions ── */
   const TABS = [
-    { id: "overview",  label: Tr.tabs.overview },
-    { id: "users",     label: `${Tr.tabs.users} (${users.length})` },
-    { id: "posts",     label: `${Tr.tabs.posts} (${posts.length})` },
-    { id: "data",      label: Tr.showDataTab },
-    { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}` },
-    { id: "logs",      label: Tr.tabs.logs },
-    { id: "slideshow", label: Tr.admin?.slideshow || "Slideshow" },
-  ];
+    { id: "overview",  label: Tr.tabs.overview, show: true },
+    { id: "users",     label: `${Tr.tabs.users} (${users.length})`, show: canManageUsers },
+    { id: "posts",     label: `${Tr.tabs.posts} (${posts.length})`, show: canManageContent },
+    { id: "data",      label: Tr.showDataTab, show: canViewStats },
+    { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}`, show: canManageContent },
+    { id: "logs",      label: Tr.tabs.logs, show: canViewLogs },
+    { id: "slideshow", label: Tr.admin?.slideshow || "Slideshow", show: canManageContent },
+  ].filter(t => t.show);
 
   /* ─────────────────────────────────────── RENDER ─── */
   return (
@@ -1460,11 +1470,11 @@ export default function AdminPage() {
                     <td style={{ padding:"11px 14px" }}>
                       {u.id !== user?.uid && (
                         <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
-                          <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
+                          {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
                             style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)",color:"var(--text-primary,#111827)",cursor:"pointer",whiteSpace:"nowrap" }}>
                             {Tr.editUser || "Edit"}
-                          </button>
-                          {u.isAdmin ? (<>
+                          </button>}
+                          {canManageAdmins && (u.isAdmin ? (<>
                             <button onClick={() => setEditPermsTarget(u)}
                               style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer",whiteSpace:"nowrap" }}>
                               {Tr.editPermsBtn}
@@ -1478,11 +1488,12 @@ export default function AdminPage() {
                               style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
                               {Tr.makeAdmin}
                             </button>
-                          )}
-                          <button onClick={() => setConfirmDeleteTarget(u)}
+                          ))}
+                          {canManageUsers && <button onClick={() => setConfirmDeleteTarget(u)}
                             style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
                             {Tr.deleteLbl}
-                          </button>
+                          </button>}
+                          {!canManageUsers && !canManageAdmins && <span style={{fontSize:11,color:"var(--text-muted)"}}>View only</span>}
                         </div>
                       )}
                     </td>
@@ -1650,16 +1661,17 @@ export default function AdminPage() {
                       <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
                       <td style={{ padding:"11px 14px" }}>
                         <div style={{ display:"flex",gap:4 }}>
-                          <button
+                          {canManageContent && <button
                             onClick={() => pinPost(p.id, p.isPinned)}
                             style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}
-                          >{p.isPinned ? "Unpin" : "Pin"}</button>
-                          <button
+                          >{p.isPinned ? "Unpin" : "Pin"}</button>}
+                          {canManageContent && <button
                             onClick={() => deletePost(p.id)}
                             style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}
                             onMouseEnter={e => e.currentTarget.style.background = "#eec3c3"}
                             onMouseLeave={e => e.currentTarget.style.background = "#f5dada"}
-                          >Delete</button>
+                          >Delete</button>}
+                          {!canManageContent && <span style={{fontSize:11,color:"var(--text-muted)"}}>View only</span>}
                         </div>
                       </td>
                     </tr>
