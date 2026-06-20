@@ -20,6 +20,15 @@ service cloud.firestore {
             request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['networksCount', 'isMentor', 'isMentee']));
 
+      /* Private contact PII (phone/email). The public user-doc read above is
+         available to every signed-in member, so contact must NOT live there.
+         It is kept in this subcollection, readable only by the owner or an
+         admin — matching the privacy promise that contact stays hidden from
+         other graduates. (Frontend is moved onto this in tasks 5b/5c.) */
+      match /private/{docId} {
+        allow read:  if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) || isAdmin();
+      }
     }
 
     /* ── Posts ── */
