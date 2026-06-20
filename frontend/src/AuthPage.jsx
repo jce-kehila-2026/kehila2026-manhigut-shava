@@ -377,7 +377,6 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
       const normalizedPhone = normalizePhone(form.phone);
       await setDoc(doc(db, "users", user.uid), {
         firstName:form.firstName, lastName:form.lastName,
-        phone:normalizedPhone, email:form.email,
         institution:form.institution,
         profession:effectiveProfession, city:effectiveCity,
         emailVerified:false, acceptedTerms:true, createdAt:new Date().toISOString(),

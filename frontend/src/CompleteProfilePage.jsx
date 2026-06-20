@@ -296,8 +296,6 @@ export default function CompleteProfilePage() {
         /* public */
         firstName:          form.firstName,
         lastName:           form.lastName,
-        phone:              normalizedPhone,
-        email:              form.email,
         birthdate:          form.birthdate || null,
         region:             form.region,
         campus:             form.campus === "OTHER" ? (form.campusOther || "אחר") : form.campus,

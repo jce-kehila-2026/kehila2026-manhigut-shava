@@ -9,7 +9,7 @@ import {
 } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, auth } from "./firebase";
-import { saveContact } from "./contact";
+import { saveContact, getContact } from "./contact";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { useTheme } from "./ThemeContext";
@@ -597,13 +597,15 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   useEffect(() => {
     const targetId = viewUserId || user?.uid;
     if (!targetId) return;
-    getDoc(doc(db, "users", targetId)).then((snap) => {
+    const isViewerOwnerOrAdmin = !viewUserId || viewUserId === user?.uid || authProfile?.isAdmin;
+    getDoc(doc(db, "users", targetId)).then(async (snap) => {
+      const contact = isViewerOwnerOrAdmin ? await getContact(targetId) : { phone: "", email: "" };
       if (snap.exists()) {
         const d = snap.data();
         setForm({
           firstName:      d.firstName      ?? "",
           lastName:       d.lastName       ?? "",
-          phone:          d.phone          ?? "",
+          phone:          contact.phone    ?? "",
           profession:     d.profession     ?? "",
           bio:            d.bio            ?? "",
           birthDate:      d.birthDate      ?? "",
@@ -623,7 +625,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setPhotoURL(d.photoURL ?? d.avatarUrl ?? null);
         setCoverURL(d.coverPhotoURL ?? null);
         setNetworksCount(d.networksCount ?? 0);
-        setProfileEmail(d.email ?? "");
+        setProfileEmail(contact.email ?? "");
         setBirthdayValue(d.birthDate ?? d.birthdate ?? "");
         const inst = d.institution ?? "";
         if (inst && !INSTITUTIONS.includes(inst)) {
@@ -790,8 +792,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       const saveData = { ...fields };
       if ("institution" in saveData && saveData.institution === "OTHER")
         saveData.institution = institutionOther || "אחר";
-      const writes = [updateDoc(doc(db, "users", targetId), saveData)];
-      if ("phone" in saveData) writes.push(saveContact(targetId, { phone: saveData.phone }));
+      const writes = [];
+      if ("phone" in saveData) {
+        writes.push(saveContact(targetId, { phone: saveData.phone }));
+        delete saveData.phone;
+      }
+      writes.push(updateDoc(doc(db, "users", targetId), saveData));
       await Promise.all(writes);
       if (isOwner) await refreshProfile();
       setSavedKey(sectionKey);
