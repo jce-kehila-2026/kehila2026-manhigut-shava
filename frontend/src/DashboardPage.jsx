@@ -5,11 +5,13 @@ import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { useTheme } from "./ThemeContext";
 import { useIsMobile } from "./hooks/useIsMobile";
-import SupportPage   from "./SupportPage";
-import CommunityPage from "./CommunityPage";
-import ProfilePage   from "./ProfilePage";
-import AdminPage     from "./AdminPage";
-import ChatPage      from "./ChatPage";
+import SupportPage          from "./SupportPage";
+import CommunityPage        from "./CommunityPage";
+import ProfilePage          from "./ProfilePage";
+import AdminPage            from "./AdminPage";
+import ChatPage             from "./ChatPage";
+import MembersDirectoryPage from "./MembersDirectoryPage";
+import EventsPage           from "./EventsPage";
 import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 import { SlideshowBanner } from "./components/SlideshowBanner";
 import { TutorialPopup } from "./components/TutorialPopup";
@@ -23,6 +25,8 @@ const Icon = {
   support: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   profile: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
   admin: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  directory: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+  events: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
   logout: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   back: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>,
   sun: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
@@ -859,10 +863,12 @@ export default function DashboardPage() {
     : (user?.email?.[0] || "?").toUpperCase();
 
   const navItems = [
-    { id: "home",      label: t.nav.home,      icon: Icon.home      },
+    { id: "home",      label: t.nav.home,       icon: Icon.home       },
     { id: "community", label: t.nav.community,  icon: Icon.community  },
     { id: "chat",      label: t.nav.messages,   icon: Icon.chat       },
     { id: "members",   label: t.nav.support,    icon: Icon.members    },
+    { id: "directory", label: t.nav.directory,  icon: Icon.directory  },
+    { id: "events",    label: t.nav.events,     icon: Icon.events     },
     { id: "profile",   label: t.nav.profile,    icon: Icon.profile    },
     ...(profile?.isAdmin ? [{ id: "admin", label: t.nav.admin, icon: Icon.admin }] : []),
   ];
@@ -1385,6 +1391,8 @@ export default function DashboardPage() {
             {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
             {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
             {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
+            {section === "directory" && <MembersDirectoryPage onViewProfile={(userId) => navigate("profile", { userId })} />}
+            {section === "events"    && <EventsPage />}
             {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} onNavigateToCommunity={() => switchTab("community")} />}
             {section === "admin"     && <AdminPage />}
           </div>
