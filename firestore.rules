@@ -10,6 +10,14 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
+    /* ── Data validation helpers ── */
+    function hasFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    function isNonEmptyString(val) {
+      return val is string && val.size() > 0;
+    }
+
     /* ── Users ── */
     match /users/{userId} {
       allow read: if isAuth();
@@ -34,7 +42,10 @@ service cloud.firestore {
     /* ── Posts ── */
     match /posts/{postId} {
       allow read:   if isAuth();
-      allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
+      allow create: if isAuth()
+        && request.resource.data.authorId == request.auth.uid
+        && hasFields(['authorId', 'createdAt'])
+        && isNonEmptyString(request.resource.data.authorId);
       allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin()
         || request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['likesCount', 'likedBy', 'commentCount', 'isPinned', 'repostCount']));
@@ -42,7 +53,11 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow read:   if isAuth();
-        allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
+        allow create: if isAuth()
+          && request.resource.data.authorId == request.auth.uid
+          && hasFields(['authorId', 'text', 'createdAt'])
+          && isNonEmptyString(request.resource.data.text)
+          && request.resource.data.text.size() <= 2000;
         allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
         allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
       }
@@ -51,7 +66,10 @@ service cloud.firestore {
     /* ── Conversations ── */
     match /conversations/{convId} {
       allow read:   if isAuth() && (request.auth.uid in resource.data.participants || isAdmin());
-      allow create: if isAuth() && request.auth.uid in request.resource.data.participants;
+      allow create: if isAuth()
+        && request.auth.uid in request.resource.data.participants
+        && hasFields(['participants'])
+        && request.resource.data.participants.size() >= 2;
       allow update: if isAuth() && request.auth.uid in resource.data.participants;
       allow delete: if isAdmin();
 
@@ -59,7 +77,9 @@ service cloud.firestore {
         allow read:   if isAuth() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
         allow create: if isAuth() &&
           request.resource.data.senderId == request.auth.uid &&
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants &&
+          hasFields(['senderId', 'createdAt']) &&
+          (isNonEmptyString(request.resource.data.text) || request.resource.data.imageUrl is string);
         allow update: if isAuth() &&
           request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
         allow delete: if isAuth() && (resource.data.senderId == request.auth.uid || isAdmin());
@@ -69,7 +89,10 @@ service cloud.firestore {
     /* ── Help requests ── */
     match /helpRequests/{docId} {
       allow read:   if isAuth();
-      allow create: if isAuth() && request.auth.uid == request.resource.data.fromUserId;
+      allow create: if isAuth()
+        && request.auth.uid == request.resource.data.fromUserId
+        && hasFields(['fromUserId', 'toUserId', 'createdAt'])
+        && isNonEmptyString(request.resource.data.toUserId);
       allow update: if isAuth() &&
         (request.auth.uid == resource.data.toUserId ||
          request.auth.uid == resource.data.fromUserId || isAdmin());
