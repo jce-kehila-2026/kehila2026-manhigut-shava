@@ -3,6 +3,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { saveContact } from "./contact";
+import { safeUrl } from "./utils/safeUrl";
 
 /* ── Palette (matches blue/coral theme) ── */
 const C = {
@@ -312,9 +313,9 @@ export default function CompleteProfilePage() {
         helpAreas:          form.helpAreas,
         wantToReceive:      form.wantToReceive || null,
         mentoringRole:      form.mentoringRole,
-        linkedin:           form.linkedin   || null,
-        instagram:          form.instagram  || null,
-        facebook:           form.facebook   || null,
+        linkedin:           safeUrl(form.linkedin)  || null,
+        instagram:          safeUrl(form.instagram) || null,
+        facebook:           safeUrl(form.facebook)  || null,
         tagline:            form.tagline    || null,
         bio:                form.bio        || null,
         /* private (stored but not shown publicly) */

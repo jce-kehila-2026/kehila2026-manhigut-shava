@@ -1158,11 +1158,16 @@ export default function AdminPage() {
       });
       return row;
     });
-    const XLSX = await import("xlsx");
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Members");
-    XLSX.writeFile(wb, `members_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Members");
+    ws.columns = fields.map(f => ({ header: f.label, key: f.label, width: 22 }));
+    rows.forEach(row => ws.addRow(row));
+    const buf = await wb.xlsx.writeBuffer();
+    const url = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `members_${new Date().toISOString().slice(0, 10)}.xlsx`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     setExportOpen(false);
   };
 
@@ -1181,10 +1186,20 @@ export default function AdminPage() {
       const isXlsx = sig[0] === 0x50 && sig[1] === 0x4b;
       const isXls  = sig[0] === 0xd0 && sig[1] === 0xcf;
       if (!isXlsx && !isXls) { setImportResult({ error: Tr.importBadType }); setImportBusy(false); return; }
-      const XLSX = await import("xlsx");
-      const wb = XLSX.read(buf, { type: "array" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
+      const ExcelJS = (await import("exceljs")).default;
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buf);
+      const ws = wb.worksheets[0];
+      if (!ws) { setImportResult({ error: Tr.importEmpty }); setImportBusy(false); return; }
+      const headers = [];
+      ws.getRow(1).eachCell((cell, col) => { headers[col] = String(cell.value ?? ""); });
+      const rows = [];
+      ws.eachRow((row, rowNum) => {
+        if (rowNum === 1) return;
+        const obj = {};
+        row.eachCell((cell, col) => { if (headers[col]) obj[headers[col]] = cell.value ?? ""; });
+        if (Object.keys(obj).length) rows.push(obj);
+      });
       if (!rows.length) { setImportResult({ error: Tr.importEmpty }); setImportBusy(false); return; }
       const labelToKey = {};
       EXPORT_FIELDS.forEach(({ key, label }) => { labelToKey[label.toLowerCase()] = key; });

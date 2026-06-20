@@ -15,6 +15,7 @@ import { useLang } from "./LanguageContext";
 import { useTheme } from "./ThemeContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { isBirthdayToday } from "./utils/birthday";
+import { safeUrl } from "./utils/safeUrl";
 
 const storage = getStorage();
 
@@ -1183,7 +1184,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {/* Actions: LinkedIn / Message */}
         <div style={S.profileActions}>
           {form.linkedIn && (
-            <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
+            <a href={safeUrl(form.linkedIn)}
               target="_blank" rel="noreferrer"
               style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#1d4896", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", border:"none", whiteSpace:"nowrap" }}
               onMouseEnter={e => e.currentTarget.style.background = "#0b1f52"}
@@ -1485,8 +1486,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     firstName:form.firstName, lastName:form.lastName, phone:form.phone,
                     profession:form.profession, birthDate:form.birthDate, bio:form.bio,
                     region:form.region, institution:form.institution, graduationYear:form.graduationYear,
-                    linkedIn: form.linkedIn && !form.linkedIn.startsWith("http") ? "https://" + form.linkedIn : form.linkedIn,
-                    facebookURL: form.facebookURL && !form.facebookURL.startsWith("http") ? "https://" + form.facebookURL : (form.facebookURL || ""),
+                    linkedIn: safeUrl(form.linkedIn),
+                    facebookURL: safeUrl(form.facebookURL),
                     contactEmail: form.contactEmail || "",
                     experience:form.experience, goals:form.goals,
                     ethnicity:form.ethnicity, ethnicityPrivate:form.ethnicityPrivate,
@@ -1582,7 +1583,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               {form.linkedIn && (
                 <div style={{ ...S.group, marginBottom:"1rem" }}>
                   <p style={S.label}>{t.profile.linkedIn}</p>
-                  <a href={form.linkedIn.startsWith("http") ? form.linkedIn : `https://${form.linkedIn}`}
+                  <a href={safeUrl(form.linkedIn)}
                     target="_blank" rel="noopener noreferrer"
                     style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
                     {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
@@ -1592,7 +1593,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               {form.facebookURL && (
                 <div style={{ ...S.group, marginBottom:"1rem" }}>
                   <p style={S.label}>{t.profile?.facebook || "Facebook"}</p>
-                  <a href={form.facebookURL} target="_blank" rel="noopener noreferrer" style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
+                  <a href={safeUrl(form.facebookURL)} target="_blank" rel="noopener noreferrer" style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                     Facebook
                   </a>
