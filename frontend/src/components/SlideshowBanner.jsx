@@ -33,8 +33,8 @@ export function SlideshowBanner() {
     <div style={{
       position: "relative", borderRadius: 16, overflow: "hidden",
       boxShadow: "0 4px 24px rgba(29,72,150,0.18), inset 0 0 0 1px rgba(255,255,255,0.06)",
-      background: "#0d1a2e",
-      aspectRatio: "16/5",
+      background: "#1a1a1a",
+      aspectRatio: "4/3",
     }}>
       {images.map((img, i) => (
         <img
@@ -43,7 +43,8 @@ export function SlideshowBanner() {
           alt={img.caption || ""}
           style={{
             position: "absolute", inset: 0,
-            width: "100%", height: "100%", objectFit: "contain",
+            width: "100%", height: "100%", objectFit: "cover",
+            objectPosition: "center 25%",
             opacity: i === idx ? 1 : 0,
             transition: "opacity 0.7s ease",
           }}

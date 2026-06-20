@@ -502,22 +502,24 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       </div>{/* end two-column grid */}
 
       {/* Tutorial replay button */}
+      <style>{`
+        @keyframes tut-btn-pulse {
+          0%,100% { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 0   rgba(68,114,184,0.5); }
+          60%      { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 12px rgba(68,114,184,0); }
+        }
+      `}</style>
       <button
-        onClick={() => {
-          try { localStorage.removeItem("tutorial_done"); } catch {}
-          window.location.reload();
-        }}
-        title="Show tutorial"
+        onClick={() => setShowTutorial(true)}
+        title={t.tutorial?.howTo || "How to use the website"}
         style={{
-          position: "fixed", bottom: isMobile ? 72 : 24, right: 16,
-          width: 38, height: 38, borderRadius: "50%",
+          position: "fixed", bottom: isMobile ? 76 : 24, right: 16,
+          width: 40, height: 40, borderRadius: "50%",
           background: "var(--brand,#4472b8)", color: "#fff",
           border: "none", cursor: "pointer",
-          fontSize: 18, fontWeight: 700,
+          fontSize: 19, fontWeight: 800,
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 14px rgba(68,114,184,0.35)",
+          animation: "tut-btn-pulse 2.4s ease-in-out infinite",
           zIndex: 100,
-          opacity: 0.85,
         }}
       >?</button>
 
@@ -699,9 +701,20 @@ export default function DashboardPage() {
   const pageTitle = navItems.find((n) => n.id === section)?.label || t.nav.home;
   const dir = isRTL ? "rtl" : "ltr";
 
-  const [showTutorial, setShowTutorial] = useState(() => {
-    try { return !localStorage.getItem("tutorial_done"); } catch { return false; }
-  });
+  const [showWelcome, setShowWelcome] = useState(false);
+  useEffect(() => {
+    if (profile && !sessionStorage.getItem("welcomed")) {
+      setShowWelcome(true);
+    }
+  }, [profile]);
+
+  const [showTutorial, setShowTutorial] = useState(false);
+  const tutorialChecked = useRef(false);
+  useEffect(() => {
+    if (!profile || tutorialChecked.current) return;
+    tutorialChecked.current = true;
+    if (!profile.tutorialDone) setShowTutorial(true);
+  }, [profile]);
 
   return (
     <div style={{
@@ -714,8 +727,10 @@ export default function DashboardPage() {
     }}>
       {showTutorial && (
         <TutorialPopup onClose={() => {
-          try { localStorage.setItem("tutorial_done", "1"); } catch {}
           setShowTutorial(false);
+          if (user?.uid) {
+            updateDoc(doc(db, "users", user.uid), { tutorialDone: true }).catch(() => {});
+          }
         }} />
       )}
       {/* ── Row that holds sidebar + main (fills all space above bottom nav) ── */}

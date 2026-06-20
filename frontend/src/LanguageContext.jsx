@@ -52,6 +52,18 @@ const translations = {
       blockTitle:         (name) => `לחסום את ${name}?`,
       yesBlock:           "כן, חסום",
     },
+    tutorial: {
+      steps: [
+        { title: "מצאי עזרה",         text: "לחצי כאן לחיפוש חברות שיכולות לעזור — לפי מקצוע, אזור או תחום." },
+        { title: "קהילה",              text: "שתפי עדכונים, חגגי ימי הולדת והתחברי עם כל הרשת כאן." },
+        { title: "הודעות ישירות",     text: "שלחי הודעה פרטית לכל חברה ברשת — ישירות ובנוחות." },
+        { title: "הפרופיל שלי",       text: "מלאי את הפרופיל שלך כדי שאחרות יוכלו למצוא ולהתחבר איתך." },
+      ],
+      next:  "הבא →",
+      back:  "← חזרה",
+      done:  "בואי נתחיל! 🚀",
+      howTo: "איך משתמשים באתר",
+    },
     dash: {
       member: "חבר/ה",
       org: "BogrotNet — מנהיגות שווה",
@@ -436,6 +448,18 @@ const translations = {
       blockTitle:         (name) => `Block ${name}?`,
       yesBlock:           "Yes, Block",
     },
+    tutorial: {
+      steps: [
+        { title: "Find Help",        text: "Tap here to search members who can help you — by profession, region, or skill." },
+        { title: "Community",        text: "Share updates, celebrate birthdays and connect with the whole network here." },
+        { title: "Direct Messages",  text: "Send a private message to any member in the network directly." },
+        { title: "My Profile",       text: "Complete your profile so others can find and connect with you easily." },
+      ],
+      next:  "Next →",
+      back:  "← Back",
+      done:  "Let's go! 🚀",
+      howTo: "How to use the website",
+    },
     dash: {
       member: "Member",
       org: "BogrotNet — Manhigut Shava",
@@ -819,6 +843,18 @@ const translations = {
       submitReport:       "إرسال البلاغ",
       blockTitle:         (name) => `حظر ${name}؟`,
       yesBlock:           "نعم، احظر",
+    },
+    tutorial: {
+      steps: [
+        { title: "اطلبي المساعدة",     text: "اضغطي هنا للبحث عن أعضاء يمكنهم المساعدة — حسب المهنة أو المنطقة." },
+        { title: "المجتمع",             text: "شاركي التحديثات واحتفلي بأعياد الميلاد وتواصلي مع الشبكة بأكملها." },
+        { title: "الرسائل المباشرة",   text: "أرسلي رسالة خاصة لأي عضو في الشبكة مباشرةً وبكل سهولة." },
+        { title: "ملفي الشخصي",        text: "أكملي ملفك الشخصي حتى يتمكن الآخرون من العثور عليك والتواصل معك." },
+      ],
+      next:  "التالي →",
+      back:  "→ رجوع",
+      done:  "هيا نبدأ! 🚀",
+      howTo: "كيفية استخدام الموقع",
     },
     dash: {
       member: "عضو",
