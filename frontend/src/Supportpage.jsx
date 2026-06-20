@@ -665,7 +665,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         fromUserId:         user.uid,
         fromUserName:       getFullName(senderProfile),
         fromUserEmail:      user.email,
-        fromUserPhone:      senderProfile?.phone ?? "",
         fromUserProfession: senderProfile?.currentRole ?? senderProfile?.profession ?? "",
         requestMessage:     requestMessage,
         status:             null,
@@ -1360,18 +1359,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               </p>
             </div>
             <div style={S.infoBlock}>
-              {selectedUser.email && (
-                <div style={S.infoRow}>
-                  <p style={S.infoLabel}>{Tr.emailLbl}</p>
-                  <p style={S.infoValue}>{selectedUser.email}</p>
-                </div>
-              )}
-              {selectedUser.phone && (
-                <div style={S.infoRow}>
-                  <p style={S.infoLabel}>{Tr.phoneLbl}</p>
-                  <p style={S.infoValue}>{selectedUser.phone}</p>
-                </div>
-              )}
               {(selectedUser.region || selectedUser.city) && (
                 <div style={S.infoRow}>
                   <p style={S.infoLabel}>{Tr.regionLabel}</p>

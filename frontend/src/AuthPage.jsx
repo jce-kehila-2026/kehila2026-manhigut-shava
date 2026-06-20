@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
+import { saveContact } from "./contact";
 
 /* ─── Translation ─── */
 const AUTH_T = {
@@ -373,13 +374,14 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
     setError(""); setLoading(true);
     try {
       const { user } = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const normalizedPhone = normalizePhone(form.phone);
       await setDoc(doc(db, "users", user.uid), {
         firstName:form.firstName, lastName:form.lastName,
-        phone:normalizePhone(form.phone), email:form.email,
         institution:form.institution,
         profession:effectiveProfession, city:effectiveCity,
         emailVerified:false, acceptedTerms:true, createdAt:new Date().toISOString(),
       });
+      await saveContact(user.uid, { phone: normalizedPhone, email: form.email });
     } catch (e) { setError(firebaseMsg(e.code)); }
     finally { setLoading(false); }
   };

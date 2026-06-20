@@ -7,6 +7,7 @@ import { SlideshowBanner } from "./components/SlideshowBanner";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { httpsCallable } from "firebase/functions";
 import { db, functions, storage } from "./firebase";
+import { saveContact, getContact } from "./contact";
 import { deletePostWithCleanup } from "./utils/deletePost";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -591,13 +592,17 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
   const [fields, setFields] = useState({
     firstName:  u.firstName  ?? "",
     lastName:   u.lastName   ?? "",
-    phone:      u.phone      ?? "",
+    phone:      "",
     city:       u.city       ?? "",
     profession: u.profession ?? "",
     bio:        u.bio        ?? "",
     isAdmin:    u.isAdmin    ?? false,
   });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getContact(u.id).then(c => setFields(prev => ({ ...prev, phone: c.phone ?? "" })));
+  }, [u.id]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -608,6 +613,7 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
     setSaving(true);
     try {
       await updateDoc(doc(db, "users", u.id), { ...fields });
+      if (fields.phone !== undefined) await saveContact(u.id, { phone: fields.phone });
       logActivity({
         type: "admin_edit_profile",
         actorId: adminUser.uid,
@@ -1392,7 +1398,7 @@ export default function AdminPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
               <thead>
                 <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
-                  {["Member","Email","Profession","City","Status","Joined","Actions"].map(h => (
+                  {["Member","Profession","City","Status","Joined","Actions"].map(h => (
                     <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -1414,11 +1420,9 @@ export default function AdminPage() {
                         }
                         <div>
                           <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)" }}>{u.firstName} {u.lastName}</p>
-                          <p style={{ fontSize:10,color:"var(--text-muted,#6b7280)" }}>{u.phone||""}</p>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.email||"—"}</td>
                     <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.profession||"—"}</td>
                     <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.city||"—"}</td>
                     <td style={{ padding:"11px 14px" }}>
@@ -1517,7 +1521,6 @@ export default function AdminPage() {
                 <thead>
                   <tr>
                     <th style={S.th}>Name</th>
-                    <th style={S.th}>Email</th>
                     <th style={S.th}>Profession</th>
                     <th style={S.th}>City</th>
                     <th style={S.th}>Admin</th>
@@ -1532,9 +1535,7 @@ export default function AdminPage() {
                     >
                       <td style={S.td}>
                         <p style={S.name}>{u.firstName} {u.lastName}</p>
-                        <p style={S.meta}>{u.phone || "—"}</p>
                       </td>
-                      <td style={S.td}>{u.email || "—"}</td>
                       <td style={S.td}>{u.profession || "—"}</td>
                       <td style={S.td}>{u.city || "—"}</td>
                       <td style={S.td}>
