@@ -10,7 +10,6 @@ import CommunityPage from "./CommunityPage";
 import ProfilePage   from "./ProfilePage";
 import AdminPage     from "./AdminPage";
 import ChatPage      from "./ChatPage";
-import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 import { SlideshowBanner } from "./components/SlideshowBanner";
 import { TutorialPopup } from "./components/TutorialPopup";
 
@@ -273,27 +272,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   const pendingRequests = helpRequests.filter((r) => !r.status);
 
-  const bdayStatus = useMemo(() => {
-    const bd = profile?.birthDate || profile?.birthdate;
-    if (!bd) return null;
-    if (isBirthdayToday(bd)) return { type: "today" };
-    const days = daysUntilBirthday(bd);
-    if (days !== null && days > 0 && days <= 7) return { type: "soon", days };
-    return null;
-  }, [profile?.birthDate, profile?.birthdate]);
-
-  const confettiPieces = useMemo(() =>
-    Array.from({ length: 24 }).map((_, i) => ({
-      left: (i * 4.2 + (i % 3) * 2.5) % 97,
-      delay: (i * 0.085) % 0.85,
-      dur: 1.1 + (i % 4) * 0.18,
-      color: ["#4472b8","#e8735a","#7ba87a","#d4a574","#c084fc","#f472b6","#facc15"][i % 7],
-      circle: i % 3 !== 0,
-      size: 6 + (i % 4) * 2,
-    })), []
-  );
-
-
   const quickCircles = [
     { icon: Icon.members,   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
     { icon: Icon.community, title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
@@ -303,42 +281,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", maxWidth: "100%", padding: isMobile ? "1.25rem 1rem 1.5rem" : "2.25rem 2.75rem" }}>
-      {/* ── Birthday banner ── */}
-      {bdayStatus?.type === "today" && (
-        <div style={{
-          position:"relative", overflow:"hidden",
-          marginBottom:"1.25rem", borderRadius:20,
-          background:"linear-gradient(135deg,#4472b8 0%,#7b3fe4 50%,#e8735a 100%)",
-          backgroundSize:"200% 200%",
-          animation:"bannerFlow 5s ease infinite, bday-banner-in 0.5s ease both",
-          padding: isMobile ? "1rem 1.25rem" : "1.25rem 1.75rem",
-          display:"flex", alignItems:"center", gap:14, color:"#fff",
-          boxShadow:"0 8px 32px rgba(68,114,184,0.28)",
-        }}>
-          {confettiPieces.map((p, i) => (
-            <div key={i} style={{
-              position:"absolute", top:0, left:`${p.left}%`,
-              width:p.size, height:p.size,
-              borderRadius: p.circle ? "50%" : 3,
-              background:p.color,
-              animation:`bday-confetti ${p.dur}s ${p.delay}s ease-in infinite`,
-              pointerEvents:"none", zIndex:0,
-            }}/>
-          ))}
-          <div style={{fontSize: isMobile ? 28 : 36, zIndex:1, flexShrink:0}}>🎉</div>
-          <div style={{zIndex:1, flex:1, minWidth:0}}>
-            <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 2px",color:"rgba(255,255,255,0.75)"}}>
-              {t.dash?.happyBirthday || "Happy Birthday!"}
-            </p>
-            <h2 style={{fontSize: isMobile ? 18 : 22,fontWeight:800,margin:"0 0 3px",fontFamily:"var(--font-display)"}}>
-              {profile?.firstName ? `${profile.firstName}! 🎂` : "🎂"}
-            </h2>
-            <p style={{fontSize:12,color:"rgba(255,255,255,0.72)",margin:0}}>
-              {t.dash?.birthdayWish || "Wishing you an amazing day — you deserve it!"}
-            </p>
-          </div>
-        </div>
-      )}
+
       {/* Shared keyframes */}
       <style>{`
         @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -399,22 +342,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             ))}
           </div>
 
-          {bdayStatus?.type === "soon" && (
-            <div style={{
-              marginBottom:"0.75rem", borderRadius:12,
-              background:"var(--brand-pale)",
-              border:"1px solid var(--blush)",
-              padding:"0.6rem 1rem",
-              display:"flex", alignItems:"center", gap:8,
-            }}>
-              <span style={{fontSize:18, flexShrink:0}}>🎂</span>
-              <p style={{fontSize:12, color:"var(--brand-dark)", fontWeight:600, margin:0}}>
-                {t.dash?.birthdaySoon
-                  ? t.dash.birthdaySoon.replace("{n}", bdayStatus.days)
-                  : `Your birthday is coming in ${bdayStatus.days} day${bdayStatus.days > 1 ? "s" : ""}!`}
-              </p>
-            </div>
-          )}
 
           <SlideshowBanner />
 
@@ -598,106 +525,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   );
 }
 
-/* ── Welcome overlay — shown once per browser session on first login ── */
-function WelcomeOverlay({ profile, initials, onDone }) {
-  const [phase, setPhase] = useState(0);
-  const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
-
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 300);
-    const t2 = setTimeout(() => setPhase(2), 2000);
-    const t3 = setTimeout(() => onDoneRef.current(), 2900);
-    return () => [t1, t2, t3].forEach(clearTimeout);
-  }, []); // intentionally empty — timers fire once on mount
-
-  const hr = new Date().getHours();
-  const greetWord = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
-  const name = profile?.firstName || "";
-  const photoURL = profile?.photoURL || profile?.avatarUrl || null;
-
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 99999, overflow: "hidden",
-      background: "linear-gradient(135deg,#0b1f52 0%,#1a3a8f 55%,#2f5fd4 100%)",
-      animation: phase === 2 ? "wo-out 0.92s cubic-bezier(0.76,0,0.24,1) forwards" : "none",
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }}>
-      {/* sweep sheen */}
-      {phase >= 1 && [{delay:"0s",dur:"0.72s",op:0.16},{delay:"0.12s",dur:"0.78s",op:0.12},{delay:"0.22s",dur:"0.68s",op:0.20}].map((w,i) => (
-        <div key={i} style={{
-          position:"absolute",top:"-8%",bottom:"-8%",width:"52%",left:"-52%",
-          background:`rgba(255,255,255,${w.op})`,borderRadius:"50% / 8%",
-          animation:`lp-sweep ${w.dur} ${w.delay} cubic-bezier(0.4,0,0.6,1) forwards`,
-          pointerEvents:"none",
-        }}/>
-      ))}
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 20,
-        opacity: phase >= 1 ? 0 : 1,
-        animation: phase === 0 ? "wo-in 0.55s 0.15s ease both" : "none",
-        textAlign: "center", padding: "0 1.5rem",
-      }}>
-        {/* Company logo */}
-        <div style={{
-          width: 80, height: 80, borderRadius: "50%",
-          background: "rgba(255,255,255,0.18)", padding: 6,
-          border: "2px solid rgba(255,255,255,0.35)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
-        }}>
-          <img src="/NewLogoNGO.png"
-            onError={e => { e.target.style.display = "none"; }}
-            alt="BogrotNet"
-            style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "50%" }}
-          />
-        </div>
-
-        {/* User profile picture */}
-        {photoURL ? (
-          <img src={photoURL} alt={name}
-            style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover",
-              border: "3px solid rgba(255,255,255,0.5)",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}
-          />
-        ) : (
-          <div style={{ width: 72, height: 72, borderRadius: "50%",
-            background: "linear-gradient(135deg,rgba(255,255,255,0.3),rgba(255,255,255,0.15))",
-            border: "3px solid rgba(255,255,255,0.5)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 26, fontWeight: 700, color: "#fff",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-            fontFamily: "'Outfit',sans-serif",
-          }}>
-            {initials}
-          </div>
-        )}
-
-        {/* Greeting */}
-        <div>
-          <h2 style={{
-            fontSize: "clamp(22px,3.5vw,38px)", fontWeight: 900, color: "#fff",
-            margin: 0, letterSpacing: "-0.02em",
-            fontFamily: "'Playfair Display',Georgia,serif",
-          }}>
-            {greetWord}{name ? `, ${name}` : ""}!
-          </h2>
-          <p style={{
-            fontSize: "clamp(13px,1.5vw,17px)", color: "rgba(200,221,251,0.75)",
-            margin: "10px 0 0", fontWeight: 500, letterSpacing: "0.01em",
-          }}>
-            Welcome back to BogrotNet, where women lead.
-          </p>
-        </div>
-      </div>
-      <style>{`
-        @keyframes wo-in { from{opacity:0;transform:scale(0.92) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
-        @keyframes wo-out { to{opacity:0;transform:scale(1.06)} }
-        @keyframes lp-sweep { from{left:-52%}to{left:130%} }
-      `}</style>
-    </div>
-  );
-}
 
 /* ── Main dashboard shell ── */
 export default function DashboardPage() {
@@ -872,13 +699,6 @@ export default function DashboardPage() {
   const pageTitle = navItems.find((n) => n.id === section)?.label || t.nav.home;
   const dir = isRTL ? "rtl" : "ltr";
 
-  const [showWelcome, setShowWelcome] = useState(false);
-  useEffect(() => {
-    if (profile && !sessionStorage.getItem("welcomed")) {
-      setShowWelcome(true);
-    }
-  }, [profile]);
-
   const [showTutorial, setShowTutorial] = useState(() => {
     try { return !localStorage.getItem("tutorial_done"); } catch { return false; }
   });
@@ -892,14 +712,6 @@ export default function DashboardPage() {
       direction: dir,
       overflow: "hidden",
     }}>
-      {/* Welcome overlay — once per session */}
-      {showWelcome && (
-        <WelcomeOverlay
-          profile={profile}
-          initials={initials}
-          onDone={() => { sessionStorage.setItem("welcomed", "1"); setShowWelcome(false); }}
-        />
-      )}
       {showTutorial && (
         <TutorialPopup onClose={() => {
           try { localStorage.setItem("tutorial_done", "1"); } catch {}
