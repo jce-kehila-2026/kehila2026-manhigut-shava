@@ -32,12 +32,11 @@ service firebase.storage {
       allow delete: if isAuth();
     }
 
-    // Slideshow images — images <= 10 MB
-    // NOTE: admin-only enforcement requires Auth custom claims (tracked as a follow-up task).
+    // Slideshow images — admin only (claim set by syncAdminClaim Cloud Function)
     match /slideshow/{fileName} {
       allow read:           if isAuth();
-      allow create, update: if isAuth() && isImage() && underMB(10);
-      allow delete:         if isAuth();
+      allow create, update: if request.auth.token.isAdmin == true && isImage() && underMB(10);
+      allow delete:         if request.auth.token.isAdmin == true;
     }
 
     // Chat image uploads — images <= 10 MB
