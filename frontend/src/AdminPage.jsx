@@ -767,6 +767,12 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
       sub: (p.text || "(media)").slice(0, 80),
       avatar: p.authorAvatar,
     }));
+  } else if (type === "convs") {
+    title = Tr.conversations;
+    items = convs.slice(0, 50).map(c => {
+      const names = Object.values(c.participantNames || {}).join(" & ");
+      return { id: c.id, name: names || "Conversation", sub: c.lastMessage?.text?.slice(0,60) || "" };
+    });
   }
 
   return (
@@ -1122,8 +1128,10 @@ export default function AdminPage() {
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
     if (u.ethnicity)  ethnicityMap[u.ethnicity]  = (ethnicityMap[u.ethnicity]  || 0) + 1;
-    if (u.identity)   religionMap[u.identity]    = (religionMap[u.identity]    || 0) + 1;
-    if (u.region)               regionMap[u.region]                 = (regionMap[u.region]                 || 0) + 1;
+    /* religion field (new dropdown) takes priority; fall back to identity freetext */
+    const rel = u.religion || u.identity;
+    if (rel)          religionMap[rel]            = (religionMap[rel]            || 0) + 1;
+    if (u.region)     regionMap[u.region]         = (regionMap[u.region]         || 0) + 1;
   });
   const topEthnicities = Object.entries(ethnicityMap).sort((a,b) => b[1]-a[1]).slice(0,8);
   const topReligions   = Object.entries(religionMap).sort((a,b) => b[1]-a[1]).slice(0,8);
@@ -1400,7 +1408,8 @@ export default function AdminPage() {
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
               onClick={() => setStatDetailType("posts")} />
             <StatCard label={Tr.conversations}  value={convs.length}   color="#d4a574"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+              onClick={() => setStatDetailType("convs")} />
             <StatCard label={Tr.admins}         value={adminsN}        color="#c25c5c"
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>}
               onClick={() => setStatDetailType("admins")} />
@@ -1945,16 +1954,21 @@ export default function AdminPage() {
           {/* Stat summary row */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:"1rem", marginBottom:"1.5rem" }}>
             {[
-              { label: Tr.totalMembers,  value: users.length,   color:"#4472b8" },
-              { label: Tr.verified,       value: verifiedN,      color:"#1d4896" },
-              { label: Tr.admins,         value: adminsN,        color:"#c25c5c" },
-              { label: Tr.totalPosts,    value: posts.length,   color:"#8b5cf6" },
-              { label: Tr.conversations,  value: convs.length,   color:"#d4a574" },
-              { label: Tr.onlineNow,     value: onlineNow,      color:"#7ba87a" },
+              { label: Tr.totalMembers,  value: users.length,   color:"#4472b8", type:"members"  },
+              { label: Tr.verified,       value: verifiedN,      color:"#1d4896", type:"verified" },
+              { label: Tr.admins,         value: adminsN,        color:"#c25c5c", type:"admins"   },
+              { label: Tr.totalPosts,    value: posts.length,   color:"#8b5cf6", type:"posts"    },
+              { label: Tr.conversations,  value: convs.length,   color:"#d4a574", type:"convs"    },
+              { label: Tr.onlineNow,     value: onlineNow,      color:"#7ba87a", type:"online"   },
             ].map(s => (
-              <div key={s.label} className="card" style={{ padding:"1rem 1.25rem" }}>
+              <div key={s.label} className="card" style={{ padding:"1rem 1.25rem", cursor: s.type ? "pointer" : "default", transition:"box-shadow 0.15s", userSelect:"none" }}
+                onClick={() => s.type && setStatDetailType(s.type)}
+                onMouseEnter={e => { if (s.type) e.currentTarget.style.boxShadow = "0 4px 16px rgba(29,72,150,0.12)"; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = ""; }}
+              >
                 <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 6px" }}>{s.label}</p>
                 <p style={{ fontSize:28, fontWeight:800, color:s.color, margin:0, lineHeight:1 }}>{s.value}</p>
+                {s.type && <p style={{ fontSize:10, color:"var(--text-muted,#6b7280)", margin:"4px 0 0" }}>Click to view →</p>}
               </div>
             ))}
           </div>
@@ -2145,6 +2159,100 @@ export default function AdminPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            );
+          })()}
+
+          {/* 30-day signups line chart */}
+          {(() => {
+            const days30 = Array.from({ length: 30 }, (_, i) => {
+              const d = new Date();
+              d.setDate(d.getDate() - (29 - i));
+              return d;
+            });
+            const counts30 = days30.map(day => {
+              const dayStr = day.toISOString().slice(0, 10);
+              return users.filter(u => u.createdAt?.slice(0, 10) === dayStr).length;
+            });
+            const maxC = Math.max(...counts30, 1);
+            const W = 300, H = 80, pad = 8;
+            const pts = counts30.map((c, i) => {
+              const x = pad + (i / (counts30.length - 1)) * (W - pad * 2);
+              const y = H - pad - (c / maxC) * (H - pad * 2);
+              return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(" ");
+            const total30 = counts30.reduce((a, b) => a + b, 0);
+            return (
+              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
+                    New Members – Last 30 Days
+                  </p>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand,#4472b8)" }}>{total30} total</span>
+                </div>
+                <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height: H }}>
+                  <polyline points={pts} fill="none" stroke="var(--brand,#4472b8)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+                  {counts30.map((c, i) => {
+                    if (c === 0) return null;
+                    const x = pad + (i / (counts30.length - 1)) * (W - pad * 2);
+                    const y = H - pad - (c / maxC) * (H - pad * 2);
+                    return <circle key={i} cx={x.toFixed(1)} cy={y.toFixed(1)} r={3} fill="var(--brand,#4472b8)" />;
+                  })}
+                </svg>
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop: 4 }}>
+                  <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>{days30[0].toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span>
+                  <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>Today</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* City distribution donut chart */}
+          {(() => {
+            const cityCount = {};
+            users.forEach(u => {
+              const city = u.city?.trim();
+              if (city) cityCount[city] = (cityCount[city] || 0) + 1;
+            });
+            const sorted = Object.entries(cityCount).sort((a, b) => b[1] - a[1]);
+            const top = sorted.slice(0, 5);
+            const othersCount = sorted.slice(5).reduce((s, [, v]) => s + v, 0);
+            if (othersCount > 0) top.push(["Other", othersCount]);
+            const totalWithCity = top.reduce((s, [, v]) => s + v, 0) || 1;
+            const cityColors = ["#4472b8","#7ba87a","#c25c5c","#d4a574","#8b5cf6","#94a3b8"];
+            let cumCity = 0;
+            const cityConicParts = top.map(([, v], i) => {
+              const pct = Math.round(v / totalWithCity * 100);
+              const start = cumCity;
+              cumCity += pct;
+              return `${cityColors[i % cityColors.length]} ${start}% ${cumCity}%`;
+            }).join(", ");
+            return (
+              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                  City Distribution
+                </p>
+                {top.length === 0 ? (
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No city data yet</p>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                    <div style={{ width: 100, height: 100, borderRadius: "50%", background: `conic-gradient(${cityConicParts})`, flexShrink: 0, position: "relative" }}>
+                      <div style={{ position:"absolute", inset: 16, borderRadius:"50%", background:"var(--bg-primary,#fff)" }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      {top.map(([city, count], i) => {
+                        const pct = Math.round(count / totalWithCity * 100);
+                        return (
+                          <div key={city} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                            <div style={{ width:10, height:10, borderRadius:3, background: cityColors[i % cityColors.length], flexShrink:0 }} />
+                            <span style={{ fontSize:11, color:"var(--text-secondary,#7a5868)", fontWeight:500 }}>{city}</span>
+                            <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", marginLeft:"auto", fontWeight:600 }}>{pct}% ({count})</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}

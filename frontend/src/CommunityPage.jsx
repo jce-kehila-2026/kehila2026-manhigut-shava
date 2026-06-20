@@ -149,6 +149,7 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
 
 /* ── Translate button ── */
 function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
+  const { lang, t } = useLang();
   const [busy, setBusy] = useState(false);
 
   const handleClick = async () => {
@@ -156,18 +157,22 @@ function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
     if (!text?.trim()) return;
     setBusy(true);
     try {
-      const tl = (navigator.language || "en").split("-")[0];
+      const tl = lang === "ar" ? "ar" : lang === "he" ? "iw" : "en";
       const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
       const res = await fetch(url);
       const data = await res.json();
       const translated = data[0]?.map(s => s[0]).join("") || text;
       onTranslated(translated);
     } catch {
-      // silently fail — button just does nothing
+      // silently fail
     } finally {
       setBusy(false);
     }
   };
+
+  const label = isTranslated
+    ? (t.community?.showOriginal || "Original")
+    : (t.community?.translate || "Translate");
 
   return (
     <button
@@ -177,8 +182,7 @@ function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
         background: "none", border: "none", cursor: busy ? "wait" : "pointer",
         fontSize: 11, color: "var(--text-muted,#6b7280)", padding: "2px 6px",
         display: "flex", alignItems: "center", gap: 4, borderRadius: 6,
-        opacity: busy ? 0.6 : 1,
-        transition: "color 0.15s",
+        opacity: busy ? 0.6 : 1, transition: "color 0.15s",
       }}
       onMouseEnter={e => e.currentTarget.style.color = "var(--brand,#4472b8)"}
       onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted,#6b7280)"}
@@ -186,7 +190,7 @@ function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/>
       </svg>
-      {busy ? "..." : isTranslated ? "Original" : "Translate"}
+      {busy ? "..." : label}
     </button>
   );
 }
