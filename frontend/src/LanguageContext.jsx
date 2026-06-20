@@ -14,6 +14,8 @@ const translations = {
       messages: "הודעות",
       admin: "ניהול",
       logout: "התנתקות",
+      directory: "מאגר חברות",
+      events: "אירועים",
     },
     chat: {
       directMessages:     "הודעות ישירות",
@@ -413,6 +415,8 @@ const translations = {
       messages: "Messages",
       admin: "Admin",
       logout: "Log Out",
+      directory: "Member Directory",
+      events: "Events",
     },
     chat: {
       directMessages:     "Direct Messages",
@@ -812,6 +816,8 @@ const translations = {
       messages: "الرسائل",
       admin: "إدارة",
       logout: "تسجيل الخروج",
+      directory: "دليل الأعضاء",
+      events: "الفعاليات",
     },
     chat: {
       directMessages:     "الرسائل المباشرة",
