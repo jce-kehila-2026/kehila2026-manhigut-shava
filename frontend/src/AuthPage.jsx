@@ -8,7 +8,7 @@ import {
   sendPasswordResetEmail,
   signInWithPopup,
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
 import { saveContact } from "./contact";
 
@@ -44,6 +44,7 @@ const AUTH_T = {
     errPhone:"מספר טלפון לא תקין. השתמשי בפורמט: 05X-XXXXXXX",
     errAgree:"יש לאשר את הסכמת שיתוף הפרטים.",
     errPassMatch:"הסיסמאות אינן תואמות.",
+    blacklisted:"כתובת האימייל הזו חסומה לצמיתות. לפרטים פנה/י לתמיכה.",
     backHome:"← חזרה לדף הבית",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
@@ -266,7 +267,12 @@ function LoginForm({ onSwitchTab, Tr, dir }) {
 
   const submit = async (e) => {
     e.preventDefault(); setError(""); setLoading(true);
-    try { await signInWithEmailAndPassword(auth, form.email, form.password); }
+    try {
+      const blQ = query(collection(db, "blacklist"), where("email", "==", form.email.trim().toLowerCase()));
+      const blSnap = await getDocs(blQ);
+      if (!blSnap.empty) { setError(Tr?.blacklisted || "This account has been permanently blocked. Please contact support."); return; }
+      await signInWithEmailAndPassword(auth, form.email, form.password);
+    }
     catch (e) { setError(firebaseMsg(e.code)); }
     finally { setLoading(false); }
   };
@@ -373,6 +379,9 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
     if (form.password !== form.confirmPassword) { setError(Tr?.errPassMatch||"הסיסמאות אינן תואמות."); return; }
     setError(""); setLoading(true);
     try {
+      const blQ = query(collection(db, "blacklist"), where("email", "==", form.email.trim().toLowerCase()));
+      const blSnap = await getDocs(blQ);
+      if (!blSnap.empty) { setError(Tr?.blacklisted || "This email address is blocked from registering."); setLoading(false); return; }
       const { user } = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const normalizedPhone = normalizePhone(form.phone);
       await setDoc(doc(db, "users", user.uid), {

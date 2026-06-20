@@ -566,7 +566,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
-    ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
+    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
   const [institutionOther, setInstitutionOther] = useState("");
@@ -614,6 +614,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           birthDate:      d.birthDate      ?? "",
           ethnicity:        d.ethnicity        ?? "",
           ethnicityPrivate: d.ethnicityPrivate ?? false,
+          religion:         d.religion         ?? "",
+          religionPrivate:  d.religionPrivate  ?? false,
           region:           d.region           ?? "",
           institution:    d.institution    ?? "",
           graduationYear: d.graduationYear ?? "",
@@ -1452,7 +1454,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
               </div>
 
-              {/* Ethnicity — only this field has a privacy toggle */}
+              {/* Ethnicity — privacy toggle */}
               <div style={{ ...S.group, marginBottom:"1rem" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
                   <label style={S.label}>{t.profile.ethnicity}<OptionalTag /></label>
@@ -1468,6 +1470,24 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
                 <SelectInput value={form.ethnicity} placeholder="—" options={t.profile.ethnicityOptions}
                   onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
+              </div>
+
+              {/* Religion — privacy toggle */}
+              <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
+                  <label style={S.label}>{t.profile.religion}<OptionalTag /></label>
+                  <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:T.sub, cursor:"pointer", userSelect:"none" }}>
+                    <input
+                      type="checkbox"
+                      checked={!!form.religionPrivate}
+                      onChange={e => setForm(p => ({ ...p, religionPrivate: e.target.checked }))}
+                      style={{ cursor:"pointer" }}
+                    />
+                    {t.profile.religionPrivateToggle}
+                  </label>
+                </div>
+                <SelectInput value={form.religion} placeholder="—" options={t.profile.religionOptions}
+                  onChange={e => handleChange({ target:{ name:"religion", value:e.target.value } })} />
               </div>
 
               {/* Help Areas */}
@@ -1519,6 +1539,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     contactEmail: form.contactEmail || "",
                     experience:form.experience, goals:form.goals,
                     ethnicity:form.ethnicity, ethnicityPrivate:form.ethnicityPrivate,
+                    religion:form.religion,   religionPrivate:form.religionPrivate,
                     helpAreas: form.helpAreas || [],
                   })}
                   disabled={!!savingKey}
@@ -1670,6 +1691,19 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     )}
                   </p>
                   <div style={S.inputDisabled}>{form.ethnicity}</div>
+                </div>
+              )}
+              {(!form.religionPrivate || authProfile?.isAdmin) && form.religion && (
+                <div style={S.group}>
+                  <p style={S.label}>
+                    {t.profile.religion}
+                    {form.religionPrivate && authProfile?.isAdmin && (
+                      <span style={{ fontSize:10, color:"var(--text-muted)", marginInlineStart:6, fontWeight:500 }}>
+                        (private — visible to admins only)
+                      </span>
+                    )}
+                  </p>
+                  <div style={S.inputDisabled}>{form.religion}</div>
                 </div>
               )}
             </div>

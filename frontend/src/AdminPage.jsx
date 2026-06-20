@@ -56,6 +56,9 @@ const AT = {
     noReports:"אין דיווחים עדיין.", reportFrom:"דווח ע\"י", reportedUser:"משתמשת מדווחת",
     reportReason:"סיבה", reportDate:"תאריך", reportStatus:"סטטוס",
     markResolved:"סמני כטופל", dismiss:"דחי", reportPending:"ממתין", reportResolved:"טופל",
+    blacklistTab:"רשימה שחורה", blacklistAdd:"הוספה לרשימה שחורה", blacklistEmail:"כתובת אימייל",
+    blacklistReason:"סיבה (רשות)", blacklistAddBtn:"חסמי", blacklistRemove:"הסר/י",
+    blacklistEmpty:"הרשימה השחורה ריקה.", blacklistNote:"משתמשות עם כתובות אלו לא יוכלו להירשם או להתחבר.",
     topSectors:"אתניות / קהילה", topReligions:"זהות דתית ולאומית", topRegions:"אזורי מגורים",
     region:"אזור", campus:"קמפוס", degree:"תואר", birthdate:"תאריך לידה",
     identity:"השתייכות לאומית-דתית", ethnicity:"קהילה/אתניות",
@@ -118,6 +121,9 @@ const AT = {
     noReports:"No reports yet.", reportFrom:"Reported by", reportedUser:"Reported user",
     reportReason:"Reason", reportDate:"Date", reportStatus:"Status",
     markResolved:"Mark Resolved", dismiss:"Dismiss", reportPending:"Pending", reportResolved:"Resolved",
+    blacklistTab:"Blacklist", blacklistAdd:"Add to Blacklist", blacklistEmail:"Email address",
+    blacklistReason:"Reason (optional)", blacklistAddBtn:"Block", blacklistRemove:"Remove",
+    blacklistEmpty:"Blacklist is empty.", blacklistNote:"Users with these addresses cannot register or sign in.",
     topSectors:"Ethnicity / Community", topReligions:"National & Religious Identity", topRegions:"Regions",
     region:"Region", campus:"Campus", degree:"Degree", birthdate:"Date of Birth",
     identity:"National-Religious Identity", ethnicity:"Community/Ethnicity",
@@ -175,6 +181,9 @@ const AT = {
     noReports:"لا توجد بلاغات بعد.", reportFrom:"مُبلَّغ من قِبَل", reportedUser:"المستخدمة المُبلَّغ عنها",
     reportReason:"السبب", reportDate:"التاريخ", reportStatus:"الحالة",
     markResolved:"تحديد كمعالَج", dismiss:"رفض", reportPending:"قيد الانتظار", reportResolved:"تمت المعالجة",
+    blacklistTab:"القائمة السوداء", blacklistAdd:"إضافة إلى القائمة السوداء", blacklistEmail:"البريد الإلكتروني",
+    blacklistReason:"السبب (اختياري)", blacklistAddBtn:"حظر", blacklistRemove:"إزالة",
+    blacklistEmpty:"القائمة السوداء فارغة.", blacklistNote:"لن تتمكن المستخدمات بهذه العناوين من التسجيل أو تسجيل الدخول.",
     topSectors:"الانتماء / المجتمع", topReligions:"الهوية الوطنية والدينية", topRegions:"مناطق السكن",
     region:"المنطقة", campus:"الحرم الجامعي", degree:"الدرجة العلمية", birthdate:"تاريخ الميلاد",
     identity:"الهوية الوطنية-الدينية", ethnicity:"المجتمع/الانتماء",
@@ -936,6 +945,13 @@ export default function AdminPage() {
   const [reportStatusFilter, setReportStatusFilter] = useState("all"); // "all"|"pending"|"resolved"|"dismissed"
   const [reportSearch,       setReportSearch]       = useState("");
 
+  /* ── Blacklist ── */
+  const [blacklist,        setBlacklist]        = useState([]);
+  const [blacklistLoading, setBlacklistLoading] = useState(false);
+  const [blacklistEmail,   setBlacklistEmail]   = useState("");
+  const [blacklistReason,  setBlacklistReason]  = useState("");
+  const [blacklistAdding,  setBlacklistAdding]  = useState(false);
+
   /* ── Permission / confirm modals ── */
   const [confirmDeleteTarget,  setConfirmDeleteTarget]  = useState(null); // user to delete
   const [confirmRevokeTarget,  setConfirmRevokeTarget]  = useState(null); // user to revoke admin
@@ -993,8 +1009,9 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (tab === "logs" && logs.length === 0) fetchLogs();
-    if (tab === "reports" && reports.length === 0) fetchReports();
+    if (tab === "logs"       && logs.length === 0)      fetchLogs();
+    if (tab === "reports"    && reports.length === 0)   fetchReports();
+    if (tab === "blacklist"  && blacklist.length === 0)  fetchBlacklist();
   }, [tab]);
 
   const fetchReports = useCallback(async () => {
@@ -1006,6 +1023,39 @@ export default function AdminPage() {
     } catch (err) { console.error(err); }
     setReportsLoading(false);
   }, []);
+
+  const fetchBlacklist = useCallback(async () => {
+    setBlacklistLoading(true);
+    try {
+      const snap = await getDocs(query(collection(db, "blacklist"), orderBy("addedAt", "desc")));
+      setBlacklist(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) { console.error(err); }
+    setBlacklistLoading(false);
+  }, []);
+
+  const addToBlacklist = async () => {
+    const email = blacklistEmail.trim().toLowerCase();
+    if (!email || blacklistAdding) return;
+    setBlacklistAdding(true);
+    try {
+      const ref = await addDoc(collection(db, "blacklist"), {
+        email,
+        reason: blacklistReason.trim() || "",
+        addedBy: adminName,
+        addedById: user?.uid,
+        addedAt: new Date().toISOString(),
+      });
+      setBlacklist(prev => [{ id: ref.id, email, reason: blacklistReason.trim(), addedBy: adminName, addedAt: new Date().toISOString() }, ...prev]);
+      setBlacklistEmail("");
+      setBlacklistReason("");
+    } catch (err) { console.error(err); }
+    setBlacklistAdding(false);
+  };
+
+  const removeFromBlacklist = async (id) => {
+    await deleteDoc(doc(db, "blacklist", id));
+    setBlacklist(prev => prev.filter(b => b.id !== id));
+  };
 
   const updateReportStatus = async (id, status) => {
     const report = reports.find(r => r.id === id);
@@ -1305,7 +1355,8 @@ export default function AdminPage() {
     { id: "data",      label: Tr.showDataTab, show: canViewStats },
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}`, show: canManageContent },
     { id: "logs",      label: Tr.tabs.logs, show: canViewLogs },
-    { id: "slideshow", label: Tr.admin?.slideshow || "Slideshow", show: canManageContent },
+    { id: "slideshow",  label: Tr.admin?.slideshow || "Slideshow", show: canManageContent },
+    { id: "blacklist",  label: `🚫 ${Tr.blacklistTab || "Blacklist"}${blacklist.length > 0 ? ` (${blacklist.length})` : ""}`, show: canManageUsers },
   ].filter(t => t.show);
 
   /* ─────────────────────────────────────── RENDER ─── */
@@ -2359,6 +2410,85 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ══ BLACKLIST TAB ══ */}
+      {tab === "blacklist" && (
+        <div>
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+              🚫 {Tr.blacklistTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({blacklist.length})</span>
+            </span>
+            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchBlacklist}>{blacklistLoading ? "…" : `↻ ${Tr.refresh}`}</button>
+          </div>
+          <p style={{ fontSize:12, color:"var(--text-muted)", marginBottom:"1rem" }}>{Tr.blacklistNote}</p>
+
+          {/* Add form */}
+          <div className="card" style={{ padding:"1.25rem", marginBottom:"1.25rem" }}>
+            <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"0.85rem" }}>{Tr.blacklistAdd}</p>
+            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+              <input
+                value={blacklistEmail}
+                onChange={e => setBlacklistEmail(e.target.value)}
+                placeholder={Tr.blacklistEmail}
+                type="email"
+                onKeyDown={e => e.key === "Enter" && addToBlacklist()}
+                style={{ flex:2, minWidth:200, padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
+              />
+              <input
+                value={blacklistReason}
+                onChange={e => setBlacklistReason(e.target.value)}
+                placeholder={Tr.blacklistReason}
+                onKeyDown={e => e.key === "Enter" && addToBlacklist()}
+                style={{ flex:3, minWidth:200, padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
+              />
+              <button
+                onClick={addToBlacklist}
+                disabled={!blacklistEmail.trim() || blacklistAdding}
+                style={{ padding:"9px 22px", borderRadius:10, background:"#c25c5c", color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor: !blacklistEmail.trim() || blacklistAdding ? "not-allowed" : "pointer", opacity: !blacklistEmail.trim() || blacklistAdding ? 0.6 : 1, whiteSpace:"nowrap" }}>
+                {blacklistAdding ? "…" : `🚫 ${Tr.blacklistAddBtn}`}
+              </button>
+            </div>
+          </div>
+
+          {/* Blacklist table */}
+          {blacklistLoading ? (
+            <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted)" }}>Loading…</div>
+          ) : blacklist.length === 0 ? (
+            <div className="empty-state"><p>{Tr.blacklistEmpty}</p></div>
+          ) : (
+            <div className="card" style={{ overflowX:"auto" }}>
+              <table style={{ ...S.table, minWidth:400 }}>
+                <thead>
+                  <tr>
+                    {[Tr.blacklistEmail, Tr.blacklistReason, "Added by", Tr.reportDate, ""].map(h => (
+                      <th key={h} style={{ ...S.th, whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {blacklist.map(b => (
+                    <tr key={b.id} style={S.row}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
+                    >
+                      <td style={{ ...S.td, fontWeight:600, color:"#c25c5c", fontFamily:"monospace" }}>{b.email}</td>
+                      <td style={{ ...S.td, maxWidth:260, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.reason || "—"}</td>
+                      <td style={S.td}>{b.addedBy || "—"}</td>
+                      <td style={{ ...S.td, whiteSpace:"nowrap", fontSize:11 }}>{b.addedAt ? new Date(b.addedAt).toLocaleDateString() : "—"}</td>
+                      <td style={S.td}>
+                        <button onClick={() => removeFromBlacklist(b.id)}
+                          style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #d99090", background:"#f5dada", color:"#c25c5c", cursor:"pointer" }}>
+                          {Tr.blacklistRemove}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

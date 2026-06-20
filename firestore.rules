@@ -204,6 +204,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    /* ── Blacklist — email addresses permanently blocked from the platform ── */
+    match /blacklist/{docId} {
+      /* Any authenticated user can read (needed for login/register check). */
+      allow read: if isAuth();
+      /* Only admins can add or remove entries. */
+      allow create, delete: if isAdmin();
+    }
+
     /* ── Default: deny all ── */
     match /{document=**} {
       allow read, write: if false;

@@ -266,10 +266,16 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   useEffect(() => {
     if (!user) return;
-    getDocs(query(collection(db, "users"), limit(20))).then((snap) => {
-      const others = snap.docs
+    Promise.all([
+      getDocs(query(collection(db, "users"), limit(40))),
+      getDocs(query(collection(db, "conversations"), where("participants", "array-contains", user.uid))),
+    ]).then(([usersSnap, convsSnap]) => {
+      const alreadyTalkedTo = new Set(
+        convsSnap.docs.flatMap(d => (d.data().participants || []).filter(id => id !== user.uid))
+      );
+      const others = usersSnap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
-        .filter((u) => u.id !== user.uid && u.profession);
+        .filter((u) => u.id !== user.uid && u.profession && !alreadyTalkedTo.has(u.id));
       others.sort((a, b) => ((b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1));
       setSuggested(others.slice(0, 4));
     });
