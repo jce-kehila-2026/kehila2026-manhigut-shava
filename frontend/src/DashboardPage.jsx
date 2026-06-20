@@ -713,7 +713,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!profile || tutorialChecked.current) return;
     tutorialChecked.current = true;
-    if (!profile.tutorialDone) setShowTutorial(true);
+    if (profile.tutorialDone === false) setShowTutorial(true);
   }, [profile]);
 
   return (

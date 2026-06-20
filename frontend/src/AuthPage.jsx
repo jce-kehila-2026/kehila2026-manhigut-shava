@@ -380,6 +380,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
         institution:form.institution,
         profession:effectiveProfession, city:effectiveCity,
         emailVerified:false, acceptedTerms:true, createdAt:new Date().toISOString(),
+        tutorialDone: false,
       });
       await saveContact(user.uid, { phone: normalizedPhone, email: form.email });
     } catch (e) { setError(firebaseMsg(e.code)); }
