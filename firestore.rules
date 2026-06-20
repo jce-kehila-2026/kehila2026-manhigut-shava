@@ -145,9 +145,15 @@ service cloud.firestore {
     /* ── Events ── */
     match /events/{eventId} {
       allow read:   if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
-      allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if isAdmin() && hasFields(['title', 'date', 'authorId'])
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+
+      match /rsvps/{uid} {
+        allow read:   if isAuth();
+        allow write:  if isAuth() && isOwner(uid);
+      }
     }
 
     /* ── Jobs ── */
