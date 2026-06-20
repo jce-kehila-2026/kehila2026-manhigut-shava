@@ -45,6 +45,25 @@ exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
   return { success: true };
 });
 
+/* ── Sync isAdmin Firestore field → Auth custom claim ──────────────────────
+   Runs whenever a users/{uid} document is created or updated. Sets the
+   isAdmin custom claim so Storage rules can check it without a Firestore
+   read (request.auth.token.isAdmin). The target user's token updates on
+   their next refresh (up to 1 h) or immediately if they sign out/in. */
+exports.syncAdminClaim = functions.firestore
+  .document("users/{uid}")
+  .onWrite(async (change, context) => {
+    const uid = context.params.uid;
+    if (!change.after.exists) return null;
+    const isAdmin = change.after.data()?.isAdmin === true;
+    try {
+      await admin.auth().setCustomUserClaims(uid, { isAdmin });
+    } catch (e) {
+      console.error("syncAdminClaim: failed for", uid, e);
+    }
+    return null;
+  });
+
 /* ── Delete user from Firebase Auth (admin only) ── */
 exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
   const callerUid = context.auth?.uid;

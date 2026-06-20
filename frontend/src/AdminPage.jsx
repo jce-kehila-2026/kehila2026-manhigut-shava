@@ -614,6 +614,11 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
     try {
       await updateDoc(doc(db, "users", u.id), { ...fields });
       if (fields.phone !== undefined) await saveContact(u.id, { phone: fields.phone });
+      // If admin status changed and the target is the current user, refresh the token
+      // so the isAdmin custom claim takes effect immediately for Storage rules.
+      if ("isAdmin" in fields && u.id === adminUser.uid) {
+        await adminUser.getIdToken(true);
+      }
       logActivity({
         type: "admin_edit_profile",
         actorId: adminUser.uid,
