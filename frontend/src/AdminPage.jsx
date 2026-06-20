@@ -7,6 +7,7 @@ import { SlideshowBanner } from "./components/SlideshowBanner";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { httpsCallable } from "firebase/functions";
 import { db, functions, storage } from "./firebase";
+import { saveContact } from "./contact";
 import { deletePostWithCleanup } from "./utils/deletePost";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -608,6 +609,7 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
     setSaving(true);
     try {
       await updateDoc(doc(db, "users", u.id), { ...fields });
+      if (fields.phone !== undefined) await saveContact(u.id, { phone: fields.phone });
       logActivity({
         type: "admin_edit_profile",
         actorId: adminUser.uid,

@@ -3,12 +3,13 @@ import Cropper from "react-easy-crop";
 import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
 import {
   updateEmail,
-  updatePassword,
+  sendPasswordResetEmail,
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, auth } from "./firebase";
+import { saveContact } from "./contact";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { useTheme } from "./ThemeContext";
@@ -585,10 +586,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [emailError,     setEmailError]     = useState("");
   const [emailSuccess,   setEmailSuccess]   = useState("");
 
-  const [showPasswordModal,      setShowPasswordModal]      = useState(false);
-  const [currentPasswordForPwd,  setCurrentPasswordForPwd]  = useState("");
-  const [newPassword,            setNewPassword]            = useState("");
-  const [confirmNewPassword,     setConfirmNewPassword]     = useState("");
   const [passwordError,          setPasswordError]          = useState("");
   const [passwordSuccess,        setPasswordSuccess]        = useState("");
 
@@ -793,7 +790,9 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       const saveData = { ...fields };
       if ("institution" in saveData && saveData.institution === "OTHER")
         saveData.institution = institutionOther || "אחר";
-      await updateDoc(doc(db, "users", targetId), saveData);
+      const writes = [updateDoc(doc(db, "users", targetId), saveData)];
+      if ("phone" in saveData) writes.push(saveContact(targetId, { phone: saveData.phone }));
+      await Promise.all(writes);
       if (isOwner) await refreshProfile();
       setSavedKey(sectionKey);
       setTimeout(() => setSavedKey(k => k === sectionKey ? null : k), 2200);
@@ -822,21 +821,16 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     }
   };
 
-  /* ── Password change ── */
-  const handlePasswordChange = async () => {
-    if (!isOwner || !user) return;
+  /* ── Password reset — Firebase emails a secure reset link to the account
+     address (works for password and Google-linked accounts alike). ── */
+  const handleResetPassword = async () => {
+    if (!isOwner || !user?.email) return;
     setPasswordError(""); setPasswordSuccess("");
-    if (newPassword.length < 6) { setPasswordError(t.profile.passwordTooShort); return; }
-    if (newPassword !== confirmNewPassword) { setPasswordError(t.profile.passwordMismatch); return; }
     try {
-      const cred = EmailAuthProvider.credential(user.email, currentPasswordForPwd);
-      await reauthenticateWithCredential(auth.currentUser, cred);
-      await updatePassword(auth.currentUser, newPassword);
-      setPasswordSuccess(t.profile.passwordSuccess);
-      setCurrentPasswordForPwd(""); setNewPassword(""); setConfirmNewPassword("");
+      await sendPasswordResetEmail(auth, user.email);
+      setPasswordSuccess(t.profile.resetEmailSent);
     } catch (err) {
-      if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential")
-        setPasswordError("Incorrect current password.");
+      if (err.code === "auth/too-many-requests") setPasswordError(t.profile.tooManyRequests);
       else setPasswordError(t.profile.errorGeneral);
     }
   };
@@ -1517,19 +1511,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <button className="change-btn" style={S.changeBtn} onClick={() => setShowEmailModal(true)}>
                 {t.profile.change}
               </button>
+              <button className="change-btn" style={S.changeBtn} onClick={handleResetPassword}>
+                {t.profile.resetPassword}
+              </button>
             </div>
-            {!isGoogleUser && (
-              <div style={{ marginTop:"0.85rem" }}>
-                <button className="change-btn" style={S.changeBtn} onClick={() => { setPasswordError(""); setPasswordSuccess(""); setShowPasswordModal(true); }}>
-                  {t.profile.changePassword}
-                </button>
-              </div>
-            )}
-            {isGoogleUser && (
-              <p style={{ fontSize:"12px", color:T.sub, margin:"0.75rem 0 0" }}>
-                {t.profile.passwordManagedByGoogle}
-              </p>
-            )}
           </div>
         )}
 
@@ -1778,36 +1763,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         </div>
       )}
 
-      {/* ── Password Change Modal ── */}
-      {showPasswordModal && isOwner && !isGoogleUser && (
-        <div style={S.modal} onClick={() => setShowPasswordModal(false)}>
-          <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
-            <p style={S.modalTitle}>{t.profile.changePassword}</p>
-            <p style={S.modalSub}>{t.profile.passwordModalSub}</p>
-            {passwordError && <div style={S.errorMsg}>{passwordError}</div>}
-            {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
-            <div style={S.group}>
-              <label style={S.label}>{t.profile.currentPassword}</label>
-              <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
-                value={currentPasswordForPwd} onChange={(e) => setCurrentPasswordForPwd(e.target.value)} />
-            </div>
-            <div style={S.group}>
-              <label style={S.label}>{t.profile.newPassword}</label>
-              <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
-                value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            </div>
-            <div style={S.group}>
-              <label style={S.label}>{t.profile.confirmNewPassword}</label>
-              <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
-                value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} />
-            </div>
-            <div style={S.modalActions}>
-              <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowPasswordModal(false)}>{t.profile.cancel}</button>
-              <button style={S.confirmBtn} onClick={handlePasswordChange}>{t.profile.confirm}</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

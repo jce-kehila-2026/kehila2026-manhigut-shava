@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { saveContact } from "./contact";
 
 /* ── Palette (matches blue/coral theme) ── */
 const C = {
@@ -290,11 +291,12 @@ export default function CompleteProfilePage() {
     if (!form.agreed) { setError("יש לאשר את הסכמת שיתוף הפרטים."); return; }
     setError(""); setLoading(true);
     try {
+      const normalizedPhone = normalizePhone(form.phone);
       await setDoc(doc(db, "users", user.uid), {
         /* public */
         firstName:          form.firstName,
         lastName:           form.lastName,
-        phone:              normalizePhone(form.phone),
+        phone:              normalizedPhone,
         email:              form.email,
         birthdate:          form.birthdate || null,
         region:             form.region,
@@ -326,6 +328,7 @@ export default function CompleteProfilePage() {
         acceptedTerms: true,
         createdAt: new Date().toISOString(),
       });
+      await saveContact(user.uid, { phone: normalizedPhone, email: form.email });
       await refreshProfile();
     } catch (err) {
       setError("שגיאה בשמירת הפרופיל. נסי שוב.");
