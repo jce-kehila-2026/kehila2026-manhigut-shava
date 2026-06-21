@@ -12,6 +12,7 @@ import { deletePostWithCleanup } from "./utils/deletePost";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
+import { getOrCreateConversation, sendMessage } from "./hooks/useMessages";
 
 /* ─── Admin translations ─── */
 const AT = {
@@ -55,6 +56,9 @@ const AT = {
     noReports:"אין דיווחים עדיין.", reportFrom:"דווח ע\"י", reportedUser:"משתמשת מדווחת",
     reportReason:"סיבה", reportDate:"תאריך", reportStatus:"סטטוס",
     markResolved:"סמני כטופל", dismiss:"דחי", reportPending:"ממתין", reportResolved:"טופל",
+    blacklistTab:"רשימה שחורה", blacklistAdd:"הוספה לרשימה שחורה", blacklistEmail:"כתובת אימייל",
+    blacklistReason:"סיבה (רשות)", blacklistAddBtn:"חסמי", blacklistRemove:"הסר/י",
+    blacklistEmpty:"הרשימה השחורה ריקה.", blacklistNote:"משתמשות עם כתובות אלו לא יוכלו להירשם או להתחבר.",
     topSectors:"אתניות / קהילה", topReligions:"זהות דתית ולאומית", topRegions:"אזורי מגורים",
     region:"אזור", campus:"קמפוס", degree:"תואר", birthdate:"תאריך לידה",
     identity:"השתייכות לאומית-דתית", ethnicity:"קהילה/אתניות",
@@ -117,6 +121,9 @@ const AT = {
     noReports:"No reports yet.", reportFrom:"Reported by", reportedUser:"Reported user",
     reportReason:"Reason", reportDate:"Date", reportStatus:"Status",
     markResolved:"Mark Resolved", dismiss:"Dismiss", reportPending:"Pending", reportResolved:"Resolved",
+    blacklistTab:"Blacklist", blacklistAdd:"Add to Blacklist", blacklistEmail:"Email address",
+    blacklistReason:"Reason (optional)", blacklistAddBtn:"Block", blacklistRemove:"Remove",
+    blacklistEmpty:"Blacklist is empty.", blacklistNote:"Users with these addresses cannot register or sign in.",
     topSectors:"Ethnicity / Community", topReligions:"National & Religious Identity", topRegions:"Regions",
     region:"Region", campus:"Campus", degree:"Degree", birthdate:"Date of Birth",
     identity:"National-Religious Identity", ethnicity:"Community/Ethnicity",
@@ -174,6 +181,9 @@ const AT = {
     noReports:"لا توجد بلاغات بعد.", reportFrom:"مُبلَّغ من قِبَل", reportedUser:"المستخدمة المُبلَّغ عنها",
     reportReason:"السبب", reportDate:"التاريخ", reportStatus:"الحالة",
     markResolved:"تحديد كمعالَج", dismiss:"رفض", reportPending:"قيد الانتظار", reportResolved:"تمت المعالجة",
+    blacklistTab:"القائمة السوداء", blacklistAdd:"إضافة إلى القائمة السوداء", blacklistEmail:"البريد الإلكتروني",
+    blacklistReason:"السبب (اختياري)", blacklistAddBtn:"حظر", blacklistRemove:"إزالة",
+    blacklistEmpty:"القائمة السوداء فارغة.", blacklistNote:"لن تتمكن المستخدمات بهذه العناوين من التسجيل أو تسجيل الدخول.",
     topSectors:"الانتماء / المجتمع", topReligions:"الهوية الوطنية والدينية", topRegions:"مناطق السكن",
     region:"المنطقة", campus:"الحرم الجامعي", degree:"الدرجة العلمية", birthdate:"تاريخ الميلاد",
     identity:"الهوية الوطنية-الدينية", ethnicity:"المجتمع/الانتماء",
@@ -757,6 +767,12 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
       sub: (p.text || "(media)").slice(0, 80),
       avatar: p.authorAvatar,
     }));
+  } else if (type === "convs") {
+    title = Tr.conversations;
+    items = convs.slice(0, 50).map(c => {
+      const names = Object.values(c.participantNames || {}).join(" & ");
+      return { id: c.id, name: names || "Conversation", sub: c.lastMessage?.text?.slice(0,60) || "" };
+    });
   }
 
   return (
@@ -819,15 +835,18 @@ function SlideshowAdmin() {
   };
 
   const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     setUploading(true);
     try {
-      const path = `slideshow/${Date.now()}_${file.name}`;
-      const sRef = storageRef(storage, path);
-      await uploadBytes(sRef, file);
-      const url = await getDownloadURL(sRef);
-      await persist([...images, { url, storagePath: path, caption: "" }]);
+      const newImgs = await Promise.all(files.map(async (file) => {
+        const path = `slideshow/${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name}`;
+        const sRef = storageRef(storage, path);
+        await uploadBytes(sRef, file);
+        const url = await getDownloadURL(sRef);
+        return { url, storagePath: path, caption: "" };
+      }));
+      await persist([...images, ...newImgs]);
     } finally { setUploading(false); e.target.value = ""; }
   };
 
@@ -874,8 +893,9 @@ function SlideshowAdmin() {
 
         <label style={{ width:180, height:150, borderRadius:12, border:"2px dashed var(--border)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: uploading ? "wait" : "pointer", color:"var(--text-muted)", fontSize:13, gap:6, background:"var(--bg-secondary)" }}>
           <span style={{ fontSize:28 }}>+</span>
-          <span>{uploading ? "Uploading..." : "Upload image"}</span>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
+          <span>{uploading ? "Uploading..." : "Upload images"}</span>
+          <span style={{ fontSize:10, color:"var(--text-muted)", marginTop:-4 }}>Select multiple</span>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
         </label>
       </div>
       {images.length === 0 && !uploading && (
@@ -903,9 +923,15 @@ export default function AdminPage() {
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
+  const [userSortBy, setUserSortBy] = useState("recent");   // recent | alpha | city | perms
+  const [userFilterAdmin, setUserFilterAdmin] = useState(false);
+  const [userFilterOnline, setUserFilterOnline] = useState(false);
 
-  /* ── Posts: search + expanded comments ── */
+  /* ── Posts: search + filter + expanded comments ── */
   const [postSearch, setPostSearch] = useState("");
+  const [postSortBy, setPostSortBy] = useState("recent");
+  const [postFilterPinned, setPostFilterPinned] = useState(false);
+  const [postFilterMedia,  setPostFilterMedia]  = useState(false);
   const [expandedPostComments, setExpandedPostComments] = useState({});
   const [postCommentsList, setPostCommentsList]         = useState({});
 
@@ -922,6 +948,15 @@ export default function AdminPage() {
   const [reportsLoading, setReportsLoading] = useState(false);
   const [expandedUserId,  setExpandedUserId]  = useState(null);
   const [expandedReportId, setExpandedReportId] = useState(null);
+  const [reportStatusFilter, setReportStatusFilter] = useState("all"); // "all"|"pending"|"resolved"|"dismissed"
+  const [reportSearch,       setReportSearch]       = useState("");
+
+  /* ── Blacklist ── */
+  const [blacklist,        setBlacklist]        = useState([]);
+  const [blacklistLoading, setBlacklistLoading] = useState(false);
+  const [blacklistEmail,   setBlacklistEmail]   = useState("");
+  const [blacklistReason,  setBlacklistReason]  = useState("");
+  const [blacklistAdding,  setBlacklistAdding]  = useState(false);
 
   /* ── Permission / confirm modals ── */
   const [confirmDeleteTarget,  setConfirmDeleteTarget]  = useState(null); // user to delete
@@ -980,8 +1015,9 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (tab === "logs" && logs.length === 0) fetchLogs();
-    if (tab === "reports" && reports.length === 0) fetchReports();
+    if (tab === "logs"       && logs.length === 0)      fetchLogs();
+    if (tab === "reports"    && reports.length === 0)   fetchReports();
+    if (tab === "blacklist"  && blacklist.length === 0)  fetchBlacklist();
   }, [tab]);
 
   const fetchReports = useCallback(async () => {
@@ -994,9 +1030,56 @@ export default function AdminPage() {
     setReportsLoading(false);
   }, []);
 
+  const fetchBlacklist = useCallback(async () => {
+    setBlacklistLoading(true);
+    try {
+      const snap = await getDocs(query(collection(db, "blacklist"), orderBy("addedAt", "desc")));
+      setBlacklist(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) { console.error(err); }
+    setBlacklistLoading(false);
+  }, []);
+
+  const addToBlacklist = async () => {
+    const email = blacklistEmail.trim().toLowerCase();
+    if (!email || blacklistAdding) return;
+    setBlacklistAdding(true);
+    try {
+      const ref = await addDoc(collection(db, "blacklist"), {
+        email,
+        reason: blacklistReason.trim() || "",
+        addedBy: adminName,
+        addedById: user?.uid,
+        addedAt: new Date().toISOString(),
+      });
+      setBlacklist(prev => [{ id: ref.id, email, reason: blacklistReason.trim(), addedBy: adminName, addedAt: new Date().toISOString() }, ...prev]);
+      setBlacklistEmail("");
+      setBlacklistReason("");
+    } catch (err) { console.error(err); }
+    setBlacklistAdding(false);
+  };
+
+  const removeFromBlacklist = async (id) => {
+    await deleteDoc(doc(db, "blacklist", id));
+    setBlacklist(prev => prev.filter(b => b.id !== id));
+  };
+
   const updateReportStatus = async (id, status) => {
-    await updateDoc(doc(db, "reports", id), { status });
+    const report = reports.find(r => r.id === id);
+    await updateDoc(doc(db, "reports", id), { status, resolvedAt: status === "resolved" ? new Date().toISOString() : null });
     setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+
+    if (status === "resolved" && report?.reporterId && user?.uid && report.reporterId !== user.uid) {
+      try {
+        const adminProfile = { firstName: profile?.firstName || "Admin", lastName: profile?.lastName || "", avatarUrl: profile?.avatarUrl || null };
+        const reporterProfile = users.find(u => u.id === report.reporterId) || { firstName: report.reporterName || "User", lastName: "", avatarUrl: null };
+        const convId = await getOrCreateConversation(user.uid, report.reporterId, adminProfile, reporterProfile);
+        const resolvedDate = new Date().toLocaleDateString();
+        const dmText = `✓ Your report about ${report.reportedName || "a user"} has been reviewed and resolved (${resolvedDate}). Thank you for helping keep the community safe.`;
+        await sendMessage(convId, user.uid, dmText, null, null, [report.reporterId]);
+      } catch (e) {
+        console.error("Auto-DM failed:", e);
+      }
+    }
   };
 
   /* ── Access denied ── */
@@ -1045,8 +1128,10 @@ export default function AdminPage() {
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
     if (u.ethnicity)  ethnicityMap[u.ethnicity]  = (ethnicityMap[u.ethnicity]  || 0) + 1;
-    if (u.identity)   religionMap[u.identity]    = (religionMap[u.identity]    || 0) + 1;
-    if (u.region)               regionMap[u.region]                 = (regionMap[u.region]                 || 0) + 1;
+    /* religion field (new dropdown) takes priority; fall back to identity freetext */
+    const rel = u.religion || u.identity;
+    if (rel)          religionMap[rel]            = (religionMap[rel]            || 0) + 1;
+    if (u.region)     regionMap[u.region]         = (regionMap[u.region]         || 0) + 1;
   });
   const topEthnicities = Object.entries(ethnicityMap).sort((a,b) => b[1]-a[1]).slice(0,8);
   const topReligions   = Object.entries(religionMap).sort((a,b) => b[1]-a[1]).slice(0,8);
@@ -1154,12 +1239,24 @@ export default function AdminPage() {
   };
 
   /* ── Filtered users (shared between Users + EditUsers tabs) ── */
-  const filteredBySearch = users.filter(u => {
-    const s = (searchUser || userSearch).toLowerCase();
-    if (!s) return true;
-    const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-    return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
-  });
+  const filteredBySearch = users
+    .filter(u => {
+      const s = (searchUser || userSearch).toLowerCase();
+      const matchSearch = !s || (() => {
+        const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
+        return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
+      })();
+      const matchAdmin  = !userFilterAdmin  || !!u.isAdmin;
+      const matchOnline = !userFilterOnline || isActuallyOnline(u);
+      return matchSearch && matchAdmin && matchOnline;
+    })
+    .sort((a, b) => {
+      if (userSortBy === "alpha")  return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
+      if (userSortBy === "city")   return (a.city ?? "").localeCompare(b.city ?? "", "he");
+      if (userSortBy === "perms")  return (b.isAdmin ? 1 : 0) - (a.isAdmin ? 1 : 0);
+      // default: recent (createdAt desc)
+      return new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0);
+    });
 
   /* ── Excel export ── */
   const exportExcel = async () => {
@@ -1266,7 +1363,8 @@ export default function AdminPage() {
     { id: "data",      label: Tr.showDataTab, show: canViewStats },
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}`, show: canManageContent },
     { id: "logs",      label: Tr.tabs.logs, show: canViewLogs },
-    { id: "slideshow", label: Tr.admin?.slideshow || "Slideshow", show: canManageContent },
+    { id: "slideshow",  label: Tr.admin?.slideshow || "Slideshow", show: canManageContent },
+    { id: "blacklist",  label: `🚫 ${Tr.blacklistTab || "Blacklist"}${blacklist.length > 0 ? ` (${blacklist.length})` : ""}`, show: canManageUsers },
   ].filter(t => t.show);
 
   /* ─────────────────────────────────────── RENDER ─── */
@@ -1310,7 +1408,8 @@ export default function AdminPage() {
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
               onClick={() => setStatDetailType("posts")} />
             <StatCard label={Tr.conversations}  value={convs.length}   color="#d4a574"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} />
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+              onClick={() => setStatDetailType("convs")} />
             <StatCard label={Tr.admins}         value={adminsN}        color="#c25c5c"
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>}
               onClick={() => setStatDetailType("admins")} />
@@ -1411,19 +1510,42 @@ export default function AdminPage() {
       {/* ══ USERS TAB ══ */}
       {!loading && tab === "users" && (
         <>
-          <SectionHeader
-            title="All Members"
-            count={filteredBySearch.length}
-            action={
-              <input
-                className="input"
-                placeholder="Search by name, email, profession…"
-                value={searchUser}
-                onChange={e => setSearchUser(e.target.value)}
-                style={{ fontSize: 12, width: 240 }}
-              />
-            }
-          />
+          {/* Members header + inline filter bar */}
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+              All Members <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredBySearch.length})</span>
+            </span>
+            <input
+              className="input"
+              placeholder="Search by name, email, profession…"
+              value={searchUser}
+              onChange={e => setSearchUser(e.target.value)}
+              style={{ fontSize:12, width:220, flexShrink:0 }}
+            />
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+              {[
+                { val:"recent", label:"Recent" },
+                { val:"alpha",  label:"A–Z" },
+                { val:"city",   label:"City" },
+                { val:"perms",  label:"Admins first" },
+              ].map(opt => (
+                <button key={opt.val} onClick={() => setUserSortBy(opt.val)}
+                  style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
+                    background: userSortBy===opt.val ? "var(--brand,#4472b8)" : "var(--bg-secondary,#f0f6fb)",
+                    color: userSortBy===opt.val ? "#fff" : "var(--text-secondary)" }}>
+                  {opt.label}
+                </button>
+              ))}
+              <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={userFilterAdmin} onChange={e => setUserFilterAdmin(e.target.checked)} style={{ cursor:"pointer" }} />
+                Admins only
+              </label>
+              <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={userFilterOnline} onChange={e => setUserFilterOnline(e.target.checked)} style={{ cursor:"pointer" }} />
+                Online now
+              </label>
+            </div>
+          </div>
           <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
               <thead>
@@ -1595,25 +1717,56 @@ export default function AdminPage() {
       {!loading && tab === "posts" && (
         <>
           {(() => {
-            const filteredPosts = posts.filter(p =>
-              !postSearch ||
-              (p.text || "").toLowerCase().includes(postSearch.toLowerCase()) ||
-              (p.authorName || "").toLowerCase().includes(postSearch.toLowerCase())
-            );
+            const filteredPosts = posts
+              .filter(p =>
+                (!postSearch ||
+                  (p.text || "").toLowerCase().includes(postSearch.toLowerCase()) ||
+                  (p.authorName || "").toLowerCase().includes(postSearch.toLowerCase())) &&
+                (!postFilterPinned || p.isPinned) &&
+                (!postFilterMedia  || (p.media?.length > 0))
+              )
+              .sort((a, b) => {
+                if (postSortBy === "alpha") return (a.authorName || "").localeCompare(b.authorName || "", "he");
+                if (postSortBy === "likes") return (b.likesCount || 0) - (a.likesCount || 0);
+                return new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0);
+              });
             return (
           <>
-          <SectionHeader title="All Posts" count={filteredPosts.length} />
-          <input
-            value={postSearch}
-            onChange={e => setPostSearch(e.target.value)}
-            placeholder={Tr.searchPh || "Search posts..."}
-            style={{
-              width:"100%", maxWidth:340, padding:"7px 12px", marginBottom:"1rem",
-              border:"1px solid var(--border,#daeaf8)", borderRadius:10, fontSize:13,
-              background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
-              boxSizing:"border-box",
-            }}
-          />
+          {/* Posts header + inline filter bar */}
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+              All Posts <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredPosts.length})</span>
+            </span>
+            <input
+              className="input"
+              value={postSearch}
+              onChange={e => setPostSearch(e.target.value)}
+              placeholder={Tr.searchPh || "Search posts..."}
+              style={{ fontSize:12, width:200, flexShrink:0 }}
+            />
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+              {[
+                { val:"recent", label:"Recent" },
+                { val:"alpha",  label:"A–Z" },
+                { val:"likes",  label:"Most liked" },
+              ].map(opt => (
+                <button key={opt.val} onClick={() => setPostSortBy(opt.val)}
+                  style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
+                    background: postSortBy===opt.val ? "var(--brand,#4472b8)" : "var(--bg-secondary,#f0f6fb)",
+                    color: postSortBy===opt.val ? "#fff" : "var(--text-secondary)" }}>
+                  {opt.label}
+                </button>
+              ))}
+              <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={postFilterPinned} onChange={e => setPostFilterPinned(e.target.checked)} style={{ cursor:"pointer" }} />
+                Pinned only
+              </label>
+              <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={postFilterMedia} onChange={e => setPostFilterMedia(e.target.checked)} style={{ cursor:"pointer" }} />
+                Has media
+              </label>
+            </div>
+          </div>
           <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
               <thead>
@@ -1640,9 +1793,24 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td style={{ padding:"11px 14px",maxWidth:320 }}>
-                        <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:0 }}>
-                          {p.text || <em style={{color:"var(--text-muted,#6b7280)"}}>Media post</em>}
-                        </p>
+                        {p.text ? (() => {
+                          const LIMIT = 120;
+                          const isLong = p.text.length > LIMIT;
+                          const isExpanded = expandedPostComments[`text-${p.id}`];
+                          return (
+                            <>
+                              <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:"0 0 2px" }}>
+                                {isExpanded || !isLong ? p.text : `${p.text.slice(0, LIMIT)}…`}
+                              </p>
+                              {isLong && (
+                                <button onClick={() => setExpandedPostComments(s => ({ ...s, [`text-${p.id}`]: !s[`text-${p.id}`] }))}
+                                  style={{ fontSize:10, color:"var(--brand,#4472b8)", background:"none", border:"none", cursor:"pointer", padding:0, fontWeight:600 }}>
+                                  {isExpanded ? "Show less" : "Show full post"}
+                                </button>
+                              )}
+                            </>
+                          );
+                        })() : <em style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>Media post</em>}
                       </td>
                       <td style={{ padding:"11px 14px" }}>
                         {p.media?.length > 0
@@ -1786,16 +1954,21 @@ export default function AdminPage() {
           {/* Stat summary row */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:"1rem", marginBottom:"1.5rem" }}>
             {[
-              { label: Tr.totalMembers,  value: users.length,   color:"#4472b8" },
-              { label: Tr.verified,       value: verifiedN,      color:"#1d4896" },
-              { label: Tr.admins,         value: adminsN,        color:"#c25c5c" },
-              { label: Tr.totalPosts,    value: posts.length,   color:"#8b5cf6" },
-              { label: Tr.conversations,  value: convs.length,   color:"#d4a574" },
-              { label: Tr.onlineNow,     value: onlineNow,      color:"#7ba87a" },
+              { label: Tr.totalMembers,  value: users.length,   color:"#4472b8", type:"members"  },
+              { label: Tr.verified,       value: verifiedN,      color:"#1d4896", type:"verified" },
+              { label: Tr.admins,         value: adminsN,        color:"#c25c5c", type:"admins"   },
+              { label: Tr.totalPosts,    value: posts.length,   color:"#8b5cf6", type:"posts"    },
+              { label: Tr.conversations,  value: convs.length,   color:"#d4a574", type:"convs"    },
+              { label: Tr.onlineNow,     value: onlineNow,      color:"#7ba87a", type:"online"   },
             ].map(s => (
-              <div key={s.label} className="card" style={{ padding:"1rem 1.25rem" }}>
+              <div key={s.label} className="card" style={{ padding:"1rem 1.25rem", cursor: s.type ? "pointer" : "default", transition:"box-shadow 0.15s", userSelect:"none" }}
+                onClick={() => s.type && setStatDetailType(s.type)}
+                onMouseEnter={e => { if (s.type) e.currentTarget.style.boxShadow = "0 4px 16px rgba(29,72,150,0.12)"; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = ""; }}
+              >
                 <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 6px" }}>{s.label}</p>
                 <p style={{ fontSize:28, fontWeight:800, color:s.color, margin:0, lineHeight:1 }}>{s.value}</p>
+                {s.type && <p style={{ fontSize:10, color:"var(--text-muted,#6b7280)", margin:"4px 0 0" }}>Click to view →</p>}
               </div>
             ))}
           </div>
@@ -1989,20 +2162,148 @@ export default function AdminPage() {
               </div>
             );
           })()}
+
+          {/* 30-day signups line chart */}
+          {(() => {
+            const days30 = Array.from({ length: 30 }, (_, i) => {
+              const d = new Date();
+              d.setDate(d.getDate() - (29 - i));
+              return d;
+            });
+            const counts30 = days30.map(day => {
+              const dayStr = day.toISOString().slice(0, 10);
+              return users.filter(u => u.createdAt?.slice(0, 10) === dayStr).length;
+            });
+            const maxC = Math.max(...counts30, 1);
+            const W = 300, H = 80, pad = 8;
+            const pts = counts30.map((c, i) => {
+              const x = pad + (i / (counts30.length - 1)) * (W - pad * 2);
+              const y = H - pad - (c / maxC) * (H - pad * 2);
+              return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(" ");
+            const total30 = counts30.reduce((a, b) => a + b, 0);
+            return (
+              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
+                    New Members – Last 30 Days
+                  </p>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand,#4472b8)" }}>{total30} total</span>
+                </div>
+                <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height: H }}>
+                  <polyline points={pts} fill="none" stroke="var(--brand,#4472b8)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+                  {counts30.map((c, i) => {
+                    if (c === 0) return null;
+                    const x = pad + (i / (counts30.length - 1)) * (W - pad * 2);
+                    const y = H - pad - (c / maxC) * (H - pad * 2);
+                    return <circle key={i} cx={x.toFixed(1)} cy={y.toFixed(1)} r={3} fill="var(--brand,#4472b8)" />;
+                  })}
+                </svg>
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop: 4 }}>
+                  <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>{days30[0].toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span>
+                  <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>Today</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* City distribution donut chart */}
+          {(() => {
+            const cityCount = {};
+            users.forEach(u => {
+              const city = u.city?.trim();
+              if (city) cityCount[city] = (cityCount[city] || 0) + 1;
+            });
+            const sorted = Object.entries(cityCount).sort((a, b) => b[1] - a[1]);
+            const top = sorted.slice(0, 5);
+            const othersCount = sorted.slice(5).reduce((s, [, v]) => s + v, 0);
+            if (othersCount > 0) top.push(["Other", othersCount]);
+            const totalWithCity = top.reduce((s, [, v]) => s + v, 0) || 1;
+            const cityColors = ["#4472b8","#7ba87a","#c25c5c","#d4a574","#8b5cf6","#94a3b8"];
+            let cumCity = 0;
+            const cityConicParts = top.map(([, v], i) => {
+              const pct = Math.round(v / totalWithCity * 100);
+              const start = cumCity;
+              cumCity += pct;
+              return `${cityColors[i % cityColors.length]} ${start}% ${cumCity}%`;
+            }).join(", ");
+            return (
+              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                  City Distribution
+                </p>
+                {top.length === 0 ? (
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No city data yet</p>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                    <div style={{ width: 100, height: 100, borderRadius: "50%", background: `conic-gradient(${cityConicParts})`, flexShrink: 0, position: "relative" }}>
+                      <div style={{ position:"absolute", inset: 16, borderRadius:"50%", background:"var(--bg-primary,#fff)" }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      {top.map(([city, count], i) => {
+                        const pct = Math.round(count / totalWithCity * 100);
+                        return (
+                          <div key={city} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                            <div style={{ width:10, height:10, borderRadius:3, background: cityColors[i % cityColors.length], flexShrink:0 }} />
+                            <span style={{ fontSize:11, color:"var(--text-secondary,#7a5868)", fontWeight:500 }}>{city}</span>
+                            <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", marginLeft:"auto", fontWeight:600 }}>{pct}% ({count})</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 
       {/* ══ REPORTS TAB ══ */}
       {tab === "reports" && (
         <div>
-          <SectionHeader title={Tr.reportsTab} count={reports.filter(r=>r.status==="pending").length} action={
-            <button style={S.refreshBtn} onClick={fetchReports}>{reportsLoading ? "…" : `↻ ${Tr.refresh}`}</button>
-          } />
-          {reportsLoading ? (
-            <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>Loading…</div>
-          ) : reports.length === 0 ? (
-            <div className="empty-state"><p>{Tr.noReports}</p></div>
-          ) : (
+          {/* Reports header + inline filter bar */}
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+              {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({reports.filter(r=>r.status==="pending").length} pending)</span>
+            </span>
+            <input
+              className="input"
+              value={reportSearch}
+              onChange={e => setReportSearch(e.target.value)}
+              placeholder="Search reporter or reported…"
+              style={{ fontSize:12, width:220, flexShrink:0 }}
+            />
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+              {[
+                { val:"all",       label:"All" },
+                { val:"pending",   label:"Pending" },
+                { val:"resolved",  label:"Resolved" },
+                { val:"dismissed", label:"Dismissed" },
+              ].map(opt => (
+                <button key={opt.val} onClick={() => setReportStatusFilter(opt.val)}
+                  style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
+                    background: reportStatusFilter===opt.val ? "var(--brand,#4472b8)" : "var(--bg-secondary,#f0f6fb)",
+                    color: reportStatusFilter===opt.val ? "#fff" : "var(--text-secondary)" }}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchReports}>{reportsLoading ? "…" : `↻ ${Tr.refresh}`}</button>
+          </div>
+          {(() => {
+            const filteredReports = reports.filter(r => {
+              const matchStatus = reportStatusFilter === "all" || r.status === reportStatusFilter;
+              const matchSearch = !reportSearch ||
+                (r.reporterName || "").toLowerCase().includes(reportSearch.toLowerCase()) ||
+                (r.reportedName || "").toLowerCase().includes(reportSearch.toLowerCase());
+              return matchStatus && matchSearch;
+            });
+            return reportsLoading ? (
+              <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>Loading…</div>
+            ) : filteredReports.length === 0 ? (
+              <div className="empty-state"><p>{reports.length === 0 ? Tr.noReports : "No reports match the filters."}</p></div>
+            ) : (
             <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
               <table style={{ ...S.table, minWidth: 560 }}>
                 <thead>
@@ -2013,7 +2314,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map(r => (
+                  {filteredReports.map(r => (
                     <React.Fragment key={r.id}>
                       <tr style={{ ...S.row, opacity: r.status !== "pending" ? 0.6 : 1, cursor:"pointer", borderBottom: expandedReportId === r.id ? "none" : undefined }}
                         onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
@@ -2104,7 +2405,8 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
-          )}
+            );
+          })()}
         </div>
       )}
 
@@ -2216,6 +2518,85 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ══ BLACKLIST TAB ══ */}
+      {tab === "blacklist" && (
+        <div>
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+              🚫 {Tr.blacklistTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({blacklist.length})</span>
+            </span>
+            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchBlacklist}>{blacklistLoading ? "…" : `↻ ${Tr.refresh}`}</button>
+          </div>
+          <p style={{ fontSize:12, color:"var(--text-muted)", marginBottom:"1rem" }}>{Tr.blacklistNote}</p>
+
+          {/* Add form */}
+          <div className="card" style={{ padding:"1.25rem", marginBottom:"1.25rem" }}>
+            <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"0.85rem" }}>{Tr.blacklistAdd}</p>
+            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+              <input
+                value={blacklistEmail}
+                onChange={e => setBlacklistEmail(e.target.value)}
+                placeholder={Tr.blacklistEmail}
+                type="email"
+                onKeyDown={e => e.key === "Enter" && addToBlacklist()}
+                style={{ flex:2, minWidth:200, padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
+              />
+              <input
+                value={blacklistReason}
+                onChange={e => setBlacklistReason(e.target.value)}
+                placeholder={Tr.blacklistReason}
+                onKeyDown={e => e.key === "Enter" && addToBlacklist()}
+                style={{ flex:3, minWidth:200, padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
+              />
+              <button
+                onClick={addToBlacklist}
+                disabled={!blacklistEmail.trim() || blacklistAdding}
+                style={{ padding:"9px 22px", borderRadius:10, background:"#c25c5c", color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor: !blacklistEmail.trim() || blacklistAdding ? "not-allowed" : "pointer", opacity: !blacklistEmail.trim() || blacklistAdding ? 0.6 : 1, whiteSpace:"nowrap" }}>
+                {blacklistAdding ? "…" : `🚫 ${Tr.blacklistAddBtn}`}
+              </button>
+            </div>
+          </div>
+
+          {/* Blacklist table */}
+          {blacklistLoading ? (
+            <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted)" }}>Loading…</div>
+          ) : blacklist.length === 0 ? (
+            <div className="empty-state"><p>{Tr.blacklistEmpty}</p></div>
+          ) : (
+            <div className="card" style={{ overflowX:"auto" }}>
+              <table style={{ ...S.table, minWidth:400 }}>
+                <thead>
+                  <tr>
+                    {[Tr.blacklistEmail, Tr.blacklistReason, "Added by", Tr.reportDate, ""].map(h => (
+                      <th key={h} style={{ ...S.th, whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {blacklist.map(b => (
+                    <tr key={b.id} style={S.row}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
+                    >
+                      <td style={{ ...S.td, fontWeight:600, color:"#c25c5c", fontFamily:"monospace" }}>{b.email}</td>
+                      <td style={{ ...S.td, maxWidth:260, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.reason || "—"}</td>
+                      <td style={S.td}>{b.addedBy || "—"}</td>
+                      <td style={{ ...S.td, whiteSpace:"nowrap", fontSize:11 }}>{b.addedAt ? new Date(b.addedAt).toLocaleDateString() : "—"}</td>
+                      <td style={S.td}>
+                        <button onClick={() => removeFromBlacklist(b.id)}
+                          style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #d99090", background:"#f5dada", color:"#c25c5c", cursor:"pointer" }}>
+                          {Tr.blacklistRemove}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
