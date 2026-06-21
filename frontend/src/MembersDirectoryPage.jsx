@@ -107,7 +107,7 @@ function SkeletonCard() {
 }
 
 /* ─── Member grid card ─── */
-function MemberCard({ member, onViewProfile }) {
+function MemberCard({ member, onViewProfile, t }) {
   const avatarUrl = member.photoURL || member.avatarUrl || null;
   const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ");
 
@@ -154,8 +154,8 @@ function MemberCard({ member, onViewProfile }) {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 4, minHeight: 22 }}>
-        {member.isMentor && <RoleBadge label="מנטורית" color="#1a3a8f" />}
-        {member.isMentee && <RoleBadge label="חניכה" color="#5a8a6a" />}
+        {member.isMentor && <RoleBadge label={t.directory.roleMentor} color="#1a3a8f" />}
+        {member.isMentee && <RoleBadge label={t.directory.roleMentee} color="#5a8a6a" />}
       </div>
 
       <button
@@ -182,14 +182,14 @@ function MemberCard({ member, onViewProfile }) {
           e.currentTarget.style.color = "#1a3a8f";
         }}
       >
-        צפה בפרופיל
+        {t.directory.viewProfile}
       </button>
     </div>
   );
 }
 
 /* ─── Member list row ─── */
-function MemberRow({ member, onViewProfile }) {
+function MemberRow({ member, onViewProfile, t }) {
   const avatarUrl = member.photoURL || member.avatarUrl || null;
   const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ");
 
@@ -220,8 +220,8 @@ function MemberRow({ member, onViewProfile }) {
       </div>
 
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-        {member.isMentor && <RoleBadge label="מנטורית" color="#1a3a8f" />}
-        {member.isMentee && <RoleBadge label="חניכה" color="#5a8a6a" />}
+        {member.isMentor && <RoleBadge label={t.directory.roleMentor} color="#1a3a8f" />}
+        {member.isMentee && <RoleBadge label={t.directory.roleMentee} color="#5a8a6a" />}
       </div>
 
       <button
@@ -248,22 +248,16 @@ function MemberRow({ member, onViewProfile }) {
           e.currentTarget.style.color = "#1a3a8f";
         }}
       >
-        צפה בפרופיל
+        {t.directory.viewProfile}
       </button>
     </div>
   );
 }
 
-/* ─── Region dropdown ─── */
-const REGIONS = [
-  "צפון", "גליל", "עמקים", "חיפה", "מרכז והשרון",
-  "גוש דן", "תל אביב", "ירושלים", "שפלה", "דרום", "נגב", "חוץ לארץ",
-];
-
 /* ─── Main component ─── */
 export default function MembersDirectoryPage({ onViewProfile }) {
   const { user } = useAuth();
-  const { t } = useLang();
+  const { t, isRTL } = useLang();
 
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -297,6 +291,9 @@ export default function MembersDirectoryPage({ onViewProfile }) {
     return () => { active = false; };
   }, []);
 
+  /* Use translated region options from profile translations */
+  const REGIONS = t.profile.regionOptions;
+
   /* Filtered members */
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();
@@ -328,7 +325,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
 
   return (
     <div
-      dir="rtl"
+      dir={isRTL ? "rtl" : "ltr"}
       style={{
         minHeight: "100vh",
         background: "var(--bg-primary)",
@@ -353,10 +350,10 @@ export default function MembersDirectoryPage({ onViewProfile }) {
       >
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--text-primary)" }}>
-            ספריית חברים
+            {t.directory.title}
           </h1>
           <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--text-secondary)" }}>
-            {loading ? "טוען…" : `${members.length} חברות וחברים רשומים בקהילה`}
+            {loading ? t.common.loading : t.directory.memberCount(members.length)}
           </p>
         </div>
       </div>
@@ -380,7 +377,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
           </span>
           <input
             type="text"
-            placeholder="חפש לפי שם, מקצוע, עיר…"
+            placeholder={t.directory.searchPlaceholder}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{
@@ -411,13 +408,13 @@ export default function MembersDirectoryPage({ onViewProfile }) {
           }}
         >
           <button style={pillStyle(roleFilter === "all")} onClick={() => setRoleFilter("all")}>
-            הכל
+            {t.directory.filterAll}
           </button>
           <button style={pillStyle(roleFilter === "mentor")} onClick={() => setRoleFilter("mentor")}>
-            מנטורים
+            {t.directory.filterMentor}
           </button>
           <button style={pillStyle(roleFilter === "mentee")} onClick={() => setRoleFilter("mentee")}>
-            חניכים
+            {t.directory.filterMentee}
           </button>
 
           {/* Region dropdown */}
@@ -426,7 +423,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
               style={pillStyle(!!regionFilter)}
               onClick={() => setShowRegionDropdown((v) => !v)}
             >
-              {regionFilter ? `אזור: ${regionFilter}` : "לפי אזור ▾"}
+              {regionFilter ? t.directory.regionLabel(regionFilter) : t.directory.filterRegion}
             </button>
             {showRegionDropdown && (
               <div
@@ -458,7 +455,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
                     fontWeight: !regionFilter ? 700 : 400,
                   }}
                 >
-                  כל האזורים
+                  {t.directory.allRegions}
                 </button>
                 {REGIONS.map((r) => (
                   <button
@@ -487,7 +484,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
           {/* Spacer + view toggle */}
           <div style={{ marginInlineStart: "auto", display: "flex", gap: 6 }}>
             <button
-              title="תצוגת גריד"
+              title={t.directory.viewGrid}
               onClick={() => setViewMode("grid")}
               style={{
                 width: 36,
@@ -506,7 +503,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
               ▦
             </button>
             <button
-              title="תצוגת רשימה"
+              title={t.directory.viewList}
               onClick={() => setViewMode("list")}
               style={{
                 width: 36,
@@ -531,8 +528,8 @@ export default function MembersDirectoryPage({ onViewProfile }) {
         {!loading && (
           <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
             {filtered.length === members.length
-              ? `${filtered.length} חברות`
-              : `${filtered.length} תוצאות מתוך ${members.length}`}
+              ? t.directory.results(filtered.length)
+              : t.directory.resultsFiltered(filtered.length, members.length)}
           </div>
         )}
 
@@ -562,10 +559,10 @@ export default function MembersDirectoryPage({ onViewProfile }) {
           >
             <div style={{ fontSize: 48, marginBottom: 16 }}>🔎</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 8 }}>
-              אין תוצאות
+              {t.directory.noResults}
             </div>
             <div style={{ fontSize: 14 }}>
-              נסה לשנות את החיפוש או לבחור פילטר אחר
+              {t.directory.noResultsSub}
             </div>
             {(searchText || roleFilter !== "all" || regionFilter) && (
               <button
@@ -582,7 +579,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
                   cursor: "pointer",
                 }}
               >
-                נקה פילטרים
+                {t.directory.clearFilters}
               </button>
             )}
           </div>
@@ -598,7 +595,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
             }}
           >
             {filtered.map((m) => (
-              <MemberCard key={m.id} member={m} onViewProfile={onViewProfile} />
+              <MemberCard key={m.id} member={m} onViewProfile={onViewProfile} t={t} />
             ))}
           </div>
         )}
@@ -607,7 +604,7 @@ export default function MembersDirectoryPage({ onViewProfile }) {
         {!loading && filtered.length > 0 && viewMode === "list" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {filtered.map((m) => (
-              <MemberRow key={m.id} member={m} onViewProfile={onViewProfile} />
+              <MemberRow key={m.id} member={m} onViewProfile={onViewProfile} t={t} />
             ))}
           </div>
         )}

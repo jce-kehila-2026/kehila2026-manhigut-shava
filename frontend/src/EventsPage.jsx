@@ -5,6 +5,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { useLang } from "./LanguageContext";
 
 /* ─── Helpers ─── */
 function avatarColor(name) {
@@ -19,11 +20,11 @@ function getInitials(name) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-function formatHebrewDate(dateStr) {
+function formatEventDate(dateStr, locale) {
   if (!dateStr) return "";
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString("he-IL", {
+    return d.toLocaleDateString(locale, {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -108,7 +109,7 @@ function AttendeeAvatars({ attendees }) {
 }
 
 /* ─── Add Event Modal ─── */
-function AddEventModal({ onClose, onSaved, userId }) {
+function AddEventModal({ onClose, onSaved, userId, t }) {
   const [form, setForm] = useState({
     title: "",
     date: "",
@@ -123,8 +124,8 @@ function AddEventModal({ onClose, onSaved, userId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title.trim()) { setError("יש להזין כותרת לאירוע"); return; }
-    if (!form.date) { setError("יש לבחור תאריך"); return; }
+    if (!form.title.trim()) { setError(t.events.errorTitle); return; }
+    if (!form.date) { setError(t.events.errorDate); return; }
     setSaving(true);
     setError("");
     try {
@@ -141,7 +142,7 @@ function AddEventModal({ onClose, onSaved, userId }) {
       onClose();
     } catch (err) {
       console.error("Add event error:", err);
-      setError("שגיאה בשמירה. נסה שוב.");
+      setError(t.events.errorSave);
     } finally {
       setSaving(false);
     }
@@ -182,7 +183,6 @@ function AddEventModal({ onClose, onSaved, userId }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        dir="rtl"
         style={{
           background: "var(--bg-secondary)",
           border: "1px solid var(--border)",
@@ -195,7 +195,7 @@ function AddEventModal({ onClose, onSaved, userId }) {
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>
-            הוספת אירוע חדש
+            {t.events.addEventTitle}
           </h2>
           <button
             onClick={onClose}
@@ -219,10 +219,10 @@ function AddEventModal({ onClose, onSaved, userId }) {
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
-            <label style={labelStyle}>כותרת האירוע *</label>
+            <label style={labelStyle}>{t.events.formTitleLabel}</label>
             <input
               style={inputStyle}
-              placeholder="שם האירוע"
+              placeholder={t.events.formTitlePlaceholder}
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
               onFocus={(e) => { e.target.style.borderColor = "#1a3a8f"; }}
@@ -232,7 +232,7 @@ function AddEventModal({ onClose, onSaved, userId }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={labelStyle}>תאריך *</label>
+              <label style={labelStyle}>{t.events.formDateLabel}</label>
               <input
                 type="date"
                 style={inputStyle}
@@ -243,7 +243,7 @@ function AddEventModal({ onClose, onSaved, userId }) {
               />
             </div>
             <div>
-              <label style={labelStyle}>שעה</label>
+              <label style={labelStyle}>{t.events.formTimeLabel}</label>
               <input
                 type="time"
                 style={inputStyle}
@@ -256,10 +256,10 @@ function AddEventModal({ onClose, onSaved, userId }) {
           </div>
 
           <div>
-            <label style={labelStyle}>מיקום</label>
+            <label style={labelStyle}>{t.events.formLocationLabel}</label>
             <input
               style={inputStyle}
-              placeholder="כתובת או קישור"
+              placeholder={t.events.formLocationPlaceholder}
               value={form.location}
               onChange={(e) => set("location", e.target.value)}
               onFocus={(e) => { e.target.style.borderColor = "#1a3a8f"; }}
@@ -268,10 +268,10 @@ function AddEventModal({ onClose, onSaved, userId }) {
           </div>
 
           <div>
-            <label style={labelStyle}>תיאור</label>
+            <label style={labelStyle}>{t.events.formDescLabel}</label>
             <textarea
               style={{ ...inputStyle, resize: "vertical", minHeight: 90 }}
-              placeholder="פרטים על האירוע…"
+              placeholder={t.events.formDescPlaceholder}
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
               onFocus={(e) => { e.target.style.borderColor = "#1a3a8f"; }}
@@ -300,7 +300,7 @@ function AddEventModal({ onClose, onSaved, userId }) {
                 cursor: "pointer",
               }}
             >
-              ביטול
+              {t.events.cancel}
             </button>
             <button
               type="submit"
@@ -316,7 +316,7 @@ function AddEventModal({ onClose, onSaved, userId }) {
                 cursor: saving ? "not-allowed" : "pointer",
               }}
             >
-              {saving ? "שומר…" : "הוסף אירוע"}
+              {saving ? t.events.saving : t.events.addBtn}
             </button>
           </div>
         </form>
@@ -326,7 +326,7 @@ function AddEventModal({ onClose, onSaved, userId }) {
 }
 
 /* ─── Event Card ─── */
-function EventCard({ event, currentUser, onRsvpChange }) {
+function EventCard({ event, currentUser, onRsvpChange, t }) {
   const [going, setGoing] = useState(false);
   const [rsvpCount, setRsvpCount] = useState(event.rsvpCount || 0);
   const [attendees, setAttendees] = useState([]);
@@ -441,7 +441,7 @@ function EventCard({ event, currentUser, onRsvpChange }) {
           </span>
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: past ? "var(--text-muted)" : "#1a3a8f" }}>
-              {formatHebrewDate(event.date)}
+              {formatEventDate(event.date, t.events.dateLocale)}
             </div>
             {event.time && (
               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
@@ -486,7 +486,7 @@ function EventCard({ event, currentUser, onRsvpChange }) {
               <AttendeeAvatars attendees={attendees} />
             )}
             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              {rsvpCount > 0 ? `${rsvpCount} הולכים` : "אין משתתפים עדיין"}
+              {rsvpCount > 0 ? t.events.attendees(rsvpCount) : t.events.noAttendees}
             </span>
           </div>
 
@@ -509,7 +509,7 @@ function EventCard({ event, currentUser, onRsvpChange }) {
                 whiteSpace: "nowrap",
               }}
             >
-              {loadingRsvp ? "…" : going ? "לא הולכ/ת" : "אני הולכ/ת"}
+              {loadingRsvp ? "…" : going ? t.events.rsvpCancel : t.events.rsvpGoing}
             </button>
           )}
 
@@ -525,7 +525,7 @@ function EventCard({ event, currentUser, onRsvpChange }) {
                 border: "1px solid var(--border)",
               }}
             >
-              האירוע עבר
+              {t.events.pastBadge}
             </span>
           )}
         </div>
@@ -537,6 +537,7 @@ function EventCard({ event, currentUser, onRsvpChange }) {
 /* ─── Main EventsPage ─── */
 export default function EventsPage() {
   const { user, profile } = useAuth();
+  const { t, isRTL } = useLang();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("all"); // "all" | "upcoming" | "past"
@@ -606,7 +607,7 @@ export default function EventsPage() {
 
   return (
     <div
-      dir="rtl"
+      dir={isRTL ? "rtl" : "ltr"}
       style={{
         minHeight: "100vh",
         background: "var(--bg-primary)",
@@ -632,10 +633,10 @@ export default function EventsPage() {
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--text-primary)" }}>
-                אירועים
+                {t.events.title}
               </h1>
               <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--text-secondary)" }}>
-                כנסים, מפגשים ואירועים של הקהילה
+                {t.events.subtitle}
               </p>
             </div>
 
@@ -661,7 +662,7 @@ export default function EventsPage() {
                 onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.88"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
               >
-                <span style={{ fontSize: 16 }}>+</span> הוסף אירוע
+                <span style={{ fontSize: 16 }}>+</span> {t.events.addEvent}
               </button>
             )}
           </div>
@@ -673,13 +674,13 @@ export default function EventsPage() {
         {/* Filter tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
           <button style={tabStyle(tab === "all")} onClick={() => setTab("all")}>
-            הכל ({events.length})
+            {t.events.tabAll} ({events.length})
           </button>
           <button style={tabStyle(tab === "upcoming")} onClick={() => setTab("upcoming")}>
-            קרובים ({events.filter((e) => isWithin30Days(e.date)).length})
+            {t.events.tabUpcoming} ({events.filter((e) => isWithin30Days(e.date)).length})
           </button>
           <button style={tabStyle(tab === "past")} onClick={() => setTab("past")}>
-            עברו ({events.filter((e) => isPast(e.date)).length})
+            {t.events.tabPast} ({events.filter((e) => isPast(e.date)).length})
           </button>
         </div>
 
@@ -701,14 +702,14 @@ export default function EventsPage() {
           >
             <div style={{ fontSize: 52, marginBottom: 16 }}>📭</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 8 }}>
-              {tab === "past" ? "אין אירועים שעברו" : tab === "upcoming" ? "אין אירועים קרובים ב-30 הימים הקרובים" : "אין אירועים עדיין"}
+              {tab === "past" ? t.events.emptyPast : tab === "upcoming" ? t.events.emptyUpcoming : t.events.emptyAll}
             </div>
             <div style={{ fontSize: 14 }}>
               {tab !== "all"
-                ? "נסה להחליף לכרטיסיית 'הכל'"
+                ? t.events.emptyTabHint
                 : isAdmin
-                  ? "לחץ על 'הוסף אירוע' להוספת האירוע הראשון"
-                  : "האירועים הקרובים יופיעו כאן"}
+                  ? t.events.adminHint
+                  : t.events.userHint}
             </div>
             {isAdmin && tab === "all" && (
               <button
@@ -725,7 +726,7 @@ export default function EventsPage() {
                   cursor: "pointer",
                 }}
               >
-                הוסף אירוע ראשון
+                {t.events.addFirstEvent}
               </button>
             )}
           </div>
@@ -737,7 +738,7 @@ export default function EventsPage() {
             {/* Upcoming section label */}
             {tab === "all" && filtered.some((e) => isUpcoming(e.date)) && (
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>
-                אירועים קרובים
+                {t.events.upcomingLabel}
               </div>
             )}
 
@@ -765,7 +766,7 @@ export default function EventsPage() {
                       >
                         <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
                         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap" }}>
-                          אירועים שעברו
+                          {t.events.pastLabel}
                         </span>
                         <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
                       </div>
@@ -774,6 +775,7 @@ export default function EventsPage() {
                       event={ev}
                       currentUser={user}
                       onRsvpChange={() => setRefreshKey((k) => k + 1)}
+                      t={t}
                     />
                   </div>
                 );
@@ -801,24 +803,24 @@ export default function EventsPage() {
             <div style={{ display: "flex", gap: 24 }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 22, fontWeight: 800, color: "#1a3a8f" }}>{events.length}</div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>סה"כ אירועים</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.events.totalEvents}</div>
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 22, fontWeight: 800, color: "#5a8a6a" }}>
                   {events.filter((e) => isUpcoming(e.date)).length}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>עתידיים</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.events.futureEvents}</div>
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-muted)" }}>
                   {events.filter((e) => isPast(e.date)).length}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>שעברו</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.events.pastEvents}</div>
               </div>
             </div>
             {!user && (
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                היכנסו לחשבון כדי לאשר השתתפות
+                {t.events.loginToRsvp}
               </div>
             )}
           </div>
@@ -831,6 +833,7 @@ export default function EventsPage() {
           userId={user?.uid}
           onClose={() => setShowAddModal(false)}
           onSaved={() => setRefreshKey((k) => k + 1)}
+          t={t}
         />
       )}
     </div>
