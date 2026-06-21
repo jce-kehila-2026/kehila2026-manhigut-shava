@@ -1043,9 +1043,13 @@ export default function DashboardPage() {
 
                 {showNotifs && (
                   <div style={{
-                    position: "absolute", top: "calc(100% + 8px)",
-                    right: isRTL ? "auto" : 0, left: isRTL ? 0 : "auto",
-                    width: 320, maxHeight: 420,
+                    position: isMobile ? "fixed" : "absolute",
+                    top: isMobile ? 56 : "calc(100% + 8px)",
+                    right: isMobile ? 8 : (isRTL ? "auto" : 0),
+                    left: isMobile ? 8 : (isRTL ? 0 : "auto"),
+                    width: isMobile ? "auto" : 320,
+                    maxWidth: isMobile ? "auto" : "calc(100vw - 16px)",
+                    maxHeight: 420,
                     background: "var(--bg-primary)",
                     border: "1px solid var(--border)",
                     borderRadius: "var(--r-xl)",

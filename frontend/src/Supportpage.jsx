@@ -232,6 +232,91 @@ const AREAS_KEYS = [
   "ניהול פיננסי","אוזן קשבת",
 ];
 
+/* All language variants per help area — matches users who registered in any language */
+const AREAS_ALL_LANGS = {
+  "קידום קריירה ותעסוקה":     ["קידום קריירה ותעסוקה","Career & Employment","التطوير المهني"],
+  "פיתוח מנהיגות וניהול":     ["פיתוח מנהיגות וניהול","Leadership & Management","القيادة والإدارة"],
+  "ניהול צוותים":              ["ניהול צוותים","Team Management","إدارة الفرق"],
+  "חיבור למגזר הציבורי":      ["חיבור למגזר הציבורי","Public Sector","القطاع العام"],
+  "חיבור למגזר הפרטי":        ["חיבור למגזר הפרטי","Private Sector","القطاع الخاص"],
+  "הובלת מאבקים אזרחיים":     ["הובלת מאבקים אזרחיים","Civic Activism","النشاط المدني"],
+  "יזמות עסקית וחברתית":      ["יזמות עסקית וחברתית","Business Entrepreneurship","ريادة الأعمال"],
+  "ניהול קמפיינים פוליטיים":   ["ניהול קמפיינים פוליטיים","Political Campaigns","الحملات السياسية"],
+  "התמודדות לתפקידים":         ["התמודדות לתפקידים","Running for Office","الترشح للمناصب"],
+  "ניהול פיננסי":              ["ניהול פיננסי","Financial Management","الإدارة المالية"],
+  "אוזן קשבת":                 ["אוזן קשבת","Active Listener","الاستماع الفعّال"],
+};
+
+/* Keyword expansion for free-text area search — maps typed terms to related profession keywords */
+const KEYWORD_EXPANSIONS = {
+  // English
+  "education":   ["teacher","מורה","מחנך","מחנכת","professor","lecturer","הוראה","חינוך","pedagog","principal","school","kindergarten","גן ילדים"],
+  "teacher":     ["מורה","מחנך","מחנכת","teacher","lecturer","professor","הוראה","חינוך"],
+  "health":      ["doctor","רופא","רופאה","nurse","אחות","medical","physician","בריאות","רפואה","therapist","clinic","hospital","paramedic","חובש"],
+  "doctor":      ["רופא","רופאה","doctor","physician","medical","clinician","surgeon","אורטופד","קרדיולוג"],
+  "nurse":       ["אחות","nurse","nursing","רפואה","medical","paramedic"],
+  "law":         ["lawyer","עורך","עורכת","attorney","legal","משפט","advocate","judge","שופט","notary","נוטריון"],
+  "lawyer":      ["עורך","עורכת","lawyer","attorney","legal","משפט"],
+  "tech":        ["engineer","מהנדס","מהנדסת","developer","software","programmer","תוכנה","היי-טק","hi-tech","data","cyber","קוד","devops","fullstack","frontend","backend"],
+  "technology":  ["engineer","מהנדס","developer","software","programmer","תוכנה","היי-טק","data","cyber"],
+  "engineering": ["מהנדס","מהנדסת","engineer","software","hardware","civil","mechanical","electrical","אלקטרוניקה"],
+  "software":    ["developer","programmer","מהנדס","software","engineer","fullstack","frontend","backend","תוכנה","קוד"],
+  "finance":     ["accountant","כלכל","banker","investment","financial","רואה חשבון","בנק","כלכלן","השקעות","analyst","cfo"],
+  "accounting":  ["רואה חשבון","accountant","כלכל","finance","audit","ביקורת"],
+  "business":    ["manager","מנהל","מנהלת","entrepreneur","יזם","יזמת","ceo","executive","startup","סטארט","עסק","ניהול"],
+  "management":  ["מנהל","מנהלת","manager","director","executive","ceo","leader","ניהול","מנכ"],
+  "media":       ["journalist","עיתונ","reporter","news","media","תקשורת","content","כתב","broadcasting","anchor","editor"],
+  "journalism":  ["journalist","עיתונ","reporter","כתב","editor","news","broadcasting"],
+  "politics":    ["politic","מדינ","ממשל","diplomat","minister","government","parliament","כנסת","mayor","עיריה","מועצה"],
+  "design":      ["designer","מעצב","מעצבת","architect","ארכיטקט","graphic","ui","ux","creative","illustrator","interior"],
+  "architecture":["ארכיטקט","architect","designer","urban","planning","תכנון"],
+  "psychology":  ["psycholog","פסיכ","therapist","counselor","social worker","עו\"ס","mental health","psychiatrist","פסיכיאטר"],
+  "therapy":     ["therapist","פסיכ","counselor","psycholog","social worker","עו\"ס","rehab","physical therapy","פיזיותרפיה"],
+  "military":    ["army","צבא","officer","קצין","military","security","ביטחון","soldier","חייל","aman","אמן","shabak","שב\"כ"],
+  "security":    ["ביטחון","security","army","צבא","officer","קצין","guard","שמירה"],
+  "art":         ["artist","אמן","אמנית","musician","מוסיקאי","actor","שחקן","theater","תיאטרון","film","קולנוע","painter","צייר","sculptor","פסל"],
+  "music":       ["musician","מוסיקאי","מוסיקאית","composer","מלחין","singer","זמר","זמרת","band","orchestra","תזמורת"],
+  "research":    ["researcher","חוקר","חוקרת","scientist","מדע","academic","אקדמי","phd","postdoc","laboratory","מעבדה"],
+  "academic":    ["professor","פרופ","lecturer","מרצה","researcher","חוקר","academic","university","אוניברסיטה","phd"],
+  "marketing":   ["marketer","שיווק","marketing","brand","פרסום","advertising","pr","יחסי ציבור","social media","content"],
+  "sales":       ["sales","מכירות","salesperson","account","business development","פיתוח עסקי"],
+  "startup":     ["startup","סטארט","entrepreneur","יזם","יזמת","founder","venture","vc","angel"],
+  "entrepreneur":["יזם","יזמת","entrepreneur","startup","founder","business owner"],
+  "social":      ["social worker","עו\"ס","welfare","רווחה","ngo","nonprofit","עמותה","community","קהילה","volunteer","מתנדב"],
+  "welfare":     ["welfare","רווחה","social worker","עו\"ס","ngo","nonprofit","עמותה"],
+  // Hebrew
+  "חינוך":       ["teacher","מורה","מחנך","מחנכת","professor","lecturer","הוראה","pedagog","principal","school"],
+  "הוראה":       ["מורה","מחנך","מחנכת","teacher","lecturer","professor","חינוך"],
+  "מורה":        ["teacher","מורה","מחנך","מחנכת","educator","lecturer","חינוך","הוראה"],
+  "רפואה":       ["doctor","רופא","רופאה","nurse","אחות","medical","physician","בריאות","therapist"],
+  "בריאות":      ["doctor","רופא","רופאה","nurse","אחות","medical","physician","therapist","חובש"],
+  "משפט":        ["lawyer","עורך","עורכת","attorney","legal","advocate","שופט","נוטריון"],
+  "טכנולוגיה":   ["engineer","מהנדס","developer","software","programmer","תוכנה","היי-טק","data","cyber"],
+  "תוכנה":       ["developer","programmer","מהנדס","software","engineer","fullstack","frontend","backend","קוד"],
+  "כלכלה":       ["accountant","כלכל","banker","investment","financial","רואה חשבון","בנק","כלכלן"],
+  "עסקים":       ["manager","מנהל","מנהלת","entrepreneur","יזם","ceo","executive","startup","סטארט"],
+  "ניהול":       ["מנהל","מנהלת","manager","director","executive","ceo","leader","מנכ"],
+  "תקשורת":      ["journalist","עיתונ","reporter","כתב","editor","news","media","broadcasting"],
+  "עיצוב":       ["designer","מעצב","מעצבת","architect","ארכיטקט","graphic","ui","ux","illustrator"],
+  "פסיכולוגיה":  ["psycholog","פסיכ","therapist","counselor","social worker","עו\"ס","psychiatrist"],
+  "צבא":         ["army","צבא","officer","קצין","military","security","ביטחון","soldier","חייל"],
+  "אמנות":       ["artist","אמן","אמנית","musician","מוסיקאי","actor","שחקן","theater","film","painter"],
+  "מחקר":        ["researcher","חוקר","חוקרת","scientist","מדע","academic","phd","מעבדה"],
+  "שיווק":       ["marketer","שיווק","marketing","brand","פרסום","advertising","pr","יחסי ציבור"],
+  "יזמות":       ["יזם","יזמת","entrepreneur","startup","founder","venture"],
+  "רווחה":       ["social worker","עו\"ס","welfare","ngo","nonprofit","עמותה","volunteer"],
+};
+
+function expandSearchTerms(term) {
+  const lower = term.toLowerCase().trim();
+  const direct = KEYWORD_EXPANSIONS[lower] || [];
+  // also check if any key partially matches (e.g. "edu" matches "education")
+  const partial = Object.entries(KEYWORD_EXPANSIONS)
+    .filter(([k]) => k !== lower && (k.startsWith(lower) || lower.startsWith(k)))
+    .flatMap(([, v]) => v);
+  return [lower, ...new Set([...direct, ...partial])];
+}
+
 /* ─── Helpers ─── */
 const getInitials = (u) => {
   if (u.firstName && u.lastName) return `${u.firstName[0]}${u.lastName[0]}`.toUpperCase();
@@ -528,12 +613,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     });
   }, [user]);
 
-  /* Pre-fill area from user's own profession/helpAreas when profile loads */
-  useEffect(() => {
-    if (!senderProfile || selectedArea) return;
-    const prof = senderProfile.helpAreas?.[0] || senderProfile.profession || senderProfile.currentRole;
-    if (prof) { setSelectedArea("OTHER"); setOtherArea(prof); }
-  }, [senderProfile]);
 
   const openSuggest = () => {
     if (nameInputRef.current) {
@@ -570,9 +649,22 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           })()
         : true;
       const matchArea   = areaQ
-        ? (u.helpAreas ?? []).some(a => a.includes(areaQ))
-          || (u.profession ?? "").toLowerCase().includes(areaQ.toLowerCase())
-          || (u.currentRole ?? "").toLowerCase().includes(areaQ.toLowerCase())
+        ? (() => {
+            const isCanonical = !!AREAS_ALL_LANGS[areaQ];
+            if (isCanonical) {
+              const variants = AREAS_ALL_LANGS[areaQ];
+              return (u.helpAreas ?? []).some(a => variants.some(v => a === v || a.includes(v)))
+                || (u.profession ?? "").toLowerCase().includes(areaQ.toLowerCase())
+                || (u.currentRole ?? "").toLowerCase().includes(areaQ.toLowerCase());
+            }
+            const terms = expandSearchTerms(areaQ);
+            return terms.some(t =>
+              (u.helpAreas ?? []).some(a => a.toLowerCase().includes(t))
+              || (u.profession ?? "").toLowerCase().includes(t)
+              || (u.currentRole ?? "").toLowerCase().includes(t)
+              || (u.bio ?? "").toLowerCase().includes(t)
+            );
+          })()
         : true;
       return matchName && matchRegion && matchArea;
     });
@@ -599,9 +691,22 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           const variants = REGION_ALL_LANGS[region] || [region];
           return variants.some(v => (u.region ?? "").includes(v) || (u.city ?? "").includes(v));
         })();
-        const matchArea   = !area   || (u.helpAreas ?? []).some(a => a.includes(area))
-          || (u.profession ?? "").toLowerCase().includes(area.toLowerCase())
-          || (u.currentRole ?? "").toLowerCase().includes(area.toLowerCase());
+        const matchArea = !area || (() => {
+          const isCanonical = !!AREAS_ALL_LANGS[area];
+          if (isCanonical) {
+            const variants = AREAS_ALL_LANGS[area];
+            return (u.helpAreas ?? []).some(a => variants.some(v => a === v || a.includes(v)))
+              || (u.profession ?? "").toLowerCase().includes(area.toLowerCase())
+              || (u.currentRole ?? "").toLowerCase().includes(area.toLowerCase());
+          }
+          const terms = expandSearchTerms(area);
+          return terms.some(t =>
+            (u.helpAreas ?? []).some(a => a.toLowerCase().includes(t))
+            || (u.profession ?? "").toLowerCase().includes(t)
+            || (u.currentRole ?? "").toLowerCase().includes(t)
+            || (u.bio ?? "").toLowerCase().includes(t)
+          );
+        })();
         return matchName && matchRegion && matchArea;
       });
       setResults(filtered);
