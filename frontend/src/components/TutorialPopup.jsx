@@ -40,10 +40,15 @@ export function TutorialPopup({ onClose }) {
     height: rect.height + PAD * 2,
   } : null;
 
-  const tooltipLeft = sp ? sp.left + sp.width / 2 : "50%";
-  const rawTop      = sp ? sp.top + sp.height + 16 : window.innerHeight * 0.55;
-  const flipAbove   = sp && (rawTop + 240 > window.innerHeight);
-  const finalTop    = flipAbove && sp ? sp.top - 210 : rawTop;
+  const CARD_W     = Math.min(252, window.innerWidth - 32);
+  const CARD_H_EST = 220;
+  const rawLeft    = sp ? sp.left + sp.width / 2 : window.innerWidth / 2;
+  const clampedLeft = Math.max(CARD_W / 2 + 8, Math.min(window.innerWidth - CARD_W / 2 - 8, rawLeft));
+  const tooltipLeft = clampedLeft;
+  const rawTop      = sp ? sp.top + sp.height + 16 : window.innerHeight * 0.45;
+  const flipAbove   = sp && (rawTop + CARD_H_EST > window.innerHeight - 8);
+  const rawFinalTop = flipAbove && sp ? sp.top - CARD_H_EST - 10 : rawTop;
+  const finalTop    = Math.max(8, Math.min(window.innerHeight - CARD_H_EST - 8, rawFinalTop));
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 99998 }} onClick={onClose}>
@@ -74,9 +79,10 @@ export function TutorialPopup({ onClose }) {
         position: "fixed", left: tooltipLeft, top: finalTop,
         transform: "translateX(-50%)",
         background: "var(--bg-primary,#fff)", borderRadius: 16,
-        padding: "1.1rem 1.25rem 1rem", width: 252,
+        padding: "1.1rem 1.25rem 1rem", width: CARD_W,
         boxShadow: "0 12px 40px rgba(15,25,50,0.28), 0 0 0 1.5px rgba(68,114,184,0.12)",
         zIndex: 99999, animation: "tut-tip-in 0.28s ease both",
+        boxSizing: "border-box",
       }}>
         {/* Close */}
         <button onClick={onClose} style={{

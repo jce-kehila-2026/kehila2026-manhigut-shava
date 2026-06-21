@@ -822,7 +822,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
       const senderName = profile
         ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || user.email
         : user.email;
-      const preview = url ? "📷 Photo" : t.trim().slice(0, 80);
+      const preview = url ? "Photo" : t.trim().slice(0, 80);
       recipientIds.forEach((recipientId) => {
         addDoc(collection(db, "notifications"), {
           toUserId: recipientId,

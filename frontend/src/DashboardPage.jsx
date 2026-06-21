@@ -702,6 +702,64 @@ export default function DashboardPage() {
     if (profile.tutorialDone === false) setShowTutorial(true);
   }, [profile]);
 
+  const [tutorialBtnHidden, setTutorialBtnHidden] = useState(
+    () => localStorage.getItem("tutorialBtnHidden") === "true"
+  );
+  const [tutorialBtnPos, setTutorialBtnPos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("tutorialBtnPos")) || null; } catch { return null; }
+  });
+  const [tutorialBtnHover, setTutorialBtnHover] = useState(false);
+  const tutorialDragRef = useRef({ dragging: false, startX: 0, startY: 0, origX: 0, origY: 0, moved: false });
+
+  function getTutorialBtnDefaultPos() {
+    return { right: 16, bottom: isMobile ? 72 : 24 };
+  }
+
+  function tutorialBtnPointerDown(e) {
+    const container = e.currentTarget.closest ? e.currentTarget.parentElement : e.currentTarget;
+    const rect = container.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    let latestPos = null;
+    tutorialDragRef.current = {
+      dragging: true, moved: false,
+      startX: clientX, startY: clientY,
+      origX: rect.left, origY: rect.top,
+    };
+    const onMove = (ev) => {
+      const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+      const dx = cx - tutorialDragRef.current.startX;
+      const dy = cy - tutorialDragRef.current.startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) tutorialDragRef.current.moved = true;
+      if (!tutorialDragRef.current.moved) return;
+      const newLeft = Math.max(8, Math.min(window.innerWidth - 48, tutorialDragRef.current.origX + dx));
+      const newTop  = Math.max(8, Math.min(window.innerHeight - 48, tutorialDragRef.current.origY + dy));
+      latestPos = { left: newLeft, top: newTop };
+      setTutorialBtnPos(latestPos);
+    };
+    const onUp = () => {
+      if (tutorialDragRef.current.moved && latestPos) {
+        localStorage.setItem("tutorialBtnPos", JSON.stringify(latestPos));
+      }
+      tutorialDragRef.current.dragging = false;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+  }
+
+  function hideTutorialBtnPermanently(e) {
+    e.stopPropagation();
+    setTutorialBtnHidden(true);
+    localStorage.setItem("tutorialBtnHidden", "true");
+  }
+
   return (
     <div style={{
       display: "flex", flexDirection: "column",
@@ -1266,27 +1324,59 @@ export default function DashboardPage() {
         </nav>
       )}
 
-        {/* Tutorial replay button — fixed, visible on every section */}
-        <style>{`
-          @keyframes tut-btn-pulse {
-            0%,100% { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 0   rgba(68,114,184,0.5); }
-            60%      { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 12px rgba(68,114,184,0); }
-          }
-        `}</style>
-        <button
-          onClick={() => setShowTutorial(true)}
-          title={t.tutorial?.howTo || "How to use the website"}
-          style={{
-            position: "fixed", bottom: isMobile ? 72 : 24, right: 16,
-            width: 40, height: 40, borderRadius: "50%",
-            background: "var(--brand,#4472b8)", color: "#fff",
-            border: "none", cursor: "pointer",
-            fontSize: 19, fontWeight: 800,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            animation: "tut-btn-pulse 2.4s ease-in-out infinite",
-            zIndex: 200,
-          }}
-        >?</button>
+        {/* Tutorial replay button — fixed, draggable, dismissible */}
+        {!tutorialBtnHidden && section === "home" && (
+          <>
+            <style>{`
+              @keyframes tut-btn-pulse {
+                0%,100% { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 0   rgba(68,114,184,0.5); }
+                60%      { box-shadow: 0 4px 16px rgba(68,114,184,0.4), 0 0 0 12px rgba(68,114,184,0); }
+              }
+            `}</style>
+            <div
+              onMouseEnter={() => setTutorialBtnHover(true)}
+              onMouseLeave={() => setTutorialBtnHover(false)}
+              style={{
+                position: "fixed",
+                ...(tutorialBtnPos
+                  ? { left: tutorialBtnPos.left, top: tutorialBtnPos.top }
+                  : { bottom: isMobile ? 72 : 24, right: 16 }),
+                zIndex: 200, userSelect: "none", touchAction: "none",
+              }}
+            >
+              {/* Dismiss × */}
+              {tutorialBtnHover && (
+                <button
+                  onClick={hideTutorialBtnPermanently}
+                  title="Remove permanently"
+                  style={{
+                    position: "absolute", top: -8, right: -8,
+                    width: 18, height: 18, borderRadius: "50%",
+                    background: "#ef4444", color: "#fff",
+                    border: "2px solid #fff", cursor: "pointer",
+                    fontSize: 11, fontWeight: 800, lineHeight: 1,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    zIndex: 201, padding: 0,
+                  }}
+                >×</button>
+              )}
+              <button
+                onMouseDown={tutorialBtnPointerDown}
+                onTouchStart={tutorialBtnPointerDown}
+                onClick={() => { if (!tutorialDragRef.current.moved) setShowTutorial(true); }}
+                title={t.tutorial?.howTo || "How to use the website"}
+                style={{
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: "var(--brand,#4472b8)", color: "#fff",
+                  border: "none", cursor: "grab",
+                  fontSize: 19, fontWeight: 800,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  animation: "tut-btn-pulse 2.4s ease-in-out infinite",
+                }}
+              >?</button>
+            </div>
+          </>
+        )}
 
         {/* Language change confirmation popup */}
         {langChangeCode && (
