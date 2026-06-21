@@ -260,7 +260,6 @@ export default function CompleteProfilePage() {
     /* Step 3 — Mutual help */
     helpAreas:         [],
     wantToReceive:     "",
-    mentoringRole:     "",
     /* Step 4 — Social & bio */
     linkedin:          "",
     instagram:         "",
@@ -312,7 +311,6 @@ export default function CompleteProfilePage() {
         publicRoles:        form.publicRoles  || null,
         helpAreas:          form.helpAreas,
         wantToReceive:      form.wantToReceive || null,
-        mentoringRole:      form.mentoringRole,
         linkedin:           safeUrl(form.linkedin)  || null,
         instagram:          safeUrl(form.instagram) || null,
         facebook:           safeUrl(form.facebook)  || null,
@@ -550,14 +548,6 @@ export default function CompleteProfilePage() {
                   placeholder="כתבי במה הייתה רוצה סיוע..."/>
               </Fld>
 
-              <Fld label="האם היית רוצה לקחת חלק בתוכנית מנטורינג?" required>
-                <RadioGroup
-                  name="mentoringRole" value={form.mentoringRole}
-                  onChange={setArr}
-                  options={["כן, בתור מנטורית (mentor)","כן, בתור מנטית (mentee)","פחות"]}
-                />
-              </Fld>
-
               <div style={{display:"flex",gap:"0.65rem"}}>
                 <button type="button" onClick={back} style={{...primaryBtn(false),
                   flex:1,background:"rgba(68,114,184,0.1)",color:C.blue,
@@ -655,7 +645,7 @@ export default function CompleteProfilePage() {
         display:"flex",justifyContent:"center",gap:"3rem",padding:"0.75rem",
         background:"rgba(29,72,150,0.8)",backdropFilter:"blur(12px)",
         borderTop:"1px solid rgba(218,234,248,0.12)"}}>
-        {[["700+","בוגרות"],["14","קמפוסים"],["🔒","פרטיות מלאה"],["חינם","להצטרפות"]].map(([n,l])=>(
+        {[["700+","בוגרות"],["14","קמפוסים"],["100%","פרטיות מלאה"],["חינם","להצטרפות"]].map(([n,l])=>(
           <div key={l} style={{textAlign:"center"}}>
             <div style={{fontSize:"1.1rem",fontWeight:800,color:"#fff",lineHeight:1}}>{n}</div>
             <div style={{color:"rgba(218,234,248,0.5)",fontSize:"0.63rem",marginTop:"0.1rem"}}>{l}</div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 
-export function SlideshowBanner() {
+export function SlideshowBanner({ maxHeight = 220 }) {
   const [images, setImages] = useState([]);
   const [idx, setIdx]       = useState(0);
   const timerRef            = useRef(null);
@@ -35,7 +35,8 @@ export function SlideshowBanner() {
       boxShadow: "0 4px 24px rgba(29,72,150,0.18), inset 0 0 0 1px rgba(255,255,255,0.06)",
       background: "#1a1a1a",
       aspectRatio: "4/3",
-      maxHeight: 220,
+      maxHeight,
+      margin: "0 auto",
     }}>
       {images.map((img, i) => (
         <img
