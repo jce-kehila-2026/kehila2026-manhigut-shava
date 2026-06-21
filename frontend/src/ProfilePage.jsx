@@ -507,21 +507,21 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
 
 /* ─── AI Help Area Suggestion (keyword matching) ─── */
 const PROFESSION_HELP_MAP = [
-  { keywords: ["רופ","doctor","physic","medical","רפו","בריאות","health","nurse","אח","אחות"], areas: ["בריאות","רפואה","רווחה"] },
-  { keywords: ["עורך","עורכת","lawyer","law","legal","משפט","עו\"ד"], areas: ["משפט","ייעוץ"] },
-  { keywords: ["מורה","teacher","מחנך","מחנכת","professor","lecture","הוראה","חינוך","education","pedagog"], areas: ["חינוך","הדרכה","הוראה"] },
-  { keywords: ["מהנדס","מהנדסת","engineer","software","developer","תוכנה","היי-טק","hi-tech","tech","טכנולוגי","data","cyber","קוד"], areas: ["טכנולוגיה","היי-טק","חדשנות"] },
-  { keywords: ["כלכל","economist","finance","פינ","accountant","רואה חשבון","בנק","השקע","invest"], areas: ["כלכלה","עסקים","השקעות","ייעוץ"] },
-  { keywords: ["עיתונ","journal","media","תקשורת","journalist","כתב","news","content","תוכן"], areas: ["תקשורת","מדיה","כתיבה"] },
-  { keywords: ["ניהול","manage","ceo","director","מנהל","מנהלת","executive","מנכ"], areas: ["מנהיגות","ניהול","עסקים"] },
-  { keywords: ["שיווק","market","מכיר","sales","פרסום","brand","pr","יחסי ציבור"], areas: ["שיווק","עסקים","תקשורת"] },
-  { keywords: ["ארכיטקט","architect","design","מעצב","מעצבת","graphic","ui","ux","creati"], areas: ["עיצוב","אדריכלות","יצירתיות"] },
-  { keywords: ["פסיכ","psycholog","therapist","counselor","social worker","עו\"ס","רגש","נפש"], areas: ["בריאות הנפש","רווחה","ייעוץ"] },
-  { keywords: ["מדינ","politic","govern","ממשל","diplomat","public service","שירות ציבורי"], areas: ["מדיניות","מנהיגות","שירות ציבורי"] },
-  { keywords: ["סטארט","startup","entrepreneur","יזם","יזמת","venture","business own"], areas: ["יזמות","עסקים","חדשנות"] },
-  { keywords: ["חוקר","researcher","research","מחקר","academic","scientist","מדע"], areas: ["מחקר","אקדמיה","חינוך"] },
-  { keywords: ["צבא","military","army","security","ביטחון","officer","קצין"], areas: ["ביטחון","מנהיגות","שירות ציבורי"] },
-  { keywords: ["אמנות","art","music","מוסיקאי","musician","actor","שחקן","תיאטרון","film","קולנוע"], areas: ["אמנות","תרבות","יצירתיות"] },
+  { keywords: ["רופ","doctor","physic","medical","רפו","בריאות","health","nurse","אח","אחות"], areas: ["קידום קריירה ותעסוקה","אוזן קשבת"] },
+  { keywords: ["עורך","עורכת","lawyer","law","legal","משפט","עו\"ד"], areas: ["קידום קריירה ותעסוקה","ניהול פיננסי","אוזן קשבת"] },
+  { keywords: ["מורה","teacher","מחנך","מחנכת","professor","lecture","הוראה","חינוך","education","pedagog"], areas: ["פיתוח מנהיגות וניהול","קידום קריירה ותעסוקה","אוזן קשבת"] },
+  { keywords: ["מהנדס","מהנדסת","engineer","software","developer","תוכנה","היי-טק","hi-tech","tech","טכנולוגי","data","cyber","קוד"], areas: ["חיבור למגזר הפרטי","יזמות עסקית וחברתית","קידום קריירה ותעסוקה"] },
+  { keywords: ["כלכל","economist","finance","פינ","accountant","רואה חשבון","בנק","השקע","invest"], areas: ["ניהול פיננסי","חיבור למגזר הפרטי","יזמות עסקית וחברתית"] },
+  { keywords: ["עיתונ","journal","media","תקשורת","journalist","כתב","news","content","תוכן"], areas: ["הובלת מאבקים אזרחיים","ניהול קמפיינים פוליטיים","חיבור למגזר הפרטי"] },
+  { keywords: ["ניהול","manage","ceo","director","מנהל","מנהלת","executive","מנכ"], areas: ["פיתוח מנהיגות וניהול","ניהול צוותים","חיבור למגזר הפרטי"] },
+  { keywords: ["שיווק","market","מכיר","sales","פרסום","brand","pr","יחסי ציבור"], areas: ["חיבור למגזר הפרטי","יזמות עסקית וחברתית","ניהול קמפיינים פוליטיים"] },
+  { keywords: ["ארכיטקט","architect","design","מעצב","מעצבת","graphic","ui","ux","creati"], areas: ["חיבור למגזר הפרטי","יזמות עסקית וחברתית"] },
+  { keywords: ["פסיכ","psycholog","therapist","counselor","social worker","עו\"ס","רגש","נפש"], areas: ["אוזן קשבת","הובלת מאבקים אזרחיים","קידום קריירה ותעסוקה"] },
+  { keywords: ["מדינ","politic","govern","ממשל","diplomat","public service","שירות ציבורי"], areas: ["חיבור למגזר הציבורי","ניהול קמפיינים פוליטיים","התמודדות לתפקידים","הובלת מאבקים אזרחיים"] },
+  { keywords: ["סטארט","startup","entrepreneur","יזם","יזמת","venture","business own"], areas: ["יזמות עסקית וחברתית","חיבור למגזר הפרטי","ניהול פיננסי"] },
+  { keywords: ["חוקר","researcher","research","מחקר","academic","scientist","מדע"], areas: ["קידום קריירה ותעסוקה","פיתוח מנהיגות וניהול"] },
+  { keywords: ["צבא","military","army","security","ביטחון","officer","קצין"], areas: ["פיתוח מנהיגות וניהול","ניהול צוותים","חיבור למגזר הציבורי"] },
+  { keywords: ["אמנות","art","music","מוסיקאי","musician","actor","שחקן","תיאטרון","film","קולנוע"], areas: ["הובלת מאבקים אזרחיים","יזמות עסקית וחברתית"] },
 ];
 
 function suggestHelpAreas(profession) {
@@ -1285,7 +1285,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.row}>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.professionJob}</label>
-                  <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} />
+                  <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} autoComplete="off" />
                   {isOwner && <RequiredHint show={!form.profession?.trim()} />}
                 </div>
                 <div style={S.group}>
