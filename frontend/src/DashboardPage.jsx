@@ -348,7 +348,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           </div>
 
 
-          <SlideshowBanner />
+          <SlideshowBanner maxHeight={isMobile ? 220 : 380} />
 
           {/* On mobile: help requests + suggestions appear below slideshow */}
           {isMobile && (
