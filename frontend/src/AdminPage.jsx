@@ -13,7 +13,7 @@ import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
 import { getOrCreateConversation, sendMessage } from "./hooks/useMessages";
-import { translateProfession, translateAny } from "./utils/translateProfile";
+import { translateProfession, translateAny, translateReligion, translateEthnicity } from "./utils/translateProfile";
 
 /* ─── Admin translations ─── */
 const AT = {
@@ -1139,9 +1139,15 @@ export default function AdminPage() {
   /* ── Private fields distributions (admin only) ── */
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
-    if (u.ethnicity)  ethnicityMap[u.ethnicity]  = (ethnicityMap[u.ethnicity]  || 0) + 1;
+    if (u.ethnicity) {
+      const key = translateEthnicity(u.ethnicity, lang) || u.ethnicity;
+      ethnicityMap[key] = (ethnicityMap[key] || 0) + 1;
+    }
     const rel = u.religion || u.identity;
-    if (rel)          religionMap[rel]            = (religionMap[rel]            || 0) + 1;
+    if (rel) {
+      const key = translateReligion(rel, lang) || rel;
+      religionMap[key] = (religionMap[key] || 0) + 1;
+    }
     if (u.region) {
       const key = translateAny(u.region, lang);
       regionMap[key] = (regionMap[key] || 0) + 1;
@@ -1645,8 +1651,8 @@ export default function AdminPage() {
                             { label: Tr.campus,    val: u.campus },
                             { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
                             { label: Tr.birthdate, val: u.birthdate },
-                            { label: Tr.identity,  val: u.identity },
-                            { label: Tr.ethnicity, val: u.ethnicity },
+                            { label: Tr.identity,  val: translateReligion(u.identity, lang) || u.identity },
+                            { label: Tr.ethnicity, val: translateEthnicity(u.ethnicity, lang) || u.ethnicity },
                             { label: Tr.bio,       val: u.bio },
                           ].map(({ label, val }) => val ? (
                             <div key={label}>

@@ -17,7 +17,7 @@ import { useTheme } from "./ThemeContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { isBirthdayToday } from "./utils/birthday";
 import { safeUrl } from "./utils/safeUrl";
-import { translateProfession, translateRegion } from "./utils/translateProfile";
+import { translateProfession, translateRegion, translateReligion, translateEthnicity } from "./utils/translateProfile";
 import ProfessionPicker from "./components/ProfessionPicker";
 
 const storage = getStorage();
@@ -1582,7 +1582,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     {t.profile.ethnicityPrivateToggle}
                   </label>
                 </div>
-                <SelectInput value={form.ethnicity} placeholder="—" options={t.profile.ethnicityOptions}
+                <SelectInput value={translateEthnicity(form.ethnicity, lang) || form.ethnicity} placeholder="—" options={t.profile.ethnicityOptions}
                   onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
               </div>
 
@@ -1600,7 +1600,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     {t.profile.religionPrivateToggle}
                   </label>
                 </div>
-                <SelectInput value={form.religion} placeholder="—" options={t.profile.religionOptions}
+                <SelectInput value={translateReligion(form.religion, lang) || form.religion} placeholder="—" options={t.profile.religionOptions}
                   onChange={e => handleChange({ target:{ name:"religion", value:e.target.value } })} />
               </div>
 
@@ -1804,7 +1804,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                       </span>
                     )}
                   </p>
-                  <div style={S.inputDisabled}>{form.ethnicity}</div>
+                  <div style={S.inputDisabled}>{translateEthnicity(form.ethnicity, lang) || form.ethnicity}</div>
                 </div>
               )}
               {(!form.religionPrivate || authProfile?.isAdmin) && form.religion && (
@@ -1817,7 +1817,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                       </span>
                     )}
                   </p>
-                  <div style={S.inputDisabled}>{form.religion}</div>
+                  <div style={S.inputDisabled}>{translateReligion(form.religion, lang) || form.religion}</div>
                 </div>
               )}
             </div>

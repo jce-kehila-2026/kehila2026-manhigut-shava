@@ -22,6 +22,18 @@ const REGIONS_BY_LANG = {
   ar: ["الشمال","الجليل","الأودية","حيفا","الوسط والشارون","غوش دان","تل أبيب","القدس","السفيلة","الجنوب","النقب","خارج البلاد"],
 };
 
+const RELIGION_BY_LANG = {
+  he: ["יהודייה-חילונית","יהודייה-מסורתית","יהודייה-דתית","יהודייה-חרדית","מוסלמית","נוצרית","דרוזית","אחר"],
+  en: ["Secular Jewish","Traditional Jewish","Religious Jewish","Ultra-Orthodox","Muslim","Christian","Druze","Other"],
+  ar: ["يهودية علمانية","يهودية تقليدية","يهودية دينية","حريدية","مسلمة","مسيحية","درزية","أخرى"],
+};
+
+const ETHNICITY_BY_LANG = {
+  he: ["יהודייה","ערבייה","דרוזית","בדואית","צ'רקסית","מעורב","אחר"],
+  en: ["Jewish","Arab","Druze","Bedouin","Circassian","Mixed","Other"],
+  ar: ["يهودية","عربية","درزية","بدوية","شركسية","مختلطة","أخرى"],
+};
+
 /* Build a single reverse-lookup map: stored-value → index, per table */
 function buildReverseMap(table) {
   const map = {};
@@ -36,6 +48,8 @@ function buildReverseMap(table) {
 const CITY_IDX       = buildReverseMap(CITIES_BY_LANG);
 const PROFESSION_IDX = buildReverseMap(PROFESSIONS_BY_LANG);
 const REGION_IDX     = buildReverseMap(REGIONS_BY_LANG);
+const RELIGION_IDX   = buildReverseMap(RELIGION_BY_LANG);
+const ETHNICITY_IDX  = buildReverseMap(ETHNICITY_BY_LANG);
 
 function translate(table, reverseMap, value, targetLang) {
   if (!value) return value;
@@ -47,6 +61,8 @@ function translate(table, reverseMap, value, targetLang) {
 export const translateCity       = (value, lang) => translate(CITIES_BY_LANG,      CITY_IDX,       value, lang);
 export const translateProfession = (value, lang) => translate(PROFESSIONS_BY_LANG, PROFESSION_IDX, value, lang);
 export const translateRegion     = (value, lang) => translate(REGIONS_BY_LANG,     REGION_IDX,     value, lang);
+export const translateReligion   = (value, lang) => translate(RELIGION_BY_LANG,    RELIGION_IDX,   value, lang);
+export const translateEthnicity  = (value, lang) => translate(ETHNICITY_BY_LANG,   ETHNICITY_IDX,  value, lang);
 
 /*
  * Translate a single location value against both city and region tables.
