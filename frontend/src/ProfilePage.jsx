@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
 import {
@@ -225,25 +226,130 @@ function SectionTitle({ label }) {
 
 function SelectInput({ value, onChange, options, disabled, placeholder }) {
   const { T } = useTheme();
+  const { isRTL } = useLang();
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = e => {
+      if (!e.target.closest("[data-portal-select]") && !triggerRef.current?.contains(e.target))
+        setOpen(false);
+    };
+    const esc = e => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [open]);
+
+  const handleOpen = () => {
+    if (disabled) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openAbove = spaceBelow < 200 && spaceAbove > spaceBelow;
+    const maxH = Math.min(240, (openAbove ? spaceAbove : spaceBelow) - 8);
+    setDropPos({
+      left: rect.left, width: rect.width, maxH,
+      ...(openAbove ? { bottom: window.innerHeight - rect.top + 2 } : { top: rect.bottom + 2 }),
+    });
+    setOpen(true);
+  };
+
+  const handleSelect = opt => {
+    onChange({ target: { value: opt } });
+    setOpen(false);
+  };
+
   return (
-    <select
-      className="profile-input"
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      style={{
-        width:"100%", boxSizing:"border-box",
-        padding:"12px 14px", fontSize:"14px",
-        border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
-        color: value ? T.text : T.sub,
-        background:T.inputBg, fontFamily:"inherit",
-        transition:"border-color 0.2s, box-shadow 0.2s",
-        appearance:"none",
-      }}
-    >
-      <option value="">{placeholder || "—"}</option>
-      {options.map((o,i) => <option key={i} value={o}>{o}</option>)}
-    </select>
+    <div ref={triggerRef}>
+      <button
+        type="button"
+        className="profile-input"
+        disabled={disabled}
+        onClick={() => open ? setOpen(false) : handleOpen()}
+        style={{
+          width:"100%", boxSizing:"border-box",
+          padding:"12px 14px", fontSize:"14px",
+          border:`1.5px solid ${open ? "#4472b8" : T.inputBorder}`, borderRadius:"13px",
+          color: value ? T.text : T.sub,
+          background: T.inputBg, fontFamily:"inherit",
+          direction: isRTL ? "rtl" : "ltr",
+          textAlign: isRTL ? "right" : "left",
+          cursor: disabled ? "not-allowed" : "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          transition: "border-color 0.2s",
+        }}
+      >
+        <span style={{ flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+          {value || placeholder || "—"}
+        </span>
+        <span style={{
+          opacity:0.4, fontSize:11, flexShrink:0, marginInlineStart:8,
+          display:"inline-block", transition:"transform 0.2s",
+          ...(open ? { transform:"rotate(180deg)" } : {}),
+        }}>▾</span>
+      </button>
+
+      {open && dropPos && createPortal(
+        <div
+          data-portal-select="true"
+          style={{
+            position:"fixed",
+            left: dropPos.left, width: dropPos.width,
+            maxHeight: dropPos.maxH,
+            ...(dropPos.top !== undefined ? { top: dropPos.top } : { bottom: dropPos.bottom }),
+            zIndex: 99999,
+            background: T.inputBg,
+            border: "1.5px solid #4472b8",
+            borderRadius: 13,
+            boxShadow: "0 6px 24px rgba(68,114,184,0.18)",
+            overflowY: "auto",
+            direction: isRTL ? "rtl" : "ltr",
+          }}
+        >
+          <button
+            type="button"
+            onMouseDown={e => { e.preventDefault(); handleSelect(""); }}
+            style={{
+              display:"block", width:"100%", padding:"10px 14px",
+              background:"none", border:"none",
+              borderBottom:`1px solid ${T.inputBorder}`,
+              cursor:"pointer", fontSize:14, color:T.sub, fontFamily:"inherit",
+              textAlign: isRTL ? "right" : "left",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background="rgba(68,114,184,0.07)"}
+            onMouseLeave={e => e.currentTarget.style.background="none"}
+          >
+            {placeholder || "—"}
+          </button>
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onMouseDown={e => { e.preventDefault(); handleSelect(opt); }}
+              style={{
+                display:"block", width:"100%", padding:"10px 14px",
+                background: opt === value ? "rgba(68,114,184,0.1)" : "none",
+                border:"none",
+                borderBottom: i < options.length - 1 ? `1px solid ${T.inputBorder}` : "none",
+                cursor:"pointer", fontSize:14,
+                color: opt === value ? "#4472b8" : T.text,
+                fontFamily:"inherit",
+                fontWeight: opt === value ? 700 : 400,
+                textAlign: isRTL ? "right" : "left",
+              }}
+              onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background="rgba(68,114,184,0.07)"; }}
+              onMouseLeave={e => { if (opt !== value) e.currentTarget.style.background="none"; }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
   );
 }
 
