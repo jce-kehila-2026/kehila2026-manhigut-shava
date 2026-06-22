@@ -10,6 +10,12 @@ const CITIES_BY_LANG = {
   ar: ["القدس","تل أبيب-يافا","حيفا","ريشون ليتسيون","بتاح تكفا","نتانيا","أشدود","عسقلان","بئر السبع","ريحوفوت","هرتسليا","حولون","بات يام","كفار سابا","رمات غان","نس تسيونا","عفولة","الناصرة","طبريا","حديرا","مودیعین","أخرى"],
 };
 
+export const INSTITUTIONS_BY_LANG = {
+  he: ["אוניברסיטת תל אביב","האוניברסיטה העברית","הטכניון","אוניברסיטת חיפה","אוניברסיטת בן גוריון","אוניברסיטת בר אילן","המכון הבינתחומי הרצליה (IDC)","מכללת אריאל","האקדמית אשקלון","הקריה האקדמית אונו","מכללת ספיר","מכללת תל חי","מכללת כנרת","מכללת אחוה","מכללת רופין","מכללת עמק יזרעאל"],
+  en: ["Tel Aviv University","Hebrew University","Technion","University of Haifa","Ben-Gurion University","Bar-Ilan University","Reichman University (IDC)","Ariel University","Ashkelon Academic College","Ono Academic College","Sapir College","Tel-Hai College","Kinneret College","Achva Academic College","Ruppin Academic Center","Jezreel Valley College"],
+  ar: ["جامعة تل أبيب","الجامعة العبرية","التخنيون","جامعة حيفا","جامعة بن غوريون","جامعة بار إيلان","جامعة رايخمان (IDC)","جامعة أريئيل","الكلية الأكاديمية عسقلان","الكلية الأكاديمية أونو","كلية سابير","كلية تل حاي","كلية كنيرت","كلية أحفاء الأكاديمية","المركز الأكاديمي روبين","كلية وادي يزرعيل"],
+};
+
 export const PROFESSIONS_BY_LANG = {
   he: ["רפואה","משפטים","הנדסה","חינוך","כלכלה ועסקים","פסיכולוגיה","מדעים","פוליטיקה וממשל","תקשורת ועיתונאות","אמנות ועיצוב","עבודה סוציאלית","בריאות הציבור","טכנולוגיה","מינהל ציבורי","שירות ציבורי","סטודנטית","אחר"],
   en: ["Medicine","Law","Engineering","Education","Economics & Business","Psychology","Sciences","Politics & Government","Media & Journalism","Arts & Design","Social Work","Public Health","Technology","Public Administration","Public Service","Student","Other"],
@@ -45,11 +51,12 @@ function buildReverseMap(table) {
   return map;
 }
 
-const CITY_IDX       = buildReverseMap(CITIES_BY_LANG);
-const PROFESSION_IDX = buildReverseMap(PROFESSIONS_BY_LANG);
-const REGION_IDX     = buildReverseMap(REGIONS_BY_LANG);
-const RELIGION_IDX   = buildReverseMap(RELIGION_BY_LANG);
-const ETHNICITY_IDX  = buildReverseMap(ETHNICITY_BY_LANG);
+const CITY_IDX        = buildReverseMap(CITIES_BY_LANG);
+const PROFESSION_IDX  = buildReverseMap(PROFESSIONS_BY_LANG);
+const INSTITUTION_IDX = buildReverseMap(INSTITUTIONS_BY_LANG);
+const REGION_IDX      = buildReverseMap(REGIONS_BY_LANG);
+const RELIGION_IDX    = buildReverseMap(RELIGION_BY_LANG);
+const ETHNICITY_IDX   = buildReverseMap(ETHNICITY_BY_LANG);
 
 function translate(table, reverseMap, value, targetLang) {
   if (!value) return value;
@@ -58,11 +65,12 @@ function translate(table, reverseMap, value, targetLang) {
   return table[targetLang]?.[idx] ?? value;
 }
 
-export const translateCity       = (value, lang) => translate(CITIES_BY_LANG,      CITY_IDX,       value, lang);
-export const translateProfession = (value, lang) => translate(PROFESSIONS_BY_LANG, PROFESSION_IDX, value, lang);
-export const translateRegion     = (value, lang) => translate(REGIONS_BY_LANG,     REGION_IDX,     value, lang);
-export const translateReligion   = (value, lang) => translate(RELIGION_BY_LANG,    RELIGION_IDX,   value, lang);
-export const translateEthnicity  = (value, lang) => translate(ETHNICITY_BY_LANG,   ETHNICITY_IDX,  value, lang);
+export const translateCity        = (value, lang) => translate(CITIES_BY_LANG,       CITY_IDX,        value, lang);
+export const translateProfession  = (value, lang) => translate(PROFESSIONS_BY_LANG,  PROFESSION_IDX,  value, lang);
+export const translateInstitution = (value, lang) => translate(INSTITUTIONS_BY_LANG, INSTITUTION_IDX, value, lang);
+export const translateRegion      = (value, lang) => translate(REGIONS_BY_LANG,      REGION_IDX,      value, lang);
+export const translateReligion    = (value, lang) => translate(RELIGION_BY_LANG,     RELIGION_IDX,    value, lang);
+export const translateEthnicity   = (value, lang) => translate(ETHNICITY_BY_LANG,    ETHNICITY_IDX,   value, lang);
 
 /*
  * Translate a single location value against both city and region tables.

@@ -17,8 +17,9 @@ import { useTheme } from "./ThemeContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { isBirthdayToday } from "./utils/birthday";
 import { safeUrl } from "./utils/safeUrl";
-import { translateProfession, translateRegion, translateReligion, translateEthnicity } from "./utils/translateProfile";
+import { translateProfession, translateInstitution, translateRegion, translateReligion, translateEthnicity } from "./utils/translateProfile";
 import ProfessionPicker from "./components/ProfessionPicker";
+import InstitutionPicker from "./components/InstitutionPicker";
 
 const storage = getStorage();
 
@@ -644,15 +645,6 @@ function suggestHelpAreas(profession) {
   return [...matches];
 }
 
-const INSTITUTIONS = [
-  "אוניברסיטת תל אביב","האוניברסיטה העברית","הטכניון","אוניברסיטת חיפה",
-  "אוניברסיטת בן גוריון","אוניברסיטת בר אילן","המכון הבינתחומי הרצליה (IDC)",
-  "מכלל אריאל","האקדמית אשקלון","הקריה האקדמית אונו","מכללת ספיר",
-  "מכלל תל חי","מכלל כנרת","מכלל אחוה","מכלל רופין","מכלל עמק יזרעאל",
-  "Tel Aviv University","Hebrew University","Technion","University of Haifa",
-  "Ben-Gurion University","Bar-Ilan University","Reichman University (IDC)",
-  "Ariel University","Ashkelon Academic College","Ono Academic College",
-];
 
 export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommunity }) {
   const { user, profile: authProfile, refreshProfile, logout } = useAuth();
@@ -674,10 +666,9 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", professionTranslations:null, bio:"", birthDate:"",
-    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
+    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", institution:"", institutionTranslations:null, graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
-  const [institutionOther, setInstitutionOther] = useState("");
   const [photoURL, setPhotoURL] = useState(null);
   const [coverURL, setCoverURL] = useState(null);
   const [savingKey, setSavingKey] = useState(null);
@@ -726,7 +717,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           religion:         d.religion         ?? "",
           religionPrivate:  d.religionPrivate  ?? false,
           region:           d.region           ?? "",
-          institution:    d.institution    ?? "",
+          institution:             d.institution             ?? "",
+          institutionTranslations: d.institutionTranslations ?? null,
           graduationYear: d.graduationYear ?? "",
           linkedIn:       d.linkedIn       ?? "",
           facebookURL:    d.facebookURL    ?? "",
@@ -741,11 +733,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setNetworksCount(d.networksCount ?? 0);
         setProfileEmail(contact.email ?? "");
         setBirthdayValue(d.birthDate ?? d.birthdate ?? "");
-        const inst = d.institution ?? "";
-        if (inst && !INSTITUTIONS.includes(inst)) {
-          setForm(prev => ({ ...prev, institution: "OTHER" }));
-          setInstitutionOther(inst);
-        }
       } else {
         setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
@@ -912,8 +899,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     setSavingKey(sectionKey); setError("");
     try {
       const saveData = { ...fields };
-      if ("institution" in saveData && saveData.institution === "OTHER")
-        saveData.institution = institutionOther || "אחר";
       const writes = [];
       if ("phone" in saveData) {
         writes.push(saveContact(targetId, { phone: saveData.phone }));
@@ -1441,23 +1426,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.row}>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.institution}<OptionalTag /></label>
-                  <select
-                    className="profile-input"
-                    value={INSTITUTIONS.includes(form.institution) ? form.institution : (form.institution ? "OTHER" : "")}
-                    onChange={e => {
-                      if (e.target.value === "OTHER") { setForm(p => ({ ...p, institution:"OTHER" })); setInstitutionOther(""); }
-                      else { handleChange({ target:{ name:"institution", value:e.target.value } }); setInstitutionOther(""); }
-                    }}
-                    style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.text, background:T.inputBg, fontFamily:"inherit", appearance:"none" }}
-                  >
-                    <option value="">{t.profile.institutionPlaceholder || "בחרי מוסד..."}</option>
-                    {INSTITUTIONS.map((inst, i) => <option key={i} value={inst}>{inst}</option>)}
-                    <option value="OTHER">אחר (כתבי ידנית)</option>
-                  </select>
-                  {(form.institution === "OTHER" || (!INSTITUTIONS.includes(form.institution) && form.institution)) && (
-                    <PlainInput value={institutionOther} onChange={e => setInstitutionOther(e.target.value)}
-                      placeholder="שם המוסד / הארגון..." />
-                  )}
+                  <InstitutionPicker
+                    value={form.institution}
+                    translations={form.institutionTranslations}
+                    placeholder={t.profile.institutionPlaceholder}
+                    onChange={(val, tr) => setForm(p => ({ ...p, institution: val, institutionTranslations: tr }))}
+                  />
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.graduationYear}<OptionalTag /></label>
@@ -1647,7 +1621,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   onClick={() => handleSaveSection("profile", {
                     firstName:form.firstName, lastName:form.lastName, phone:form.phone,
                     profession:form.profession, professionTranslations:form.professionTranslations ?? null, birthDate:form.birthDate, bio:form.bio,
-                    region:form.region, institution:form.institution, graduationYear:form.graduationYear,
+                    region:form.region, institution:form.institution, institutionTranslations:form.institutionTranslations ?? null, graduationYear:form.graduationYear,
                     linkedIn: safeUrl(form.linkedIn),
                     facebookURL: safeUrl(form.facebookURL),
                     contactEmail: form.contactEmail || "",
@@ -1734,7 +1708,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.institution}</p>
                   <div style={S.inputDisabled}>
-                    {form.institution === "OTHER" ? (institutionOther || "—") : (form.institution || "—")}
+                    {form.institutionTranslations?.[lang] || translateInstitution(form.institution, lang) || form.institution || "—"}
                   </div>
                 </div>
                 <div style={S.group}>
