@@ -212,6 +212,12 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
     }
 
+    /* ── Custom professions (user-contributed, shared dropdown) ── */
+    match /customProfessions/{docId} {
+      allow read:   if isAuth();
+      allow create: if isAuth();
+    }
+
     /* ── Default: deny all ── */
     match /{document=**} {
       allow read, write: if false;
