@@ -11,6 +11,7 @@ import {
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
 import { saveContact } from "./contact";
+import { REGIONS_BY_LANG } from "./utils/translateProfile";
 
 /* ─── Translation ─── */
 const AUTH_T = {
@@ -42,7 +43,7 @@ const AUTH_T = {
     phoneLbl:"טלפון *",
     instituteLbl:"מוסד לימודים", institutePh:"בחרי מוסד...",
     profLbl:"מקצוע / תפקיד", profPh:"רופאה, עורכת דין...",
-    cityLbl:"עיר מגורים", cityPh:"תל אביב, ירושלים...",
+    regionLbl:"אזור מגורים", regionSelectPh:"בחרי אזור...",
     step2H:"פרטים מקצועיים", step2Sub:"ספרי לנו עליך",
     step3H:"הגדרת סיסמה", step3Sub:"כמעט סיימנו",
     passLbl2:"סיסמה *", passPh:"לפחות 6 תווים",
@@ -61,9 +62,7 @@ const AUTH_T = {
     backHome:"← חזרה לדף הבית",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
-    citySelectPh:"בחרי עיר...",cityOtherPh:"כתבי את עירך",
     profSelectPh:"בחרי מקצוע...",profOtherPh:"כתבי את מקצועך",
-    cities:["ירושלים","תל אביב-יפו","חיפה","ראשון לציון","פתח תקווה","נתניה","אשדוד","אשקלון","באר שבע","רחובות","הרצליה","חולון","בת ים","כפר סבא","רמת גן","נס ציונה","עפולה","נצרת","טבריה","חדרה","מודיעין","אחר"],
     professions:["רפואה","משפטים","הנדסה","חינוך","כלכלה ועסקים","פסיכולוגיה","מדעים","פוליטיקה וממשל","תקשורת ועיתונאות","אמנות ועיצוב","עבודה סוציאלית","בריאות הציבור","טכנולוגיה","מינהל ציבורי","שירות ציבורי","סטודנטית","אחר"],
   },
   en: {
@@ -94,7 +93,7 @@ const AUTH_T = {
     phoneLbl:"Phone *",
     instituteLbl:"Institution", institutePh:"Select institution...",
     profLbl:"Profession / Role", profPh:"Doctor, Lawyer, Engineer...",
-    cityLbl:"City", cityPh:"Tel Aviv, Jerusalem...",
+    regionLbl:"Region", regionSelectPh:"Select region...",
     step2H:"Professional Details", step2Sub:"Tell us about yourself",
     step3H:"Set Password", step3Sub:"Almost done",
     passLbl2:"Password *", passPh:"At least 6 characters",
@@ -112,9 +111,7 @@ const AUTH_T = {
     backHome:"← Back to Home",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
-    citySelectPh:"Select city...",cityOtherPh:"Type your city",
     profSelectPh:"Select profession...",profOtherPh:"Type your profession",
-    cities:["Jerusalem","Tel Aviv-Jaffa","Haifa","Rishon LeZion","Petah Tikva","Netanya","Ashdod","Ashkelon","Beer Sheva","Rehovot","Herzliya","Holon","Bat Yam","Kfar Saba","Ramat Gan","Nes Ziona","Afula","Nazareth","Tiberias","Hadera","Modi'in","Other"],
     professions:["Medicine","Law","Engineering","Education","Economics & Business","Psychology","Sciences","Politics & Government","Media & Journalism","Arts & Design","Social Work","Public Health","Technology","Public Administration","Public Service","Student","Other"],
   },
   ar: {
@@ -145,7 +142,7 @@ const AUTH_T = {
     phoneLbl:"رقم الهاتف *",
     instituteLbl:"المؤسسة الأكاديمية", institutePh:"اختاري مؤسسة...",
     profLbl:"المهنة / الوظيفة", profPh:"طبيبة، محامية...",
-    cityLbl:"المدينة", cityPh:"تل أبيب، القدس...",
+    regionLbl:"المنطقة", regionSelectPh:"اختاري المنطقة...",
     step2H:"التفاصيل المهنية", step2Sub:"أخبرينا عن نفسك",
     step3H:"تعيين كلمة المرور", step3Sub:"اقتربنا من النهاية",
     passLbl2:"كلمة المرور *", passPh:"6 أحرف على الأقل",
@@ -163,9 +160,7 @@ const AUTH_T = {
     backHome:"← العودة إلى الصفحة الرئيسية",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
-    citySelectPh:"اختاري المدينة...",cityOtherPh:"اكتبي مدينتك",
     profSelectPh:"اختاري المهنة...",profOtherPh:"اكتبي مهنتك",
-    cities:["القدس","تل أبيب-يافا","حيفا","ريشون ليتسيون","بتاح تكفا","نتانيا","أشدود","عسقلان","بئر السبع","ريحوفوت","هرتسليا","حولون","بات يام","كفار سابا","رمات غان","نس تسيونا","عفولة","الناصرة","طبريا","حديرا","مودیعین","أخرى"],
     professions:["الطب","القانون","الهندسة","التعليم","الاقتصاد والأعمال","علم النفس","العلوم","السياسة والحكم","الإعلام والصحافة","الفنون والتصميم","الخدمة الاجتماعية","الصحة العامة","التكنولوجيا","الإدارة العامة","الخدمة العامة","طالبة","أخرى"],
   },
 };
@@ -376,11 +371,12 @@ function validPhone(raw) {
 
 function SignUpForm({ onSwitchTab, Tr, dir }) {
   const isMobile = useIsMobile();
+  const { lang } = useLang();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     firstName:"", lastName:"", email:"", phone:"",
     institution:"", profession:"", professionOther:"",
-    city:"", cityOther:"",
+    region:"",
     password:"", confirmPassword:"",
   });
   const [agreed, setAgreed]   = useState(false);
@@ -410,7 +406,6 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
     ? <p style={{ color:"#e9415b", fontSize:"0.73rem", marginTop:"0.3rem", marginBottom:0, direction:"ltr", textAlign:"left", fontWeight:500 }}>{msg}</p>
     : null;
 
-  const effectiveCity       = form.city==="אחר"||form.city==="Other"||form.city==="أخرى" ? form.cityOther : form.city;
   const effectiveProfession = form.profession==="אחר"||form.profession==="Other"||form.profession==="أخرى" ? form.professionOther : form.profession;
 
   const submit = async () => {
@@ -427,7 +422,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
       await setDoc(doc(db, "users", user.uid), {
         firstName:form.firstName, lastName:form.lastName,
         institution:form.institution,
-        profession:effectiveProfession, city:effectiveCity,
+        profession:effectiveProfession, region:form.region,
         emailVerified:false, acceptedTerms:true, createdAt:new Date().toISOString(),
         tutorialDone: false,
       });
@@ -530,15 +525,11 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
                 placeholder={Tr?.profOtherPh||"כתבי את מקצועך"} onFocus={focusOn} onBlur={focusOff}/>
             )}
           </Fld>
-          <Fld label={Tr?.cityLbl||"עיר מגורים"}>
-            <select style={{...inp,color:form.city?C.ink:C.mute}} name="city" value={form.city} onChange={set} onFocus={focusOn} onBlur={focusOff}>
-              <option value="">{Tr?.citySelectPh||"בחרי עיר..."}</option>
-              {(Tr?.cities||[]).map(o=><option key={o} value={o}>{o}</option>)}
+          <Fld label={Tr?.regionLbl||"אזור מגורים"}>
+            <select style={{...inp,color:form.region?C.ink:C.mute}} name="region" value={form.region} onChange={set} onFocus={focusOn} onBlur={focusOff}>
+              <option value="">{Tr?.regionSelectPh||"בחרי אזור..."}</option>
+              {(REGIONS_BY_LANG[lang]||REGIONS_BY_LANG.he).map((o,i)=><option key={i} value={REGIONS_BY_LANG.en[i]}>{o}</option>)}
             </select>
-            {(form.city==="אחר"||form.city==="Other"||form.city==="أخرى")&&(
-              <input style={{...inputStyle("cityOther"),marginTop:6}} name="cityOther" value={form.cityOther} onChange={set}
-                placeholder={Tr?.cityOtherPh||"כתבי את עירך"} onFocus={focusOn} onBlur={focusOff}/>
-            )}
           </Fld>
           <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr", gap:"0.6rem" }}>
             <button style={{ ...ghostBtn, margin:0 }} onClick={()=>setStep(1)}>{Tr?.backBtn||"← חזרה"}</button>

@@ -24,7 +24,7 @@ const AT = {
     totalPosts:"סה\"כ פוסטים", conversations:"שיחות", admins:"מנהלות",
     activeMembers:"חברות פעילות", thisWeek:(n)=>`+${n} השבוע`,
     percentVerified:(p)=>`${p}% מאומתות`,
-    topProfessions:"מקצועות מובילות", topCities:"ערים מובילות", recentMembers:"חברות חדשות", noData:"אין נתונים עדיין",
+    topProfessions:"מקצועות מובילות", topRegionsLabel:"אזורים מובילים", recentMembers:"חברות חדשות", noData:"אין נתונים עדיין",
     searchPh:"חפשי משתמשת...", editUser:"עריכת משתמשת",
     firstName:"שם פרטי", lastName:"שם משפחה", phone:"טלפון",
     city:"עיר", profession:"מקצוע", bio:"ביוגרפיה",
@@ -89,7 +89,7 @@ const AT = {
     totalPosts:"Total Posts", conversations:"Conversations", admins:"Admins",
     activeMembers:"Active members", thisWeek:(n)=>`+${n} this week`,
     percentVerified:(p)=>`${p}% verified`,
-    topProfessions:"Top Professions", topCities:"Top Cities", recentMembers:"Recent Members", noData:"No data yet",
+    topProfessions:"Top Professions", topRegionsLabel:"Top Regions", recentMembers:"Recent Members", noData:"No data yet",
     searchPh:"Search users...", editUser:"Edit User",
     firstName:"First Name", lastName:"Last Name", phone:"Phone",
     city:"City", profession:"Profession", bio:"Bio",
@@ -154,7 +154,7 @@ const AT = {
     totalPosts:"إجمالي المنشورات", conversations:"المحادثات", admins:"المشرفات",
     activeMembers:"أعضاء نشطات", thisWeek:(n)=>`+${n} هذا الأسبوع`,
     percentVerified:(p)=>`${p}% موثّقات`,
-    topProfessions:"أبرز المهن", topCities:"أبرز المدن", recentMembers:"أعضاء جدد", noData:"لا توجد بيانات بعد",
+    topProfessions:"أبرز المهن", topRegionsLabel:"أبرز المناطق", recentMembers:"أعضاء جدد", noData:"لا توجد بيانات بعد",
     searchPh:"ابحثي عن مستخدمة...", editUser:"تعديل المستخدمة",
     firstName:"الاسم الأول", lastName:"اسم العائلة", phone:"الهاتف",
     city:"المدينة", profession:"المهنة", bio:"نبذة",
@@ -1125,17 +1125,6 @@ export default function AdminPage() {
   });
   const topProfessions = Object.entries(professionMap).sort((a,b) => b[1]-a[1]).slice(0,5);
 
-  /* ── City distribution ── */
-  const cityMap = {};
-  users.forEach(u => {
-    const raw = u.city || u.region;
-    if (raw) {
-      const key = translateAny(raw, lang);
-      cityMap[key] = (cityMap[key] || 0) + 1;
-    }
-  });
-  const topCities = Object.entries(cityMap).sort((a,b) => b[1]-a[1]).slice(0,5);
-
   /* ── Private fields distributions (admin only) ── */
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
@@ -1453,14 +1442,14 @@ export default function AdminPage() {
               ))}
             </div>
 
-            {/* City distribution */}
+            {/* Region distribution */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topCities}</p>
-              {topCities.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)" }}>{Tr.noData}</p>}
-              {topCities.map(([city, count]) => (
-                <div key={city} style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topRegionsLabel}</p>
+              {topRegions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)" }}>{Tr.noData}</p>}
+              {topRegions.map(([region, count]) => (
+                <div key={region} style={{ marginBottom: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{city}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{region}</span>
                     <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)", fontWeight: 600 }}>{count}</span>
                   </div>
                   <div style={{ height: 6, background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
@@ -2014,15 +2003,15 @@ export default function AdminPage() {
               }
             </div>
 
-            {/* Cities bar chart */}
+            {/* Regions bar chart */}
             <div className="card" style={{ padding:"1.25rem" }}>
-              <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{Tr.topCities}</p>
-              {topCities.length === 0
+              <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{Tr.topRegionsLabel}</p>
+              {topRegions.length === 0
                 ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.noData}</p>
-                : topCities.map(([city, count]) => (
-                  <div key={city} style={{ marginBottom:12 }}>
+                : topRegions.map(([region, count]) => (
+                  <div key={region} style={{ marginBottom:12 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-                      <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)" }}>{city}</span>
+                      <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)" }}>{region}</span>
                       <span style={{ fontSize:11, fontWeight:700, color:"#8b5cf6" }}>{count}</span>
                     </div>
                     <div style={{ height:8, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
@@ -2040,7 +2029,6 @@ export default function AdminPage() {
             {[
               { label: Tr.topSectors,   data: topEthnicities, color:"#e8735a" },
               { label: Tr.topReligions, data: topReligions,   color:"#1d4896" },
-              { label: Tr.topRegions,   data: topRegions,     color:"#7ba87a" },
             ].map(({ label, data, color }) => (
               <div key={label} className="card" style={{ padding:"1.25rem" }}>
                 <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{label}</p>

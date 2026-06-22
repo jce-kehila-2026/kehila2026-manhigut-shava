@@ -20,6 +20,7 @@ import { safeUrl } from "./utils/safeUrl";
 import { translateProfession, translateInstitution, translateRegion, translateReligion, translateEthnicity } from "./utils/translateProfile";
 import ProfessionPicker from "./components/ProfessionPicker";
 import InstitutionPicker from "./components/InstitutionPicker";
+import RegionPicker from "./components/RegionPicker";
 
 const storage = getStorage();
 
@@ -666,7 +667,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", professionTranslations:null, bio:"", birthDate:"",
-    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", institution:"", institutionTranslations:null, graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
+    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", regionTranslations:null, institution:"", institutionTranslations:null, graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
   const [photoURL, setPhotoURL] = useState(null);
@@ -717,6 +718,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           religion:         d.religion         ?? "",
           religionPrivate:  d.religionPrivate  ?? false,
           region:           d.region           ?? "",
+          regionTranslations: d.regionTranslations ?? null,
           institution:             d.institution             ?? "",
           institutionTranslations: d.institutionTranslations ?? null,
           graduationYear: d.graduationYear ?? "",
@@ -1417,8 +1419,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.region}</label>
-                  <SelectInput value={form.region} placeholder="—" options={t.profile.regionOptions}
-                    onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
+                  <RegionPicker
+                    value={form.region}
+                    translations={form.regionTranslations}
+                    placeholder="—"
+                    onChange={(val, tr) => setForm(p => ({ ...p, region: val, regionTranslations: tr }))}
+                  />
                   {isOwner && <RequiredHint show={!form.region} />}
                 </div>
               </div>
@@ -1621,7 +1627,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   onClick={() => handleSaveSection("profile", {
                     firstName:form.firstName, lastName:form.lastName, phone:form.phone,
                     profession:form.profession, professionTranslations:form.professionTranslations ?? null, birthDate:form.birthDate, bio:form.bio,
-                    region:form.region, institution:form.institution, institutionTranslations:form.institutionTranslations ?? null, graduationYear:form.graduationYear,
+                    region:form.region, regionTranslations:form.regionTranslations ?? null, institution:form.institution, institutionTranslations:form.institutionTranslations ?? null, graduationYear:form.graduationYear,
                     linkedIn: safeUrl(form.linkedIn),
                     facebookURL: safeUrl(form.facebookURL),
                     contactEmail: form.contactEmail || "",
@@ -1700,7 +1706,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.region}</p>
-                  <div style={S.inputDisabled}>{translateRegion(form.region, lang) || "—"}</div>
+                  <div style={S.inputDisabled}>{form.regionTranslations?.[lang] || translateRegion(form.region, lang) || form.region || "—"}</div>
                 </div>
               </div>
 
