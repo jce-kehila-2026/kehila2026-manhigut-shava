@@ -7,6 +7,7 @@ import { useTheme } from "./ThemeContext";
 import { logActivity } from "./activityLogger";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { getOrCreateConversation, sendHelpRequestPrompt } from "./hooks/useMessages";
+import { translateProfession, translateLocation } from "./utils/translateProfile";
 
 /* ─── Translation ─── */
 const T = {
@@ -510,7 +511,7 @@ function RequestMessageModal({ targetUser, Tr, dir, onConfirm, onCancel }) {
             <p style={{ fontSize:"10px", fontWeight:"700", color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1px" }}>{Tr.reqModalTo}</p>
             <p style={{ fontSize:"13px", fontWeight:"700", color:"var(--text-primary)", margin:0 }}>{getFullName(targetUser)}</p>
             {(targetUser.currentRole || targetUser.profession) && (
-              <p style={{ fontSize:"11px", color:"var(--text-muted)", margin:0 }}>{targetUser.currentRole || targetUser.profession}</p>
+              <p style={{ fontSize:"11px", color:"var(--text-muted)", margin:0 }}>{targetUser.professionTranslations?.[lang] || translateProfession(targetUser.currentRole || targetUser.profession, lang)}</p>
             )}
           </div>
         </div>
@@ -1169,7 +1170,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                       {getFullName(u)}
                     </p>
                     {(u.currentRole || u.profession) && (
-                      <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.currentRole || u.profession}</p>
+                      <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole || u.profession, lang)}</p>
                     )}
                   </div>
                 </button>
@@ -1253,8 +1254,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                       <MemberAvatar user={u} size={34} fontSize={12} />
                       <span style={{ fontWeight:600, color:"var(--text-primary)" }}>{getFullName(u)}</span>
                     </td>
-                    <td style={{ padding:"10px 12px", color:"var(--text-secondary)" }}>{u.currentRole ?? u.profession ?? "—"}</td>
-                    <td style={{ padding:"10px 12px", color:"var(--text-muted)" }}>{u.region || u.city || "—"}</td>
+                    <td style={{ padding:"10px 12px", color:"var(--text-secondary)" }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "—"}</td>
+                    <td style={{ padding:"10px 12px", color:"var(--text-muted)" }}>{translateLocation(u.region, u.city, lang) || "—"}</td>
                     <td style={{ padding:"10px 12px", borderRadius:"0 10px 10px 0" }}>
                       <div style={{ display:"flex", gap:6 }}>
                         <button className="view-btn" style={{ ...S.viewBtn, flex:"none", padding:"6px 14px" }}
@@ -1288,10 +1289,10 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   </div>
                   <div>
                     <p style={S.name}>{getFullName(u)}</p>
-                    <p style={S.profession}>{u.currentRole ?? u.profession ?? "—"}</p>
+                    <p style={S.profession}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "—"}</p>
                   </div>
                 </div>
-                {(u.region || u.city) && <span style={S.cityTag}>{u.region || u.city}</span>}
+                {(u.region || u.city) && <span style={S.cityTag}>{translateLocation(u.region, u.city, lang)}</span>}
                 {u.helpAreas?.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                     {u.helpAreas.slice(0, 3).map(a => (
@@ -1417,11 +1418,11 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 </div>
                 <p style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>{getFullName(u)}</p>
                 {(u.currentRole || u.profession) && (
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.currentRole || u.profession}</p>
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole || u.profession, lang)}</p>
                 )}
                 {(u.region || u.city) && (
                   <span style={{ fontSize: "11px", color: dark ? "#7aaecc" : "#1d4896", background: dark ? "rgba(68,114,184,0.16)" : "#daeaf8", borderRadius: "99px", padding: "2px 9px" }}>
-                    {u.region || u.city}
+                    {translateLocation(u.region, u.city, lang)}
                   </span>
                 )}
                 {!cantSendHelp(u) && (
@@ -1461,14 +1462,14 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 </p>
               )}
               <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0 }}>
-                {selectedUser.currentRole ?? selectedUser.profession ?? "—"}
+                {selectedUser.professionTranslations?.[lang] || translateProfession(selectedUser.currentRole ?? selectedUser.profession, lang) || "—"}
               </p>
             </div>
             <div style={S.infoBlock}>
               {(selectedUser.region || selectedUser.city) && (
                 <div style={S.infoRow}>
                   <p style={S.infoLabel}>{Tr.regionLabel}</p>
-                  <p style={S.infoValue}>{selectedUser.region || selectedUser.city}</p>
+                  <p style={S.infoValue}>{translateLocation(selectedUser.region, selectedUser.city, lang)}</p>
                 </div>
               )}
               {selectedUser.campus && (

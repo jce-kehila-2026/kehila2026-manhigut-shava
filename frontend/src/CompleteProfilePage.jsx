@@ -349,7 +349,7 @@ export default function CompleteProfilePage() {
   };
 
   return (
-    <div style={{minHeight:"100vh",position:"relative",fontFamily:"'Figtree','Heebo',system-ui,sans-serif",overflow:"hidden"}}>
+    <div style={{height:"100dvh",position:"relative",fontFamily:"'Figtree','Heebo',system-ui,sans-serif",overflowY:"auto"}}>
       {/* Background */}
       <div style={{position:"fixed",inset:0,zIndex:0,backgroundImage:"url(/background.jpg)",backgroundSize:"cover",backgroundPosition:"center",filter:"brightness(0.75)"}}/>
       <div style={{position:"fixed",inset:0,zIndex:1,background:"linear-gradient(135deg,rgba(29,72,150,0.72) 0%,rgba(68,114,184,0.5) 100%)"}}/>

@@ -14,6 +14,7 @@ import { deletePostWithCleanup } from "./utils/deletePost";
 import { daysUntilBirthday, formatBirthday } from "./utils/birthday";
 import ImageEditorModal from "./ImageEditorModal";
 import { SlideshowBanner } from "./components/SlideshowBanner";
+import { translateProfession } from "./utils/translateProfile";
 
 /* ── Helpers ── */
 function timeAgo(ts, t) {
@@ -197,7 +198,7 @@ function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
 
 /* ── Post card ── */
 function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, onRepost, onViewProfile, onMessage, onPin }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [liked,    setLiked]    = useState((post.likedBy || []).includes(currentUser?.uid));
   const [likes,    setLikes]    = useState(post.likesCount || (post.likedBy?.length || 0));
   const [comments, setComments] = useState([]);
@@ -418,7 +419,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
                 borderRadius: "var(--r-full)", padding: "2px 9px",
                 fontWeight: 600,
               }}>
-                {post.authorProfession}
+                {translateProfession(post.authorProfession, lang)}
               </span>
             )}
           </div>

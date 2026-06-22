@@ -13,6 +13,7 @@ import ChatPage             from "./ChatPage";
 import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 import { SlideshowBanner } from "./components/SlideshowBanner";
 import { TutorialPopup } from "./components/TutorialPopup";
+import { translateProfession } from "./utils/translateProfile";
 
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
@@ -66,9 +67,9 @@ function NavBtn({ item, active, badge, onClick, expanded }) {
           paddingLeft: expanded ? 12 : 0,
           borderRadius: 14,
           background: active
-            ? "rgba(68,114,184,0.18)"
-            : hover ? "rgba(255,255,255,0.06)" : "transparent",
-          color: active ? "#daeaf8" : hover ? "#fff" : "rgba(218,234,248,0.55)",
+            ? "rgba(68,114,184,0.24)"
+            : hover ? "rgba(255,255,255,0.07)" : "transparent",
+          color: active ? "#ffffff" : hover ? "#fff" : "rgba(218,234,248,0.55)",
           border: "none", cursor: "pointer",
           transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
           position: "relative",
@@ -77,7 +78,8 @@ function NavBtn({ item, active, badge, onClick, expanded }) {
         {active && (
           <span style={{
             position: "absolute", left: expanded ? 0 : -10, top: 10, bottom: 10,
-            width: 3, borderRadius: 99, background: "#daeaf8",
+            width: 3, borderRadius: 99,
+            background: "#e8735a",
           }} />
         )}
         <span style={{ flexShrink: 0 }}>{item.icon}</span>
@@ -239,7 +241,7 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tu
 function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [suggested, setSuggested]       = useState([]);
   const [helpRequests, setHelpRequests] = useState([]);
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const isMobile = useIsMobile(1024); // single-column below 1024px (covers split-screen & tablets)
 
   useEffect(() => {
@@ -392,7 +394,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                           </div>
                           <div style={{ minWidth:0 }}>
                             <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
-                            {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>}
+                            {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang)}</p>}
                           </div>
                         </div>
                       );
@@ -495,7 +497,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                         </div>
                         <div style={{ minWidth:0 }}>
                           <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
-                          {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession}</p>}
+                          {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang)}</p>}
                         </div>
                       </div>
                     );
@@ -787,12 +789,19 @@ export default function DashboardPage() {
         background: "linear-gradient(180deg, #1a2f5e 0%, #162548 100%)",
         display: isMobile ? "none" : "flex", flexDirection: "column",
         alignItems: sidebarExpanded ? "stretch" : "center",
-        paddingTop: "1rem", paddingBottom: "1rem",
+        paddingTop: "calc(1rem + 3px)", paddingBottom: "1rem",
         gap: "6px", zIndex: 30,
         borderRight: "1px solid rgba(218,234,248,0.08)",
         transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
         overflow: "hidden",
+        position: "relative",
       }}>
+        {/* Brand accent stripe */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: 3,
+          background: "#e8735a",
+          zIndex: 2,
+        }} />
         {/* Logo row */}
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
@@ -802,8 +811,8 @@ export default function DashboardPage() {
         }}>
           <div style={{
             width: 42, height: 42, borderRadius: 14, flexShrink: 0,
-            background: "rgba(255,255,255,0.92)",
-            boxShadow: "0 4px 14px rgba(68,114,184,0.35)",
+            background: "#ffffff",
+            boxShadow: "0 0 0 2px rgba(232,115,90,0.45), 0 4px 16px rgba(68,114,184,0.3)",
             overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <img src="/NewLogoNGO.png"
@@ -978,6 +987,7 @@ export default function DashboardPage() {
               height: isMobile ? 48 : 60, minHeight: isMobile ? 48 : 60,
               background: "var(--bg-primary)",
               borderBottom: "1px solid var(--border)",
+              boxShadow: "0 1px 0 var(--border), 0 2px 12px rgba(68,114,184,0.05)",
               display: "flex", alignItems: "center",
               padding: isMobile ? "0 0.75rem" : "0 1.75rem",
               gap: isMobile ? "0.5rem" : "0.85rem", zIndex: 10,
@@ -1000,10 +1010,18 @@ export default function DashboardPage() {
                 </button>
               )}
 
-              <span style={{
-                fontSize: isMobile ? 14 : 17, fontWeight: 600, color: "var(--text-primary)",
-                fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em",
-              }}>{pageTitle}</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{
+                  fontSize: isMobile ? 14 : 18, fontWeight: 700, color: "var(--text-primary)",
+                  fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em",
+                }}>{pageTitle}</span>
+                {!isMobile && (
+                  <div style={{
+                    height: 2, width: 28, borderRadius: 99,
+                    background: "#e8735a",
+                  }} />
+                )}
+              </div>
               <div style={{ flex: 1 }} />
 
               <LangSwitcher lang={lang} onChangeLang={(code) => {
@@ -1081,7 +1099,7 @@ export default function DashboardPage() {
                               onMouseEnter={(e) => e.currentTarget.style.background = "var(--brand-pale)"}
                               onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                             >
-                              Read all
+                              {t.community?.readAll || "Mark all read"}
                             </button>
                           )}
                           <button
@@ -1095,7 +1113,7 @@ export default function DashboardPage() {
                             onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(220,50,50,0.08)"; e.currentTarget.style.color = "#c0392b"; }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--text-muted)"; }}
                           >
-                            Clear all
+                            {t.community?.clearAll || "Clear all"}
                           </button>
                         </div>
                       )}
@@ -1119,14 +1137,14 @@ export default function DashboardPage() {
                         const bodyText = n.type === "birthday_wish"
                           ? (t.community?.birthdayWishNotif ? t.community.birthdayWishNotif(n.fromUserName) : `${n.fromUserName} sent you a birthday balloon!`)
                           : n.type === "new_message"
-                          ? `${n.fromUserName}: ${n.message || "sent you a message"}`
+                          ? (t.community?.notifNewMessage ? t.community.notifNewMessage(n.fromUserName, n.message) : `${n.fromUserName}: ${n.message || "sent you a message"}`)
                           : n.type === "help_request"
-                          ? `${n.fromUserName} sent you a help request${n.message ? `: ${n.message.slice(0, 60)}` : ""}`
+                          ? (t.community?.notifHelpRequest ? t.community.notifHelpRequest(n.fromUserName, n.message?.slice(0, 60)) : `${n.fromUserName} sent you a help request`)
                           : n.type === "post_like"
-                          ? `${n.fromUserName} liked your post`
+                          ? (t.community?.notifPostLike ? t.community.notifPostLike(n.fromUserName) : `${n.fromUserName} liked your post`)
                           : n.type === "post_comment"
-                          ? `${n.fromUserName} commented: ${n.message || ""}`
-                          : n.message || "New notification";
+                          ? (t.community?.notifPostComment ? t.community.notifPostComment(n.fromUserName, n.message) : `${n.fromUserName} commented: ${n.message || ""}`)
+                          : n.message || (t.community?.notifDefault || "New notification");
 
                         return (
                           <div

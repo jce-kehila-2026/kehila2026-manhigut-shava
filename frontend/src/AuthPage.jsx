@@ -11,10 +11,24 @@ import {
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
 import { saveContact } from "./contact";
+import { REGIONS_BY_LANG } from "./utils/translateProfile";
 
 /* ─── Translation ─── */
 const AUTH_T = {
   he: {
+    forgotEmailRequired: "הכניסי דוא״ל למעלה לפני איפוס הסיסמה.",
+    firstNamePh: "שם",
+    lastNamePh: "משפחה",
+    firebaseErrors: {
+      "auth/invalid-credential":   "דוא״ל או סיסמה שגויים.",
+      "auth/user-not-found":       "לא נמצא חשבון עם דוא״ל זה.",
+      "auth/wrong-password":       "סיסמה שגויה.",
+      "auth/email-already-in-use": "קיים כבר חשבון עם דוא״ל זה.",
+      "auth/weak-password":        "הסיסמה חייבת לכלול לפחות 6 תווים.",
+      "auth/invalid-email":        "כתובת דוא״ל לא תקינה.",
+      "auth/too-many-requests":    "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
+      "auth/popup-closed-by-user": "הכניסה בוטלה.",
+    },
     loginTab:"כניסה", signupTab:"הרשמה",
     loginH:"ברוכה הבאה", loginSub:"היכנסי לרשת הבוגרות שלך",
     emailLbl:"דוא״ל", passLbl:"סיסמה",
@@ -29,7 +43,7 @@ const AUTH_T = {
     phoneLbl:"טלפון *",
     instituteLbl:"מוסד לימודים", institutePh:"בחרי מוסד...",
     profLbl:"מקצוע / תפקיד", profPh:"רופאה, עורכת דין...",
-    cityLbl:"עיר מגורים", cityPh:"תל אביב, ירושלים...",
+    regionLbl:"אזור מגורים", regionSelectPh:"בחרי אזור...",
     step2H:"פרטים מקצועיים", step2Sub:"ספרי לנו עליך",
     step3H:"הגדרת סיסמה", step3Sub:"כמעט סיימנו",
     passLbl2:"סיסמה *", passPh:"לפחות 6 תווים",
@@ -48,12 +62,23 @@ const AUTH_T = {
     backHome:"← חזרה לדף הבית",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
-    citySelectPh:"בחרי עיר...",cityOtherPh:"כתבי את עירך",
     profSelectPh:"בחרי מקצוע...",profOtherPh:"כתבי את מקצועך",
-    cities:["ירושלים","תל אביב-יפו","חיפה","ראשון לציון","פתח תקווה","נתניה","אשדוד","אשקלון","באר שבע","רחובות","הרצליה","חולון","בת ים","כפר סבא","רמת גן","נס ציונה","עפולה","נצרת","טבריה","חדרה","מודיעין","אחר"],
     professions:["רפואה","משפטים","הנדסה","חינוך","כלכלה ועסקים","פסיכולוגיה","מדעים","פוליטיקה וממשל","תקשורת ועיתונאות","אמנות ועיצוב","עבודה סוציאלית","בריאות הציבור","טכנולוגיה","מינהל ציבורי","שירות ציבורי","סטודנטית","אחר"],
   },
   en: {
+    forgotEmailRequired: "Enter your email address above before resetting your password.",
+    firstNamePh: "Jane",
+    lastNamePh: "Smith",
+    firebaseErrors: {
+      "auth/invalid-credential":   "Incorrect email or password.",
+      "auth/user-not-found":       "No account found with this email.",
+      "auth/wrong-password":       "Incorrect password.",
+      "auth/email-already-in-use": "An account with this email already exists.",
+      "auth/weak-password":        "Password must be at least 6 characters.",
+      "auth/invalid-email":        "Invalid email address.",
+      "auth/too-many-requests":    "Too many attempts. Please try again later.",
+      "auth/popup-closed-by-user": "Sign-in was cancelled.",
+    },
     loginTab:"Log In", signupTab:"Sign Up",
     loginH:"Welcome back", loginSub:"Sign in to your BogrotNet account",
     emailLbl:"Email", passLbl:"Password",
@@ -68,7 +93,7 @@ const AUTH_T = {
     phoneLbl:"Phone *",
     instituteLbl:"Institution", institutePh:"Select institution...",
     profLbl:"Profession / Role", profPh:"Doctor, Lawyer, Engineer...",
-    cityLbl:"City", cityPh:"Tel Aviv, Jerusalem...",
+    regionLbl:"Region", regionSelectPh:"Select region...",
     step2H:"Professional Details", step2Sub:"Tell us about yourself",
     step3H:"Set Password", step3Sub:"Almost done",
     passLbl2:"Password *", passPh:"At least 6 characters",
@@ -86,12 +111,23 @@ const AUTH_T = {
     backHome:"← Back to Home",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
-    citySelectPh:"Select city...",cityOtherPh:"Type your city",
     profSelectPh:"Select profession...",profOtherPh:"Type your profession",
-    cities:["Jerusalem","Tel Aviv-Jaffa","Haifa","Rishon LeZion","Petah Tikva","Netanya","Ashdod","Ashkelon","Beer Sheva","Rehovot","Herzliya","Holon","Bat Yam","Kfar Saba","Ramat Gan","Nes Ziona","Afula","Nazareth","Tiberias","Hadera","Modi'in","Other"],
     professions:["Medicine","Law","Engineering","Education","Economics & Business","Psychology","Sciences","Politics & Government","Media & Journalism","Arts & Design","Social Work","Public Health","Technology","Public Administration","Public Service","Student","Other"],
   },
   ar: {
+    forgotEmailRequired: "أدخلي عنوان بريدك الإلكتروني أعلاه قبل إعادة تعيين كلمة المرور.",
+    firstNamePh: "الاسم",
+    lastNamePh: "اللقب",
+    firebaseErrors: {
+      "auth/invalid-credential":   "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+      "auth/user-not-found":       "لم يتم العثور على حساب بهذا البريد الإلكتروني.",
+      "auth/wrong-password":       "كلمة المرور غير صحيحة.",
+      "auth/email-already-in-use": "يوجد حساب بهذا البريد الإلكتروني بالفعل.",
+      "auth/weak-password":        "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل.",
+      "auth/invalid-email":        "عنوان البريد الإلكتروني غير صالح.",
+      "auth/too-many-requests":    "محاولات كثيرة جدًا. يرجى المحاولة لاحقًا.",
+      "auth/popup-closed-by-user": "تم إلغاء تسجيل الدخول.",
+    },
     loginTab:"تسجيل الدخول", signupTab:"إنشاء حساب",
     loginH:"مرحباً بك", loginSub:"سجّلي دخولك إلى شبكة البوگروت",
     emailLbl:"البريد الإلكتروني", passLbl:"كلمة المرور",
@@ -106,7 +142,7 @@ const AUTH_T = {
     phoneLbl:"رقم الهاتف *",
     instituteLbl:"المؤسسة الأكاديمية", institutePh:"اختاري مؤسسة...",
     profLbl:"المهنة / الوظيفة", profPh:"طبيبة، محامية...",
-    cityLbl:"المدينة", cityPh:"تل أبيب، القدس...",
+    regionLbl:"المنطقة", regionSelectPh:"اختاري المنطقة...",
     step2H:"التفاصيل المهنية", step2Sub:"أخبرينا عن نفسك",
     step3H:"تعيين كلمة المرور", step3Sub:"اقتربنا من النهاية",
     passLbl2:"كلمة المرور *", passPh:"6 أحرف على الأقل",
@@ -124,9 +160,7 @@ const AUTH_T = {
     backHome:"← العودة إلى الصفحة الرئيسية",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
-    citySelectPh:"اختاري المدينة...",cityOtherPh:"اكتبي مدينتك",
     profSelectPh:"اختاري المهنة...",profOtherPh:"اكتبي مهنتك",
-    cities:["القدس","تل أبيب-يافا","حيفا","ريشون ليتسيون","بتاح تكفا","نتانيا","أشدود","عسقلان","بئر السبع","ريحوفوت","هرتسليا","حولون","بات يام","كفار سابا","رمات غان","نس تسيونا","عفولة","الناصرة","طبريا","حديرا","مودیعین","أخرى"],
     professions:["الطب","القانون","الهندسة","التعليم","الاقتصاد والأعمال","علم النفس","العلوم","السياسة والحكم","الإعلام والصحافة","الفنون والتصميم","الخدمة الاجتماعية","الصحة العامة","التكنولوجيا","الإدارة العامة","الخدمة العامة","طالبة","أخرى"],
   },
 };
@@ -154,8 +188,8 @@ function normalizePhone(raw) {
   return s;
 }
 
-function firebaseMsg(code) {
-  const m = {
+function firebaseMsg(code, Tr) {
+  const m = Tr?.firebaseErrors || {
     "auth/invalid-credential":   "דוא״ל או סיסמה שגויים.",
     "auth/user-not-found":       "לא נמצא חשבון עם דוא״ל זה.",
     "auth/wrong-password":       "סיסמה שגויה.",
@@ -165,7 +199,7 @@ function firebaseMsg(code) {
     "auth/too-many-requests":    "יותר מדי ניסיונות. נסי שוב מאוחר יותר.",
     "auth/popup-closed-by-user": "הכניסה בוטלה.",
   };
-  return m[code] || `שגיאה (${code || "unknown"}). נסי שוב.`;
+  return m[code] || (Tr?.firebaseErrors ? `Error (${code || "unknown"}). Please try again.` : `שגיאה (${code || "unknown"}). נסי שוב.`);
 }
 
 function GoogleIcon() {
@@ -195,11 +229,12 @@ const lbl = {
 };
 const primaryBtn = {
   width:"100%", padding:"0.9rem",
-  background:C.brand, color:"#fff",
+  background:"#4472b8",
+  color:"#fff",
   border:"none", borderRadius:12,
-  fontSize:"0.94rem", fontWeight:600, cursor:"pointer",
-  fontFamily:fontStack, letterSpacing:"0.01em",
-  boxShadow:`0 6px 20px rgba(68,114,184,0.35)`,
+  fontSize:"0.94rem", fontWeight:700, cursor:"pointer",
+  fontFamily:fontStack, letterSpacing:"0.02em",
+  boxShadow:`0 4px 16px rgba(68,114,184,0.32)`,
   transition:"transform 0.2s,box-shadow 0.2s,background 0.2s",
   marginBottom:"0.9rem",
 };
@@ -240,7 +275,7 @@ function GoogleButton({ label, Tr }) {
   const handle = async () => {
     setLoading(true); setError("");
     try { await signInWithPopup(auth, googleProvider); }
-    catch (e) { if (e.code !== "auth/popup-closed-by-user") setError(firebaseMsg(e.code)); }
+    catch (e) { if (e.code !== "auth/popup-closed-by-user") setError(firebaseMsg(e.code, Tr)); }
     finally { setLoading(false); }
   };
   return (
@@ -252,7 +287,7 @@ function GoogleButton({ label, Tr }) {
         onMouseOver={e=>{ e.currentTarget.style.background=C.blush; e.currentTarget.style.borderColor=C.blushDeep; }}
         onMouseOut={e =>{  e.currentTarget.style.background="#fff";  e.currentTarget.style.borderColor=C.line; }}
       >
-        <GoogleIcon/> {loading ? "מתחבר..." : label}
+        <GoogleIcon/> {loading ? (Tr?.loginLoading || "...") : label}
       </button>
     </>
   );
@@ -273,14 +308,14 @@ function LoginForm({ onSwitchTab, Tr, dir }) {
       if (!blSnap.empty) { setError(Tr?.blacklisted || "This account has been permanently blocked. Please contact support."); return; }
       await signInWithEmailAndPassword(auth, form.email, form.password);
     }
-    catch (e) { setError(firebaseMsg(e.code)); }
+    catch (e) { setError(firebaseMsg(e.code, Tr)); }
     finally { setLoading(false); }
   };
 
   const forgot = async () => {
-    if (!form.email) { setError("הכניסי דוא״ל למעלה לפני איפוס הסיסמה."); return; }
+    if (!form.email) { setError(Tr?.forgotEmailRequired || "Enter your email address above before resetting your password."); return; }
     try { await sendPasswordResetEmail(auth, form.email); setResetSent(true); setError(""); }
-    catch (e) { setError(firebaseMsg(e.code)); }
+    catch (e) { setError(firebaseMsg(e.code, Tr)); }
   };
 
   return (
@@ -314,8 +349,8 @@ function LoginForm({ onSwitchTab, Tr, dir }) {
         </button>
       </div>
       <button type="submit" disabled={loading} style={primaryBtn}
-        onMouseOver={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.background=C.brandSoft; }}
-        onMouseOut={e =>{ e.currentTarget.style.transform=""; e.currentTarget.style.background=C.brand; }}
+        onMouseOver={e=>{ e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.background="#1d4896"; }}
+        onMouseOut={e =>{ e.currentTarget.style.transform=""; e.currentTarget.style.background="#4472b8"; }}
       >{loading ? (Tr?.loginLoading||"מתחברת...") : (Tr?.loginBtn||"כניסה לחשבון →")}</button>
       <p style={{ textAlign:"center", color:C.mute, fontSize:"0.8rem", margin:0 }}>
         {Tr?.noAccount||"עוד לא רשומה?"}{" "}
@@ -336,11 +371,12 @@ function validPhone(raw) {
 
 function SignUpForm({ onSwitchTab, Tr, dir }) {
   const isMobile = useIsMobile();
+  const { lang } = useLang();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     firstName:"", lastName:"", email:"", phone:"",
     institution:"", profession:"", professionOther:"",
-    city:"", cityOther:"",
+    region:"",
     password:"", confirmPassword:"",
   });
   const [agreed, setAgreed]   = useState(false);
@@ -370,7 +406,6 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
     ? <p style={{ color:"#e9415b", fontSize:"0.73rem", marginTop:"0.3rem", marginBottom:0, direction:"ltr", textAlign:"left", fontWeight:500 }}>{msg}</p>
     : null;
 
-  const effectiveCity       = form.city==="אחר"||form.city==="Other"||form.city==="أخرى" ? form.cityOther : form.city;
   const effectiveProfession = form.profession==="אחר"||form.profession==="Other"||form.profession==="أخرى" ? form.professionOther : form.profession;
 
   const submit = async () => {
@@ -387,12 +422,12 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
       await setDoc(doc(db, "users", user.uid), {
         firstName:form.firstName, lastName:form.lastName,
         institution:form.institution,
-        profession:effectiveProfession, city:effectiveCity,
+        profession:effectiveProfession, region:form.region,
         emailVerified:false, acceptedTerms:true, createdAt:new Date().toISOString(),
         tutorialDone: false,
       });
       await saveContact(user.uid, { phone: normalizedPhone, email: form.email });
-    } catch (e) { setError(firebaseMsg(e.code)); }
+    } catch (e) { setError(firebaseMsg(e.code, Tr)); }
     finally { setLoading(false); }
   };
 
@@ -427,10 +462,10 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
           {error && <div style={errBox}>{error}</div>}
           <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"0.7rem" }}>
             <Fld label={Tr?.firstNameLbl||"שם פרטי *"}>
-              <input style={inputStyle("firstName")} name="firstName" value={form.firstName} onChange={set} placeholder="שם" required onFocus={focusOn} onBlur={focusOff}/>
+              <input style={inputStyle("firstName")} name="firstName" value={form.firstName} onChange={set} placeholder={Tr?.firstNamePh||"שם"} required onFocus={focusOn} onBlur={focusOff}/>
             </Fld>
             <Fld label={Tr?.lastNameLbl||"שם משפחה *"}>
-              <input style={inputStyle("lastName")} name="lastName" value={form.lastName} onChange={set} placeholder="משפחה" required onFocus={focusOn} onBlur={focusOff}/>
+              <input style={inputStyle("lastName")} name="lastName" value={form.lastName} onChange={set} placeholder={Tr?.lastNamePh||"משפחה"} required onFocus={focusOn} onBlur={focusOff}/>
             </Fld>
           </div>
           <Fld label={Tr?.emailLbl||"דוא״ל *"}>
@@ -490,15 +525,11 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
                 placeholder={Tr?.profOtherPh||"כתבי את מקצועך"} onFocus={focusOn} onBlur={focusOff}/>
             )}
           </Fld>
-          <Fld label={Tr?.cityLbl||"עיר מגורים"}>
-            <select style={{...inp,color:form.city?C.ink:C.mute}} name="city" value={form.city} onChange={set} onFocus={focusOn} onBlur={focusOff}>
-              <option value="">{Tr?.citySelectPh||"בחרי עיר..."}</option>
-              {(Tr?.cities||[]).map(o=><option key={o} value={o}>{o}</option>)}
+          <Fld label={Tr?.regionLbl||"אזור מגורים"}>
+            <select style={{...inp,color:form.region?C.ink:C.mute}} name="region" value={form.region} onChange={set} onFocus={focusOn} onBlur={focusOff}>
+              <option value="">{Tr?.regionSelectPh||"בחרי אזור..."}</option>
+              {(REGIONS_BY_LANG[lang]||REGIONS_BY_LANG.he).map((o,i)=><option key={i} value={REGIONS_BY_LANG.en[i]}>{o}</option>)}
             </select>
-            {(form.city==="אחר"||form.city==="Other"||form.city==="أخرى")&&(
-              <input style={{...inputStyle("cityOther"),marginTop:6}} name="cityOther" value={form.cityOther} onChange={set}
-                placeholder={Tr?.cityOtherPh||"כתבי את עירך"} onFocus={focusOn} onBlur={focusOff}/>
-            )}
           </Fld>
           <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr", gap:"0.6rem" }}>
             <button style={{ ...ghostBtn, margin:0 }} onClick={()=>setStep(1)}>{Tr?.backBtn||"← חזרה"}</button>
@@ -706,11 +737,18 @@ export default function AuthPage({ onBack }) {
           borderRadius:24, padding: isMobile ? "1.5rem 1.25rem" : "2.5rem",
           boxShadow:"0 32px 80px rgba(29,72,150,0.28),0 4px 16px rgba(0,0,0,0.08)",
           animation:"cardUp 0.5s cubic-bezier(0.2,0.8,0.2,1) both",
+          position:"relative", overflow:"hidden",
         }}>
+          {/* Brand accent stripe */}
+          <div style={{
+            position:"absolute", top:0, left:0, right:0, height:4,
+            background:"#4472b8",
+            borderRadius:"24px 24px 0 0",
+          }} />
           {/* Tabs */}
           <div style={{
             display:"flex", background:C.blush,
-            borderRadius:99, padding:4, marginBottom:"1.8rem",
+            borderRadius:99, padding:4, marginBottom:"1.8rem", marginTop:"0.5rem",
             direction:dir,
           }}>
             {[["login",Tr.loginTab],["signup",Tr.signupTab]].map(([key,label])=>(
@@ -719,10 +757,21 @@ export default function AuthPage({ onBack }) {
                 background:tab===key?"#fff":"transparent",
                 color:tab===key?C.plum:C.mute,
                 fontFamily:fontStack,
-                fontSize:"0.86rem", fontWeight:600, cursor:"pointer",
-                boxShadow:tab===key?"0 2px 8px rgba(68,114,184,0.12)":"none",
-                transition:"all 0.2s",
-              }}>{label}</button>
+                fontSize:"0.86rem", fontWeight:700, cursor:"pointer",
+                boxShadow:tab===key?"0 2px 10px rgba(68,114,184,0.16), 0 0 0 1.5px rgba(68,114,184,0.1)":"none",
+                transition:"all 0.22s",
+                position:"relative",
+              }}>
+                {label}
+                {tab===key && (
+                  <span style={{
+                    position:"absolute", bottom:4, left:"50%", transform:"translateX(-50%)",
+                    width:20, height:2, borderRadius:99,
+                    background:"#e8735a",
+                    display:"block",
+                  }}/>
+                )}
+              </button>
             ))}
           </div>
 

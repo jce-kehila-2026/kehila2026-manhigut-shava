@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
 import {
@@ -16,6 +17,10 @@ import { useTheme } from "./ThemeContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { isBirthdayToday } from "./utils/birthday";
 import { safeUrl } from "./utils/safeUrl";
+import { translateProfession, translateInstitution, translateRegion, translateReligion, translateEthnicity } from "./utils/translateProfile";
+import ProfessionPicker from "./components/ProfessionPicker";
+import InstitutionPicker from "./components/InstitutionPicker";
+import RegionPicker from "./components/RegionPicker";
 
 const storage = getStorage();
 
@@ -223,25 +228,130 @@ function SectionTitle({ label }) {
 
 function SelectInput({ value, onChange, options, disabled, placeholder }) {
   const { T } = useTheme();
+  const { isRTL } = useLang();
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = e => {
+      if (!e.target.closest("[data-portal-select]") && !triggerRef.current?.contains(e.target))
+        setOpen(false);
+    };
+    const esc = e => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [open]);
+
+  const handleOpen = () => {
+    if (disabled) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openAbove = spaceBelow < 200 && spaceAbove > spaceBelow;
+    const maxH = Math.min(240, (openAbove ? spaceAbove : spaceBelow) - 8);
+    setDropPos({
+      left: rect.left, width: rect.width, maxH,
+      ...(openAbove ? { bottom: window.innerHeight - rect.top + 2 } : { top: rect.bottom + 2 }),
+    });
+    setOpen(true);
+  };
+
+  const handleSelect = opt => {
+    onChange({ target: { value: opt } });
+    setOpen(false);
+  };
+
   return (
-    <select
-      className="profile-input"
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      style={{
-        width:"100%", boxSizing:"border-box",
-        padding:"12px 14px", fontSize:"14px",
-        border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
-        color: value ? T.text : T.sub,
-        background:T.inputBg, fontFamily:"inherit",
-        transition:"border-color 0.2s, box-shadow 0.2s",
-        appearance:"none",
-      }}
-    >
-      <option value="">{placeholder || "—"}</option>
-      {options.map((o,i) => <option key={i} value={o}>{o}</option>)}
-    </select>
+    <div ref={triggerRef}>
+      <button
+        type="button"
+        className="profile-input"
+        disabled={disabled}
+        onClick={() => open ? setOpen(false) : handleOpen()}
+        style={{
+          width:"100%", boxSizing:"border-box",
+          padding:"12px 14px", fontSize:"14px",
+          border:`1.5px solid ${open ? "#4472b8" : T.inputBorder}`, borderRadius:"13px",
+          color: value ? T.text : T.sub,
+          background: T.inputBg, fontFamily:"inherit",
+          direction: isRTL ? "rtl" : "ltr",
+          textAlign: isRTL ? "right" : "left",
+          cursor: disabled ? "not-allowed" : "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          transition: "border-color 0.2s",
+        }}
+      >
+        <span style={{ flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+          {value || placeholder || "—"}
+        </span>
+        <span style={{
+          opacity:0.4, fontSize:11, flexShrink:0, marginInlineStart:8,
+          display:"inline-block", transition:"transform 0.2s",
+          ...(open ? { transform:"rotate(180deg)" } : {}),
+        }}>▾</span>
+      </button>
+
+      {open && dropPos && createPortal(
+        <div
+          data-portal-select="true"
+          style={{
+            position:"fixed",
+            left: dropPos.left, width: dropPos.width,
+            maxHeight: dropPos.maxH,
+            ...(dropPos.top !== undefined ? { top: dropPos.top } : { bottom: dropPos.bottom }),
+            zIndex: 99999,
+            background: T.inputBg,
+            border: "1.5px solid #4472b8",
+            borderRadius: 13,
+            boxShadow: "0 6px 24px rgba(68,114,184,0.18)",
+            overflowY: "auto",
+            direction: isRTL ? "rtl" : "ltr",
+          }}
+        >
+          <button
+            type="button"
+            onMouseDown={e => { e.preventDefault(); handleSelect(""); }}
+            style={{
+              display:"block", width:"100%", padding:"10px 14px",
+              background:"none", border:"none",
+              borderBottom:`1px solid ${T.inputBorder}`,
+              cursor:"pointer", fontSize:14, color:T.sub, fontFamily:"inherit",
+              textAlign: isRTL ? "right" : "left",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background="rgba(68,114,184,0.07)"}
+            onMouseLeave={e => e.currentTarget.style.background="none"}
+          >
+            {placeholder || "—"}
+          </button>
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onMouseDown={e => { e.preventDefault(); handleSelect(opt); }}
+              style={{
+                display:"block", width:"100%", padding:"10px 14px",
+                background: opt === value ? "rgba(68,114,184,0.1)" : "none",
+                border:"none",
+                borderBottom: i < options.length - 1 ? `1px solid ${T.inputBorder}` : "none",
+                cursor:"pointer", fontSize:14,
+                color: opt === value ? "#4472b8" : T.text,
+                fontFamily:"inherit",
+                fontWeight: opt === value ? 700 : 400,
+                textAlign: isRTL ? "right" : "left",
+              }}
+              onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background="rgba(68,114,184,0.07)"; }}
+              onMouseLeave={e => { if (opt !== value) e.currentTarget.style.background="none"; }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
   );
 }
 
@@ -536,19 +646,10 @@ function suggestHelpAreas(profession) {
   return [...matches];
 }
 
-const INSTITUTIONS = [
-  "אוניברסיטת תל אביב","האוניברסיטה העברית","הטכניון","אוניברסיטת חיפה",
-  "אוניברסיטת בן גוריון","אוניברסיטת בר אילן","המכון הבינתחומי הרצליה (IDC)",
-  "מכלל אריאל","האקדמית אשקלון","הקריה האקדמית אונו","מכללת ספיר",
-  "מכלל תל חי","מכלל כנרת","מכלל אחוה","מכלל רופין","מכלל עמק יזרעאל",
-  "Tel Aviv University","Hebrew University","Technion","University of Haifa",
-  "Ben-Gurion University","Bar-Ilan University","Reichman University (IDC)",
-  "Ariel University","Ashkelon Academic College","Ono Academic College",
-];
 
 export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommunity }) {
   const { user, profile: authProfile, refreshProfile, logout } = useAuth();
-  const { t, isRTL } = useLang();
+  const { t, lang, isRTL } = useLang();
   const { T, dark } = useTheme();
   const isMobile = useIsMobile();
   const fileRef = useRef();
@@ -565,11 +666,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const onCoverCropComplete = useCallback((_, pixels) => setCoverCroppedPixels(pixels), []);
 
   const [form, setForm] = useState({
-    firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
-    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
+    firstName:"", lastName:"", phone:"", profession:"", professionTranslations:null, bio:"", birthDate:"",
+    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", regionTranslations:null, institution:"", institutionTranslations:null, graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
-  const [institutionOther, setInstitutionOther] = useState("");
   const [photoURL, setPhotoURL] = useState(null);
   const [coverURL, setCoverURL] = useState(null);
   const [savingKey, setSavingKey] = useState(null);
@@ -609,7 +709,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           firstName:      d.firstName      ?? "",
           lastName:       d.lastName       ?? "",
           phone:          contact.phone    ?? "",
-          profession:     d.profession     ?? "",
+          profession:             d.profession             ?? "",
+          professionTranslations: d.professionTranslations ?? null,
           bio:            d.bio            ?? "",
           birthDate:      d.birthDate      ?? "",
           ethnicity:        d.ethnicity        ?? "",
@@ -617,7 +718,9 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           religion:         d.religion         ?? "",
           religionPrivate:  d.religionPrivate  ?? false,
           region:           d.region           ?? "",
-          institution:    d.institution    ?? "",
+          regionTranslations: d.regionTranslations ?? null,
+          institution:             d.institution             ?? "",
+          institutionTranslations: d.institutionTranslations ?? null,
           graduationYear: d.graduationYear ?? "",
           linkedIn:       d.linkedIn       ?? "",
           facebookURL:    d.facebookURL    ?? "",
@@ -632,11 +735,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setNetworksCount(d.networksCount ?? 0);
         setProfileEmail(contact.email ?? "");
         setBirthdayValue(d.birthDate ?? d.birthdate ?? "");
-        const inst = d.institution ?? "";
-        if (inst && !INSTITUTIONS.includes(inst)) {
-          setForm(prev => ({ ...prev, institution: "OTHER" }));
-          setInstitutionOther(inst);
-        }
       } else {
         setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
@@ -803,8 +901,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     setSavingKey(sectionKey); setError("");
     try {
       const saveData = { ...fields };
-      if ("institution" in saveData && saveData.institution === "OTHER")
-        saveData.institution = institutionOther || "אחר";
       const writes = [];
       if ("phone" in saveData) {
         writes.push(saveContact(targetId, { phone: saveData.phone }));
@@ -1190,7 +1286,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               ? `${form.firstName} ${form.lastName}`.trim()
               : (isOwner ? t.profile.myProfile : t.profile.memberProfile)}
           </h2>
-          {form.profession && <p style={S.profilePro}>{form.profession}</p>}
+          {form.profession && <p style={S.profilePro}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang)}</p>}
         </div>
 
         {/* Actions: LinkedIn / Message */}
@@ -1313,13 +1409,22 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.row}>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.professionJob}</label>
-                  <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} autoComplete="off" />
+                  <ProfessionPicker
+                    value={form.profession}
+                    translations={form.professionTranslations}
+                    placeholder={t.profile.professionPlaceholder}
+                    onChange={(val, tr) => setForm(p => ({ ...p, profession: val, professionTranslations: tr }))}
+                  />
                   {isOwner && <RequiredHint show={!form.profession?.trim()} />}
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.region}</label>
-                  <SelectInput value={form.region} placeholder="—" options={t.profile.regionOptions}
-                    onChange={e => handleChange({ target:{ name:"region", value:e.target.value } })} />
+                  <RegionPicker
+                    value={form.region}
+                    translations={form.regionTranslations}
+                    placeholder="—"
+                    onChange={(val, tr) => setForm(p => ({ ...p, region: val, regionTranslations: tr }))}
+                  />
                   {isOwner && <RequiredHint show={!form.region} />}
                 </div>
               </div>
@@ -1327,23 +1432,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.row}>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.institution}<OptionalTag /></label>
-                  <select
-                    className="profile-input"
-                    value={INSTITUTIONS.includes(form.institution) ? form.institution : (form.institution ? "OTHER" : "")}
-                    onChange={e => {
-                      if (e.target.value === "OTHER") { setForm(p => ({ ...p, institution:"OTHER" })); setInstitutionOther(""); }
-                      else { handleChange({ target:{ name:"institution", value:e.target.value } }); setInstitutionOther(""); }
-                    }}
-                    style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.text, background:T.inputBg, fontFamily:"inherit", appearance:"none" }}
-                  >
-                    <option value="">{t.profile.institutionPlaceholder || "בחרי מוסד..."}</option>
-                    {INSTITUTIONS.map((inst, i) => <option key={i} value={inst}>{inst}</option>)}
-                    <option value="OTHER">אחר (כתבי ידנית)</option>
-                  </select>
-                  {(form.institution === "OTHER" || (!INSTITUTIONS.includes(form.institution) && form.institution)) && (
-                    <PlainInput value={institutionOther} onChange={e => setInstitutionOther(e.target.value)}
-                      placeholder="שם המוסד / הארגון..." />
-                  )}
+                  <InstitutionPicker
+                    value={form.institution}
+                    translations={form.institutionTranslations}
+                    placeholder={t.profile.institutionPlaceholder}
+                    onChange={(val, tr) => setForm(p => ({ ...p, institution: val, institutionTranslations: tr }))}
+                  />
                 </div>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.graduationYear}<OptionalTag /></label>
@@ -1468,7 +1562,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     {t.profile.ethnicityPrivateToggle}
                   </label>
                 </div>
-                <SelectInput value={form.ethnicity} placeholder="—" options={t.profile.ethnicityOptions}
+                <SelectInput value={translateEthnicity(form.ethnicity, lang) || form.ethnicity} placeholder="—" options={t.profile.ethnicityOptions}
                   onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
               </div>
 
@@ -1486,7 +1580,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     {t.profile.religionPrivateToggle}
                   </label>
                 </div>
-                <SelectInput value={form.religion} placeholder="—" options={t.profile.religionOptions}
+                <SelectInput value={translateReligion(form.religion, lang) || form.religion} placeholder="—" options={t.profile.religionOptions}
                   onChange={e => handleChange({ target:{ name:"religion", value:e.target.value } })} />
               </div>
 
@@ -1532,8 +1626,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   className={savingKey === "profile" ? "save-btn-shimmer" : ""}
                   onClick={() => handleSaveSection("profile", {
                     firstName:form.firstName, lastName:form.lastName, phone:form.phone,
-                    profession:form.profession, birthDate:form.birthDate, bio:form.bio,
-                    region:form.region, institution:form.institution, graduationYear:form.graduationYear,
+                    profession:form.profession, professionTranslations:form.professionTranslations ?? null, birthDate:form.birthDate, bio:form.bio,
+                    region:form.region, regionTranslations:form.regionTranslations ?? null, institution:form.institution, institutionTranslations:form.institutionTranslations ?? null, graduationYear:form.graduationYear,
                     linkedIn: safeUrl(form.linkedIn),
                     facebookURL: safeUrl(form.facebookURL),
                     contactEmail: form.contactEmail || "",
@@ -1608,11 +1702,11 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.row}>
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.professionJob}</p>
-                  <div style={S.inputDisabled}>{form.profession || "—"}</div>
+                  <div style={S.inputDisabled}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang) || "—"}</div>
                 </div>
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.region}</p>
-                  <div style={S.inputDisabled}>{form.region || "—"}</div>
+                  <div style={S.inputDisabled}>{form.regionTranslations?.[lang] || translateRegion(form.region, lang) || form.region || "—"}</div>
                 </div>
               </div>
 
@@ -1620,7 +1714,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.institution}</p>
                   <div style={S.inputDisabled}>
-                    {form.institution === "OTHER" ? (institutionOther || "—") : (form.institution || "—")}
+                    {form.institutionTranslations?.[lang] || translateInstitution(form.institution, lang) || form.institution || "—"}
                   </div>
                 </div>
                 <div style={S.group}>
@@ -1690,7 +1784,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                       </span>
                     )}
                   </p>
-                  <div style={S.inputDisabled}>{form.ethnicity}</div>
+                  <div style={S.inputDisabled}>{translateEthnicity(form.ethnicity, lang) || form.ethnicity}</div>
                 </div>
               )}
               {(!form.religionPrivate || authProfile?.isAdmin) && form.religion && (
@@ -1703,7 +1797,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                       </span>
                     )}
                   </p>
-                  <div style={S.inputDisabled}>{form.religion}</div>
+                  <div style={S.inputDisabled}>{translateReligion(form.religion, lang) || form.religion}</div>
                 </div>
               )}
             </div>

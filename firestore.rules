@@ -206,10 +206,22 @@ service cloud.firestore {
 
     /* ── Blacklist — email addresses permanently blocked from the platform ── */
     match /blacklist/{docId} {
-      /* Any authenticated user can read (needed for login/register check). */
-      allow read: if isAuth();
+      /* Must be readable before login/signup so the check can run unauthenticated. */
+      allow read: if true;
       /* Only admins can add or remove entries. */
       allow create, delete: if isAdmin();
+    }
+
+    /* ── Custom professions (user-contributed, shared dropdown) ── */
+    match /customProfessions/{docId} {
+      allow read:   if isAuth();
+      allow create: if isAuth();
+    }
+
+    /* ── Custom institutions (user-contributed, shared dropdown) ── */
+    match /customInstitutions/{docId} {
+      allow read:   if isAuth();
+      allow create: if isAuth();
     }
 
     /* ── Default: deny all ── */

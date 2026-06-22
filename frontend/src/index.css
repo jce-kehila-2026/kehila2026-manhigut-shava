@@ -11,11 +11,17 @@
   --brand-light:  #6da3d4;   /* light blue */
   --brand-pale:   #daeaf8;   /* whisper blue */
   --brand-glow:   rgba(68, 114, 184, 0.18);
+  --brand-vivid:  #5ab3e8;   /* jacket blue — more saturated, from logo */
 
-  /* Coral accent */
+  /* Coral accent — megaphone from logo */
   --coral:        #e8735a;
   --coral-dark:   #c4503a;
   --coral-light:  #f5a08c;
+
+  /* Tan accent — podium from logo */
+  --tan:          #c49178;
+  --tan-light:    #e8c9b5;
+  --tan-pale:     #f5ede7;
 
   --plum:         #111827;   /* primary dark text */
   --plum-soft:    #374151;
@@ -177,6 +183,30 @@ h1, h2, h3, h4, h5, h6 {
 .card-hover:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
+}
+
+/* ── Brand accent bar — logo color stripe ── */
+.brand-accent-bar {
+  height: 3px;
+  background: var(--brand);
+  border-radius: 0 0 var(--r-xs) var(--r-xs);
+}
+
+/* ── Section eyebrow label ── */
+.eyebrow {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: var(--font);
+  display: flex; align-items: center; gap: 8px;
+}
+.eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 14px; height: 2px;
+  border-radius: 99px;
+  background: var(--coral);
+  flex-shrink: 0;
 }
 
 /* ── Badges ── */

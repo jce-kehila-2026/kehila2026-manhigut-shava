@@ -63,7 +63,12 @@
       "Bash(grep -nE 'placeholder=\"[A-Z]|>[A-Z][a-z]+\\( [a-zA-Z]+\\){1,}[.!?]?<' LandingPage.jsx)",
       "Bash(awk 'NR>=413 && NR<=991 && \\(/^function [A-Z]/ || /^const [A-Z][a-zA-Z]+ = \\\\\\(/ || /^export default function/\\)' DashboardPage.jsx)",
       "Bash(git revert *)",
-      "Bash(xargs ls -la)"
+      "Bash(xargs ls -la)",
+      "Bash(grep -n \"useLang\\\\|const.*lang\\\\b\\\\|{ lang\\\\|, lang\" /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/ProfilePage.jsx)",
+      "Bash(awk -F: '{if \\($1 <= 421\\) last=$0} END {print last}')",
+      "Bash(awk -F: '{if \\($1 <= 1200\\) last=$0} END {print last}')",
+      "Bash(grep -v \"//\\\\|import\\\\|form\\\\.\\\\|setForm\\\\|onChange\\\\|input\\\\|Input\\\\|select\\\\|Select\\\\|=\\\\s*{\\\\|useState\\\\|useMemo\\\\|PROFESSION\\\\|profession,\\\\|currentRole:\\\\|profession:\\\\|profession &&\\\\|profession?\")",
+      "Bash(npx firebase *)"
     ],
     "additionalDirectories": [
       "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src"

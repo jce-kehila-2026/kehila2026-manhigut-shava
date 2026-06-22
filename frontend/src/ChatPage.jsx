@@ -11,6 +11,7 @@ import {
   toggleReaction, editMessage, deleteMessage, respondToHelpRequestPrompt,
 } from "./hooks/useMessages";
 import { logActivity } from "./activityLogger";
+import { translateProfession } from "./utils/translateProfile";
 
 /* ── Helpers ── */
 function formatTime(ts) {
@@ -657,7 +658,7 @@ function MessageBubble({ msg, isMe, senderAvatar, senderName, showAvatar, showTi
 /* ── Main ChatPage ── */
 export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUserId }) {
   const { user, profile } = useAuth();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { dark } = useTheme();
   const isMobile = useIsMobile();
   const { conversations } = useConversations(user?.uid);
@@ -1037,7 +1038,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                 <Avatar url={u.avatarUrl} name={`${u.firstName} ${u.lastName}`} size={36} online={isActuallyOnline(u)} />
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{u.firstName} {u.lastName}</p>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.profession || u.city || ""}</p>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang) || u.city || ""}</p>
                 </div>
               </button>
             ))}
@@ -1113,7 +1114,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", lineHeight: 1.2 }}>{otherName || "…"}</p>
               <p style={{ fontSize: 11, color: isActuallyOnline(otherUser) ? "#7ba87a" : "var(--text-muted)", marginTop: 1 }}>
-                {isActuallyOnline(otherUser) ? t.chat.activeNow : otherUser?.profession || t.chat.offline}
+                {isActuallyOnline(otherUser) ? t.chat.activeNow : otherUser?.professionTranslations?.[lang] || translateProfession(otherUser?.profession, lang) || t.chat.offline}
               </p>
             </div>
             {/* Conversation actions menu */}
@@ -1197,7 +1198,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12, padding: "3rem 2rem" }}>
                 <Avatar url={otherAvatar} name={otherName} size={76} />
                 <p style={{ fontWeight: 700, fontSize: 16, color: "var(--text-primary)" }}>{otherName}</p>
-                {otherUser?.profession && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{otherUser.profession}</p>}
+                {otherUser?.profession && <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{otherUser?.professionTranslations?.[lang] || translateProfession(otherUser.profession, lang)}</p>}
                 <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", maxWidth: 260, lineHeight: 1.6 }}>
                   This is the beginning of your conversation. Say hello!
                 </p>

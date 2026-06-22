@@ -13,6 +13,7 @@ import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
 import { getOrCreateConversation, sendMessage } from "./hooks/useMessages";
+import { translateProfession, translateAny, translateReligion, translateEthnicity } from "./utils/translateProfile";
 
 /* ─── Admin translations ─── */
 const AT = {
@@ -23,7 +24,7 @@ const AT = {
     totalPosts:"סה\"כ פוסטים", conversations:"שיחות", admins:"מנהלות",
     activeMembers:"חברות פעילות", thisWeek:(n)=>`+${n} השבוע`,
     percentVerified:(p)=>`${p}% מאומתות`,
-    topProfessions:"מקצועות מובילות", topCities:"ערים מובילות", recentMembers:"חברות חדשות", noData:"אין נתונים עדיין",
+    topProfessions:"מקצועות מובילות", topRegionsLabel:"אזורים מובילים", recentMembers:"חברות חדשות", noData:"אין נתונים עדיין",
     searchPh:"חפשי משתמשת...", editUser:"עריכת משתמשת",
     firstName:"שם פרטי", lastName:"שם משפחה", phone:"טלפון",
     city:"עיר", profession:"מקצוע", bio:"ביוגרפיה",
@@ -88,7 +89,7 @@ const AT = {
     totalPosts:"Total Posts", conversations:"Conversations", admins:"Admins",
     activeMembers:"Active members", thisWeek:(n)=>`+${n} this week`,
     percentVerified:(p)=>`${p}% verified`,
-    topProfessions:"Top Professions", topCities:"Top Cities", recentMembers:"Recent Members", noData:"No data yet",
+    topProfessions:"Top Professions", topRegionsLabel:"Top Regions", recentMembers:"Recent Members", noData:"No data yet",
     searchPh:"Search users...", editUser:"Edit User",
     firstName:"First Name", lastName:"Last Name", phone:"Phone",
     city:"City", profession:"Profession", bio:"Bio",
@@ -153,7 +154,7 @@ const AT = {
     totalPosts:"إجمالي المنشورات", conversations:"المحادثات", admins:"المشرفات",
     activeMembers:"أعضاء نشطات", thisWeek:(n)=>`+${n} هذا الأسبوع`,
     percentVerified:(p)=>`${p}% موثّقات`,
-    topProfessions:"أبرز المهن", topCities:"أبرز المدن", recentMembers:"أعضاء جدد", noData:"لا توجد بيانات بعد",
+    topProfessions:"أبرز المهن", topRegionsLabel:"أبرز المناطق", recentMembers:"أعضاء جدد", noData:"لا توجد بيانات بعد",
     searchPh:"ابحثي عن مستخدمة...", editUser:"تعديل المستخدمة",
     firstName:"الاسم الأول", lastName:"اسم العائلة", phone:"الهاتف",
     city:"المدينة", profession:"المهنة", bio:"نبذة",
@@ -1116,22 +1117,30 @@ export default function AdminPage() {
 
   /* ── Profession distribution ── */
   const professionMap = {};
-  users.forEach(u => { if (u.profession) professionMap[u.profession] = (professionMap[u.profession] || 0) + 1; });
+  users.forEach(u => {
+    if (u.profession) {
+      const key = u.professionTranslations?.[lang] || translateProfession(u.profession, lang) || u.profession;
+      professionMap[key] = (professionMap[key] || 0) + 1;
+    }
+  });
   const topProfessions = Object.entries(professionMap).sort((a,b) => b[1]-a[1]).slice(0,5);
-
-  /* ── City distribution ── */
-  const cityMap = {};
-  users.forEach(u => { if (u.city) cityMap[u.city] = (cityMap[u.city] || 0) + 1; });
-  const topCities = Object.entries(cityMap).sort((a,b) => b[1]-a[1]).slice(0,5);
 
   /* ── Private fields distributions (admin only) ── */
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
-    if (u.ethnicity)  ethnicityMap[u.ethnicity]  = (ethnicityMap[u.ethnicity]  || 0) + 1;
-    /* religion field (new dropdown) takes priority; fall back to identity freetext */
+    if (u.ethnicity) {
+      const key = translateEthnicity(u.ethnicity, lang) || u.ethnicity;
+      ethnicityMap[key] = (ethnicityMap[key] || 0) + 1;
+    }
     const rel = u.religion || u.identity;
-    if (rel)          religionMap[rel]            = (religionMap[rel]            || 0) + 1;
-    if (u.region)     regionMap[u.region]         = (regionMap[u.region]         || 0) + 1;
+    if (rel) {
+      const key = translateReligion(rel, lang) || rel;
+      religionMap[key] = (religionMap[key] || 0) + 1;
+    }
+    if (u.region) {
+      const key = translateAny(u.region, lang);
+      regionMap[key] = (regionMap[key] || 0) + 1;
+    }
   });
   const topEthnicities = Object.entries(ethnicityMap).sort((a,b) => b[1]-a[1]).slice(0,8);
   const topReligions   = Object.entries(religionMap).sort((a,b) => b[1]-a[1]).slice(0,8);
@@ -1433,14 +1442,14 @@ export default function AdminPage() {
               ))}
             </div>
 
-            {/* City distribution */}
+            {/* Region distribution */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topCities}</p>
-              {topCities.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)" }}>{Tr.noData}</p>}
-              {topCities.map(([city, count]) => (
-                <div key={city} style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topRegionsLabel}</p>
+              {topRegions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)" }}>{Tr.noData}</p>}
+              {topRegions.map(([region, count]) => (
+                <div key={region} style={{ marginBottom: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{city}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{region}</span>
                     <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)", fontWeight: 600 }}>{count}</span>
                   </div>
                   <div style={{ height: 6, background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
@@ -1631,8 +1640,8 @@ export default function AdminPage() {
                             { label: Tr.campus,    val: u.campus },
                             { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
                             { label: Tr.birthdate, val: u.birthdate },
-                            { label: Tr.identity,  val: u.identity },
-                            { label: Tr.ethnicity, val: u.ethnicity },
+                            { label: Tr.identity,  val: translateReligion(u.identity, lang) || u.identity },
+                            { label: Tr.ethnicity, val: translateEthnicity(u.ethnicity, lang) || u.ethnicity },
                             { label: Tr.bio,       val: u.bio },
                           ].map(({ label, val }) => val ? (
                             <div key={label}>
@@ -1994,15 +2003,15 @@ export default function AdminPage() {
               }
             </div>
 
-            {/* Cities bar chart */}
+            {/* Regions bar chart */}
             <div className="card" style={{ padding:"1.25rem" }}>
-              <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{Tr.topCities}</p>
-              {topCities.length === 0
+              <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{Tr.topRegionsLabel}</p>
+              {topRegions.length === 0
                 ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.noData}</p>
-                : topCities.map(([city, count]) => (
-                  <div key={city} style={{ marginBottom:12 }}>
+                : topRegions.map(([region, count]) => (
+                  <div key={region} style={{ marginBottom:12 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-                      <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)" }}>{city}</span>
+                      <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)" }}>{region}</span>
                       <span style={{ fontSize:11, fontWeight:700, color:"#8b5cf6" }}>{count}</span>
                     </div>
                     <div style={{ height:8, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
@@ -2020,7 +2029,6 @@ export default function AdminPage() {
             {[
               { label: Tr.topSectors,   data: topEthnicities, color:"#e8735a" },
               { label: Tr.topReligions, data: topReligions,   color:"#1d4896" },
-              { label: Tr.topRegions,   data: topRegions,     color:"#7ba87a" },
             ].map(({ label, data, color }) => (
               <div key={label} className="card" style={{ padding:"1.25rem" }}>
                 <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{label}</p>
@@ -2211,13 +2219,17 @@ export default function AdminPage() {
           {(() => {
             const cityCount = {};
             users.forEach(u => {
-              const city = u.city?.trim();
-              if (city) cityCount[city] = (cityCount[city] || 0) + 1;
+              const raw = u.city?.trim() || u.region?.trim();
+              if (raw) {
+                const key = translateAny(raw, lang);
+                cityCount[key] = (cityCount[key] || 0) + 1;
+              }
             });
             const sorted = Object.entries(cityCount).sort((a, b) => b[1] - a[1]);
             const top = sorted.slice(0, 5);
             const othersCount = sorted.slice(5).reduce((s, [, v]) => s + v, 0);
-            if (othersCount > 0) top.push(["Other", othersCount]);
+            const otherLabel = lang === "he" ? "אחר" : lang === "ar" ? "أخرى" : "Other";
+            if (othersCount > 0) top.push([otherLabel, othersCount]);
             const totalWithCity = top.reduce((s, [, v]) => s + v, 0) || 1;
             const cityColors = ["#4472b8","#7ba87a","#c25c5c","#d4a574","#8b5cf6","#94a3b8"];
             let cumCity = 0;
