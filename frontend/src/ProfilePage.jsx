@@ -16,6 +16,8 @@ import { useTheme } from "./ThemeContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { isBirthdayToday } from "./utils/birthday";
 import { safeUrl } from "./utils/safeUrl";
+import { translateProfession, translateRegion } from "./utils/translateProfile";
+import ProfessionPicker from "./components/ProfessionPicker";
 
 const storage = getStorage();
 
@@ -548,7 +550,7 @@ const INSTITUTIONS = [
 
 export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommunity }) {
   const { user, profile: authProfile, refreshProfile, logout } = useAuth();
-  const { t, isRTL } = useLang();
+  const { t, lang, isRTL } = useLang();
   const { T, dark } = useTheme();
   const isMobile = useIsMobile();
   const fileRef = useRef();
@@ -565,7 +567,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const onCoverCropComplete = useCallback((_, pixels) => setCoverCroppedPixels(pixels), []);
 
   const [form, setForm] = useState({
-    firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"",
+    firstName:"", lastName:"", phone:"", profession:"", professionTranslations:null, bio:"", birthDate:"",
     ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
@@ -609,7 +611,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           firstName:      d.firstName      ?? "",
           lastName:       d.lastName       ?? "",
           phone:          contact.phone    ?? "",
-          profession:     d.profession     ?? "",
+          profession:             d.profession             ?? "",
+          professionTranslations: d.professionTranslations ?? null,
           bio:            d.bio            ?? "",
           birthDate:      d.birthDate      ?? "",
           ethnicity:        d.ethnicity        ?? "",
@@ -1190,7 +1193,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               ? `${form.firstName} ${form.lastName}`.trim()
               : (isOwner ? t.profile.myProfile : t.profile.memberProfile)}
           </h2>
-          {form.profession && <p style={S.profilePro}>{form.profession}</p>}
+          {form.profession && <p style={S.profilePro}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang)}</p>}
         </div>
 
         {/* Actions: LinkedIn / Message */}
@@ -1313,7 +1316,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.row}>
                 <div style={S.group}>
                   <label style={S.label}>{t.profile.professionJob}</label>
-                  <PlainInput name="profession" value={form.profession} onChange={handleChange} placeholder={t.profile.professionPlaceholder} autoComplete="off" />
+                  <ProfessionPicker
+                    value={form.profession}
+                    translations={form.professionTranslations}
+                    placeholder={t.profile.professionPlaceholder}
+                    onChange={(val, tr) => setForm(p => ({ ...p, profession: val, professionTranslations: tr }))}
+                  />
                   {isOwner && <RequiredHint show={!form.profession?.trim()} />}
                 </div>
                 <div style={S.group}>
@@ -1532,7 +1540,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   className={savingKey === "profile" ? "save-btn-shimmer" : ""}
                   onClick={() => handleSaveSection("profile", {
                     firstName:form.firstName, lastName:form.lastName, phone:form.phone,
-                    profession:form.profession, birthDate:form.birthDate, bio:form.bio,
+                    profession:form.profession, professionTranslations:form.professionTranslations ?? null, birthDate:form.birthDate, bio:form.bio,
                     region:form.region, institution:form.institution, graduationYear:form.graduationYear,
                     linkedIn: safeUrl(form.linkedIn),
                     facebookURL: safeUrl(form.facebookURL),
@@ -1608,11 +1616,11 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={S.row}>
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.professionJob}</p>
-                  <div style={S.inputDisabled}>{form.profession || "—"}</div>
+                  <div style={S.inputDisabled}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang) || "—"}</div>
                 </div>
                 <div style={S.group}>
                   <p style={S.label}>{t.profile.region}</p>
-                  <div style={S.inputDisabled}>{form.region || "—"}</div>
+                  <div style={S.inputDisabled}>{translateRegion(form.region, lang) || "—"}</div>
                 </div>
               </div>
 

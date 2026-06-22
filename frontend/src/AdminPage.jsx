@@ -13,6 +13,7 @@ import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
 import { getOrCreateConversation, sendMessage } from "./hooks/useMessages";
+import { translateProfession, translateAny } from "./utils/translateProfile";
 
 /* ─── Admin translations ─── */
 const AT = {
@@ -1116,22 +1117,35 @@ export default function AdminPage() {
 
   /* ── Profession distribution ── */
   const professionMap = {};
-  users.forEach(u => { if (u.profession) professionMap[u.profession] = (professionMap[u.profession] || 0) + 1; });
+  users.forEach(u => {
+    if (u.profession) {
+      const key = u.professionTranslations?.[lang] || translateProfession(u.profession, lang) || u.profession;
+      professionMap[key] = (professionMap[key] || 0) + 1;
+    }
+  });
   const topProfessions = Object.entries(professionMap).sort((a,b) => b[1]-a[1]).slice(0,5);
 
   /* ── City distribution ── */
   const cityMap = {};
-  users.forEach(u => { if (u.city) cityMap[u.city] = (cityMap[u.city] || 0) + 1; });
+  users.forEach(u => {
+    const raw = u.city || u.region;
+    if (raw) {
+      const key = translateAny(raw, lang);
+      cityMap[key] = (cityMap[key] || 0) + 1;
+    }
+  });
   const topCities = Object.entries(cityMap).sort((a,b) => b[1]-a[1]).slice(0,5);
 
   /* ── Private fields distributions (admin only) ── */
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
     if (u.ethnicity)  ethnicityMap[u.ethnicity]  = (ethnicityMap[u.ethnicity]  || 0) + 1;
-    /* religion field (new dropdown) takes priority; fall back to identity freetext */
     const rel = u.religion || u.identity;
     if (rel)          religionMap[rel]            = (religionMap[rel]            || 0) + 1;
-    if (u.region)     regionMap[u.region]         = (regionMap[u.region]         || 0) + 1;
+    if (u.region) {
+      const key = translateAny(u.region, lang);
+      regionMap[key] = (regionMap[key] || 0) + 1;
+    }
   });
   const topEthnicities = Object.entries(ethnicityMap).sort((a,b) => b[1]-a[1]).slice(0,8);
   const topReligions   = Object.entries(religionMap).sort((a,b) => b[1]-a[1]).slice(0,8);
@@ -2211,13 +2225,17 @@ export default function AdminPage() {
           {(() => {
             const cityCount = {};
             users.forEach(u => {
-              const city = u.city?.trim();
-              if (city) cityCount[city] = (cityCount[city] || 0) + 1;
+              const raw = u.city?.trim() || u.region?.trim();
+              if (raw) {
+                const key = translateAny(raw, lang);
+                cityCount[key] = (cityCount[key] || 0) + 1;
+              }
             });
             const sorted = Object.entries(cityCount).sort((a, b) => b[1] - a[1]);
             const top = sorted.slice(0, 5);
             const othersCount = sorted.slice(5).reduce((s, [, v]) => s + v, 0);
-            if (othersCount > 0) top.push(["Other", othersCount]);
+            const otherLabel = lang === "he" ? "אחר" : lang === "ar" ? "أخرى" : "Other";
+            if (othersCount > 0) top.push([otherLabel, othersCount]);
             const totalWithCity = top.reduce((s, [, v]) => s + v, 0) || 1;
             const cityColors = ["#4472b8","#7ba87a","#c25c5c","#d4a574","#8b5cf6","#94a3b8"];
             let cumCity = 0;
