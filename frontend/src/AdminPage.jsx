@@ -429,7 +429,7 @@ function avatarColor(name) {
 /* ── Stat card ── */
 function StatCard({ label, value, sub, color, icon, onClick }) {
   return (
-    <div className="card slide-up" style={{
+    <div className="card slide-up admin-stat-card" style={{
       padding: "1.25rem 1.5rem",
       borderLeft: `4px solid ${color}`,
       display: "flex", alignItems: "center", gap: "1rem",
@@ -440,16 +440,16 @@ function StatCard({ label, value, sub, color, icon, onClick }) {
       onMouseLeave={e => { e.currentTarget.style.boxShadow=""; e.currentTarget.style.transform=""; }}
       onClick={onClick}
     >
-      <div style={{
+      <div className="admin-stat-icon" style={{
         width: 44, height: 44, borderRadius: "var(--r-md,10px)",
         background: `${color}18`, display: "flex",
         alignItems: "center", justifyContent: "center",
         color, flexShrink: 0,
       }}>{icon}</div>
-      <div>
-        <p style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary,#111827)", lineHeight: 1 }}>{value}</p>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted,#6b7280)", marginTop: 3 }}>{label}</p>
-        {sub && <p style={{ fontSize: 11, color: color, marginTop: 1 }}>{sub}</p>}
+      <div style={{ minWidth: 0 }}>
+        <p className="stat-val" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary,#111827)", lineHeight: 1 }}>{value}</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted,#6b7280)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</p>
+        {sub && <p style={{ fontSize: 11, color: color, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</p>}
       </div>
     </div>
   );
@@ -936,10 +936,21 @@ function SlideshowAdmin() {
 /* ══════════════════════════════════════════════════════
    DISTRIBUTION DONUT CHART
 ═══════════════════════════════════════════════════════ */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 640);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener("resize", fn, { passive: true });
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return isMobile;
+}
+
 function DistributionDonutChart({ users, lang }) {
   const [distType,  setDistType]  = useState("regions");
   const [timeframe, setTimeframe] = useState("all");
   const [hovIdx,    setHovIdx]    = useState(null);
+  const isMobile = useIsMobile();
 
   const filteredUsers = (() => {
     if (timeframe === "all") return users;
@@ -1002,6 +1013,88 @@ function DistributionDonutChart({ users, lang }) {
     }}>{label}</button>
   );
 
+  const selStyle = {
+    flex:1, padding:"8px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
+    borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+    fontFamily:"var(--font,'Figtree','Heebo',system-ui,sans-serif)", cursor:"pointer",
+    appearance:"auto", minWidth:0,
+  };
+
+  const donutSvg = (size) => (
+    <svg width={size} height={size} viewBox="0 0 180 180" style={{ display:"block" }}>
+      {slices.map((s, i) => (
+        <path key={i} d={s.path} fill={s.color}
+          opacity={hovIdx === null || hovIdx === i ? 1 : 0.3}
+          onMouseEnter={() => setHovIdx(i)}
+          onMouseLeave={() => setHovIdx(null)}
+          style={{ cursor:"pointer", transition:"opacity 0.15s" }}
+        />
+      ))}
+      <text x={CX} y={CY - 7} textAnchor="middle" style={{ fontSize:20, fontWeight:800, fill:"var(--text-primary,#111827)", fontFamily:"inherit" }}>
+        {hov ? `${hov.pct}%` : filteredUsers.length}
+      </text>
+      <text x={CX} y={CY + 11} textAnchor="middle" style={{ fontSize:10, fill:"var(--text-muted,#6b7280)", fontFamily:"inherit" }}>
+        {hov ? hov.label.slice(0, 14) : "members"}
+      </text>
+      {hov && (
+        <text x={CX} y={CY + 24} textAnchor="middle" style={{ fontSize:9, fill:"var(--text-muted,#6b7280)", fontFamily:"inherit" }}>
+          {hov.count} total
+        </text>
+      )}
+    </svg>
+  );
+
+  const legend = (
+    <div style={{ flex:1, minWidth:0 }}>
+      {slices.map((s, i) => (
+        <div key={i}
+          onMouseEnter={() => setHovIdx(i)}
+          onMouseLeave={() => setHovIdx(null)}
+          style={{
+            display:"flex", alignItems:"center", gap:8,
+            padding:"5px 8px", borderRadius:8, marginBottom:2, cursor:"pointer",
+            background: hovIdx === i ? `${s.color}18` : "transparent",
+            transition:"background 0.12s",
+          }}>
+          <div style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
+          <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.label}</span>
+          <span style={{ fontSize:11, fontWeight:700, color:s.color, flexShrink:0 }}>{s.pct}%</span>
+          <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)", flexShrink:0 }}>({s.count})</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="card" style={{ padding:"1.25rem" }}>
+        <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 0.75rem" }}>Distribution</p>
+        <div style={{ display:"flex", gap:8, marginBottom:"1.25rem" }}>
+          <select value={distType} onChange={e => setDistType(e.target.value)} style={selStyle}>
+            <option value="regions">Regions</option>
+            <option value="professions">Professions</option>
+            <option value="ethnicity">Ethnicity</option>
+            <option value="religion">Religion</option>
+          </select>
+          <select value={timeframe} onChange={e => setTimeframe(e.target.value)} style={{ ...selStyle, flex:"0 0 80px" }}>
+            <option value="30d">30d</option>
+            <option value="90d">90d</option>
+            <option value="6m">6m</option>
+            <option value="1y">1y</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        {entries.length === 0
+          ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", textAlign:"center", padding:"2rem 0" }}>No data</p>
+          : (<>
+              <div style={{ display:"flex", justifyContent:"center", marginBottom:"1rem" }}>{donutSvg(160)}</div>
+              {legend}
+            </>)
+        }
+      </div>
+    );
+  }
+
   return (
     <div className="card" style={{ padding:"1.5rem" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:10, marginBottom:"1.25rem" }}>
@@ -1015,51 +1108,12 @@ function DistributionDonutChart({ users, lang }) {
           </div>
         </div>
       </div>
-
       {entries.length === 0
         ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", textAlign:"center", padding:"3rem 0" }}>No data for this selection</p>
         : (
           <div style={{ display:"flex", gap:"2rem", alignItems:"center", flexWrap:"wrap" }}>
-            <svg width={180} height={180} viewBox="0 0 180 180" style={{ flexShrink:0 }}>
-              {slices.map((s, i) => (
-                <path key={i} d={s.path} fill={s.color}
-                  opacity={hovIdx === null || hovIdx === i ? 1 : 0.3}
-                  onMouseEnter={() => setHovIdx(i)}
-                  onMouseLeave={() => setHovIdx(null)}
-                  style={{ cursor:"pointer", transition:"opacity 0.15s" }}
-                />
-              ))}
-              <text x={CX} y={CY - 7} textAnchor="middle" style={{ fontSize:20, fontWeight:800, fill:"var(--text-primary,#111827)", fontFamily:"inherit" }}>
-                {hov ? `${hov.pct}%` : filteredUsers.length}
-              </text>
-              <text x={CX} y={CY + 11} textAnchor="middle" style={{ fontSize:10, fill:"var(--text-muted,#6b7280)", fontFamily:"inherit" }}>
-                {hov ? hov.label.slice(0, 14) : "members"}
-              </text>
-              {hov && (
-                <text x={CX} y={CY + 24} textAnchor="middle" style={{ fontSize:9, fill:"var(--text-muted,#6b7280)", fontFamily:"inherit" }}>
-                  {hov.count} total
-                </text>
-              )}
-            </svg>
-
-            <div style={{ flex:1, minWidth:140 }}>
-              {slices.map((s, i) => (
-                <div key={i}
-                  onMouseEnter={() => setHovIdx(i)}
-                  onMouseLeave={() => setHovIdx(null)}
-                  style={{
-                    display:"flex", alignItems:"center", gap:8,
-                    padding:"5px 8px", borderRadius:8, marginBottom:2, cursor:"pointer",
-                    background: hovIdx === i ? `${s.color}18` : "transparent",
-                    transition:"background 0.12s",
-                  }}>
-                  <div style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
-                  <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.label}</span>
-                  <span style={{ fontSize:11, fontWeight:700, color:s.color, flexShrink:0 }}>{s.pct}%</span>
-                  <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)", flexShrink:0 }}>({s.count})</span>
-                </div>
-              ))}
-            </div>
+            {donutSvg(180)}
+            {legend}
           </div>
         )
       }
@@ -1078,6 +1132,7 @@ function MemberGrowthChart({ users }) {
   const [dateFrom, setDateFrom] = useState(defaultFrom);
   const [dateTo,   setDateTo]   = useState(todayStr);
   const [hoverIdx, setHoverIdx] = useState(null);
+  const isMobile = useIsMobile();
 
   const applyPreset = (p) => {
     setPreset(p);
@@ -1126,7 +1181,7 @@ function MemberGrowthChart({ users }) {
   return (
     <div className="card" style={{ padding: "1.5rem" }}>
       {/* Header row */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"1.25rem", gap:12, flexWrap:"wrap" }}>
+      <div className="admin-growth-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"1.25rem", gap:12, flexWrap:"wrap" }}>
         <div>
           <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 6px" }}>
             New Members
@@ -1137,23 +1192,38 @@ function MemberGrowthChart({ users }) {
           </div>
         </div>
 
-        {/* Pill-group preset selector */}
-        <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:10, padding:3, gap:1, alignSelf:"flex-start" }}>
-          {[
-            { val:"7d",     label:"7d"     },
-            { val:"30d",    label:"30d"    },
-            { val:"90d",    label:"90d"    },
-            { val:"all",    label:"All"    },
-            { val:"custom", label:"Custom" },
-          ].map(opt => (
-            <button key={opt.val} onClick={() => applyPreset(opt.val)} style={{
-              fontSize:11, fontWeight:600, padding:"5px 11px", borderRadius:7, border:"none", cursor:"pointer", transition:"all 0.15s",
-              background: preset === opt.val ? "var(--bg-primary,#fff)" : "transparent",
-              color:      preset === opt.val ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
-              boxShadow:  preset === opt.val ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-            }}>{opt.label}</button>
-          ))}
-        </div>
+        {/* Preset selector — dropdown on mobile, pills on desktop */}
+        {isMobile ? (
+          <select value={preset} onChange={e => applyPreset(e.target.value)} style={{
+            padding:"8px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
+            borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+            fontFamily:"var(--font,'Figtree','Heebo',system-ui,sans-serif)", cursor:"pointer",
+            alignSelf:"flex-start",
+          }}>
+            <option value="7d">7d</option>
+            <option value="30d">30d</option>
+            <option value="90d">90d</option>
+            <option value="all">All</option>
+            <option value="custom">Custom</option>
+          </select>
+        ) : (
+          <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:10, padding:3, gap:1, alignSelf:"flex-start" }}>
+            {[
+              { val:"7d",     label:"7d"     },
+              { val:"30d",    label:"30d"    },
+              { val:"90d",    label:"90d"    },
+              { val:"all",    label:"All"    },
+              { val:"custom", label:"Custom" },
+            ].map(opt => (
+              <button key={opt.val} onClick={() => applyPreset(opt.val)} style={{
+                fontSize:11, fontWeight:600, padding:"5px 11px", borderRadius:7, border:"none", cursor:"pointer", transition:"all 0.15s",
+                background: preset === opt.val ? "var(--bg-primary,#fff)" : "transparent",
+                color:      preset === opt.val ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
+                boxShadow:  preset === opt.val ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+              }}>{opt.label}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Custom date pickers */}
@@ -1170,7 +1240,7 @@ function MemberGrowthChart({ users }) {
 
       {/* Chart */}
       <div style={{ position:"relative" }}>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:H, display:"block", cursor:"crosshair", overflow:"visible" }}
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:"auto", display:"block", cursor:"crosshair", overflow:"visible" }}
           onMouseMove={e => {
             const rect = e.currentTarget.getBoundingClientRect();
             const svgX = ((e.clientX - rect.left) / rect.width) * W;
@@ -1248,6 +1318,8 @@ export default function AdminPage() {
   const { lang } = useLang();
   const Tr = AT[lang] || AT.he;
   const [tab, setTab]     = useState("overview");
+  const [mobileDataSection, setMobileDataSection] = useState("distribution");
+  const isMobile = useIsMobile();
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [convs, setConvs] = useState([]);
@@ -1719,17 +1791,37 @@ export default function AdminPage() {
     <div style={S.page} className="admin-root">
       <style>{`
         @media (max-width: 640px) {
-          .admin-root { padding: 1rem 0.75rem !important; }
+          .admin-root { padding: 1rem 0.75rem !important; overflow-x: hidden !important; }
+
+          /* Tab bar scrolls horizontally */
           .admin-tabs {
-            width: 100% !important;
-            overflow-x: auto !important;
-            flex-wrap: nowrap !important;
-            scrollbar-width: none;
+            width: 100% !important; overflow-x: auto !important;
+            flex-wrap: nowrap !important; scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
           }
           .admin-tabs::-webkit-scrollbar { display: none; }
+
+          /* Stat cards: compact 2-column grid */
+          .admin-stat-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.55rem !important; margin-bottom: 0.85rem !important;
+          }
+          .admin-stat-card { padding: 0.7rem 0.8rem !important; gap: 0.55rem !important; }
+          .admin-stat-card .stat-val { font-size: 20px !important; line-height: 1 !important; }
+          .admin-stat-icon { width: 32px !important; height: 32px !important; }
+
+          /* Overview mid: single column, quick actions first */
           .admin-overview-mid { grid-template-columns: 1fr !important; }
-          .admin-data-charts  { grid-template-columns: 1fr !important; }
+          .admin-overview-quick { order: -1 !important; }
+
+          /* Quick action buttons: 2-per-row */
+          .admin-quick-btns {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 6px !important;
+          }
+
+          /* Search inputs full width on mobile */
           .admin-search-input { width: 100% !important; min-width: unset !important; }
         }
       `}</style>
@@ -1759,7 +1851,7 @@ export default function AdminPage() {
       {!loading && tab === "overview" && (
         <>
           {/* Stat cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+          <div className="admin-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <StatCard label={Tr.totalMembers}  value={users.length}   color="#4472b8" sub={Tr.thisWeek(newThisWeek)}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
               onClick={() => setStatDetailType("members")} />
@@ -1836,11 +1928,11 @@ export default function AdminPage() {
             </div>
 
             {/* Quick actions + top post */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div className="admin-overview-quick" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               {/* Quick actions */}
               <div className="card" style={{ padding: "1.25rem" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.85rem" }}>{Tr.quickActions}</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="admin-quick-btns" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {canManageUsers && (
                     <button onClick={() => setTab("users")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4472b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -2349,14 +2441,35 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* ── Mobile section nav ── */}
+          {isMobile && (
+            <div style={{ display:"flex", gap:0, marginBottom:"1rem", background:"var(--bg-secondary,#f0f6fb)", borderRadius:12, padding:3 }}>
+              {[["distribution","Distribution"],["growth","Growth"],["members","Members"]].map(([v,l]) => (
+                <button key={v} onClick={() => setMobileDataSection(v)} style={{
+                  flex:1, padding:"8px 4px", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", transition:"all 0.15s", borderRadius:9,
+                  background: mobileDataSection === v ? "var(--bg-primary,#fff)" : "transparent",
+                  color:      mobileDataSection === v ? "var(--accent,#4472b8)" : "var(--text-muted,#6b7280)",
+                  boxShadow:  mobileDataSection === v ? "0 1px 5px rgba(0,0,0,0.12)" : "none",
+                }}>{l}</button>
+              ))}
+            </div>
+          )}
+
           {/* ── Row 1: Donut + Line Chart ── */}
-          <div className="admin-data-charts" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", marginBottom:"1.25rem" }}>
-            <DistributionDonutChart users={users} lang={lang} />
-            <MemberGrowthChart users={users} />
-          </div>
+          {isMobile ? (
+            <>
+              {mobileDataSection === "distribution" && <DistributionDonutChart users={users} lang={lang} />}
+              {mobileDataSection === "growth" && <MemberGrowthChart users={users} />}
+            </>
+          ) : (
+            <div className="admin-data-charts" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", marginBottom:"1.25rem" }}>
+              <DistributionDonutChart users={users} lang={lang} />
+              <MemberGrowthChart users={users} />
+            </div>
+          )}
 
           {/* ── Row 2: Recent Members ── */}
-          {(() => {
+          {(!isMobile || mobileDataSection === "members") && (() => {
             const cutoffMs = { "7d":7,"30d":30,"90d":90,"6m":180,"1y":365 }[recentTimeframe];
             const cutoff   = cutoffMs ? Date.now() - cutoffMs * 86400000 : null;
             const filtered = users.filter(u => !cutoff || (u.createdAt && new Date(u.createdAt) >= cutoff));
@@ -2368,35 +2481,58 @@ export default function AdminPage() {
             });
             return (
               <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-                <div style={{ padding:"1rem 1.5rem", borderBottom:"1px solid var(--border,#daeaf8)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+                <div className="admin-data-members-hdr" style={{ padding:"1rem 1.5rem", borderBottom:"1px solid var(--border,#daeaf8)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
                   <div>
                     <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 2px" }}>{Tr.recentMembers}</p>
                     <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{sorted.length} member{sorted.length !== 1 ? "s" : ""}</span>
                   </div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
-                    {/* Timeframe */}
-                    <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-                      {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all","All"]].map(([v,l]) => (
-                        <button key={v} onClick={() => setRecentTimeframe(v)} style={{
-                          fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
-                          background: recentTimeframe===v ? "var(--bg-primary,#fff)" : "transparent",
-                          color:      recentTimeframe===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
-                          boxShadow:  recentTimeframe===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                        }}>{l}</button>
-                      ))}
+                  {isMobile ? (
+                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                      <select value={recentTimeframe} onChange={e => setRecentTimeframe(e.target.value)} style={{
+                        padding:"7px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
+                        borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+                        fontFamily:"inherit", cursor:"pointer",
+                      }}>
+                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all","All"]].map(([v,l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
+                      <select value={recentSort} onChange={e => setRecentSort(e.target.value)} style={{
+                        padding:"7px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
+                        borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+                        fontFamily:"inherit", cursor:"pointer",
+                      }}>
+                        {[["newest","Newest"],["oldest","Oldest"],["alpha","A–Z"],["profession","Profession"]].map(([v,l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
                     </div>
-                    {/* Sort */}
-                    <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-                      {[["newest","Newest"],["oldest","Oldest"],["alpha","A–Z"],["profession","Profession"]].map(([v,l]) => (
-                        <button key={v} onClick={() => setRecentSort(v)} style={{
-                          fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
-                          background: recentSort===v ? "var(--bg-primary,#fff)" : "transparent",
-                          color:      recentSort===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
-                          boxShadow:  recentSort===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                        }}>{l}</button>
-                      ))}
+                  ) : (
+                    <div className="admin-data-controls-row" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+                      {/* Timeframe */}
+                      <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
+                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all","All"]].map(([v,l]) => (
+                          <button key={v} onClick={() => setRecentTimeframe(v)} style={{
+                            fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
+                            background: recentTimeframe===v ? "var(--bg-primary,#fff)" : "transparent",
+                            color:      recentTimeframe===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
+                            boxShadow:  recentTimeframe===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                          }}>{l}</button>
+                        ))}
+                      </div>
+                      {/* Sort */}
+                      <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
+                        {[["newest","Newest"],["oldest","Oldest"],["alpha","A–Z"],["profession","Profession"]].map(([v,l]) => (
+                          <button key={v} onClick={() => setRecentSort(v)} style={{
+                            fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
+                            background: recentSort===v ? "var(--bg-primary,#fff)" : "transparent",
+                            color:      recentSort===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
+                            boxShadow:  recentSort===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                          }}>{l}</button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 {sorted.length === 0
                   ? <div className="empty-state"><p>No members in this period.</p></div>
