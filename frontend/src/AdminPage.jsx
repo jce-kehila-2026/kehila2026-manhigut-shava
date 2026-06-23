@@ -1311,6 +1311,7 @@ export default function AdminPage() {
   const { user, profile } = useAuth();
   const { lang } = useLang();
   const Tr = AT[lang] || AT.he;
+  const isMobile = useIsMobile();
   const [tab, setTab]     = useState("overview");
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
