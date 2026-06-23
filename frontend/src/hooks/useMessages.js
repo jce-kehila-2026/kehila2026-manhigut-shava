@@ -180,8 +180,8 @@ export async function getOrCreateConversation(uid1, uid2, profile1, profile2) {
       [uid2]: `${profile2.firstName} ${profile2.lastName}`,
     },
     participantAvatars: {
-      [uid1]: profile1.photoURL || profile1.avatarUrl || null,
-      [uid2]: profile2.photoURL || profile2.avatarUrl || null,
+      [uid1]: profile1.avatarUrl || null,
+      [uid2]: profile2.avatarUrl || null,
     },
     unreadCounts: { [uid1]: 0, [uid2]: 0 },
     lastMessage: null,

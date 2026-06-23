@@ -89,8 +89,8 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
   const { t } = useLang();
   const otherId = conv.participants?.find((p) => p !== currentUid);
   const otherName = conv.participantNames?.[otherId] || "Unknown";
+  const otherAvatar = conv.participantAvatars?.[otherId] || null;
   const otherUser = allUsers.find((u) => u.id === otherId);
-  const otherAvatar = otherUser?.photoURL || otherUser?.avatarUrl || conv.participantAvatars?.[otherId] || null;
   const isOnline = isActuallyOnline(otherUser);
   const unread = conv.unreadCounts?.[currentUid] || 0;
   const lastMsg = conv.lastMessage;
@@ -731,7 +731,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
   const otherId = activeConv?.participants?.find((p) => p !== user?.uid) || activePeer?.id;
   const otherUser = allUsers.find((u) => u.id === otherId) || activePeer;
   const otherName = activeConv?.participantNames?.[otherId] || (activePeer ? `${activePeer.firstName} ${activePeer.lastName}`.trim() : "");
-  const otherAvatar = otherUser?.photoURL || otherUser?.avatarUrl || activeConv?.participantAvatars?.[otherId] || activePeer?.photoURL || activePeer?.avatarUrl || null;
+  const otherAvatar = activeConv?.participantAvatars?.[otherId] || activePeer?.avatarUrl || null;
 
   /* Seen: other user has read all my messages */
   const lastMyMsgIdx = messages.map((m, i) => m.senderId === user?.uid ? i : -1).filter(i => i >= 0).pop();
@@ -1214,7 +1214,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
 
               const senderProfile = allUsers.find((u) => u.id === msg.senderId);
               const senderName = senderProfile ? `${senderProfile.firstName} ${senderProfile.lastName}` : "";
-              const senderAvatar = senderProfile?.photoURL || senderProfile?.avatarUrl || null;
+              const senderAvatar = senderProfile?.avatarUrl || null;
 
               const isLastInGroup = !next || next.senderId !== msg.senderId ||
                 (new Date(next.createdAt) - new Date(msg.createdAt)) > 3 * 60 * 1000;

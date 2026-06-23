@@ -189,14 +189,15 @@ const eyebrow = {
 };
 
 /* ── Quick-access circle with sonar rings ── */
-function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tutId, vertical }) {
+function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tutId }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const size = isMobile ? "min(90px, calc(25vw - 14px))" : vertical ? "76px" : "120px";
-  const ringInset = vertical ? 14 : 22;
+  // On mobile, fill the grid cell (25vw minus gaps); cap at 90px. Desktop stays fixed.
+  const size = isMobile ? "min(90px, calc(25vw - 14px))" : "120px";
+  const ringInset = 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
-    <div id={tutId} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : vertical ? 5 : 10, cursor:"pointer",
+    <div id={tutId} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
       animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
@@ -223,11 +224,11 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tu
           boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform: isMobile ? "scale(0.9)" : "scale(1.1)" }}>{icon}</div>
+          <div style={{ transform: isMobile ? "scale(0.9)" : "scale(1.2)" }}>{icon}</div>
         </div>
       </div>
-      <p style={{ fontSize: isMobile ? 9 : vertical ? 10 : 11, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(25vw - 8px)" : 90, lineHeight: 1.2 }}>{title}</p>
-      {!isMobile && !vertical && (
+      <p style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(25vw - 8px)" : 110, lineHeight: 1.2 }}>{title}</p>
+      {!isMobile && (
         <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
           lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
           opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
@@ -340,32 +341,18 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       {/* Two-column layout on desktop, single column on mobile */}
       <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: isMobile ? undefined : "1fr 300px", gap: "1.5rem", alignItems: "start" }}>
 
-        {/* LEFT (desktop) / TOP (mobile): circles + slideshow */}
+        {/* LEFT (desktop) / TOP (mobile): circles + birthday soon + slideshow */}
         <div>
-          {!isMobile ? (
-            <div style={{ display:"flex", alignItems:"stretch", gap:"0.5rem", marginBottom:"1rem" }}>
-              {/* Circles — vertical strip on far left */}
-              <div style={{ display:"flex", flexDirection:"column", justifyContent:"space-evenly", alignItems:"center", gap:"0.3rem", paddingBlock:"0.25rem", paddingInline:"0.25rem" }}>
-                {quickCircles.map((item, i) => (
-                  <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={false} vertical={true} onClick={() => onNavigate(item.action)} />
-                ))}
-              </div>
-              {/* Slideshow fills the rest */}
-              <div style={{ flex:1, minWidth:0 }}>
-                <SlideshowBanner maxHeight={580} />
-              </div>
-            </div>
-          ) : (
-            <>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"0.4rem",
-                marginBottom:"1rem", padding:"0 0 0.25rem", placeItems:"center" }}>
-                {quickCircles.map((item, i) => (
-                  <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} onClick={() => onNavigate(item.action)} />
-                ))}
-              </div>
-              <SlideshowBanner maxHeight={220} />
-            </>
-          )}
+          <div style={{ display:"grid", gridTemplateColumns: "repeat(4,1fr)", gap: isMobile ? "0.4rem" : "1rem",
+            marginBottom:"1rem", padding: isMobile ? "0 0 0.25rem" : "0.25rem 0 0.75rem",
+            placeItems:"center" }}>
+            {quickCircles.map((item, i) => (
+              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
+            ))}
+          </div>
+
+
+          <SlideshowBanner maxHeight={isMobile ? 220 : 520} />
 
           {/* On mobile: help requests + suggestions appear below slideshow */}
           {isMobile && (
@@ -434,35 +421,31 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                 profile?.helpAreas?.length > 0,
               ];
               const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
-              const done = pct >= 100;
+              if (pct >= 100) return null;
               return (
                 <div onClick={() => onNavigate("profile")} style={{
                   background:"var(--bg-primary,#fff)",
-                  border:`1px solid ${done ? "rgba(74,222,128,0.3)" : "rgba(232,115,90,0.22)"}`,
-                  borderRadius:14, padding:"0.75rem 1rem",
+                  border:"1px solid rgba(232,115,90,0.22)",
+                  borderRadius:14, padding:"0.9rem 1rem",
                   cursor:"pointer",
-                  boxShadow: done ? "0 2px 10px rgba(74,222,128,0.08)" : "0 2px 10px rgba(232,115,90,0.07)",
+                  boxShadow:"0 2px 10px rgba(232,115,90,0.07)",
                   transition:"transform 0.18s, box-shadow 0.18s",
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform=""; }}
+                  onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 6px 18px rgba(232,115,90,0.14)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow="0 2px 10px rgba(232,115,90,0.07)"; }}
                 >
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: done ? 0 : 5 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:"var(--text-primary,#111827)" }}>
-                      {done ? (t.dash?.profileComplete || "Profile Complete") : (t.dash?.completeProfileTitle || "Complete Your Profile")}
+                      {t.dash?.completeProfileTitle || "Complete Your Profile"}
                     </span>
-                    <span style={{ fontSize:15, fontWeight:800, color: done ? "#4ade80" : "#e8735a" }}>{pct}%</span>
+                    <span style={{ fontSize:16, fontWeight:800, color:"#e8735a" }}>{pct}%</span>
                   </div>
-                  {!done && (
-                    <>
-                      <div style={{ height:4, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
-                        <div style={{ height:"100%", width:`${pct}%`, borderRadius:99, background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
-                      </div>
-                      <p style={{ fontSize:10, color:"var(--text-muted,#6b7280)", margin:"4px 0 0", fontWeight:500 }}>
-                        {t.dash?.completeProfileCta || "Tap to complete →"}
-                      </p>
-                    </>
-                  )}
+                  <div style={{ height:5, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${pct}%`, borderRadius:99, background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
+                  </div>
+                  <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"5px 0 0", fontWeight:500 }}>
+                    {t.dash?.completeProfileCta || "Tap to complete →"}
+                  </p>
                 </div>
               );
             })()}

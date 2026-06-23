@@ -1001,6 +1001,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   return (
     <div style={S.page}>
 
+      <p style={{ ...S.pageTitle, marginBottom: "1rem" }}>{Tr.title}</p>
+
       {/* ── Tab bar ── */}
       <div style={{
         display: "flex", overflowX: "auto", flexWrap: "nowrap",
