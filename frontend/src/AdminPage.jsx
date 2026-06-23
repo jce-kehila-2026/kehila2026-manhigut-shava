@@ -2210,22 +2210,22 @@ export default function AdminPage() {
       {!loading && tab === "data" && (
         <>
           {/* Export / import members */}
-          <div className="card" style={{ padding:"1.25rem", marginBottom:"1.5rem" }}>
-            <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 0.85rem" }}>{Tr.dataManage}</p>
-            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+          <div className="card" style={{ padding:"0.75rem 1rem", marginBottom:"1.5rem", display:"flex", flexWrap:"wrap", alignItems:"center", gap:"0.75rem" }}>
+            <span style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>{Tr.dataManage}</span>
+            <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap", alignItems:"center" }}>
               <button onClick={() => setExportOpen(true)}
-                style={{ padding:"10px 20px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                style={{ padding:"6px 14px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
                 ⬇ {Tr.downloadBtn}
               </button>
               <button onClick={() => fileRef.current?.click()} disabled={importBusy}
-                style={{ padding:"10px 20px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, fontSize:14, fontWeight:700, cursor: importBusy ? "wait" : "pointer", opacity: importBusy ? 0.6 : 1 }}>
+                style={{ padding:"6px 14px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:8, fontSize:12, fontWeight:700, cursor: importBusy ? "wait" : "pointer", opacity: importBusy ? 0.6 : 1, display:"flex", alignItems:"center", gap:5 }}>
                 ⬆ {importBusy ? Tr.importing : Tr.uploadBtn}
               </button>
               <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={importExcel} style={{ display:"none" }} />
             </div>
-            <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"0.75rem 0 0" }}>{Tr.dirNote}</p>
+            <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", flexShrink:0 }}>{Tr.dirNote}</span>
             {importResult && (
-              <div style={{ marginTop:"1rem", padding:"0.85rem 1rem", borderRadius:10, background:"var(--bg-tertiary,#f0f6fb)", border:"1px solid var(--border,#daeaf8)" }}>
+              <div style={{ width:"100%", padding:"0.75rem 1rem", borderRadius:10, background:"var(--bg-tertiary,#f0f6fb)", border:"1px solid var(--border,#daeaf8)" }}>
                 {importResult.error ? (
                   <p style={{ margin:0, fontSize:13, color:"#c25c5c", fontWeight:600 }}>⚠ {importResult.error}</p>
                 ) : (
