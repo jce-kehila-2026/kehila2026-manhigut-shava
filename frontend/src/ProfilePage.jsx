@@ -189,27 +189,27 @@ function OptionalTag() {
   return <span style={{ fontSize:10, fontWeight:500, color:"var(--text-muted,#9ca3af)", marginRight:4, marginLeft:4 }}>{t.profile?.optionalTag || "(רשות)"}</span>;
 }
 
-function CompletenessBadge({ pct }) {
-  const { T } = useTheme();
-  const color  = pct >= 80 ? "#7ba87a" : pct >= 50 ? "#b8895a" : "#c25c5c";
-  const bg     = pct >= 80 ? "#f0fdf4" : pct >= 50 ? "#fffbeb" : "#fff5f5";
-  const border = pct >= 80 ? "#cfe4ce" : pct >= 50 ? "#fde68a" : "#d99090";
+function CompletenessBadge({ pct, onCover = false }) {
+  const color = pct >= 80 ? "#7ba87a" : pct >= 50 ? "#b8895a" : "#c25c5c";
+  const track = onCover ? "rgba(255,255,255,0.25)" : (pct >= 80 ? "#cfe4ce" : pct >= 50 ? "#fde68a" : "#d99090");
+  const SIZE = 40, SW = 3.5, R = (SIZE - SW) / 2;
+  const circ = 2 * Math.PI * R;
+  const offset = circ * (1 - pct / 100);
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"0.75rem" }}>
-      <div style={{ flex:1, height:"6px", background:T.inputBorder, borderRadius:"99px", overflow:"hidden" }}>
-        <div style={{
-          width:`${pct}%`, height:"100%",
-          background:`linear-gradient(90deg, ${color}, ${color}bb)`,
-          borderRadius:"99px", transition:"width 0.6s cubic-bezier(.4,0,.2,1)",
-        }} />
+    <div style={{ position:"relative", width:SIZE, height:SIZE, flexShrink:0,
+      borderRadius:"50%",
+      ...(onCover ? { background:"rgba(0,0,0,0.38)", backdropFilter:"blur(6px)" } : {}) }}
+      title={`${pct}% complete`}>
+      <svg width={SIZE} height={SIZE} style={{ transform:"rotate(-90deg)", display:"block" }}>
+        <circle cx={SIZE/2} cy={SIZE/2} r={R} fill="none" stroke={track} strokeWidth={SW} />
+        <circle cx={SIZE/2} cy={SIZE/2} r={R} fill="none" stroke={color} strokeWidth={SW}
+          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+          style={{ transition:"stroke-dashoffset 0.6s cubic-bezier(.4,0,.2,1)" }} />
+      </svg>
+      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+        fontSize:9, fontWeight:800, color: onCover ? "#fff" : color, lineHeight:1 }}>
+        {pct}%
       </div>
-      <span style={{
-        fontSize:"11px", fontWeight:"700", color,
-        background:bg, border:`1px solid ${border}`,
-        borderRadius:"99px", padding:"2px 10px", whiteSpace:"nowrap",
-      }}>
-        {pct}% complete
-      </span>
     </div>
   );
 }
@@ -980,7 +980,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     /* ── Cover photo (standalone, normal flow) ── */
     coverWrap: {
       position:"relative", flexShrink:0,
-      height: isMobile ? 110 : 150,
+      height: isMobile ? 170 : 220,
       background:"linear-gradient(135deg, #0b1f52 0%, #1d4896 60%, #2f5fd4 100%)",
       overflow:"hidden",
     },
@@ -1007,8 +1007,11 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       position:"relative", flexShrink:0,
       background: T.bg,
       paddingTop: isMobile ? 56 : 64,
-      padding: isMobile ? "56px 1rem 8px" : "64px 2rem 10px",
-      display:"flex", justifyContent:"space-between", alignItems:"flex-start",
+      padding: isMobile ? "56px 1rem 12px" : "64px 2rem 10px",
+      display:"flex",
+      flexDirection: isMobile ? "column" : "row",
+      justifyContent:"space-between", alignItems:"flex-start",
+      gap: isMobile ? 8 : 0,
     },
     avatarWrap: {
       position:"absolute",
@@ -1039,10 +1042,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       padding:0, fontSize:12, color:"#1d4896",
       transition:"background 0.18s, color 0.18s, border-color 0.18s",
     },
-    profileMetaText: { flex:1, minWidth:0 },
+    profileMetaText: { flex: isMobile ? "none" : 1, minWidth:0 },
     profileName: { fontSize: isMobile ? 18 : 22, fontWeight:800, color:T.text, margin:"0 0 3px", lineHeight:1.2 },
     profilePro:  { fontSize:13, color:T.sub, margin:"0 0 5px" },
-    profileActions: { display:"flex", gap:8, alignItems:"flex-start", flexShrink:0, paddingTop:2 },
+    profileActions: { display:"flex", gap:8, alignItems:"flex-start", flexShrink:0, paddingTop:2, flexWrap:"wrap" },
     /* ── Tab bar ── */
     tabBar: {
       display:"flex", gap:0,
@@ -1083,7 +1086,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       padding:"1.25rem", marginBottom:"1rem",
       borderLeft:"4px solid #4472b8",
     },
-    row:   { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:"1rem", marginBottom:"1rem" },
+    row:   { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:"0.75rem", marginBottom:"0.875rem" },
     group: { display:"flex", flexDirection:"column", gap:"7px" },
     label: { fontSize:"11px", fontWeight:"700", color:T.sub, textTransform:"uppercase", letterSpacing:"0.08em" },
     bioWrap: { position:"relative" },
@@ -1107,7 +1110,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       display:"flex", alignItems:"center", gap:"7px",
     },
     errorMsg:       { fontSize:"13px", color:"#9a4545", background: dark ? "#3b1f1f" : "#fff0f0", border:"1px solid #d99090", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
-    emailRow:       { display:"flex", gap:"10px", alignItems:"flex-end" },
+    emailRow:       { display:"flex", flexDirection: isMobile ? "column" : "row", gap:"10px", alignItems: isMobile ? "stretch" : "flex-end" },
     inputDisabled:  { padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.sub, background:T.tagBg, width:"100%", boxSizing:"border-box", fontFamily:"inherit" },
     changeBtn:      { padding:"10px 16px", background: dark ? T.tagBg : "#eff6ff", color:"#1d4896", border:`1.5px solid ${dark ? T.cardBorderL : "#bfdbfe"}`, borderRadius: "12px", fontSize:"13px", fontWeight:"600", cursor:"pointer", whiteSpace:"nowrap", transition:"background 0.2s, border-color 0.2s" },
     emailSuccessMsg:{ fontSize:"13px", color:"#3f6a3e", background: dark ? "#1a2e1a" : "#f0fdf4", border:"1px solid #cfe4ce", borderRadius:"9px", padding:"9px 13px", marginBottom:"0.75rem" },
@@ -1234,6 +1237,11 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       <div style={S.coverWrap}>
         {coverURL && <img src={coverURL} alt="cover" style={S.coverImg} />}
         <div style={S.coverOverlay} />
+        {isMobile && isOwner && pct < 100 && (
+          <div style={{ position:"absolute", bottom:10, right:10, zIndex:3 }}>
+            <CompletenessBadge pct={pct} onCover />
+          </div>
+        )}
         {isOwner && (
           <>
             <input ref={coverFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleCoverUpload} />
@@ -1289,8 +1297,9 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           {form.profession && <p style={S.profilePro}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang)}</p>}
         </div>
 
-        {/* Actions: LinkedIn / Message */}
+        {/* Actions: completeness circle + LinkedIn / Message */}
         <div style={S.profileActions}>
+          {!isMobile && isOwner && pct < 100 && <CompletenessBadge pct={pct} />}
           {form.linkedIn && (
             <a href={safeUrl(form.linkedIn)}
               target="_blank" rel="noreferrer"
@@ -1346,13 +1355,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             relativeTime={relativeTime}
             isMobile={isMobile}
           />
-        </div>
-      )}
-
-      {/* Completeness badge — only for owner when not yet complete */}
-      {isOwner && pct < 100 && (
-        <div style={{ padding: isMobile ? "0.5rem 1rem 0" : "0.5rem 2rem 0" }}>
-          <CompletenessBadge pct={pct} />
         </div>
       )}
 

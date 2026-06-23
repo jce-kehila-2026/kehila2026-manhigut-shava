@@ -68,7 +68,10 @@
       "Bash(awk -F: '{if \\($1 <= 421\\) last=$0} END {print last}')",
       "Bash(awk -F: '{if \\($1 <= 1200\\) last=$0} END {print last}')",
       "Bash(grep -v \"//\\\\|import\\\\|form\\\\.\\\\|setForm\\\\|onChange\\\\|input\\\\|Input\\\\|select\\\\|Select\\\\|=\\\\s*{\\\\|useState\\\\|useMemo\\\\|PROFESSION\\\\|profession,\\\\|currentRole:\\\\|profession:\\\\|profession &&\\\\|profession?\")",
-      "Bash(npx firebase *)"
+      "Bash(npx firebase *)",
+      "Bash(npx --no-install tsc --noEmit --jsx react)",
+      "Bash(npx acorn *)",
+      "Bash(node -e \"require\\('fs'\\).readFileSync\\('src/AdminPage.jsx','utf8'\\)\")"
     ],
     "additionalDirectories": [
       "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src"
