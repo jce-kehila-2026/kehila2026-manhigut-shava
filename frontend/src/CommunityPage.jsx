@@ -1403,6 +1403,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   const [profile, setProfile]       = useState(null);
   const [loading, setLoading]       = useState(true);
   const [showMobileBdays, setShowMobileBdays] = useState(false);
+  const [suggested, setSuggested] = useState([]);
   const autoPostedRef = useRef(new Set());
 
   useEffect(() => {
@@ -1434,6 +1435,11 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
         .filter((u) => u.daysUntil !== null)
         .sort((a, b) => a.daysUntil - b.daysUntil);
       setBirthdays(upcoming);
+      // Suggested members for sidebar
+      const others = users
+        .filter((u) => u.id !== authProfile?.uid && (u.profession || u.city || u.bio))
+        .sort((a, b) => ((b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1));
+      setSuggested(others.slice(0, 5));
     });
   }, []);
 
@@ -1674,6 +1680,40 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             currentUser={user}
             currentUserProfile={profile}
           />
+
+          {/* Recommended members */}
+          {suggested.length > 0 && (
+            <div className="card" style={{ padding:"1rem" }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 0.75rem" }}>
+                {t.dash?.suggestedMembers || "People You May Know"}
+              </p>
+              <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+                {suggested.map((u) => {
+                  const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
+                  const av   = u.photoURL || u.avatarUrl || null;
+                  const isOnline = u.lastSeen && (Date.now() - new Date(u.lastSeen).getTime()) < 5 * 60 * 1000;
+                  return (
+                    <div key={u.id} onClick={() => onViewProfile?.(u.id)}
+                      style={{ display:"flex", alignItems:"center", gap:"0.6rem", cursor:"pointer", padding:"0.4rem 0.3rem", borderRadius:8, transition:"background 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background="var(--bg-tertiary,#f0f6fb)"}
+                      onMouseLeave={e => e.currentTarget.style.background="transparent"}
+                    >
+                      <div style={{ position:"relative", flexShrink:0, width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#e8735a)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                        {av ? <img src={av} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{name[0]?.toUpperCase()}</span>}
+                        {isOnline && <div style={{ position:"absolute", bottom:0, right:0, width:8, height:8, borderRadius:"50%", background:"#4ade80", border:"1.5px solid var(--bg-primary)" }} />}
+                      </div>
+                      <div style={{ minWidth:0, flex:1 }}>
+                        <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                        {(u.profession || u.city) && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.profession || u.city}</p>}
+                      </div>
+                      <span style={{ fontSize:11, color:"var(--brand,#4472b8)", fontWeight:600, flexShrink:0 }}>→</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <SlideshowBanner />
 
         </aside>
