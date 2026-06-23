@@ -90,6 +90,43 @@ const AT = {
       admin_delete_comment: (n)=>`${n} (מנהלת) מחקה תגובה`,
       default:              (n,type)=>`${n} ביצעה פעולה: ${type}`,
     },
+    allMembers:"כל החברות", searchByNamePh:"חפשי לפי שם, אימייל, מקצוע...",
+    sortRecent:"אחרונות", sortAlpha:"א–ת", sortAdminsFirst:"מנהלות קודם",
+    adminsOnly:"מנהלות בלבד", onlineOnly:"מחוברות עכשיו",
+    colMember:"חברה", colStatus:"סטטוס", colJoined:"הצטרפות", colActions:"פעולות",
+    statusPending:"ממתינה", adminBadge:"מנהלת", onlineBadge:"מחוברת",
+    viewOnly:"צפייה בלבד", noMembersFound:"לא נמצאו חברות.",
+    allPosts:"כל הפוסטים", sortMostLiked:"הכי אהוב", pinnedOnly:"מוצמדים בלבד", hasMedia:"עם מדיה",
+    colAuthor:"מחברת", colContent:"תוכן", colMedia:"מדיה", colComments:"תגובות", colPosted:"פורסם",
+    showLess:"הצג פחות", showFullPost:"הצג פוסט מלא",
+    hide:"הסתר", showCommentsFn:(n)=>`הצג (${n})`,
+    loadingComments:"טוען תגובות...", noComments:"אין תגובות עדיין.",
+    pinLbl:"הצמד", unpinLbl:"הסר הצמדה", noPosts:"אין פוסטים עדיין.",
+    deletePostConfirm:"למחוק פוסט זה?", deleteCommentConfirm:"למחוק תגובה זו?",
+    distributionLabel:"התפלגות", growthLabel:"צמיחה", membersNavLabel:"חברות",
+    regionsLabel:"אזורים", professionsLabel:"מקצועות", religionLabel:"דת",
+    noDataSelection:"אין נתונים לסינון זה", newMembersLabel:"חברות חדשות",
+    inPeriodLabel:"בתקופה", customLabel:"מותאם",
+    fromLabel:"מ-", toLabel:"עד-", todayLabel:"היום",
+    membersCountFn:(n)=>`${n} ${n===1?"חברה":"חברות"}`,
+    newestLabel:"חדשות", oldestLabel:"ישנות", noMembersInPeriod:"אין חברות בתקופה זו.",
+    searchReporterPh:"חפשי מדווחת או מדווח עליה...", allFilter:"הכל", dismissedLabel:"נדחה",
+    noReportsFiltered:"אין דיווחים תואמים לסינון.",
+    conversationLabel:(a,b)=>`שיחה — ${a} ו${b}`, noMessages:"לא נלכדו הודעות.", convoBtn:"שיחה",
+    clearFilter:"נקה סינון", actorNameLabel:"שם המשתמשת",
+    fromDateLabel:"מתאריך", toDateLabel:"עד תאריך", clearBtn:"נקה",
+    loadingLogs:"טוען יומן...", noLogsFiltered:"אין רשומות תואמות לסינון.",
+    showingEntriesFn:(n,t)=>`מציג ${n} מתוך ${t} רשומות`,
+    fieldsLabel:"שדות:", toLogLabel:"אל:",
+    addedByLabel:"נוסף ע\"י", loading:"טוען...",
+    accessDenied:"גישה נדחתה", accessDeniedMsg:"אזור זה מוגבל למנהלות בלבד.",
+    slideshowTitle:"סרגל תמונות", slideshowCaptionPh:"כיתוב (רשות)",
+    slideshowMoveUp:"↑ העלה", slideshowUploading:"מעלה...",
+    slideshowUpload:"העלה תמונות", slideshowMultiple:"בחרי מספר",
+    slideshowEmpty:"אין תמונות לסרגל עדיין. העלי תמונה למעלה.",
+    chartMembers:"חברות", chartTotal:"סה\"כ",
+    editUsersSectionTitle:"עריכת משתמשות", noUsersMatch:"לא נמצאו משתמשות.", colAdmin:"מנהלת", colName:"שם",
+    pendingBadge:(n)=>`(${n} ממתינות)`,
   },
   en: {
     pageTitle: "Admin Dashboard", pageSub: "Platform management and analytics",
@@ -164,6 +201,43 @@ const AT = {
       admin_delete_comment: (n)=>`${n} (admin) deleted a comment`,
       default:              (n,type)=>`${n} performed action: ${type}`,
     },
+    allMembers:"All Members", searchByNamePh:"Search by name, email, profession…",
+    sortRecent:"Recent", sortAlpha:"A–Z", sortAdminsFirst:"Admins first",
+    adminsOnly:"Admins only", onlineOnly:"Online now",
+    colMember:"Member", colStatus:"Status", colJoined:"Joined", colActions:"Actions",
+    statusPending:"Pending", adminBadge:"Admin", onlineBadge:"Online",
+    viewOnly:"View only", noMembersFound:"No members found.",
+    allPosts:"All Posts", sortMostLiked:"Most liked", pinnedOnly:"Pinned only", hasMedia:"Has media",
+    colAuthor:"Author", colContent:"Content", colMedia:"Media", colComments:"Comments", colPosted:"Posted",
+    showLess:"Show less", showFullPost:"Show full post",
+    hide:"Hide", showCommentsFn:(n)=>`Show (${n})`,
+    loadingComments:"Loading comments…", noComments:"No comments yet.",
+    pinLbl:"Pin", unpinLbl:"Unpin", noPosts:"No posts yet.",
+    deletePostConfirm:"Delete this post?", deleteCommentConfirm:"Delete this comment?",
+    distributionLabel:"Distribution", growthLabel:"Growth", membersNavLabel:"Members",
+    regionsLabel:"Regions", professionsLabel:"Professions", religionLabel:"Religion",
+    noDataSelection:"No data for this selection", newMembersLabel:"New Members",
+    inPeriodLabel:"in period", customLabel:"Custom",
+    fromLabel:"From", toLabel:"To", todayLabel:"Today",
+    membersCountFn:(n)=>`${n} member${n!==1?"s":""}`,
+    newestLabel:"Newest", oldestLabel:"Oldest", noMembersInPeriod:"No members in this period.",
+    searchReporterPh:"Search reporter or reported…", allFilter:"All", dismissedLabel:"Dismissed",
+    noReportsFiltered:"No reports match the filters.",
+    conversationLabel:(a,b)=>`Conversation — ${a} & ${b}`, noMessages:"No messages captured.", convoBtn:"Convo",
+    clearFilter:"Clear filter", actorNameLabel:"Actor name",
+    fromDateLabel:"From date", toDateLabel:"To date", clearBtn:"Clear",
+    loadingLogs:"Loading logs…", noLogsFiltered:"No logs match the current filters.",
+    showingEntriesFn:(n,t)=>`Showing ${n} of ${t} entries`,
+    fieldsLabel:"Fields:", toLogLabel:"To:",
+    addedByLabel:"Added by", loading:"Loading…",
+    accessDenied:"Access Denied", accessDeniedMsg:"This area is restricted to administrators only.",
+    slideshowTitle:"Slideshow", slideshowCaptionPh:"Caption (optional)",
+    slideshowMoveUp:"↑ Move up", slideshowUploading:"Uploading...",
+    slideshowUpload:"Upload images", slideshowMultiple:"Select multiple",
+    slideshowEmpty:"No slideshow images yet. Upload one above.",
+    chartMembers:"members", chartTotal:"total",
+    editUsersSectionTitle:"Edit Users", noUsersMatch:"No users match your search.", colAdmin:"Admin", colName:"Name",
+    pendingBadge:(n)=>`(${n} pending)`,
   },
   ar: {
     pageTitle: "لوحة تحكم المشرف", pageSub: "إدارة المنصة والتحليلات",
@@ -233,6 +307,48 @@ const AT = {
       admin_delete_comment: (n)=>`${n} (مشرفة) حذفت تعليقاً`,
       default:              (n,type)=>`${n} نفّذت إجراء: ${type}`,
     },
+    dataManage:"إدارة البيانات", downloadBtn:"تنزيل Excel", uploadBtn:"رفع Excel", importing:"جارٍ الاستيراد...",
+    dirNote:"الاستيراد يُنشئ سجلات الدليل فقط (بدون حساب تسجيل دخول).",
+    created:"تم الإنشاء", skippedDup:"تم التخطي (مكرر)", errorsLbl:"أخطاء", rowLbl:"صف",
+    exportTitle:"تصدير الأعضاء إلى Excel", exportSub:"اختاري الحقول التي تريدين تضمينها.", selectAll:"تحديد الكل", clearAll:"مسح",
+    importBadType:"ملف غير صالح — يُقبل .xlsx أو .xls فقط.", importEmpty:"الورقة فارغة.", importMissing:"حقول مفقودة", importBadEmail:"بريد إلكتروني غير صالح",
+    allMembers:"جميع الأعضاء", searchByNamePh:"ابحثي بالاسم أو البريد الإلكتروني أو المهنة...",
+    sortRecent:"الأحدث", sortAlpha:"أ–ي", sortAdminsFirst:"المشرفات أولاً",
+    adminsOnly:"المشرفات فقط", onlineOnly:"متصلات الآن",
+    colMember:"عضوة", colStatus:"الحالة", colJoined:"تاريخ الانضمام", colActions:"الإجراءات",
+    statusPending:"قيد الانتظار", adminBadge:"مشرفة", onlineBadge:"متصلة",
+    viewOnly:"عرض فقط", noMembersFound:"لم يتم العثور على أعضاء.",
+    allPosts:"جميع المنشورات", sortMostLiked:"الأكثر إعجاباً", pinnedOnly:"المثبتة فقط", hasMedia:"بوسائط",
+    colAuthor:"الكاتبة", colContent:"المحتوى", colMedia:"الوسائط", colComments:"التعليقات", colPosted:"نُشر",
+    showLess:"عرض أقل", showFullPost:"عرض المنشور كاملاً",
+    hide:"إخفاء", showCommentsFn:(n)=>`عرض (${n})`,
+    loadingComments:"جارٍ تحميل التعليقات...", noComments:"لا توجد تعليقات بعد.",
+    pinLbl:"تثبيت", unpinLbl:"إلغاء التثبيت", noPosts:"لا توجد منشورات بعد.",
+    deletePostConfirm:"هل تريدين حذف هذا المنشور؟", deleteCommentConfirm:"هل تريدين حذف هذا التعليق؟",
+    distributionLabel:"التوزيع", growthLabel:"النمو", membersNavLabel:"الأعضاء",
+    regionsLabel:"المناطق", professionsLabel:"المهن", religionLabel:"الدين",
+    noDataSelection:"لا توجد بيانات لهذا الاختيار", newMembersLabel:"أعضاء جدد",
+    inPeriodLabel:"في الفترة", customLabel:"مخصص",
+    fromLabel:"من", toLabel:"إلى", todayLabel:"اليوم",
+    membersCountFn:(n)=>`${n} ${n===1?"عضوة":"أعضاء"}`,
+    newestLabel:"الأحدث", oldestLabel:"الأقدم", noMembersInPeriod:"لا يوجد أعضاء في هذه الفترة.",
+    searchReporterPh:"ابحثي عن المبلِّغة أو المُبلَّغ عنها...", allFilter:"الكل", dismissedLabel:"مرفوض",
+    noReportsFiltered:"لا توجد بلاغات تطابق التصفية.",
+    conversationLabel:(a,b)=>`محادثة — ${a} و${b}`, noMessages:"لم يتم التقاط رسائل.", convoBtn:"محادثة",
+    clearFilter:"مسح التصفية", actorNameLabel:"اسم المستخدمة",
+    fromDateLabel:"من تاريخ", toDateLabel:"إلى تاريخ", clearBtn:"مسح",
+    loadingLogs:"جارٍ تحميل السجل...", noLogsFiltered:"لا توجد سجلات تطابق التصفية.",
+    showingEntriesFn:(n,t)=>`عرض ${n} من ${t} سجل`,
+    fieldsLabel:"الحقول:", toLogLabel:"إلى:",
+    addedByLabel:"أضيف بواسطة", loading:"جارٍ التحميل...",
+    accessDenied:"تم رفض الوصول", accessDeniedMsg:"هذه المنطقة مخصصة للمشرفات فقط.",
+    slideshowTitle:"عرض الشرائح", slideshowCaptionPh:"التسمية (اختياري)",
+    slideshowMoveUp:"↑ نقل للأعلى", slideshowUploading:"جارٍ الرفع...",
+    slideshowUpload:"رفع صور", slideshowMultiple:"اختر متعددة",
+    slideshowEmpty:"لا توجد صور للعرض بعد. ارفعي صورة أعلاه.",
+    chartMembers:"أعضاء", chartTotal:"إجمالي",
+    editUsersSectionTitle:"تعديل المستخدمات", noUsersMatch:"لا توجد مستخدمات تطابق البحث.", colAdmin:"مشرفة", colName:"الاسم",
+    pendingBadge:(n)=>`(${n} قيد الانتظار)`,
   },
 };
 
@@ -548,14 +664,14 @@ const PERM_KEYS = ["canManageUsers","canManageContent","canViewLogs","canManageA
 const DEFAULT_PERMS = Object.fromEntries(PERM_KEYS.map(k => [k, false]));
 
 /* ── Simple confirm modal ── */
-function ConfirmModal({ title, message, confirmLabel, onConfirm, onCancel, danger = true }) {
+function ConfirmModal({ title, message, confirmLabel, cancelLabel = "Cancel", onConfirm, onCancel, danger = true }) {
   return (
     <div style={S.overlay} onClick={onCancel}>
       <div style={{ ...S.modalBox, maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <p style={{ ...S.modalTitle, color: danger ? "#c25c5c" : "var(--text-primary,#111827)" }}>{title}</p>
         <p style={{ fontSize: 14, color: "var(--text-secondary,#7a5868)", lineHeight: 1.6, margin: 0 }}>{message}</p>
         <div style={S.modalActions}>
-          <button style={S.cancelModalBtn} onClick={onCancel}>Cancel</button>
+          <button style={S.cancelModalBtn} onClick={onCancel}>{cancelLabel}</button>
           <button style={{
             ...S.saveModalBtn,
             background: danger ? "#e9415b" : "var(--brand,#4472b8)",
@@ -836,7 +952,7 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
               {item.badge && <span style={{ fontSize:10, background:"#d1fae5", color:"#065f46", borderRadius:99, padding:"1px 6px", fontWeight:700 }}>{item.badge}</span>}
             </div>
           ))}
-          {items.length === 0 && <p style={{ fontSize:13, color:"var(--text-muted,#6b7280)", textAlign:"center", marginTop:"2rem" }}>No data</p>}
+          {items.length === 0 && <p style={{ fontSize:13, color:"var(--text-muted,#6b7280)", textAlign:"center", marginTop:"2rem" }}>{Tr.noData}</p>}
         </div>
       </div>
     </div>
@@ -846,7 +962,7 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
 /* ══════════════════════════════════════════════════════
    SLIDESHOW ADMIN COMPONENT
 ═══════════════════════════════════════════════════════ */
-function SlideshowAdmin() {
+function SlideshowAdmin({ Tr }) {
   const [images, setImages]       = useState([]);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -910,10 +1026,10 @@ function SlideshowAdmin() {
               <input
                 value={img.caption || ""}
                 onChange={e => updateCaption(i, e.target.value)}
-                placeholder="Caption (optional)"
+                placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
                 style={{ width:"100%", fontSize:12, padding:"4px 8px", borderRadius:6, border:"1px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", boxSizing:"border-box" }}
               />
-              <button onClick={() => moveUp(i)} disabled={i === 0} style={{ fontSize:11, padding:"3px 0", background:"none", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", color:"var(--text-muted)" }}>↑ Move up</button>
+              <button onClick={() => moveUp(i)} disabled={i === 0} style={{ fontSize:11, padding:"3px 0", background:"none", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", color:"var(--text-muted)" }}>{Tr?.slideshowMoveUp || "↑ Move up"}</button>
             </div>
             <button onClick={() => remove(i)} style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.55)", color:"#fff", border:"none", borderRadius:"50%", width:26, height:26, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
           </div>
@@ -921,13 +1037,13 @@ function SlideshowAdmin() {
 
         <label style={{ width:180, height:150, borderRadius:12, border:"2px dashed var(--border)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: uploading ? "wait" : "pointer", color:"var(--text-muted)", fontSize:13, gap:6, background:"var(--bg-secondary)" }}>
           <span style={{ fontSize:28 }}>+</span>
-          <span>{uploading ? "Uploading..." : "Upload images"}</span>
-          <span style={{ fontSize:10, color:"var(--text-muted)", marginTop:-4 }}>Select multiple</span>
+          <span>{uploading ? (Tr?.slideshowUploading || "Uploading...") : (Tr?.slideshowUpload || "Upload images")}</span>
+          <span style={{ fontSize:10, color:"var(--text-muted)", marginTop:-4 }}>{Tr?.slideshowMultiple || "Select multiple"}</span>
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
         </label>
       </div>
       {images.length === 0 && !uploading && (
-        <p style={{ fontSize:13, color:"var(--text-muted)", textAlign:"center", padding:"1rem 0" }}>No slideshow images yet. Upload one above.</p>
+        <p style={{ fontSize:13, color:"var(--text-muted)", textAlign:"center", padding:"1rem 0" }}>{Tr?.slideshowEmpty || "No slideshow images yet. Upload one above."}</p>
       )}
     </div>
   );
@@ -946,7 +1062,7 @@ function useIsMobile() {
   return isMobile;
 }
 
-function DistributionDonutChart({ users, lang }) {
+function DistributionDonutChart({ users, lang, Tr }) {
   const [distType,  setDistType]  = useState("regions");
   const [timeframe, setTimeframe] = useState("all");
   const [hovIdx,    setHovIdx]    = useState(null);
@@ -1034,11 +1150,11 @@ function DistributionDonutChart({ users, lang }) {
         {hov ? `${hov.pct}%` : filteredUsers.length}
       </text>
       <text x={CX} y={CY + 11} textAnchor="middle" style={{ fontSize:10, fill:"var(--text-muted,#6b7280)", fontFamily:"inherit" }}>
-        {hov ? hov.label.slice(0, 14) : "members"}
+        {hov ? hov.label.slice(0, 14) : (Tr?.chartMembers || "members")}
       </text>
       {hov && (
         <text x={CX} y={CY + 24} textAnchor="middle" style={{ fontSize:9, fill:"var(--text-muted,#6b7280)", fontFamily:"inherit" }}>
-          {hov.count} total
+          {hov.count} {Tr?.chartTotal || "total"}
         </text>
       )}
     </svg>
@@ -1068,24 +1184,24 @@ function DistributionDonutChart({ users, lang }) {
   if (isMobile) {
     return (
       <div className="card" style={{ padding:"1.25rem" }}>
-        <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 0.75rem" }}>Distribution</p>
+        <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 0.75rem" }}>{Tr?.distributionLabel || "Distribution"}</p>
         <div style={{ display:"flex", gap:8, marginBottom:"1.25rem" }}>
           <select value={distType} onChange={e => setDistType(e.target.value)} style={selStyle}>
-            <option value="regions">Regions</option>
-            <option value="professions">Professions</option>
-            <option value="ethnicity">Ethnicity</option>
-            <option value="religion">Religion</option>
+            <option value="regions">{Tr?.regionsLabel || "Regions"}</option>
+            <option value="professions">{Tr?.professionsLabel || "Professions"}</option>
+            <option value="ethnicity">{Tr?.ethnicity || "Ethnicity"}</option>
+            <option value="religion">{Tr?.religionLabel || "Religion"}</option>
           </select>
           <select value={timeframe} onChange={e => setTimeframe(e.target.value)} style={{ ...selStyle, flex:"0 0 80px" }}>
             <option value="30d">30d</option>
             <option value="90d">90d</option>
             <option value="6m">6m</option>
             <option value="1y">1y</option>
-            <option value="all">All</option>
+            <option value="all">{Tr?.allFilter || "All"}</option>
           </select>
         </div>
         {entries.length === 0
-          ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", textAlign:"center", padding:"2rem 0" }}>No data</p>
+          ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", textAlign:"center", padding:"2rem 0" }}>{Tr?.noData || "No data"}</p>
           : (<>
               <div style={{ display:"flex", justifyContent:"center", marginBottom:"1rem" }}>{donutSvg(160)}</div>
               {legend}
@@ -1098,18 +1214,18 @@ function DistributionDonutChart({ users, lang }) {
   return (
     <div className="card" style={{ padding:"1.5rem" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:10, marginBottom:"1.25rem" }}>
-        <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>Distribution</p>
+        <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>{Tr?.distributionLabel || "Distribution"}</p>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
           <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-            {[["regions","Regions"],["professions","Professions"],["ethnicity","Ethnicity"],["religion","Religion"]].map(([v,l]) => segBtn(v,l,distType===v,setDistType))}
+            {[["regions", Tr?.regionsLabel||"Regions"],["professions", Tr?.professionsLabel||"Professions"],["ethnicity", Tr?.ethnicity||"Ethnicity"],["religion", Tr?.religionLabel||"Religion"]].map(([v,l]) => segBtn(v,l,distType===v,setDistType))}
           </div>
           <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-            {[["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all","All"]].map(([v,l]) => segBtn(v,l,timeframe===v,setTimeframe))}
+            {[["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr?.allFilter||"All"]].map(([v,l]) => segBtn(v,l,timeframe===v,setTimeframe))}
           </div>
         </div>
       </div>
       {entries.length === 0
-        ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", textAlign:"center", padding:"3rem 0" }}>No data for this selection</p>
+        ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", textAlign:"center", padding:"3rem 0" }}>{Tr?.noDataSelection || "No data for this selection"}</p>
         : (
           <div style={{ display:"flex", gap:"2rem", alignItems:"center", flexWrap:"wrap" }}>
             {donutSvg(180)}
@@ -1124,7 +1240,7 @@ function DistributionDonutChart({ users, lang }) {
 /* ══════════════════════════════════════════════════════
    MEMBER GROWTH CHART
 ═══════════════════════════════════════════════════════ */
-function MemberGrowthChart({ users }) {
+function MemberGrowthChart({ users, Tr }) {
   const todayStr    = new Date().toISOString().slice(0, 10);
   const defaultFrom = (() => { const d = new Date(); d.setDate(d.getDate() - 29); return d.toISOString().slice(0, 10); })();
 
@@ -1184,11 +1300,11 @@ function MemberGrowthChart({ users }) {
       <div className="admin-growth-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"1.25rem", gap:12, flexWrap:"wrap" }}>
         <div>
           <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 6px" }}>
-            New Members
+            {Tr?.newMembersLabel || "New Members"}
           </p>
           <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
             <span style={{ fontSize:32, fontWeight:800, color:"var(--text-primary,#111827)", lineHeight:1 }}>{total}</span>
-            <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)", fontWeight:500 }}>in period</span>
+            <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)", fontWeight:500 }}>{Tr?.inPeriodLabel || "in period"}</span>
           </div>
         </div>
 
@@ -1203,8 +1319,8 @@ function MemberGrowthChart({ users }) {
             <option value="7d">7d</option>
             <option value="30d">30d</option>
             <option value="90d">90d</option>
-            <option value="all">All</option>
-            <option value="custom">Custom</option>
+            <option value="all">{Tr?.allFilter || "All"}</option>
+            <option value="custom">{Tr?.customLabel || "Custom"}</option>
           </select>
         ) : (
           <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:10, padding:3, gap:1, alignSelf:"flex-start" }}>
@@ -1212,8 +1328,8 @@ function MemberGrowthChart({ users }) {
               { val:"7d",     label:"7d"     },
               { val:"30d",    label:"30d"    },
               { val:"90d",    label:"90d"    },
-              { val:"all",    label:"All"    },
-              { val:"custom", label:"Custom" },
+              { val:"all",    label:Tr?.allFilter || "All"    },
+              { val:"custom", label:Tr?.customLabel || "Custom" },
             ].map(opt => (
               <button key={opt.val} onClick={() => applyPreset(opt.val)} style={{
                 fontSize:11, fontWeight:600, padding:"5px 11px", borderRadius:7, border:"none", cursor:"pointer", transition:"all 0.15s",
@@ -1229,10 +1345,10 @@ function MemberGrowthChart({ users }) {
       {/* Custom date pickers */}
       {preset === "custom" && (
         <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:"1rem", flexWrap:"wrap" }}>
-          <span style={{ fontSize:11, fontWeight:600, color:"var(--text-muted,#6b7280)" }}>From</span>
+          <span style={{ fontSize:11, fontWeight:600, color:"var(--text-muted,#6b7280)" }}>{Tr?.fromLabel || "From"}</span>
           <input type="date" value={dateFrom} max={dateTo} onChange={e => setDateFrom(e.target.value)}
             style={{ fontSize:12, padding:"6px 10px", borderRadius:8, border:"1.5px solid var(--border,#daeaf8)", background:"var(--bg-primary,#fff)", color:"var(--text-primary,#111827)", fontFamily:"inherit" }} />
-          <span style={{ fontSize:11, fontWeight:600, color:"var(--text-muted,#6b7280)" }}>To</span>
+          <span style={{ fontSize:11, fontWeight:600, color:"var(--text-muted,#6b7280)" }}>{Tr?.toLabel || "To"}</span>
           <input type="date" value={dateTo} min={dateFrom} max={todayStr} onChange={e => setDateTo(e.target.value)}
             style={{ fontSize:12, padding:"6px 10px", borderRadius:8, border:"1.5px solid var(--border,#daeaf8)", background:"var(--bg-primary,#fff)", color:"var(--text-primary,#111827)", fontFamily:"inherit" }} />
         </div>
@@ -1291,7 +1407,7 @@ function MemberGrowthChart({ users }) {
             boxShadow:"0 6px 20px rgba(0,0,0,0.22)", zIndex:10, lineHeight:1.6,
           }}>
             <span style={{ fontSize:16, fontWeight:800 }}>{hov.count}</span>
-            {" "}{hov.count === 1 ? "member" : "members"}
+            {" "}{Tr?.membersCountFn ? Tr.membersCountFn(hov.count).replace(/^\d+\s*/, "") : (hov.count === 1 ? "member" : "members")}
             <br />
             <span style={{ fontWeight:400, fontSize:11, opacity:0.7 }}>
               {hov.date.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" })}
@@ -1304,7 +1420,7 @@ function MemberGrowthChart({ users }) {
       <div style={{ display:"flex", justifyContent:"space-between", marginTop:10 }}>
         <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{days[0]?.toLocaleDateString(undefined, { month:"short", day:"numeric" })}</span>
         {days.length > 6 && <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{days[Math.floor(days.length / 2)]?.toLocaleDateString(undefined, { month:"short", day:"numeric" })}</span>}
-        <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>Today</span>
+        <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{Tr?.todayLabel || "Today"}</span>
       </div>
     </div>
   );
@@ -1499,8 +1615,8 @@ export default function AdminPage() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted,#6b7280)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <h3>Access Denied</h3>
-          <p>This area is restricted to administrators only.</p>
+          <h3>{Tr.accessDenied}</h3>
+          <p>{Tr.accessDeniedMsg}</p>
         </div>
       </div>
     );
@@ -1587,7 +1703,7 @@ export default function AdminPage() {
 
   /* ── Post operations ── */
   const deletePost = async (id) => {
-    if (!window.confirm("Delete this post?")) return;
+    if (!window.confirm(Tr.deletePostConfirm)) return;
     await deletePostWithCleanup(id);
     setPosts(prev => prev.filter(p => p.id !== id));
     logActivity({
@@ -1622,7 +1738,7 @@ export default function AdminPage() {
   };
 
   const deleteComment = async (postId, comment) => {
-    if (!window.confirm("Delete this comment?")) return;
+    if (!window.confirm(Tr.deleteCommentConfirm)) return;
     try {
       await deleteDoc(doc(db, "posts", postId, "comments", comment.id));
       const post = posts.find(p => p.id === postId);
@@ -1782,7 +1898,7 @@ export default function AdminPage() {
     { id: "data",      label: Tr.showDataTab, show: canViewStats },
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}`, show: canManageContent },
     { id: "logs",      label: Tr.tabs.logs, show: canViewLogs },
-    { id: "slideshow",  label: Tr.admin?.slideshow || "Slideshow", show: canManageContent },
+    { id: "slideshow",  label: Tr.slideshowTitle, show: canManageContent },
     { id: "blacklist",  label: `🚫 ${Tr.blacklistTab || "Blacklist"}${blacklist.length > 0 ? ` (${blacklist.length})` : ""}`, show: canManageUsers },
   ].filter(t => t.show);
 
@@ -2003,21 +2119,21 @@ export default function AdminPage() {
           {/* Members header + inline filter bar */}
           <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              All Members <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredBySearch.length})</span>
+              {Tr.allMembers} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredBySearch.length})</span>
             </span>
             <input
               className="input admin-search-input"
-              placeholder="Search by name, email, profession…"
+              placeholder={Tr.searchByNamePh}
               value={searchUser}
               onChange={e => setSearchUser(e.target.value)}
               style={{ fontSize:12, width:220, flexShrink:0 }}
             />
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
-                { val:"recent", label:"Recent" },
-                { val:"alpha",  label:"A–Z" },
-                { val:"city",   label:"City" },
-                { val:"perms",  label:"Admins first" },
+                { val:"recent", label:Tr.sortRecent },
+                { val:"alpha",  label:Tr.sortAlpha },
+                { val:"city",   label:Tr.city },
+                { val:"perms",  label:Tr.sortAdminsFirst },
               ].map(opt => (
                 <button key={opt.val} onClick={() => setUserSortBy(opt.val)}
                   style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
@@ -2028,11 +2144,11 @@ export default function AdminPage() {
               ))}
               <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
                 <input type="checkbox" checked={userFilterAdmin} onChange={e => setUserFilterAdmin(e.target.checked)} style={{ cursor:"pointer" }} />
-                Admins only
+                {Tr.adminsOnly}
               </label>
               <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
                 <input type="checkbox" checked={userFilterOnline} onChange={e => setUserFilterOnline(e.target.checked)} style={{ cursor:"pointer" }} />
-                Online now
+                {Tr.onlineOnly}
               </label>
             </div>
           </div>
@@ -2040,7 +2156,7 @@ export default function AdminPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
               <thead>
                 <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
-                  {["Member","Profession","City","Status","Joined","Actions"].map(h => (
+                  {[Tr.colMember, Tr.profession, Tr.city, Tr.colStatus, Tr.colJoined, Tr.colActions].map(h => (
                     <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -2070,10 +2186,10 @@ export default function AdminPage() {
                     <td style={{ padding:"11px 14px" }}>
                       <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
                         <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
-                          {u.emailVerified ? "Verified" : "Pending"}
+                          {u.emailVerified ? Tr.verified : Tr.statusPending}
                         </span>
-                        {u.isAdmin && <span className="badge badge-purple">Admin</span>}
-                        {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● Online</span>}
+                        {u.isAdmin && <span className="badge badge-purple">{Tr.adminBadge}</span>}
+                        {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● {Tr.onlineBadge}</span>}
                       </div>
                     </td>
                     <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>
@@ -2105,7 +2221,7 @@ export default function AdminPage() {
                             style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
                             {Tr.deleteLbl}
                           </button>}
-                          {!canManageUsers && !canManageAdmins && <span style={{fontSize:11,color:"var(--text-muted)"}}>View only</span>}
+                          {!canManageUsers && !canManageAdmins && <span style={{fontSize:11,color:"var(--text-muted)"}}>{Tr.viewOnly}</span>}
                         </div>
                       )}
                     </td>
@@ -2139,7 +2255,7 @@ export default function AdminPage() {
               </tbody>
             </table>
             {filteredBySearch.length === 0 && (
-              <div className="empty-state"><p>No members found.</p></div>
+              <div className="empty-state"><p>{Tr.noMembersFound}</p></div>
             )}
           </div>
         </>
@@ -2148,26 +2264,26 @@ export default function AdminPage() {
       {/* ══ EDIT USERS TAB ══ */}
       {!loading && tab === "editUsers" && (
         <div>
-          <SectionHeader title="Edit Users" count={users.length} />
+          <SectionHeader title={Tr.editUsersSectionTitle} count={users.length} />
           <input
             style={S.searchInput}
             type="text"
-            placeholder="Search by name, email, profession…"
+            placeholder={Tr.searchByNamePh}
             value={userSearch}
             onChange={e => setUserSearch(e.target.value)}
           />
           <div style={S.tableWrap}>
             {filteredBySearch.length === 0 ? (
-              <p style={S.empty}>No users match your search.</p>
+              <p style={S.empty}>{Tr.noUsersMatch}</p>
             ) : (
               <table style={S.table}>
                 <thead>
                   <tr>
-                    <th style={S.th}>Name</th>
-                    <th style={S.th}>Profession</th>
-                    <th style={S.th}>City</th>
-                    <th style={S.th}>Admin</th>
-                    <th style={S.th}>Actions</th>
+                    <th style={S.th}>{Tr.colName}</th>
+                    <th style={S.th}>{Tr.profession}</th>
+                    <th style={S.th}>{Tr.city}</th>
+                    <th style={S.th}>{Tr.colAdmin}</th>
+                    <th style={S.th}>{Tr.colActions}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2182,7 +2298,7 @@ export default function AdminPage() {
                       <td style={S.td}>{u.profession || "—"}</td>
                       <td style={S.td}>{u.city || "—"}</td>
                       <td style={S.td}>
-                        {u.isAdmin ? <span style={S.adminBadge}>Admin</span> : <span style={{ color: "#d9c8ce" }}>—</span>}
+                        {u.isAdmin ? <span style={S.adminBadge}>{Tr.adminBadge}</span> : <span style={{ color: "#d9c8ce" }}>—</span>}
                       </td>
                       <td style={S.td}>
                         <button
@@ -2191,7 +2307,7 @@ export default function AdminPage() {
                           onMouseLeave={e => e.currentTarget.style.background = "none"}
                           onClick={() => setEditingUser(u)}
                         >
-                          Edit
+                          {Tr.editLbl}
                         </button>
                       </td>
                     </tr>
@@ -2225,20 +2341,20 @@ export default function AdminPage() {
           {/* Posts header + inline filter bar */}
           <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              All Posts <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredPosts.length})</span>
+              {Tr.allPosts} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredPosts.length})</span>
             </span>
             <input
               className="input admin-search-input"
               value={postSearch}
               onChange={e => setPostSearch(e.target.value)}
-              placeholder={Tr.searchPh || "Search posts..."}
+              placeholder={Tr.searchPh}
               style={{ fontSize:12, width:200, flexShrink:0 }}
             />
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
-                { val:"recent", label:"Recent" },
-                { val:"alpha",  label:"A–Z" },
-                { val:"likes",  label:"Most liked" },
+                { val:"recent", label:Tr.sortRecent },
+                { val:"alpha",  label:Tr.sortAlpha },
+                { val:"likes",  label:Tr.sortMostLiked },
               ].map(opt => (
                 <button key={opt.val} onClick={() => setPostSortBy(opt.val)}
                   style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
@@ -2249,11 +2365,11 @@ export default function AdminPage() {
               ))}
               <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
                 <input type="checkbox" checked={postFilterPinned} onChange={e => setPostFilterPinned(e.target.checked)} style={{ cursor:"pointer" }} />
-                Pinned only
+                {Tr.pinnedOnly}
               </label>
               <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
                 <input type="checkbox" checked={postFilterMedia} onChange={e => setPostFilterMedia(e.target.checked)} style={{ cursor:"pointer" }} />
-                Has media
+                {Tr.hasMedia}
               </label>
             </div>
           </div>
@@ -2261,7 +2377,7 @@ export default function AdminPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
               <thead>
                 <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
-                  {["Author","Content","Media","Comments","Posted","Actions"].map(h => (
+                  {[Tr.colAuthor, Tr.colContent, Tr.colMedia, Tr.colComments, Tr.colPosted, Tr.colActions].map(h => (
                     <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -2295,12 +2411,12 @@ export default function AdminPage() {
                               {isLong && (
                                 <button onClick={() => setExpandedPostComments(s => ({ ...s, [`text-${p.id}`]: !s[`text-${p.id}`] }))}
                                   style={{ fontSize:10, color:"var(--brand,#4472b8)", background:"none", border:"none", cursor:"pointer", padding:0, fontWeight:600 }}>
-                                  {isExpanded ? "Show less" : "Show full post"}
+                                  {isExpanded ? Tr.showLess : Tr.showFullPost}
                                 </button>
                               )}
                             </>
                           );
-                        })() : <em style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>Media post</em>}
+                        })() : <em style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>{Tr.mediaPost}</em>}
                       </td>
                       <td style={{ padding:"11px 14px" }}>
                         {p.media?.length > 0
@@ -2313,7 +2429,7 @@ export default function AdminPage() {
                           style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}
                           onClick={() => togglePostComments(p.id)}
                         >
-                          {expandedPostComments[p.id] ? "Hide" : `Show (${p.commentsCount ?? 0})`}
+                          {expandedPostComments[p.id] ? Tr.hide : Tr.showCommentsFn(p.commentsCount ?? 0)}
                         </button>
                       </td>
                       <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
@@ -2322,14 +2438,14 @@ export default function AdminPage() {
                           {canManageContent && <button
                             onClick={() => pinPost(p.id, p.isPinned)}
                             style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}
-                          >{p.isPinned ? "Unpin" : "Pin"}</button>}
+                          >{p.isPinned ? Tr.unpinLbl : Tr.pinLbl}</button>}
                           {canManageContent && <button
                             onClick={() => deletePost(p.id)}
                             style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}
                             onMouseEnter={e => e.currentTarget.style.background = "#eec3c3"}
                             onMouseLeave={e => e.currentTarget.style.background = "#f5dada"}
-                          >Delete</button>}
-                          {!canManageContent && <span style={{fontSize:11,color:"var(--text-muted)"}}>View only</span>}
+                          >{Tr.deleteLbl}</button>}
+                          {!canManageContent && <span style={{fontSize:11,color:"var(--text-muted)"}}>{Tr.viewOnly}</span>}
                         </div>
                       </td>
                     </tr>
@@ -2338,9 +2454,9 @@ export default function AdminPage() {
                         <td colSpan={6} style={{ padding:"0 14px 12px 46px",background:"var(--bg-secondary,#f0f6fb)" }}>
                           <div style={S.commentsWrap}>
                             {!postCommentsList[p.id] ? (
-                              <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>Loading comments…</p>
+                              <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.loadingComments}</p>
                             ) : postCommentsList[p.id].length === 0 ? (
-                              <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>No comments yet.</p>
+                              <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.noComments}</p>
                             ) : (
                               postCommentsList[p.id].map(c => (
                                 <div key={c.id} style={S.commentRow}>
@@ -2355,7 +2471,7 @@ export default function AdminPage() {
                                     onMouseLeave={e => e.currentTarget.style.background = "none"}
                                     onClick={() => deleteComment(p.id, c)}
                                   >
-                                    Delete
+                                    {Tr.deleteLbl}
                                   </button>
                                 </div>
                               ))
@@ -2368,7 +2484,7 @@ export default function AdminPage() {
                 ))}
               </tbody>
             </table>
-            {filteredPosts.length === 0 && <div className="empty-state"><p>No posts yet.</p></div>}
+            {filteredPosts.length === 0 && <div className="empty-state"><p>{Tr.noPosts}</p></div>}
           </div>
           </>
             );
@@ -2444,7 +2560,7 @@ export default function AdminPage() {
           {/* ── Mobile section nav ── */}
           {isMobile && (
             <div style={{ display:"flex", gap:0, marginBottom:"1rem", background:"var(--bg-secondary,#f0f6fb)", borderRadius:12, padding:3 }}>
-              {[["distribution","Distribution"],["growth","Growth"],["members","Members"]].map(([v,l]) => (
+              {[["distribution", Tr.distributionLabel],["growth", Tr.growthLabel],["members", Tr.membersNavLabel]].map(([v,l]) => (
                 <button key={v} onClick={() => setMobileDataSection(v)} style={{
                   flex:1, padding:"8px 4px", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", transition:"all 0.15s", borderRadius:9,
                   background: mobileDataSection === v ? "var(--bg-primary,#fff)" : "transparent",
@@ -2458,13 +2574,13 @@ export default function AdminPage() {
           {/* ── Row 1: Donut + Line Chart ── */}
           {isMobile ? (
             <>
-              {mobileDataSection === "distribution" && <DistributionDonutChart users={users} lang={lang} />}
-              {mobileDataSection === "growth" && <MemberGrowthChart users={users} />}
+              {mobileDataSection === "distribution" && <DistributionDonutChart users={users} lang={lang} Tr={Tr} />}
+              {mobileDataSection === "growth" && <MemberGrowthChart users={users} Tr={Tr} />}
             </>
           ) : (
             <div className="admin-data-charts" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", marginBottom:"1.25rem" }}>
-              <DistributionDonutChart users={users} lang={lang} />
-              <MemberGrowthChart users={users} />
+              <DistributionDonutChart users={users} lang={lang} Tr={Tr} />
+              <MemberGrowthChart users={users} Tr={Tr} />
             </div>
           )}
 
@@ -2484,7 +2600,7 @@ export default function AdminPage() {
                 <div className="admin-data-members-hdr" style={{ padding:"1rem 1.5rem", borderBottom:"1px solid var(--border,#daeaf8)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
                   <div>
                     <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 2px" }}>{Tr.recentMembers}</p>
-                    <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{sorted.length} member{sorted.length !== 1 ? "s" : ""}</span>
+                    <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.membersCountFn(sorted.length)}</span>
                   </div>
                   {isMobile ? (
                     <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -2493,7 +2609,7 @@ export default function AdminPage() {
                         borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
                         fontFamily:"inherit", cursor:"pointer",
                       }}>
-                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all","All"]].map(([v,l]) => (
+                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr.allFilter]].map(([v,l]) => (
                           <option key={v} value={v}>{l}</option>
                         ))}
                       </select>
@@ -2502,7 +2618,7 @@ export default function AdminPage() {
                         borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
                         fontFamily:"inherit", cursor:"pointer",
                       }}>
-                        {[["newest","Newest"],["oldest","Oldest"],["alpha","A–Z"],["profession","Profession"]].map(([v,l]) => (
+                        {[["newest",Tr.newestLabel],["oldest",Tr.oldestLabel],["alpha",Tr.sortAlpha],["profession",Tr.profession]].map(([v,l]) => (
                           <option key={v} value={v}>{l}</option>
                         ))}
                       </select>
@@ -2511,7 +2627,7 @@ export default function AdminPage() {
                     <div className="admin-data-controls-row" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
                       {/* Timeframe */}
                       <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all","All"]].map(([v,l]) => (
+                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr.allFilter]].map(([v,l]) => (
                           <button key={v} onClick={() => setRecentTimeframe(v)} style={{
                             fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
                             background: recentTimeframe===v ? "var(--bg-primary,#fff)" : "transparent",
@@ -2522,7 +2638,7 @@ export default function AdminPage() {
                       </div>
                       {/* Sort */}
                       <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-                        {[["newest","Newest"],["oldest","Oldest"],["alpha","A–Z"],["profession","Profession"]].map(([v,l]) => (
+                        {[["newest",Tr.newestLabel],["oldest",Tr.oldestLabel],["alpha",Tr.sortAlpha],["profession",Tr.profession]].map(([v,l]) => (
                           <button key={v} onClick={() => setRecentSort(v)} style={{
                             fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
                             background: recentSort===v ? "var(--bg-primary,#fff)" : "transparent",
@@ -2535,12 +2651,12 @@ export default function AdminPage() {
                   )}
                 </div>
                 {sorted.length === 0
-                  ? <div className="empty-state"><p>No members in this period.</p></div>
+                  ? <div className="empty-state"><p>{Tr.noMembersInPeriod}</p></div>
                   : (
                     <table style={{ ...S.table, minWidth:520 }}>
                       <thead>
                         <tr>
-                          {["Member","Profession","Region","Joined"].map(h => (
+                          {[Tr.colMember, Tr.profession, Tr.region, Tr.colJoined].map(h => (
                             <th key={h} style={S.th}>{h}</th>
                           ))}
                         </tr>
@@ -2585,21 +2701,21 @@ export default function AdminPage() {
           {/* Reports header + inline filter bar */}
           <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({reports.filter(r=>r.status==="pending").length} pending)</span>
+              {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>{Tr.pendingBadge(reports.filter(r=>r.status==="pending").length)}</span>
             </span>
             <input
               className="input admin-search-input"
               value={reportSearch}
               onChange={e => setReportSearch(e.target.value)}
-              placeholder="Search reporter or reported…"
+              placeholder={Tr.searchReporterPh}
               style={{ fontSize:12, width:220, flexShrink:0 }}
             />
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
-                { val:"all",       label:"All" },
-                { val:"pending",   label:"Pending" },
-                { val:"resolved",  label:"Resolved" },
-                { val:"dismissed", label:"Dismissed" },
+                { val:"all",       label:Tr.allFilter },
+                { val:"pending",   label:Tr.reportPending },
+                { val:"resolved",  label:Tr.reportResolved },
+                { val:"dismissed", label:Tr.dismissedLabel },
               ].map(opt => (
                 <button key={opt.val} onClick={() => setReportStatusFilter(opt.val)}
                   style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
@@ -2620,9 +2736,9 @@ export default function AdminPage() {
               return matchStatus && matchSearch;
             });
             return reportsLoading ? (
-              <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>Loading…</div>
+              <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>{Tr.loading}</div>
             ) : filteredReports.length === 0 ? (
-              <div className="empty-state"><p>{reports.length === 0 ? Tr.noReports : "No reports match the filters."}</p></div>
+              <div className="empty-state"><p>{reports.length === 0 ? Tr.noReports : Tr.noReportsFiltered}</p></div>
             ) : (
             <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
               <table style={{ ...S.table, minWidth: 560 }}>
@@ -2676,7 +2792,7 @@ export default function AdminPage() {
                             </>)}
                             <button onClick={() => setExpandedReportId(expandedReportId === r.id ? null : r.id)}
                               style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #93c5fd", background:"#eff6ff", color:"#1d4896", cursor:"pointer" }}>
-                              {expandedReportId === r.id ? "▲" : "▼ Convo"}
+                              {expandedReportId === r.id ? "▲" : `▼ ${Tr.convoBtn}`}
                             </button>
                           </div>
                         </td>
@@ -2686,10 +2802,10 @@ export default function AdminPage() {
                           <td colSpan={6} style={{ background:"var(--bg-secondary,#f0f6fb)", padding:"1rem 1.5rem 1.25rem", borderBottom:"2px solid var(--border,#daeaf8)" }}
                             onClick={e => e.stopPropagation()}>
                             <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 10px" }}>
-                              Conversation — {r.reporterName} &amp; {r.reportedName}
+                              {Tr.conversationLabel(r.reporterName, r.reportedName)}
                             </p>
                             {(!r.messages || r.messages.length === 0) ? (
-                              <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", fontStyle:"italic", margin:0 }}>No messages captured.</p>
+                              <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", fontStyle:"italic", margin:0 }}>{Tr.noMessages}</p>
                             ) : (
                               <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:340, overflowY:"auto", paddingRight:4 }}>
                                 {r.messages.map((m, i) => {
@@ -2760,7 +2876,7 @@ export default function AdminPage() {
                 })}
                 {logTypeFilter.length > 0 && (
                   <button onClick={() => setLogTypeFilter([])} style={{ padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",border:"1.5px solid var(--border,#f0dce0)",background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)" }}>
-                    Clear filter
+                    {Tr.clearFilter}
                   </button>
                 )}
               </div>
@@ -2769,21 +2885,21 @@ export default function AdminPage() {
             {/* Actor + Date range */}
             <div style={{ display:"flex",gap:"0.75rem",flexWrap:"wrap",alignItems:"center" }}>
               <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>Actor name</p>
-                <input style={{ ...S.logFilterInput,width:"200px" }} type="text" placeholder="Filter by actor…" value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.actorNameLabel}</p>
+                <input style={{ ...S.logFilterInput,width:"200px" }} type="text" placeholder={Tr.filterByActor} value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
               </div>
               <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>From date</p>
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.fromDateLabel}</p>
                 <input style={S.logFilterInput} type="date" value={logDateFrom} onChange={e => setLogDateFrom(e.target.value)} />
               </div>
               <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>To date</p>
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.toDateLabel}</p>
                 <input style={S.logFilterInput} type="date" value={logDateTo} onChange={e => setLogDateTo(e.target.value)} />
               </div>
               {(logActorFilter || logDateFrom || logDateTo) && (
                 <button onClick={() => { setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
                   style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)",border:"1.5px solid var(--border,#f0dce0)",marginTop:"18px" }}>
-                  Clear
+                  {Tr.clearBtn}
                 </button>
               )}
             </div>
@@ -2791,15 +2907,15 @@ export default function AdminPage() {
 
           {/* Log entries */}
           <div style={S.logPanel}>
-            {logsLoading && <p style={S.empty}>Loading logs…</p>}
+            {logsLoading && <p style={S.empty}>{Tr.loadingLogs}</p>}
             {!logsLoading && filteredLogs.length === 0 && (
-              <p style={S.empty}>{logs.length === 0 ? "No activity logs yet." : "No logs match the current filters."}</p>
+              <p style={S.empty}>{logs.length === 0 ? Tr.noLogs : Tr.noLogsFiltered}</p>
             )}
             {!logsLoading && filteredLogs.length > 0 && (
               <div style={S.logList}>
                 <div style={{ padding:"10px 1.25rem 6px",background:"var(--bg-primary,#fff)",borderBottom:"1px solid var(--border,#daeaf8)" }}>
                   <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>
-                    Showing {filteredLogs.length} of {logs.length} entries
+                    {Tr.showingEntriesFn(filteredLogs.length, logs.length)}
                   </p>
                 </div>
                 {filteredLogs.map(log => {
@@ -2824,9 +2940,9 @@ export default function AdminPage() {
                             {log.details.text
                               ? `"${log.details.text}"`
                               : log.details.editedFields
-                              ? `Fields: ${log.details.editedFields.join(", ")}`
+                              ? `${Tr.fieldsLabel} ${log.details.editedFields.join(", ")}`
                               : log.details.toUserName
-                              ? `To: ${log.details.toUserName}`
+                              ? `${Tr.toLogLabel} ${log.details.toUserName}`
                               : null}
                           </p>
                         )}
@@ -2890,7 +3006,7 @@ export default function AdminPage() {
               <table style={{ ...S.table, minWidth:400 }}>
                 <thead>
                   <tr>
-                    {[Tr.blacklistEmail, Tr.blacklistReason, "Added by", Tr.reportDate, ""].map(h => (
+                    {[Tr.blacklistEmail, Tr.blacklistReason, Tr.addedByLabel, Tr.reportDate, ""].map(h => (
                       <th key={h} style={{ ...S.th, whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
@@ -2923,8 +3039,8 @@ export default function AdminPage() {
       {/* ══ SLIDESHOW TAB ══ */}
       {tab === "slideshow" && (
         <div>
-          <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", marginBottom:"1rem" }}>{Tr.admin?.slideshow || "Slideshow"}</h2>
-          <SlideshowAdmin />
+          <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", marginBottom:"1rem" }}>{Tr.slideshowTitle}</h2>
+          <SlideshowAdmin Tr={Tr} />
         </div>
       )}
 
@@ -2949,6 +3065,7 @@ export default function AdminPage() {
           title={Tr.confirmDeleteTitle}
           message={Tr.confirmDeleteMsg(`${confirmDeleteTarget.firstName} ${confirmDeleteTarget.lastName}`)}
           confirmLabel={Tr.confirmDeleteBtn}
+          cancelLabel={Tr.cancel}
           onConfirm={() => doDeleteUser(confirmDeleteTarget.id)}
           onCancel={() => setConfirmDeleteTarget(null)}
         />
@@ -2961,6 +3078,7 @@ export default function AdminPage() {
           title={Tr.revokeAdmin}
           message={Tr.confirmRevokeAdminMsg(`${confirmRevokeTarget.firstName} ${confirmRevokeTarget.lastName}`)}
           confirmLabel={Tr.confirmRevokeAdminBtn}
+          cancelLabel={Tr.cancel}
           onConfirm={() => doRevokeAdmin(confirmRevokeTarget.id)}
           onCancel={() => setConfirmRevokeTarget(null)}
         />
@@ -2973,6 +3091,7 @@ export default function AdminPage() {
           title={Tr.confirmMakeAdminTitle}
           message={Tr.confirmMakeAdminMsg(`${makeAdminConfirmTarget.firstName} ${makeAdminConfirmTarget.lastName}`)}
           confirmLabel={Tr.confirmMakeAdminBtn}
+          cancelLabel={Tr.cancel}
           onConfirm={() => { setPermsTarget(makeAdminConfirmTarget); setMakeAdminConfirmTarget(null); }}
           onCancel={() => setMakeAdminConfirmTarget(null)}
         />
