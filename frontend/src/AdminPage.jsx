@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   collection, getDocs, addDoc, deleteDoc, doc, query,
   orderBy, updateDoc, limit, where, setDoc, getDoc,
@@ -13,6 +13,7 @@ import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
 import { logActivity } from "./activityLogger";
 import { getOrCreateConversation, sendMessage } from "./hooks/useMessages";
+import { translateProfession, translateAny, translateReligion, translateEthnicity } from "./utils/translateProfile";
 
 /* ─── Admin translations ─── */
 const AT = {
@@ -915,6 +916,352 @@ function SlideshowAdmin() {
 }
 
 /* ══════════════════════════════════════════════════════
+   DISTRIBUTION DONUT CHART
+═══════════════════════════════════════════════════════ */
+function DistributionDonutChart({ users, lang, Tr }) {
+  const [distType,  setDistType]  = useState("regions");
+  const [timeframe, setTimeframe] = useState("all");
+  const [hovIdx,    setHovIdx]    = useState(null);
+  const isMobile = useIsMobile();
+
+  const filteredUsers = (() => {
+    if (timeframe === "all") return users;
+    const days = { "30d":30, "90d":90, "6m":180, "1y":365 }[timeframe] ?? 30;
+    const cutoff = Date.now() - days * 86400000;
+    return users.filter(u => u.createdAt && new Date(u.createdAt) >= cutoff);
+  })();
+
+  const entries = (() => {
+    const map = {};
+    filteredUsers.forEach(u => {
+      let key = null;
+      if (distType === "regions") {
+        const raw = u.region?.trim() || u.city?.trim();
+        key = raw ? translateAny(raw, lang) : null;
+      } else if (distType === "professions") {
+        const raw = u.profession?.trim();
+        key = raw ? (u.professionTranslations?.[lang] || translateProfession(raw, lang) || raw) : null;
+      } else if (distType === "ethnicity") {
+        const raw = u.ethnicity?.trim();
+        key = raw ? (translateEthnicity(raw, lang) || raw) : null;
+      } else if (distType === "religion") {
+        const raw = (u.religion || u.identity)?.trim();
+        key = raw ? (translateReligion(raw, lang) || raw) : null;
+      }
+      if (key) map[key] = (map[key] || 0) + 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  })();
+
+  const total  = entries.reduce((s, [, v]) => s + v, 0) || 1;
+  const colors = ["#4472b8","#7ba87a","#c25c5c","#d4a574","#8b5cf6","#14b8a6","#e8735a","#94a3b8"];
+  const CX = 90, CY = 90, R = 72, IR = 46;
+
+  const polar = (angle, radius) => {
+    const rad = (angle - 90) * Math.PI / 180;
+    return { x: CX + radius * Math.cos(rad), y: CY + radius * Math.sin(rad) };
+  };
+
+  let cum = 0;
+  const slices = entries.map(([label, count], i) => {
+    const sweep = (count / total) * 360;
+    const s = cum, e = cum + sweep;
+    cum = e;
+    const so = polar(s, R), eo = polar(e, R);
+    const si = polar(s, IR), ei = polar(e, IR);
+    const large = sweep > 180 ? 1 : 0;
+    const path = `M${so.x.toFixed(2)},${so.y.toFixed(2)} A${R},${R},0,${large},1,${eo.x.toFixed(2)},${eo.y.toFixed(2)} L${ei.x.toFixed(2)},${ei.y.toFixed(2)} A${IR},${IR},0,${large},0,${si.x.toFixed(2)},${si.y.toFixed(2)} Z`;
+    return { label, count, path, color: colors[i % colors.length], pct: Math.round((count / total) * 100) };
+  });
+
+  const hov = hovIdx !== null ? slices[hovIdx] : null;
+
+  const segBtn = (val, label, active, setter) => (
+    <button key={val} onClick={() => setter(val)} style={{
+      fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
+      background: active ? "var(--bg-primary,#fff)" : "transparent",
+      color:      active ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
+      boxShadow:  active ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+    }}>{label}</button>
+  );
+
+  const selStyle = {
+    flex:1, padding:"8px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
+    borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+    fontFamily:"var(--font,'Figtree','Heebo',system-ui,sans-serif)", cursor:"pointer",
+    appearance:"auto", minWidth:0,
+  };
+
+  const donutSvg = (size) => (
+    <svg width={size} height={size} viewBox="0 0 180 180" style={{ display:"block" }}>
+      {slices.map((s, i) => (
+        <path key={i} d={s.path} fill={s.color}
+          opacity={hovIdx === null || hovIdx === i ? 1 : 0.3}
+          onMouseEnter={() => setHovIdx(i)}
+          onMouseLeave={() => setHovIdx(null)}
+          style={{ cursor:"pointer", transition:"opacity 0.15s" }}
+        />
+      ))}
+      <text x={CX} y={CY - 7} textAnchor="middle" style={{ fontSize:20, fontWeight:800, fill:"var(--text-primary,#111827)", fontFamily:"inherit" }}>
+        {hov ? `${hov.pct}%` : filteredUsers.length}
+      </text>
+      <text x={CX} y={CY + 11} textAnchor="middle" style={{ fontSize:10, fill:"var(--text-muted,#6b7280)", fontFamily:"inherit" }}>
+        {hov ? hov.label.slice(0, 14) : (Tr?.chartMembers || "members")}
+      </text>
+      {hov && (
+        <text x={CX} y={CY + 24} textAnchor="middle" style={{ fontSize:9, fill:"var(--text-muted,#6b7280)", fontFamily:"inherit" }}>
+          {hov.count} {Tr?.chartTotal || "total"}
+        </text>
+      )}
+    </svg>
+  );
+
+  const legend = (
+    <div style={{ flex:1, minWidth:0 }}>
+      {slices.map((s, i) => (
+        <div key={i}
+          onMouseEnter={() => setHovIdx(i)}
+          onMouseLeave={() => setHovIdx(null)}
+          style={{
+            display:"flex", alignItems:"center", gap:8,
+            padding:"5px 8px", borderRadius:8, marginBottom:2, cursor:"pointer",
+            background: hovIdx === i ? `${s.color}18` : "transparent",
+            transition:"background 0.12s",
+          }}>
+          <div style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
+          <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.label}</span>
+          <span style={{ fontSize:11, fontWeight:700, color:s.color, flexShrink:0 }}>{s.pct}%</span>
+          <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)", flexShrink:0 }}>({s.count})</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="card" style={{ padding:"1.25rem" }}>
+        <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 0.75rem" }}>{Tr?.distributionLabel || "Distribution"}</p>
+        <div style={{ display:"flex", gap:8, marginBottom:"1.25rem" }}>
+          <select value={distType} onChange={e => setDistType(e.target.value)} style={selStyle}>
+            <option value="regions">{Tr?.regionsLabel || "Regions"}</option>
+            <option value="professions">{Tr?.professionsLabel || "Professions"}</option>
+            <option value="ethnicity">{Tr?.ethnicity || "Ethnicity"}</option>
+            <option value="religion">{Tr?.religionLabel || "Religion"}</option>
+          </select>
+          <select value={timeframe} onChange={e => setTimeframe(e.target.value)} style={{ ...selStyle, flex:"0 0 80px" }}>
+            <option value="30d">30d</option>
+            <option value="90d">90d</option>
+            <option value="6m">6m</option>
+            <option value="1y">1y</option>
+            <option value="all">{Tr?.allFilter || "All"}</option>
+          </select>
+        </div>
+        {entries.length === 0
+          ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", textAlign:"center", padding:"2rem 0" }}>{Tr?.noData || "No data"}</p>
+          : (<>
+              <div style={{ display:"flex", justifyContent:"center", marginBottom:"1rem" }}>{donutSvg(160)}</div>
+              {legend}
+            </>)
+        }
+      </div>
+    );
+  }
+
+  return (
+    <div className="card" style={{ padding:"1.5rem" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:10, marginBottom:"1.25rem" }}>
+        <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:0 }}>{Tr?.distributionLabel || "Distribution"}</p>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
+            {[["regions", Tr?.regionsLabel||"Regions"],["professions", Tr?.professionsLabel||"Professions"],["ethnicity", Tr?.ethnicity||"Ethnicity"],["religion", Tr?.religionLabel||"Religion"]].map(([v,l]) => segBtn(v,l,distType===v,setDistType))}
+          </div>
+          <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
+            {[["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr?.allFilter||"All"]].map(([v,l]) => segBtn(v,l,timeframe===v,setTimeframe))}
+          </div>
+        </div>
+      </div>
+      {entries.length === 0
+        ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", textAlign:"center", padding:"3rem 0" }}>{Tr?.noDataSelection || "No data for this selection"}</p>
+        : (
+          <div style={{ display:"flex", gap:"2rem", alignItems:"center", flexWrap:"wrap" }}>
+            {donutSvg(180)}
+            {legend}
+          </div>
+        )
+      }
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   MEMBER GROWTH CHART
+═══════════════════════════════════════════════════════ */
+function MemberGrowthChart({ users, Tr }) {
+  const todayStr    = new Date().toISOString().slice(0, 10);
+  const defaultFrom = (() => { const d = new Date(); d.setDate(d.getDate() - 29); return d.toISOString().slice(0, 10); })();
+
+  const [preset,   setPreset]   = useState("30d");
+  const [dateFrom, setDateFrom] = useState(defaultFrom);
+  const [dateTo,   setDateTo]   = useState(todayStr);
+  const [hoverIdx, setHoverIdx] = useState(null);
+  const isMobile = useIsMobile();
+
+  const applyPreset = (p) => {
+    setPreset(p);
+    if (p === "custom") return;
+    const to   = new Date();
+    const from = new Date(to);
+    if      (p === "7d")  from.setDate(to.getDate() - 6);
+    else if (p === "30d") from.setDate(to.getDate() - 29);
+    else if (p === "90d") from.setDate(to.getDate() - 89);
+    else if (p === "all") {
+      const earliest = users.reduce((min, u) => {
+        const d = u.createdAt ? new Date(u.createdAt) : null;
+        return d && (!min || d < min) ? d : min;
+      }, null);
+      if (earliest) from.setTime(earliest.getTime());
+      else from.setDate(to.getDate() - 29);
+    }
+    setDateFrom(from.toISOString().slice(0, 10));
+    setDateTo(to.toISOString().slice(0, 10));
+  };
+
+  const fromDate = new Date(dateFrom + "T00:00:00");
+  const toDate   = new Date(dateTo   + "T23:59:59");
+  const dayCount = Math.max(1, Math.round((toDate - fromDate) / 86400000) + 1);
+  const days     = Array.from({ length: dayCount }, (_, i) => {
+    const d = new Date(fromDate);
+    d.setDate(fromDate.getDate() + i);
+    return d;
+  });
+  const counts  = days.map(day => users.filter(u => u.createdAt?.slice(0, 10) === day.toISOString().slice(0, 10)).length);
+  const total   = counts.reduce((a, b) => a + b, 0);
+  const maxC    = Math.max(...counts, 1);
+  const W = 500, H = 150, px = 6, py = 18;
+
+  const pts = counts.map((c, i) => ({
+    x: parseFloat((px + (i / Math.max(counts.length - 1, 1)) * (W - px * 2)).toFixed(1)),
+    y: parseFloat((H - py - (c / maxC) * (H - py * 2)).toFixed(1)),
+    count: c, date: days[i],
+  }));
+  const polyline = pts.map(p => `${p.x},${p.y}`).join(" ");
+  const area     = pts.length > 1
+    ? `M${pts[0].x},${H - py} ${pts.map(p => `L${p.x},${p.y}`).join(" ")} L${pts[pts.length - 1].x},${H - py} Z`
+    : "";
+  const hov = hoverIdx !== null ? pts[hoverIdx] : null;
+
+  return (
+    <div className="card" style={{ padding: "1.5rem" }}>
+      <div className="admin-growth-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"1.25rem", gap:12, flexWrap:"wrap" }}>
+        <div>
+          <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 6px" }}>
+            {Tr?.newMembersLabel || "New Members"}
+          </p>
+          <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+            <span style={{ fontSize:32, fontWeight:800, color:"var(--text-primary,#111827)", lineHeight:1 }}>{total}</span>
+            <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)", fontWeight:500 }}>{Tr?.inPeriodLabel || "in period"}</span>
+          </div>
+        </div>
+        {isMobile ? (
+          <select value={preset} onChange={e => applyPreset(e.target.value)} style={{
+            padding:"8px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
+            borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+            fontFamily:"var(--font,'Figtree','Heebo',system-ui,sans-serif)", cursor:"pointer",
+            alignSelf:"flex-start",
+          }}>
+            <option value="7d">7d</option>
+            <option value="30d">30d</option>
+            <option value="90d">90d</option>
+            <option value="all">{Tr?.allFilter || "All"}</option>
+            <option value="custom">{Tr?.customLabel || "Custom"}</option>
+          </select>
+        ) : (
+          <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:10, padding:3, gap:1, alignSelf:"flex-start" }}>
+            {[
+              { val:"7d",     label:"7d"     },
+              { val:"30d",    label:"30d"    },
+              { val:"90d",    label:"90d"    },
+              { val:"all",    label:Tr?.allFilter || "All"    },
+              { val:"custom", label:Tr?.customLabel || "Custom" },
+            ].map(opt => (
+              <button key={opt.val} onClick={() => applyPreset(opt.val)} style={{
+                fontSize:11, fontWeight:600, padding:"5px 11px", borderRadius:7, border:"none", cursor:"pointer", transition:"all 0.15s",
+                background: preset === opt.val ? "var(--bg-primary,#fff)" : "transparent",
+                color:      preset === opt.val ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
+                boxShadow:  preset === opt.val ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+              }}>{opt.label}</button>
+            ))}
+          </div>
+        )}
+      </div>
+      {preset === "custom" && (
+        <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:"1rem", flexWrap:"wrap" }}>
+          <span style={{ fontSize:11, fontWeight:600, color:"var(--text-muted,#6b7280)" }}>{Tr?.fromLabel || "From"}</span>
+          <input type="date" value={dateFrom} max={dateTo} onChange={e => setDateFrom(e.target.value)}
+            style={{ fontSize:12, padding:"6px 10px", borderRadius:8, border:"1.5px solid var(--border,#daeaf8)", background:"var(--bg-primary,#fff)", color:"var(--text-primary,#111827)", fontFamily:"inherit" }} />
+          <span style={{ fontSize:11, fontWeight:600, color:"var(--text-muted,#6b7280)" }}>{Tr?.toLabel || "To"}</span>
+          <input type="date" value={dateTo} min={dateFrom} max={todayStr} onChange={e => setDateTo(e.target.value)}
+            style={{ fontSize:12, padding:"6px 10px", borderRadius:8, border:"1.5px solid var(--border,#daeaf8)", background:"var(--bg-primary,#fff)", color:"var(--text-primary,#111827)", fontFamily:"inherit" }} />
+        </div>
+      )}
+      <div style={{ position:"relative" }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:"auto", display:"block", cursor:"crosshair", overflow:"visible" }}
+          onMouseMove={e => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const svgX = ((e.clientX - rect.left) / rect.width) * W;
+            let best = 0, bestDist = Infinity;
+            pts.forEach((p, i) => { const d = Math.abs(p.x - svgX); if (d < bestDist) { bestDist = d; best = i; } });
+            setHoverIdx(best);
+          }}
+          onMouseLeave={() => setHoverIdx(null)}
+        >
+          <defs>
+            <linearGradient id="mgc-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#4472b8" stopOpacity="0.20" />
+              <stop offset="100%" stopColor="#4472b8" stopOpacity="0.01" />
+            </linearGradient>
+          </defs>
+          {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+            const gy = H - py - pct * (H - py * 2);
+            return <line key={pct} x1={px} x2={W - px} y1={gy} y2={gy} stroke="#e5e7eb" strokeWidth={pct === 0 ? 1.5 : 1} />;
+          })}
+          {area && <path d={area} fill="url(#mgc-grad)" />}
+          <polyline points={polyline} fill="none" stroke="#4472b8" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+          {hov && <line x1={hov.x} x2={hov.x} y1={py} y2={H - py} stroke="#4472b8" strokeWidth={1.5} strokeDasharray="4,3" opacity={0.4} />}
+          {pts.map((p, i) => (p.count > 0 || i === hoverIdx) && (
+            <circle key={i} cx={p.x} cy={p.y} r={i === hoverIdx ? 5.5 : 3.5} fill="#4472b8" stroke="#fff" strokeWidth={2} />
+          ))}
+        </svg>
+        {hov && (
+          <div style={{
+            position:"absolute",
+            left:`${(hov.x / W) * 100}%`,
+            top:-10,
+            transform:"translate(-50%, -100%)",
+            background:"#1a2e42", color:"#fff",
+            fontSize:12, fontWeight:600, padding:"8px 13px", borderRadius:10,
+            whiteSpace:"nowrap", pointerEvents:"none",
+            boxShadow:"0 6px 20px rgba(0,0,0,0.22)", zIndex:10, lineHeight:1.6,
+          }}>
+            <span style={{ fontSize:16, fontWeight:800 }}>{hov.count}</span>
+            {" "}{Tr?.membersCountFn ? Tr.membersCountFn(hov.count).replace(/^\d+\s*/, "") : (hov.count === 1 ? "member" : "members")}
+            <br />
+            <span style={{ fontWeight:400, fontSize:11, opacity:0.7 }}>
+              {hov.date.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" })}
+            </span>
+          </div>
+        )}
+      </div>
+      <div style={{ display:"flex", justifyContent:"space-between", marginTop:10 }}>
+        <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{days[0]?.toLocaleDateString(undefined, { month:"short", day:"numeric" })}</span>
+        {days.length > 6 && <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{days[Math.floor(days.length / 2)]?.toLocaleDateString(undefined, { month:"short", day:"numeric" })}</span>}
+        <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{Tr?.todayLabel || "Today"}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
    MAIN ADMIN PAGE
 ═══════════════════════════════════════════════════════ */
 export default function AdminPage() {
@@ -930,6 +1277,9 @@ export default function AdminPage() {
   const [statDetailType, setStatDetailType] = useState(null); // "members"|"online"|"verified"|"admins"|"posts"|"convs"
   const [hiddenDataStats, setHiddenDataStats] = useState(new Set());
   const [statsCustomizeOpen, setStatsCustomizeOpen] = useState(false);
+  const [mobileDataSection, setMobileDataSection] = useState("distribution");
+  const [recentTimeframe, setRecentTimeframe] = useState("all");
+  const [recentSort,      setRecentSort]      = useState("newest");
 
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
@@ -1895,77 +2245,23 @@ export default function AdminPage() {
       {/* ══ DATA TAB ══ */}
       {!loading && tab === "data" && (
         <>
-          {/* Shortcuts row */}
-          <div style={{ display:"flex", gap:"0.6rem", flexWrap:"wrap", marginBottom:"1rem", alignItems:"center" }}>
-            <button onClick={() => chartsRef.current?.scrollIntoView({ behavior:"smooth", block:"start" })}
-              style={{ padding:"7px 16px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-              📊 {Tr.goToOverview || "View Statistics"}
-            </button>
-            <button onClick={() => setStatsCustomizeOpen(true)}
-              style={{ padding:"7px 16px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:8, fontSize:13, fontWeight:600, cursor:"pointer" }}>
-              ⚙ {Tr.customizeStats || "Customize Cards"}
-            </button>
-          </div>
-
-          {/* Customize stats modal */}
-          {statsCustomizeOpen && (() => {
-            const ALL_STATS = [
-              { key:"members",  label: Tr.totalMembers  },
-              { key:"verified", label: Tr.verified       },
-              { key:"admins",   label: Tr.admins         },
-              { key:"posts",    label: Tr.totalPosts     },
-              { key:"convs",    label: Tr.conversations  },
-              { key:"online",   label: Tr.onlineNow      },
-            ];
-            return (
-              <div style={S.overlay} onClick={() => setStatsCustomizeOpen(false)}>
-                <div style={S.modalBox} onClick={e => e.stopPropagation()}>
-                  <p style={S.modalTitle}>{Tr.customizeStats || "Customize Stat Cards"}</p>
-                  <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", margin:"4px 0 0.85rem" }}>
-                    {Tr.customizeStatsSub || "Choose which stat cards to show in the data tab."}
-                  </p>
-                  <div style={{ display:"flex", gap:10, marginBottom:"0.4rem" }}>
-                    <button onClick={() => setHiddenDataStats(new Set())} style={{ background:"none", border:"none", color:"var(--brand,#4472b8)", fontSize:12, fontWeight:700, cursor:"pointer", padding:0 }}>{Tr.selectAll}</button>
-                    <button onClick={() => setHiddenDataStats(new Set(ALL_STATS.map(s => s.key)))} style={{ background:"none", border:"none", color:"var(--text-muted,#6b7280)", fontSize:12, fontWeight:700, cursor:"pointer", padding:0 }}>{Tr.clearAll}</button>
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, margin:"0.5rem 0 1rem" }}>
-                    {ALL_STATS.map(s => (
-                      <label key={s.key} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, cursor:"pointer" }}>
-                        <input type="checkbox" checked={!hiddenDataStats.has(s.key)}
-                          onChange={() => setHiddenDataStats(prev => {
-                            const next = new Set(prev);
-                            next.has(s.key) ? next.delete(s.key) : next.add(s.key);
-                            return next;
-                          })} />
-                        {s.label}
-                      </label>
-                    ))}
-                  </div>
-                  <div style={{ display:"flex", justifyContent:"flex-end" }}>
-                    <button onClick={() => setStatsCustomizeOpen(false)} style={{ padding:"9px 20px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:9, fontSize:13, fontWeight:700, cursor:"pointer" }}>{Tr.done || "Done"}</button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
           {/* Export / import members */}
-          <div className="card" style={{ padding:"1.25rem", marginBottom:"1.5rem" }}>
-            <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 0.85rem" }}>{Tr.dataManage}</p>
-            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+          <div className="card" style={{ padding:"0.75rem 1rem", marginBottom:"1.5rem", display:"flex", flexWrap:"wrap", alignItems:"center", gap:"0.75rem" }}>
+            <span style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", flexShrink:0 }}>{Tr.dataManage}</span>
+            <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap", alignItems:"center" }}>
               <button onClick={() => setExportOpen(true)}
-                style={{ padding:"10px 20px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                style={{ padding:"6px 14px", background:"var(--brand,#4472b8)", color:"#fff", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
                 ⬇ {Tr.downloadBtn}
               </button>
               <button onClick={() => fileRef.current?.click()} disabled={importBusy}
-                style={{ padding:"10px 20px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, fontSize:14, fontWeight:700, cursor: importBusy ? "wait" : "pointer", opacity: importBusy ? 0.6 : 1 }}>
+                style={{ padding:"6px 14px", background:"var(--bg-tertiary,#f0f6fb)", color:"var(--text-primary,#111827)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:8, fontSize:12, fontWeight:700, cursor: importBusy ? "wait" : "pointer", opacity: importBusy ? 0.6 : 1, display:"flex", alignItems:"center", gap:5 }}>
                 ⬆ {importBusy ? Tr.importing : Tr.uploadBtn}
               </button>
               <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={importExcel} style={{ display:"none" }} />
             </div>
-            <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"0.75rem 0 0" }}>{Tr.dirNote}</p>
+            <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", flexShrink:0 }}>{Tr.dirNote}</span>
             {importResult && (
-              <div style={{ marginTop:"1rem", padding:"0.85rem 1rem", borderRadius:10, background:"var(--bg-tertiary,#f0f6fb)", border:"1px solid var(--border,#daeaf8)" }}>
+              <div style={{ width:"100%", padding:"0.75rem 1rem", borderRadius:10, background:"var(--bg-tertiary,#f0f6fb)", border:"1px solid var(--border,#daeaf8)" }}>
                 {importResult.error ? (
                   <p style={{ margin:0, fontSize:13, color:"#c25c5c", fontWeight:600 }}>⚠ {importResult.error}</p>
                 ) : (
@@ -2011,327 +2307,143 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Stat summary row */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:"1rem", marginBottom:"1.5rem" }}>
-            {[
-              { label: Tr.totalMembers,  value: users.length,   color:"#4472b8", type:"members"  },
-              { label: Tr.verified,       value: verifiedN,      color:"#1d4896", type:"verified" },
-              { label: Tr.admins,         value: adminsN,        color:"#c25c5c", type:"admins"   },
-              { label: Tr.totalPosts,    value: posts.length,   color:"#8b5cf6", type:"posts"    },
-              { label: Tr.conversations,  value: convs.length,   color:"#d4a574", type:"convs"    },
-              { label: Tr.onlineNow,     value: onlineNow,      color:"#7ba87a", type:"online"   },
-            ].filter(s => !hiddenDataStats.has(s.type)).map(s => (
-              <div key={s.label} className="card" style={{ padding:"1rem 1.25rem", cursor:"pointer", transition:"box-shadow 0.15s", userSelect:"none" }}
-                onClick={() => setStatDetailType(s.type)}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(29,72,150,0.12)"; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = ""; }}
-              >
-                <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 6px" }}>{s.label}</p>
-                <p style={{ fontSize:28, fontWeight:800, color:s.color, margin:0, lineHeight:1 }}>{s.value}</p>
-                <p style={{ fontSize:10, color:"var(--text-muted,#6b7280)", margin:"4px 0 0" }}>Click to view →</p>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", marginBottom:"1.25rem" }}>
-            {/* Professions bar chart */}
-            <div className="card" style={{ padding:"1.25rem" }}>
-              <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{Tr.topProfessions}</p>
-              {topProfessions.length === 0
-                ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.noData}</p>
-                : topProfessions.map(([prof, count]) => (
-                  <div key={prof} style={{ marginBottom:12 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-                      <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)" }}>{prof}</span>
-                      <span style={{ fontSize:11, fontWeight:700, color:"var(--brand,#4472b8)" }}>{count}</span>
-                    </div>
-                    <div style={{ height:8, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
-                      <div style={{ height:"100%", width:`${Math.round((count/users.length)*100)}%`, background:"var(--brand,#4472b8)", borderRadius:99, transition:"width 0.6s ease" }} />
-                    </div>
-                    <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{Math.round((count/users.length)*100)}%</span>
-                  </div>
-                ))
-              }
+          {/* Mobile section nav */}
+          {isMobile && (
+            <div style={{ display:"flex", gap:0, marginBottom:"1rem", background:"var(--bg-secondary,#f0f6fb)", borderRadius:12, padding:3 }}>
+              {[["distribution", Tr.distributionLabel],["growth", Tr.growthLabel],["members", Tr.membersNavLabel]].map(([v,l]) => (
+                <button key={v} onClick={() => setMobileDataSection(v)} style={{
+                  flex:1, padding:"8px 4px", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", transition:"all 0.15s", borderRadius:9,
+                  background: mobileDataSection === v ? "var(--bg-primary,#fff)" : "transparent",
+                  color:      mobileDataSection === v ? "var(--accent,#4472b8)" : "var(--text-muted,#6b7280)",
+                  boxShadow:  mobileDataSection === v ? "0 1px 5px rgba(0,0,0,0.12)" : "none",
+                }}>{l}</button>
+              ))}
             </div>
-
-            {/* Cities bar chart */}
-            <div className="card" style={{ padding:"1.25rem" }}>
-              <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{Tr.topCities}</p>
-              {topCities.length === 0
-                ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.noData}</p>
-                : topCities.map(([city, count]) => (
-                  <div key={city} style={{ marginBottom:12 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-                      <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary,#7a5868)" }}>{city}</span>
-                      <span style={{ fontSize:11, fontWeight:700, color:"#8b5cf6" }}>{count}</span>
-                    </div>
-                    <div style={{ height:8, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
-                      <div style={{ height:"100%", width:`${Math.round((count/users.length)*100)}%`, background:"#8b5cf6", borderRadius:99, transition:"width 0.6s ease" }} />
-                    </div>
-                    <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{Math.round((count/users.length)*100)}%</span>
-                  </div>
-                ))
-              }
-            </div>
-          </div>
-
-          {/* Private-field charts */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:"1.25rem", marginBottom:"1.25rem" }}>
-            {[
-              { label: Tr.topSectors,   data: topEthnicities, color:"#e8735a" },
-              { label: Tr.topReligions, data: topReligions,   color:"#1d4896" },
-              { label: Tr.topRegions,   data: topRegions,     color:"#7ba87a" },
-            ].map(({ label, data, color }) => (
-              <div key={label} className="card" style={{ padding:"1.25rem" }}>
-                <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 1rem" }}>{label}</p>
-                {data.length === 0
-                  ? <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.noData}</p>
-                  : data.map(([val, count]) => (
-                    <div key={val} style={{ marginBottom:10 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                        <span style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary,#7a5868)", maxWidth:"75%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{val}</span>
-                        <span style={{ fontSize:11, fontWeight:700, color }}>{count} <span style={{ color:"var(--text-muted,#6b7280)", fontWeight:400 }}>({Math.round((count/users.length)*100)}%)</span></span>
-                      </div>
-                      <div style={{ height:6, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
-                        <div style={{ height:"100%", width:`${Math.round((count/users.length)*100)}%`, background:color, borderRadius:99, transition:"width 0.6s ease" }} />
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            ))}
-          </div>
-
-          {/* Recent members table */}
-          <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-            <div style={{ padding:"1rem 1.25rem", borderBottom:"1px solid var(--border,#daeaf8)" }}>
-              <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:0 }}>{Tr.recentMembers}</p>
-            </div>
-            <table style={{ ...S.table, minWidth: 480 }}>
-              <thead>
-                <tr>
-                  {["Name","Email","Profession","City","Joined"].map(h => (
-                    <th key={h} style={S.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[...users]
-                  .sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0))
-                  .slice(0, 10)
-                  .map(u => (
-                    <tr key={u.id} style={S.row}
-                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
-                    >
-                      <td style={S.td}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, background:avatarColor(`${u.firstName} ${u.lastName}`), display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:"#fff" }}>
-                            {getInitials(`${u.firstName} ${u.lastName}`)}
-                          </div>
-                          <span style={{ fontWeight:600, color:"var(--text-primary,#111827)" }}>{u.firstName} {u.lastName}</span>
-                        </div>
-                      </td>
-                      <td style={S.td}>{u.email||"—"}</td>
-                      <td style={S.td}>{u.profession||"—"}</td>
-                      <td style={S.td}>{u.city||"—"}</td>
-                      <td style={{ ...S.td, whiteSpace:"nowrap" }}>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
-          </div>
-
-          {/* Member breakdown donut */}
-          {(() => {
-            const verified = users.filter(u => u.emailVerified).length;
-            const adminCount = users.filter(u => u.isAdmin).length;
-            const online = users.filter(isActuallyOnline).length;
-            const total = users.length || 1;
-            const vPct = Math.round(verified / total * 100);
-            const aPct = Math.round(adminCount / total * 100);
-            const oPct = Math.round(online / total * 100);
-            const segments = [
-              { label: Tr.verified || "Verified", pct: vPct, color: "#4472b8" },
-              { label: Tr.admins || "Admins", pct: aPct, color: "#c25c5c" },
-              { label: Tr.onlineNow || "Online", pct: oPct, color: "#7ba87a" },
-              { label: "Others", pct: Math.max(0, 100 - vPct - aPct - oPct), color: "#e2e8f0" },
-            ];
-            let cumulative = 0;
-            const conicParts = segments.map(s => {
-              const start = cumulative;
-              cumulative += s.pct;
-              return `${s.color} ${start}% ${cumulative}%`;
-            }).join(", ");
-            return (
-              <div ref={chartsRef} className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
-                  Member Breakdown
-                </p>
-                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-                  <div style={{ width: 100, height: 100, borderRadius: "50%", background: `conic-gradient(${conicParts})`, flexShrink: 0, position: "relative" }}>
-                    <div style={{ position:"absolute", inset: 16, borderRadius:"50%", background:"var(--bg-primary,#fff)" }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    {segments.filter(s => s.pct > 0).map(s => (
-                      <div key={s.label} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
-                        <div style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
-                        <span style={{ fontSize:11, color:"var(--text-secondary,#7a5868)", fontWeight:500 }}>{s.label}</span>
-                        <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", marginLeft:"auto", fontWeight:600 }}>{s.pct}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Weekly signups bar chart */}
-          {(() => {
-            const days = Array.from({ length: 7 }, (_, i) => {
-              const d = new Date();
-              d.setDate(d.getDate() - (6 - i));
-              return d;
-            });
-            const counts = days.map(day => {
-              const dayStr = day.toISOString().slice(0, 10);
-              return users.filter(u => u.createdAt?.slice(0, 10) === dayStr).length;
-            });
-            const maxCount = Math.max(...counts, 1);
-            const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-            return (
-              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
-                  New Members – Last 7 Days
-                </p>
-                <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80 }}>
-                  {counts.map((count, i) => (
-                    <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-                      <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)", fontWeight:600, minHeight:14 }}>{count > 0 ? count : ""}</span>
-                      <div style={{
-                        width:"100%", borderRadius:"4px 4px 2px 2px",
-                        background: count > 0 ? "var(--brand,#4472b8)" : "var(--bg-tertiary,#f0f6fb)",
-                        height: `${Math.max(4, (count / maxCount) * 52)}px`,
-                        transition: "height 0.6s ease",
-                      }} />
-                      <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>{dayLabels[days[i].getDay()]}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 30-day signups line chart */}
-          {(() => {
-            const days30 = Array.from({ length: 30 }, (_, i) => {
-              const d = new Date();
-              d.setDate(d.getDate() - (29 - i));
-              return d;
-            });
-            const counts30 = days30.map(day => {
-              const dayStr = day.toISOString().slice(0, 10);
-              return users.filter(u => u.createdAt?.slice(0, 10) === dayStr).length;
-            });
-            const maxC = Math.max(...counts30, 1);
-            const W = 300, H = 80, pad = 8;
-            const pts = counts30.map((c, i) => {
-              const x = pad + (i / (counts30.length - 1)) * (W - pad * 2);
-              const y = H - pad - (c / maxC) * (H - pad * 2);
-              return `${x.toFixed(1)},${y.toFixed(1)}`;
-            }).join(" ");
-            const total30 = counts30.reduce((a, b) => a + b, 0);
-            return (
-              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
-                    New Members – Last 30 Days
-                  </p>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand,#4472b8)" }}>{total30} total</span>
-                </div>
-                <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height: H }}>
-                  <polyline points={pts} fill="none" stroke="var(--brand,#4472b8)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-                  {counts30.map((c, i) => {
-                    if (c === 0) return null;
-                    const x = pad + (i / (counts30.length - 1)) * (W - pad * 2);
-                    const y = H - pad - (c / maxC) * (H - pad * 2);
-                    return <circle key={i} cx={x.toFixed(1)} cy={y.toFixed(1)} r={3} fill="var(--brand,#4472b8)" />;
-                  })}
-                </svg>
-                <div style={{ display:"flex", justifyContent:"space-between", marginTop: 4 }}>
-                  <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>{days30[0].toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span>
-                  <span style={{ fontSize:9, color:"var(--text-muted,#6b7280)" }}>Today</span>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* City distribution donut chart */}
-          {(() => {
-            const cityCount = {};
-            users.forEach(u => {
-              const city = u.city?.trim();
-              if (city) cityCount[city] = (cityCount[city] || 0) + 1;
-            });
-            const sorted = Object.entries(cityCount).sort((a, b) => b[1] - a[1]);
-            const top = sorted.slice(0, 5);
-            const othersCount = sorted.slice(5).reduce((s, [, v]) => s + v, 0);
-            if (othersCount > 0) top.push(["Other", othersCount]);
-            const totalWithCity = top.reduce((s, [, v]) => s + v, 0) || 1;
-            const cityColors = ["#4472b8","#7ba87a","#c25c5c","#d4a574","#8b5cf6","#94a3b8"];
-            let cumCity = 0;
-            const cityConicParts = top.map(([, v], i) => {
-              const pct = Math.round(v / totalWithCity * 100);
-              const start = cumCity;
-              cumCity += pct;
-              return `${cityColors[i % cityColors.length]} ${start}% ${cumCity}%`;
-            }).join(", ");
-            return (
-              <div className="card" style={{ padding: "1.25rem", marginTop: "1.25rem" }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
-                  City Distribution
-                </p>
-                {top.length === 0 ? (
-                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No city data yet</p>
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-                    <div style={{ width: 100, height: 100, borderRadius: "50%", background: `conic-gradient(${cityConicParts})`, flexShrink: 0, position: "relative" }}>
-                      <div style={{ position:"absolute", inset: 16, borderRadius:"50%", background:"var(--bg-primary,#fff)" }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      {top.map(([city, count], i) => {
-                        const pct = Math.round(count / totalWithCity * 100);
-                        return (
-                          <div key={city} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
-                            <div style={{ width:10, height:10, borderRadius:3, background: cityColors[i % cityColors.length], flexShrink:0 }} />
-                            <span style={{ fontSize:11, color:"var(--text-secondary,#7a5868)", fontWeight:500 }}>{city}</span>
-                            <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", marginLeft:"auto", fontWeight:600 }}>{pct}% ({count})</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {statDetailType && (
-            <StatDetailPanel
-              type={statDetailType}
-              users={users}
-              posts={posts}
-              convs={convs}
-              onClose={() => setStatDetailType(null)}
-              Tr={Tr}
-              isActuallyOnline={isActuallyOnline}
-            />
           )}
+
+          {/* Donut + Line Chart */}
+          {isMobile ? (
+            <>
+              {mobileDataSection === "distribution" && <DistributionDonutChart users={users} lang={lang} Tr={Tr} />}
+              {mobileDataSection === "growth" && <MemberGrowthChart users={users} Tr={Tr} />}
+            </>
+          ) : (
+            <div className="admin-data-charts" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", marginBottom:"1.25rem" }}>
+              <DistributionDonutChart users={users} lang={lang} Tr={Tr} />
+              <MemberGrowthChart users={users} Tr={Tr} />
+            </div>
+          )}
+
+          {/* Recent Members */}
+          {(!isMobile || mobileDataSection === "members") && (() => {
+            const cutoffMs = { "7d":7,"30d":30,"90d":90,"6m":180,"1y":365 }[recentTimeframe];
+            const cutoff   = cutoffMs ? Date.now() - cutoffMs * 86400000 : null;
+            const filtered = users.filter(u => !cutoff || (u.createdAt && new Date(u.createdAt) >= cutoff));
+            const sorted   = [...filtered].sort((a, b) => {
+              if (recentSort === "oldest")     return new Date(a.createdAt||0) - new Date(b.createdAt||0);
+              if (recentSort === "alpha")      return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
+              if (recentSort === "profession") return (a.profession||"").localeCompare(b.profession||"", "he");
+              return new Date(b.createdAt||0) - new Date(a.createdAt||0);
+            });
+            return (
+              <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+                <div className="admin-data-members-hdr" style={{ padding:"1rem 1.5rem", borderBottom:"1px solid var(--border,#daeaf8)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+                  <div>
+                    <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 2px" }}>{Tr.recentMembers}</p>
+                    <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.membersCountFn(sorted.length)}</span>
+                  </div>
+                  {isMobile ? (
+                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                      <select value={recentTimeframe} onChange={e => setRecentTimeframe(e.target.value)} style={{
+                        padding:"7px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
+                        borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+                        fontFamily:"inherit", cursor:"pointer",
+                      }}>
+                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr.allFilter]].map(([v,l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
+                      <select value={recentSort} onChange={e => setRecentSort(e.target.value)} style={{
+                        padding:"7px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
+                        borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
+                        fontFamily:"inherit", cursor:"pointer",
+                      }}>
+                        {[["newest",Tr.newestLabel],["oldest",Tr.oldestLabel],["alpha",Tr.sortAlpha],["profession",Tr.profession]].map(([v,l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="admin-data-controls-row" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+                      <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
+                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr.allFilter]].map(([v,l]) => (
+                          <button key={v} onClick={() => setRecentTimeframe(v)} style={{
+                            fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
+                            background: recentTimeframe===v ? "var(--bg-primary,#fff)" : "transparent",
+                            color:      recentTimeframe===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
+                            boxShadow:  recentTimeframe===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                          }}>{l}</button>
+                        ))}
+                      </div>
+                      <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
+                        {[["newest",Tr.newestLabel],["oldest",Tr.oldestLabel],["alpha",Tr.sortAlpha],["profession",Tr.profession]].map(([v,l]) => (
+                          <button key={v} onClick={() => setRecentSort(v)} style={{
+                            fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
+                            background: recentSort===v ? "var(--bg-primary,#fff)" : "transparent",
+                            color:      recentSort===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
+                            boxShadow:  recentSort===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                          }}>{l}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {sorted.length === 0
+                  ? <div className="empty-state"><p>{Tr.noMembersInPeriod}</p></div>
+                  : (
+                    <table style={{ ...S.table, minWidth:520 }}>
+                      <thead>
+                        <tr>
+                          {[Tr.colMember, Tr.profession, Tr.region, Tr.colJoined].map(h => (
+                            <th key={h} style={S.th}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sorted.map(u => (
+                          <tr key={u.id} style={S.row}
+                            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
+                            onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
+                          >
+                            <td style={S.td}>
+                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                                <div style={{ width:32, height:32, borderRadius:"50%", flexShrink:0, background:avatarColor(`${u.firstName} ${u.lastName}`), display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"#fff" }}>
+                                  {getInitials(`${u.firstName} ${u.lastName}`)}
+                                </div>
+                                <div>
+                                  <p style={{ fontSize:13, fontWeight:700, color:"var(--text-primary,#111827)", margin:0 }}>{u.firstName} {u.lastName}</p>
+                                  <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:0 }}>{u.email||""}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={S.td}>{u.profession||"—"}</td>
+                            <td style={S.td}>{u.region||u.city||"—"}</td>
+                            <td style={{ ...S.td, whiteSpace:"nowrap", fontSize:11 }}>
+                              {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )
+                }
+              </div>
+            );
+          })()}
         </>
       )}
 
-      {/* ══ REPORTS TAB ══ */}
+            {/* ══ REPORTS TAB ══ */}
       {tab === "reports" && (
         <div>
           {/* Reports header + inline filter bar */}
