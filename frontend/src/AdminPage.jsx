@@ -25,6 +25,15 @@ const AT = {
     activeMembers:"חברות פעילות", thisWeek:(n)=>`+${n} השבוע`,
     percentVerified:(p)=>`${p}% מאומתות`,
     topProfessions:"מקצועות מובילות", topRegionsLabel:"אזורים מובילים", recentMembers:"חברות חדשות", noData:"אין נתונים עדיין",
+    withHelpAreas:"עם תחומי עזרה",
+    postsSubLabel:(l,c)=>`${l} לייקים · ${c} תגובות`,
+    platformHealth:"בריאות הפלטפורמה",
+    verifiedMembers:"חברות מאומתות", helpAreaCoverage:"כיסוי תחומי עזרה", onlineRightNow:"מחוברות כרגע",
+    avgPostsPerMember:"פוסטים ממוצע לחברה", totalInteractions:"סך האינטראקציות",
+    viewAllMembers:"לכל החברות →",
+    quickActions:"פעולות מהירות",
+    manageUsers:"ניהול משתמשות", reviewReports:"בדיקת דיווחים", activityLogs:"יומן פעילות", dataAndAnalytics:"נתונים ואנליטיקה",
+    mostLikedPost:"הפוסט הכי אהוב", mediaPost:"(פוסט מדיה)", postBy:(n)=>`מאת ${n}`,
     searchPh:"חפשי משתמשת...", editUser:"עריכת משתמשת",
     firstName:"שם פרטי", lastName:"שם משפחה", phone:"טלפון",
     city:"עיר", profession:"מקצוע", bio:"ביוגרפיה",
@@ -90,6 +99,15 @@ const AT = {
     activeMembers:"Active members", thisWeek:(n)=>`+${n} this week`,
     percentVerified:(p)=>`${p}% verified`,
     topProfessions:"Top Professions", topRegionsLabel:"Top Regions", recentMembers:"Recent Members", noData:"No data yet",
+    withHelpAreas:"With Help Areas",
+    postsSubLabel:(l,c)=>`${l} likes · ${c} comments`,
+    platformHealth:"Platform Health",
+    verifiedMembers:"Verified members", helpAreaCoverage:"Help-area coverage", onlineRightNow:"Online right now",
+    avgPostsPerMember:"Avg posts / member", totalInteractions:"Total interactions",
+    viewAllMembers:"View all members →",
+    quickActions:"Quick Actions",
+    manageUsers:"Manage Users", reviewReports:"Review Reports", activityLogs:"Activity Logs", dataAndAnalytics:"Data & Analytics",
+    mostLikedPost:"Most Liked Post", mediaPost:"(media post)", postBy:(n)=>`by ${n}`,
     searchPh:"Search users...", editUser:"Edit User",
     firstName:"First Name", lastName:"Last Name", phone:"Phone",
     city:"City", profession:"Profession", bio:"Bio",
@@ -155,6 +173,15 @@ const AT = {
     activeMembers:"أعضاء نشطات", thisWeek:(n)=>`+${n} هذا الأسبوع`,
     percentVerified:(p)=>`${p}% موثّقات`,
     topProfessions:"أبرز المهن", topRegionsLabel:"أبرز المناطق", recentMembers:"أعضاء جدد", noData:"لا توجد بيانات بعد",
+    withHelpAreas:"مع مجالات مساعدة",
+    postsSubLabel:(l,c)=>`${l} إعجاب · ${c} تعليق`,
+    platformHealth:"صحة المنصة",
+    verifiedMembers:"الأعضاء الموثّقات", helpAreaCoverage:"تغطية مجالات المساعدة", onlineRightNow:"متصلات الآن",
+    avgPostsPerMember:"متوسط المنشورات / عضو", totalInteractions:"إجمالي التفاعلات",
+    viewAllMembers:"عرض جميع الأعضاء →",
+    quickActions:"إجراءات سريعة",
+    manageUsers:"إدارة المستخدمات", reviewReports:"مراجعة البلاغات", activityLogs:"سجل النشاط", dataAndAnalytics:"البيانات والتحليلات",
+    mostLikedPost:"المنشور الأكثر إعجاباً", mediaPost:"(منشور وسائط)", postBy:(n)=>`بقلم ${n}`,
     searchPh:"ابحثي عن مستخدمة...", editUser:"تعديل المستخدمة",
     firstName:"الاسم الأول", lastName:"اسم العائلة", phone:"الهاتف",
     city:"المدينة", profession:"المهنة", bio:"نبذة",
@@ -1689,7 +1716,24 @@ export default function AdminPage() {
 
   /* ─────────────────────────────────────── RENDER ─── */
   return (
-    <div style={S.page}>
+    <div style={S.page} className="admin-root">
+      <style>{`
+        @media (max-width: 640px) {
+          .admin-root { padding: 1rem 0.75rem !important; }
+          .admin-tabs {
+            width: 100% !important;
+            overflow-x: auto !important;
+            flex-wrap: nowrap !important;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+          .admin-tabs::-webkit-scrollbar { display: none; }
+          .admin-overview-mid { grid-template-columns: 1fr !important; }
+          .admin-data-charts  { grid-template-columns: 1fr !important; }
+          .admin-search-input { width: 100% !important; min-width: unset !important; }
+        }
+      `}</style>
+
       {/* Page header */}
       <div style={S.header}>
         <p style={S.title}>{Tr.pageTitle}</p>
@@ -1697,7 +1741,7 @@ export default function AdminPage() {
       </div>
 
       {/* Tabs */}
-      <div style={S.tabs}>
+      <div style={S.tabs} className="admin-tabs">
         {TABS.map(t => (
           <button key={t.id} style={S.tab(tab === t.id)} onClick={() => setTab(t.id)}>
             {t.label}
@@ -1714,6 +1758,7 @@ export default function AdminPage() {
       {/* ══ OVERVIEW TAB ══ */}
       {!loading && tab === "overview" && (
         <>
+          {/* Stat cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <StatCard label={Tr.totalMembers}  value={users.length}   color="#4472b8" sub={Tr.thisWeek(newThisWeek)}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
@@ -1721,10 +1766,10 @@ export default function AdminPage() {
             <StatCard label={Tr.onlineNow}     value={onlineNow}      color="#7ba87a" sub={Tr.activeMembers}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>}
               onClick={() => setStatDetailType("online")} />
-            <StatCard label={Tr.withHelpAreas || "With Help Areas"} value={users.filter(u => u.helpAreas?.length > 0).length} color="#1d4896" sub={`${Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1)*100)}%`}
+            <StatCard label={Tr.withHelpAreas} value={users.filter(u => u.helpAreas?.length > 0).length} color="#1d4896" sub={`${Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1)*100)}%`}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
               onClick={() => setStatDetailType("helpAreas")} />
-            <StatCard label={Tr.totalPosts}    value={posts.length}   color="#8b5cf6" sub={`${totalLikes} · ${totalComments}`}
+            <StatCard label={Tr.totalPosts}    value={posts.length}   color="#8b5cf6" sub={Tr.postsSubLabel(totalLikes, totalComments)}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
               onClick={() => setStatDetailType("posts")} />
             <StatCard label={Tr.conversations}  value={convs.length}   color="#d4a574"
@@ -1735,80 +1780,113 @@ export default function AdminPage() {
               onClick={() => setStatDetailType("admins")} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "1.25rem" }}>
-            {/* Profession distribution */}
+          {/* Platform health + quick actions + recent members */}
+          <div className="admin-overview-mid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem", alignItems: "start" }}>
+
+            {/* Platform health */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topProfessions}</p>
-              {topProfessions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)" }}>{Tr.noData}</p>}
-              {topProfessions.map(([prof, count]) => (
-                <div key={prof} style={{ marginBottom: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{prof}</span>
-                    <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)", fontWeight: 600 }}>{count}</span>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1.1rem" }}>{Tr.platformHealth}</p>
+              {[
+                { label: Tr.verifiedMembers, pct: Math.round(verifiedN / Math.max(users.length,1) * 100), color: "#7ba87a" },
+                { label: Tr.helpAreaCoverage, pct: Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1) * 100), color: "#4472b8" },
+                { label: Tr.onlineRightNow, pct: Math.round(onlineNow / Math.max(users.length,1) * 100), color: "#d4a574" },
+              ].map(m => (
+                <div key={m.label} style={{ marginBottom: "0.9rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{m.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: m.color }}>{m.pct}%</span>
                   </div>
-                  <div style={{ height: 6, background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "var(--brand,#4472b8)", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
+                  <div style={{ height: 6, background: "var(--bg-tertiary,#f0f6fb)", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${m.pct}%`, background: m.color, borderRadius: 99, transition: "width 0.7s ease" }} />
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Region distribution */}
-            <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topRegionsLabel}</p>
-              {topRegions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)" }}>{Tr.noData}</p>}
-              {topRegions.map(([region, count]) => (
-                <div key={region} style={{ marginBottom: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{region}</span>
-                    <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)", fontWeight: 600 }}>{count}</span>
-                  </div>
-                  <div style={{ height: 6, background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "#8b5cf6", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
-                  </div>
+              <div style={{ marginTop: "1rem", paddingTop: "0.85rem", borderTop: "1px solid var(--bg-tertiary,#f0f6fb)", display: "flex", justifyContent: "space-between" }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 2px" }}>{Tr.avgPostsPerMember}</p>
+                  <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary,#111827)", margin: 0 }}>{(posts.length / Math.max(users.length,1)).toFixed(1)}</p>
                 </div>
-              ))}
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 2px" }}>{Tr.totalInteractions}</p>
+                  <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary,#111827)", margin: 0 }}>{(totalLikes + totalComments).toLocaleString()}</p>
+                </div>
+              </div>
             </div>
 
-            {/* Recent signups */}
+            {/* Recent members */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.recentMembers}</p>
-              {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5).map(u => (
-                <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width:28,height:28,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1rem" }}>{Tr.recentMembers}</p>
+              {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6).map(u => (
+                <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0", borderBottom: "1px solid var(--bg-tertiary,#f0f6fb)" }}>
+                  <div style={{ width:30,height:30,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>
                     {getInitials(`${u.firstName} ${u.lastName}`)}
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
-                    <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{u.firstName} {u.lastName}</p>
-                    <p style={{ fontSize:10,color:"var(--text-muted,#6b7280)" }}>{timeAgo(u.createdAt)}</p>
+                    <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",margin:0 }}>{u.firstName} {u.lastName}</p>
+                    <p style={{ fontSize:10,color:"var(--text-muted,#6b7280)",margin:0 }}>{u.profession || timeAgo(u.createdAt)}</p>
                   </div>
-                  {u.emailVerified && <span className="badge badge-green">✓</span>}
+                  <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap",flexShrink:0 }}>{timeAgo(u.createdAt)}</span>
                 </div>
               ))}
+              {canManageUsers && (
+                <button onClick={() => setTab("users")} style={{ marginTop: "0.85rem", width: "100%", fontSize: 12, fontWeight: 600, padding: "7px", borderRadius: 8, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-secondary,#f0f6fb)", color: "var(--text-primary,#111827)", cursor: "pointer" }}>
+                  {Tr.viewAllMembers}
+                </button>
+              )}
             </div>
 
-            {/* Top posts */}
-            <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Posts</p>
-              {posts.slice().sort((a,b)=>(b.likesCount||0)-(a.likesCount||0)).slice(0,4).map(p => (
-                <div key={p.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid var(--bg-tertiary,#f0f6fb)" }}>
-                  <p style={{ fontSize:12,color:"var(--text-primary,#111827)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2 }}>
-                    {p.text || "(media post)"}
-                  </p>
-                  <div style={{ display:"flex", gap:10 }}>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",display:"flex",alignItems:"center",gap:2 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                      {p.likesCount||0}
-                    </span>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",display:"flex",alignItems:"center",gap:2 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                      {p.commentCount||0}
-                    </span>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)" }}>by {p.authorName}</span>
-                  </div>
+            {/* Quick actions + top post */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              {/* Quick actions */}
+              <div className="card" style={{ padding: "1.25rem" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.85rem" }}>{Tr.quickActions}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {canManageUsers && (
+                    <button onClick={() => setTab("users")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4472b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      {Tr.manageUsers}
+                    </button>
+                  )}
+                  {canManageContent && (
+                    <button onClick={() => setTab("reports")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c25c5c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      {Tr.reviewReports}
+                    </button>
+                  )}
+                  {canViewLogs && (
+                    <button onClick={() => setTab("logs")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      {Tr.activityLogs}
+                    </button>
+                  )}
+                  {canViewStats && (
+                    <button onClick={() => setTab("data")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                      {Tr.dataAndAnalytics}
+                    </button>
+                  )}
                 </div>
-              ))}
-              {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>No posts yet</p>}
+              </div>
+
+              {/* Top post */}
+              {posts.length > 0 && (() => {
+                const top = posts.slice().sort((a,b) => (b.likesCount||0) - (a.likesCount||0))[0];
+                return (
+                  <div className="card" style={{ padding: "1.25rem" }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.75rem" }}>{Tr.mostLikedPost}</p>
+                    <p style={{ fontSize: 13, color: "var(--text-primary,#111827)", fontWeight: 500, margin: "0 0 8px", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {top.text || Tr.mediaPost}
+                    </p>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#c25c5c", display: "flex", alignItems: "center", gap: 4 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        {top.likesCount||0}
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)" }}>{Tr.postBy(top.authorName)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
           </div>
@@ -1836,7 +1914,7 @@ export default function AdminPage() {
               All Members <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredBySearch.length})</span>
             </span>
             <input
-              className="input"
+              className="input admin-search-input"
               placeholder="Search by name, email, profession…"
               value={searchUser}
               onChange={e => setSearchUser(e.target.value)}
@@ -2058,7 +2136,7 @@ export default function AdminPage() {
               All Posts <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredPosts.length})</span>
             </span>
             <input
-              className="input"
+              className="input admin-search-input"
               value={postSearch}
               onChange={e => setPostSearch(e.target.value)}
               placeholder={Tr.searchPh || "Search posts..."}
@@ -2272,7 +2350,7 @@ export default function AdminPage() {
           )}
 
           {/* ── Row 1: Donut + Line Chart ── */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", marginBottom:"1.25rem" }}>
+          <div className="admin-data-charts" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem", marginBottom:"1.25rem" }}>
             <DistributionDonutChart users={users} lang={lang} />
             <MemberGrowthChart users={users} />
           </div>
@@ -2374,7 +2452,7 @@ export default function AdminPage() {
               {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({reports.filter(r=>r.status==="pending").length} pending)</span>
             </span>
             <input
-              className="input"
+              className="input admin-search-input"
               value={reportSearch}
               onChange={e => setReportSearch(e.target.value)}
               placeholder="Search reporter or reported…"
