@@ -948,6 +948,16 @@ function SlideshowAdmin() {
   );
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 640);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener("resize", fn, { passive: true });
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return isMobile;
+}
+
 /* ══════════════════════════════════════════════════════
    DISTRIBUTION DONUT CHART
 ═══════════════════════════════════════════════════════ */
