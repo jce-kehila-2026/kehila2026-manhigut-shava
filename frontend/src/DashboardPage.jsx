@@ -189,11 +189,11 @@ const eyebrow = {
 };
 
 /* ── Quick-access circle with sonar rings ── */
-function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tutId }) {
+function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, tutId }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  // On mobile, fill the grid cell (25vw minus gaps); cap at 90px. Desktop stays fixed.
   const size = isMobile ? "min(90px, calc(25vw - 14px))" : "120px";
+  const imgSize = isMobile ? "min(58px, calc(17vw))" : "72px";
   const ringInset = 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
@@ -215,19 +215,29 @@ function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tu
         ))}
         <div style={{
           width:size, height:size, borderRadius:"50%",
-          background: hov ? color : (coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)"),
+          background: coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)",
           border:`2px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
           display:"flex", alignItems:"center", justifyContent:"center",
-          color: hov ? "#fff" : color,
-          transition:"background 0.26s, border-color 0.26s, color 0.26s, box-shadow 0.26s, transform 0.26s",
-          transform: hov ? "scale(1.06)" : "scale(1)",
+          transition:"border-color 0.26s, box-shadow 0.26s, transform 0.26s",
+          transform: hov ? "scale(1.08)" : "scale(1)",
           boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
         }}>
-          <div style={{ transform: isMobile ? "scale(0.9)" : "scale(1.2)" }}>{icon}</div>
+          <img
+            src={imgSrc}
+            alt={title}
+            style={{
+              width: imgSize,
+              height: imgSize,
+              objectFit: "contain",
+              transition: "transform 0.26s",
+              transform: hov ? "scale(1.12)" : "scale(1)",
+              display: "block",
+            }}
+          />
         </div>
       </div>
-      <p style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(25vw - 8px)" : 110, lineHeight: 1.2 }}>{title}</p>
+      <p style={{ fontSize: isMobile ? 12 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(44vw - 16px)" : 140, lineHeight: 1.2 }}>{title}</p>
       {!isMobile && (
         <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
           lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
@@ -282,10 +292,10 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const pendingRequests = helpRequests.filter((r) => !r.status);
 
   const quickCircles = [
-    { icon: Icon.members,   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
-    { icon: Icon.community, title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
-    { icon: Icon.chat,      title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: true  },
-    { icon: Icon.profile,   title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
+    { imgSrc: "/FindHelpSymbol.png",   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
+    { imgSrc: "/CommunitySymbol.png",  title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
+    { imgSrc: "/ChatSymbol.png",       title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: true  },
+    { imgSrc: "/ProfileSymbol.png",    title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
   ];
 
   return (
