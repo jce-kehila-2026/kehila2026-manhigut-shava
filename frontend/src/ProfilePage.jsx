@@ -1237,11 +1237,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       <div style={S.coverWrap}>
         {coverURL && <img src={coverURL} alt="cover" style={S.coverImg} />}
         <div style={S.coverOverlay} />
-        {isMobile && isOwner && pct < 100 && (
-          <div style={{ position:"absolute", bottom:10, right:10, zIndex:3 }}>
-            <CompletenessBadge pct={pct} onCover />
-          </div>
-        )}
         {isOwner && (
           <>
             <input ref={coverFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleCoverUpload} />
@@ -1299,7 +1294,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
         {/* Actions: completeness circle + LinkedIn / Message */}
         <div style={S.profileActions}>
-          {!isMobile && isOwner && pct < 100 && <CompletenessBadge pct={pct} />}
           {form.linkedIn && (
             <a href={safeUrl(form.linkedIn)}
               target="_blank" rel="noreferrer"
@@ -1380,7 +1374,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             {error && <div style={S.errorMsg}>{error}</div>}
 
             <div className="profile-card" style={S.card}>
-              <SectionTitle label={t.profile.personalInfo} />
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1.25rem" }}>
+                <p style={{ fontSize:"11px", fontWeight:"700", color:T.text, textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
+                  {t.profile.personalInfo}
+                </p>
+                {isOwner && pct < 100 && <CompletenessBadge pct={pct} />}
+              </div>
 
               <div style={S.row}>
                 <div style={S.group}>
