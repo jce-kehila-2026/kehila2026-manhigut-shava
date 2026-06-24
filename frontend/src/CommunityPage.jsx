@@ -923,7 +923,7 @@ function ComposeBox({ currentUser, profile, onPost }) {
       }}
     >
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-        <Avatar url={profile?.avatarUrl} name={profile ? `${profile.firstName} ${profile.lastName}` : ""} size={42} />
+        <Avatar url={profile?.photoURL || profile?.avatarUrl} name={profile ? `${profile.firstName} ${profile.lastName}` : ""} size={42} />
         <div style={{ flex: 1 }}>
           <textarea
             value={text}

@@ -2021,8 +2021,11 @@ export default function AdminPage() {
               <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1rem" }}>{Tr.recentMembers}</p>
               {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6).map(u => (
                 <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0", borderBottom: "1px solid var(--bg-tertiary,#f0f6fb)" }}>
-                  <div style={{ width:30,height:30,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>
-                    {getInitials(`${u.firstName} ${u.lastName}`)}
+                  <div style={{ width:30,height:30,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0,overflow:"hidden" }}>
+                    {(u.photoURL || u.avatarUrl)
+                      ? <img src={u.photoURL || u.avatarUrl} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                      : getInitials(`${u.firstName} ${u.lastName}`)
+                    }
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
                     <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",margin:0 }}>{u.firstName} {u.lastName}</p>
@@ -2167,8 +2170,8 @@ export default function AdminPage() {
                   >
                     <td style={{ padding:"11px 14px" }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        {u.avatarUrl
-                          ? <img src={u.avatarUrl} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover" }} alt="" />
+                        {(u.photoURL || u.avatarUrl)
+                          ? <img src={u.photoURL || u.avatarUrl} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover" }} alt="" />
                           : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
                         }
                         <div>
