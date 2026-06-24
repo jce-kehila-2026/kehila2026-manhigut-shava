@@ -1487,10 +1487,6 @@ export default function AdminPage() {
   const [permsTarget,          setPermsTarget]          = useState(null); // step 2: set perms (isNew=true)
   const [editPermsTarget,      setEditPermsTarget]      = useState(null); // edit existing admin perms
 
-  /* ── Data tab: recent members ── */
-  const [recentTimeframe, setRecentTimeframe] = useState("all");
-  const [recentSort,      setRecentSort]      = useState("newest");
-
   /* ── Excel export / import ── */
   const [exportOpen, setExportOpen]     = useState(false);
   const [selFields, setSelFields]       = useState(() => EXPORT_FIELDS.map(f => f.key));
@@ -2583,114 +2579,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* ── Row 2: Recent Members ── */}
-          {(!isMobile || mobileDataSection === "members") && (() => {
-            const cutoffMs = { "7d":7,"30d":30,"90d":90,"6m":180,"1y":365 }[recentTimeframe];
-            const cutoff   = cutoffMs ? Date.now() - cutoffMs * 86400000 : null;
-            const filtered = users.filter(u => !cutoff || (u.createdAt && new Date(u.createdAt) >= cutoff));
-            const sorted   = [...filtered].sort((a, b) => {
-              if (recentSort === "oldest")     return new Date(a.createdAt||0) - new Date(b.createdAt||0);
-              if (recentSort === "alpha")      return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
-              if (recentSort === "profession") return (a.profession||"").localeCompare(b.profession||"", "he");
-              return new Date(b.createdAt||0) - new Date(a.createdAt||0);
-            });
-            return (
-              <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-                <div className="admin-data-members-hdr" style={{ padding:"1rem 1.5rem", borderBottom:"1px solid var(--border,#daeaf8)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
-                  <div>
-                    <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 2px" }}>{Tr.recentMembers}</p>
-                    <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.membersCountFn(sorted.length)}</span>
-                  </div>
-                  {isMobile ? (
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      <select value={recentTimeframe} onChange={e => setRecentTimeframe(e.target.value)} style={{
-                        padding:"7px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
-                        borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
-                        fontFamily:"inherit", cursor:"pointer",
-                      }}>
-                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr.allFilter]].map(([v,l]) => (
-                          <option key={v} value={v}>{l}</option>
-                        ))}
-                      </select>
-                      <select value={recentSort} onChange={e => setRecentSort(e.target.value)} style={{
-                        padding:"7px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
-                        borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
-                        fontFamily:"inherit", cursor:"pointer",
-                      }}>
-                        {[["newest",Tr.newestLabel],["oldest",Tr.oldestLabel],["alpha",Tr.sortAlpha],["profession",Tr.profession]].map(([v,l]) => (
-                          <option key={v} value={v}>{l}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <div className="admin-data-controls-row" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
-                      {/* Timeframe */}
-                      <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr.allFilter]].map(([v,l]) => (
-                          <button key={v} onClick={() => setRecentTimeframe(v)} style={{
-                            fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
-                            background: recentTimeframe===v ? "var(--bg-primary,#fff)" : "transparent",
-                            color:      recentTimeframe===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
-                            boxShadow:  recentTimeframe===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                          }}>{l}</button>
-                        ))}
-                      </div>
-                      {/* Sort */}
-                      <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-                        {[["newest",Tr.newestLabel],["oldest",Tr.oldestLabel],["alpha",Tr.sortAlpha],["profession",Tr.profession]].map(([v,l]) => (
-                          <button key={v} onClick={() => setRecentSort(v)} style={{
-                            fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
-                            background: recentSort===v ? "var(--bg-primary,#fff)" : "transparent",
-                            color:      recentSort===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
-                            boxShadow:  recentSort===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                          }}>{l}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {sorted.length === 0
-                  ? <div className="empty-state"><p>{Tr.noMembersInPeriod}</p></div>
-                  : (
-                    <table style={{ ...S.table, minWidth:520 }}>
-                      <thead>
-                        <tr>
-                          {[Tr.colMember, Tr.profession, Tr.region, Tr.colJoined].map(h => (
-                            <th key={h} style={S.th}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sorted.map(u => (
-                          <tr key={u.id} style={S.row}
-                            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
-                            onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
-                          >
-                            <td style={S.td}>
-                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                                <div style={{ width:32, height:32, borderRadius:"50%", flexShrink:0, background:avatarColor(`${u.firstName} ${u.lastName}`), display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"#fff" }}>
-                                  {getInitials(`${u.firstName} ${u.lastName}`)}
-                                </div>
-                                <div>
-                                  <p style={{ fontSize:13, fontWeight:700, color:"var(--text-primary,#111827)", margin:0 }}>{u.firstName} {u.lastName}</p>
-                                  <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:0 }}>{u.email||""}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td style={S.td}>{u.profession||"—"}</td>
-                            <td style={S.td}>{u.region||"—"}</td>
-                            <td style={{ ...S.td, whiteSpace:"nowrap", fontSize:11 }}>
-                              {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )
-                }
-              </div>
-            );
-          })()}
         </>
       )}
 
@@ -2725,6 +2613,7 @@ export default function AdminPage() {
               ))}
             </div>
             <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchReports}>{reportsLoading ? "…" : `↻ ${Tr.refresh}`}</button>
+
           </div>
           {(() => {
             const filteredReports = reports.filter(r => {
