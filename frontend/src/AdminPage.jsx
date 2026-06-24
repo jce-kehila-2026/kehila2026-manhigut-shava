@@ -354,21 +354,21 @@ const AT = {
 
 /* ─── Styles (our S object — used by EditUsers, Logs, EditUserModal) ─── */
 const S = {
-  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)", flex: 1, overflow: "auto" },
+  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", maxWidth: "100%", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)", flex: 1, overflowY: "auto", overflowX: "hidden" },
   denied: { textAlign: "center", padding: "4rem", color: "#c25c5c", fontSize: "1.1rem", fontWeight: 700 },
 
   header: { marginBottom: "1.75rem" },
   title: { fontSize: "22px", fontWeight: 800, color: "var(--text-primary,#111827)", margin: "0 0 3px" },
   sub: { fontSize: "13px", color: "var(--text-muted,#6b7280)", margin: 0 },
 
-  tabs: { display: "flex", gap: "4px", marginBottom: "1.5rem", flexWrap: "wrap", background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-md,10px)", padding: "4px", width: "fit-content" },
+  tabs: { display: "flex", gap: "4px", marginBottom: "1.5rem", flexWrap: "wrap", background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-md,10px)", padding: "4px", width: "100%", maxWidth: "100%", boxSizing: "border-box" },
   tab: (active) => ({
-    padding: "7px 16px", borderRadius: "var(--r-sm,8px)", border: "none", cursor: "pointer",
+    padding: "7px 14px", borderRadius: "var(--r-sm,8px)", border: "none", cursor: "pointer",
     fontSize: "13px", fontWeight: active ? 700 : 500, fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
     background: active ? "var(--bg-primary,#fff)" : "transparent",
     color: active ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
     boxShadow: active ? "var(--shadow-xs,0 1px 4px rgba(29, 72, 150,0.07))" : "none",
-    transition: "all 0.15s",
+    transition: "all 0.15s", whiteSpace: "nowrap", flex: "1 1 auto", textAlign: "center",
   }),
 
   table: { width: "100%", borderCollapse: "collapse" },
@@ -1902,15 +1902,15 @@ export default function AdminPage() {
     <div style={S.page} className="admin-root">
       <style>{`
         @media (max-width: 640px) {
-          .admin-root { padding: 1rem 0.75rem !important; overflow-x: hidden !important; }
+          .admin-root { padding: 1rem 0.75rem !important; }
 
-          /* Tab bar scrolls horizontally */
+          /* Tab bar wraps to two rows on mobile */
           .admin-tabs {
-            width: 100% !important; overflow-x: auto !important;
-            flex-wrap: nowrap !important; scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
+            width: 100% !important; max-width: 100% !important;
+            flex-wrap: wrap !important; box-sizing: border-box !important;
           }
-          .admin-tabs::-webkit-scrollbar { display: none; }
+          .admin-tabs button { white-space: nowrap !important; }
+          .admin-root { overflow-x: hidden !important; }
 
           /* Stat cards: compact 2-column grid */
           .admin-stat-grid {
@@ -1933,7 +1933,21 @@ export default function AdminPage() {
           }
 
           /* Search inputs full width on mobile */
-          .admin-search-input { width: 100% !important; min-width: unset !important; }
+          .admin-search-input { width: 100% !important; min-width: unset !important; flex-shrink: 1 !important; }
+
+          /* Table card: reliable horizontal scroll on mobile */
+          .admin-table-card {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            max-width: 100%;
+          }
+
+          /* Filter bar: stack vertically on mobile for easier interaction */
+          .admin-filter-bar { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+          .admin-filter-pills { flex-wrap: wrap !important; }
+
+          /* Make action buttons in tables wrap */
+          .admin-table-actions { flex-wrap: wrap !important; gap: 4px !important; }
         }
       `}</style>
 
@@ -2115,7 +2129,7 @@ export default function AdminPage() {
       {!loading && tab === "users" && (
         <>
           {/* Members header + inline filter bar */}
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+          <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
               {Tr.allMembers} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredBySearch.length})</span>
             </span>
@@ -2126,7 +2140,7 @@ export default function AdminPage() {
               onChange={e => setSearchUser(e.target.value)}
               style={{ fontSize:12, width:220, flexShrink:0 }}
             />
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+            <div className="admin-filter-pills" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
                 { val:"recent", label:Tr.sortRecent },
                 { val:"alpha",  label:Tr.sortAlpha },
@@ -2150,112 +2164,194 @@ export default function AdminPage() {
               </label>
             </div>
           </div>
-          <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
-              <thead>
-                <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
-                  {[Tr.colMember, Tr.profession, Tr.region, Tr.colStatus, Tr.colJoined, Tr.colActions].map(h => (
-                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBySearch.map((u) => (
-                  <React.Fragment key={u.id}>
-                  <tr
-                    style={{ borderBottom: expandedUserId === u.id ? "none" : "1px solid var(--bg-tertiary,#f0f6fb)", transition:"background 0.12s", cursor:"pointer" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
-                    onMouseLeave={e => e.currentTarget.style.background = expandedUserId === u.id ? "var(--bg-secondary,#f0f6fb)" : "transparent"}
-                    onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}
-                  >
-                    <td style={{ padding:"11px 14px" }}>
-                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        {(u.photoURL || u.avatarUrl)
-                          ? <img src={u.photoURL || u.avatarUrl} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover" }} alt="" />
-                          : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
-                        }
-                        <div>
-                          <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)" }}>{u.firstName} {u.lastName}</p>
-                        </div>
+          {isMobile ? (
+            <div style={{ display:"flex",flexDirection:"column",gap:"0.65rem" }}>
+              {filteredBySearch.map(u => {
+                const isExpandedU = expandedUserId === u.id;
+                const uName = `${u.firstName||""} ${u.lastName||""}`.trim();
+                const uAv = u.photoURL || u.avatarUrl;
+                return (
+                  <div key={u.id} style={{ background:"var(--bg-primary,#fff)",border:"1.5px solid var(--border,#daeaf8)",borderRadius:14,overflow:"hidden",boxShadow:"0 1px 4px rgba(29,72,150,0.05)" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:10,padding:"0.75rem 1rem",cursor:"pointer" }}
+                      onClick={() => setExpandedUserId(isExpandedU ? null : u.id)}>
+                      <div style={{ width:38,height:38,borderRadius:"50%",flexShrink:0,background:avatarColor(uName),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,overflow:"hidden" }}>
+                        {uAv ? <img src={uAv} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} /> : getInitials(uName)}
                       </div>
-                    </td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.profession||"—"}</td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.region||"—"}</td>
-                    <td style={{ padding:"11px 14px" }}>
-                      <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
-                        <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:14,fontWeight:700,color:"var(--text-primary,#111827)",margin:"0 0 2px" }}>{uName||"—"}</p>
+                        <p style={{ fontSize:11,color:"var(--text-muted,#6b7280)",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                          {[u.profession,u.region].filter(Boolean).join(" · ")||"—"}
+                        </p>
+                      </div>
+                      <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,flexShrink:0 }}>
+                        <span className={`badge ${u.emailVerified?"badge-green":"badge-yellow"}`} style={{ fontSize:10 }}>
                           {u.emailVerified ? Tr.verified : Tr.statusPending}
                         </span>
-                        {u.isAdmin && <span className="badge badge-purple">{Tr.adminBadge}</span>}
-                        {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● {Tr.onlineBadge}</span>}
+                        {u.isAdmin && <span className="badge badge-purple" style={{ fontSize:10 }}>{Tr.adminBadge}</span>}
+                        {isActuallyOnline(u) && <span className="badge badge-green" style={{ fontSize:10,background:"#f0fdf4" }}>● {Tr.onlineBadge}</span>}
                       </div>
-                    </td>
-                    <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>
-                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
-                    </td>
-                    <td style={{ padding:"11px 14px" }}>
-                      {u.id !== user?.uid && (
-                        <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
-                          {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)",color:"var(--text-primary,#111827)",cursor:"pointer",whiteSpace:"nowrap" }}>
-                            {Tr.editUser || "Edit"}
-                          </button>}
-                          {canManageAdmins && (u.isAdmin ? (<>
-                            <button onClick={() => setEditPermsTarget(u)}
-                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer",whiteSpace:"nowrap" }}>
-                              {Tr.editPermsBtn}
-                            </button>
-                            <button onClick={() => setConfirmRevokeTarget(u)}
-                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
-                              {Tr.revokeAdmin}
-                            </button>
-                          </>) : (
-                            <button onClick={() => setMakeAdminConfirmTarget(u)}
-                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
-                              {Tr.makeAdmin}
-                            </button>
-                          ))}
-                          {canManageUsers && <button onClick={() => setConfirmDeleteTarget(u)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
-                            {Tr.deleteLbl}
-                          </button>}
-                          {!canManageUsers && !canManageAdmins && <span style={{fontSize:11,color:"var(--text-muted)"}}>{Tr.viewOnly}</span>}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                  {/* Expanded detail row */}
-                  {expandedUserId === u.id && (
-                    <tr key={`${u.id}-detail`}>
-                      <td colSpan={7} style={{ background:"var(--bg-secondary,#f0f6fb)", padding:"12px 20px 14px 48px", borderBottom:"2px solid var(--border,#daeaf8)" }}
-                        onClick={e => e.stopPropagation()}>
-                        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:"10px 24px" }}>
+                    </div>
+                    {isExpandedU && (
+                      <div style={{ padding:"0.65rem 1rem",borderTop:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)" }}>
+                        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 16px" }}>
                           {[
-                            { label: Tr.region,    val: u.region },
-                            { label: Tr.campus,    val: u.campus },
-                            { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
-                            { label: Tr.birthdate, val: u.birthdate },
-                            { label: Tr.identity,  val: translateReligion(u.identity, lang) || u.identity },
-                            { label: Tr.ethnicity, val: translateEthnicity(u.ethnicity, lang) || u.ethnicity },
-                            { label: Tr.bio,       val: u.bio },
-                          ].map(({ label, val }) => val ? (
+                            { label:Tr.colJoined, val:u.createdAt ? new Date(u.createdAt).toLocaleDateString() : null },
+                            { label:Tr.campus,    val:u.campus },
+                            { label:Tr.degree,    val:[u.bachelorDegree,u.masterDegree].filter(Boolean).join(" · ")||null },
+                            { label:Tr.birthdate, val:u.birthdate },
+                            { label:Tr.identity,  val:translateReligion(u.identity,lang)||u.identity },
+                            { label:Tr.ethnicity, val:translateEthnicity(u.ethnicity,lang)||u.ethnicity },
+                            { label:Tr.bio,       val:u.bio },
+                          ].map(({label,val}) => val ? (
                             <div key={label}>
-                              <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 2px" }}>{label}</p>
-                              <p style={{ fontSize:12, color:"var(--text-secondary,#7a5868)", margin:0, wordBreak:"break-word" }}>{val}</p>
+                              <p style={{ fontSize:9,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 1px" }}>{label}</p>
+                              <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",margin:0,wordBreak:"break-word" }}>{val}</p>
                             </div>
                           ) : null)}
                         </div>
+                      </div>
+                    )}
+                    {u.id !== user?.uid && (
+                      <div style={{ display:"flex",gap:6,flexWrap:"wrap",padding:"0.6rem 1rem",borderTop:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)" }}>
+                        {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
+                          style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-primary,#fff)",color:"var(--text-primary,#111827)",cursor:"pointer" }}>
+                          {Tr.editUser||"Edit"}
+                        </button>}
+                        {canManageAdmins && (u.isAdmin ? (<>
+                          <button onClick={e => { e.stopPropagation(); setEditPermsTarget(u); }}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer" }}>
+                            {Tr.editPermsBtn}
+                          </button>
+                          <button onClick={e => { e.stopPropagation(); setConfirmRevokeTarget(u); }}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer" }}>
+                            {Tr.revokeAdmin}
+                          </button>
+                        </>) : (
+                          <button onClick={e => { e.stopPropagation(); setMakeAdminConfirmTarget(u); }}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer" }}>
+                            {Tr.makeAdmin}
+                          </button>
+                        ))}
+                        {canManageUsers && <button onClick={e => { e.stopPropagation(); setConfirmDeleteTarget(u); }}
+                          style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
+                          {Tr.deleteLbl}
+                        </button>}
+                        {!canManageUsers && !canManageAdmins && <span style={{ fontSize:11,color:"var(--text-muted)" }}>{Tr.viewOnly}</span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {filteredBySearch.length === 0 && <div className="empty-state"><p>{Tr.noMembersFound}</p></div>}
+            </div>
+          ) : (
+            <div className="card admin-table-card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table className="admin-users-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
+                    {[Tr.colMember, Tr.profession, Tr.region, Tr.colStatus, Tr.colJoined, Tr.colActions].map(h => (
+                      <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBySearch.map((u) => (
+                    <React.Fragment key={u.id}>
+                    <tr
+                      style={{ borderBottom: expandedUserId === u.id ? "none" : "1px solid var(--bg-tertiary,#f0f6fb)", transition:"background 0.12s", cursor:"pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
+                      onMouseLeave={e => e.currentTarget.style.background = expandedUserId === u.id ? "var(--bg-secondary,#f0f6fb)" : "transparent"}
+                      onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}
+                    >
+                      <td style={{ padding:"11px 14px" }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                          {(u.photoURL || u.avatarUrl)
+                            ? <img src={u.photoURL || u.avatarUrl} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover" }} alt="" />
+                            : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
+                          }
+                          <div>
+                            <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)" }}>{u.firstName} {u.lastName}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.profession||"—"}</td>
+                      <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.region||"—"}</td>
+                      <td style={{ padding:"11px 14px" }}>
+                        <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                          <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
+                            {u.emailVerified ? Tr.verified : Tr.statusPending}
+                          </span>
+                          {u.isAdmin && <span className="badge badge-purple">{Tr.adminBadge}</span>}
+                          {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● {Tr.onlineBadge}</span>}
+                        </div>
+                      </td>
+                      <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                      </td>
+                      <td style={{ padding:"11px 14px" }}>
+                        {u.id !== user?.uid && (
+                          <div className="admin-table-actions" style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                            {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
+                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)",color:"var(--text-primary,#111827)",cursor:"pointer",whiteSpace:"nowrap" }}>
+                              {Tr.editUser || "Edit"}
+                            </button>}
+                            {canManageAdmins && (u.isAdmin ? (<>
+                              <button onClick={() => setEditPermsTarget(u)}
+                                style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                {Tr.editPermsBtn}
+                              </button>
+                              <button onClick={() => setConfirmRevokeTarget(u)}
+                                style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                {Tr.revokeAdmin}
+                              </button>
+                            </>) : (
+                              <button onClick={() => setMakeAdminConfirmTarget(u)}
+                                style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                {Tr.makeAdmin}
+                              </button>
+                            ))}
+                            {canManageUsers && <button onClick={() => setConfirmDeleteTarget(u)}
+                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
+                              {Tr.deleteLbl}
+                            </button>}
+                            {!canManageUsers && !canManageAdmins && <span style={{fontSize:11,color:"var(--text-muted)"}}>{Tr.viewOnly}</span>}
+                          </div>
+                        )}
                       </td>
                     </tr>
-                  )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-            {filteredBySearch.length === 0 && (
-              <div className="empty-state"><p>{Tr.noMembersFound}</p></div>
-            )}
-          </div>
+                    {/* Expanded detail row */}
+                    {expandedUserId === u.id && (
+                      <tr key={`${u.id}-detail`}>
+                        <td colSpan={7} style={{ background:"var(--bg-secondary,#f0f6fb)", padding:"12px 20px 14px 48px", borderBottom:"2px solid var(--border,#daeaf8)" }}
+                          onClick={e => e.stopPropagation()}>
+                          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:"10px 24px" }}>
+                            {[
+                              { label: Tr.region,    val: u.region },
+                              { label: Tr.campus,    val: u.campus },
+                              { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
+                              { label: Tr.birthdate, val: u.birthdate },
+                              { label: Tr.identity,  val: translateReligion(u.identity, lang) || u.identity },
+                              { label: Tr.ethnicity, val: translateEthnicity(u.ethnicity, lang) || u.ethnicity },
+                              { label: Tr.bio,       val: u.bio },
+                            ].map(({ label, val }) => val ? (
+                              <div key={label}>
+                                <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 2px" }}>{label}</p>
+                                <p style={{ fontSize:12, color:"var(--text-secondary,#7a5868)", margin:0, wordBreak:"break-word" }}>{val}</p>
+                              </div>
+                            ) : null)}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+              {filteredBySearch.length === 0 && (
+                <div className="empty-state"><p>{Tr.noMembersFound}</p></div>
+              )}
+            </div>
+          )}
         </>
       )}
 
@@ -2337,7 +2433,7 @@ export default function AdminPage() {
             return (
           <>
           {/* Posts header + inline filter bar */}
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+          <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
               {Tr.allPosts} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredPosts.length})</span>
             </span>
@@ -2348,7 +2444,7 @@ export default function AdminPage() {
               placeholder={Tr.searchPh}
               style={{ fontSize:12, width:200, flexShrink:0 }}
             />
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+            <div className="admin-filter-pills" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
                 { val:"recent", label:Tr.sortRecent },
                 { val:"alpha",  label:Tr.sortAlpha },
@@ -2371,119 +2467,205 @@ export default function AdminPage() {
               </label>
             </div>
           </div>
-          <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
-              <thead>
-                <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
-                  {[Tr.colAuthor, Tr.colContent, Tr.colMedia, Tr.colComments, Tr.colPosted, Tr.colActions].map(h => (
-                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPosts.map(p => (
-                  <>
-                    <tr key={p.id}
-                      style={{ borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)",transition:"background 0.12s" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      <td style={{ padding:"11px 14px" }}>
-                        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                          <div style={{ width:28,height:28,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff" }}>
-                            {getInitials(p.authorName)}
-                          </div>
-                          <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)" }}>{p.authorName}</p>
-                        </div>
-                      </td>
-                      <td style={{ padding:"11px 14px",maxWidth:320 }}>
-                        {p.text ? (() => {
-                          const LIMIT = 120;
-                          const isLong = p.text.length > LIMIT;
-                          const isExpanded = expandedPostComments[`text-${p.id}`];
-                          return (
-                            <>
-                              <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:"0 0 2px" }}>
-                                {isExpanded || !isLong ? p.text : `${p.text.slice(0, LIMIT)}…`}
-                              </p>
-                              {isLong && (
-                                <button onClick={() => setExpandedPostComments(s => ({ ...s, [`text-${p.id}`]: !s[`text-${p.id}`] }))}
-                                  style={{ fontSize:10, color:"var(--brand,#4472b8)", background:"none", border:"none", cursor:"pointer", padding:0, fontWeight:600 }}>
-                                  {isExpanded ? Tr.showLess : Tr.showFullPost}
-                                </button>
-                              )}
-                            </>
-                          );
-                        })() : <em style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>{Tr.mediaPost}</em>}
-                      </td>
-                      <td style={{ padding:"11px 14px" }}>
-                        {p.media?.length > 0
-                          ? <span style={{ fontSize:"11px",background:"#dbeafe",color:"#1e40af",borderRadius:"99px",padding:"2px 9px",fontWeight:700 }}>{p.media.length} file{p.media.length>1?"s":""}</span>
-                          : <span style={{ color:"#d9c8ce" }}>—</span>
-                        }
-                      </td>
-                      <td style={{ padding:"11px 14px" }}>
-                        <button
-                          style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}
-                          onClick={() => togglePostComments(p.id)}
-                        >
-                          {expandedPostComments[p.id] ? Tr.hide : Tr.showCommentsFn(p.commentCount ?? 0)}
-                        </button>
-                      </td>
-                      <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
-                      <td style={{ padding:"11px 14px" }}>
-                        <div style={{ display:"flex",gap:4 }}>
-                          {canManageContent && <button
-                            onClick={() => pinPost(p.id, p.isPinned)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}
-                          >{p.isPinned ? Tr.unpinLbl : Tr.pinLbl}</button>}
-                          {canManageContent && <button
-                            onClick={() => deletePost(p.id)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#eec3c3"}
-                            onMouseLeave={e => e.currentTarget.style.background = "#f5dada"}
-                          >{Tr.deleteLbl}</button>}
-                          {!canManageContent && <span style={{fontSize:11,color:"var(--text-muted)"}}>{Tr.viewOnly}</span>}
-                        </div>
-                      </td>
-                    </tr>
+          {isMobile ? (
+            <div style={{ display:"flex",flexDirection:"column",gap:"0.65rem" }}>
+              {filteredPosts.map(p => {
+                const textKey = `text-${p.id}`;
+                const isTextExpanded = expandedPostComments[textKey];
+                const LIMIT = 160;
+                const isLong = p.text && p.text.length > LIMIT;
+                return (
+                  <div key={p.id} style={{ background:"var(--bg-primary,#fff)",border:"1.5px solid var(--border,#daeaf8)",borderRadius:14,overflow:"hidden",boxShadow:"0 1px 4px rgba(29,72,150,0.05)" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:9,padding:"0.7rem 1rem",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
+                      <div style={{ width:32,height:32,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff" }}>
+                        {getInitials(p.authorName)}
+                      </div>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)",margin:0 }}>{p.authorName}</p>
+                      </div>
+                      <div style={{ display:"flex",alignItems:"center",gap:6,flexShrink:0 }}>
+                        {p.isPinned && <span style={{ fontSize:10,background:"#fef9c3",color:"#92400e",borderRadius:99,padding:"2px 8px",fontWeight:700 }}>📌</span>}
+                        <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</span>
+                      </div>
+                    </div>
+                    <div style={{ padding:"0.6rem 1rem",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
+                      {p.text ? (
+                        <>
+                          <p style={{ fontSize:13,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:"0 0 4px",lineHeight:1.5 }}>
+                            {isTextExpanded || !isLong ? p.text : `${p.text.slice(0,LIMIT)}…`}
+                          </p>
+                          {isLong && (
+                            <button onClick={() => setExpandedPostComments(s => ({ ...s, [textKey]: !s[textKey] }))}
+                              style={{ fontSize:11,color:"var(--brand,#4472b8)",background:"none",border:"none",cursor:"pointer",padding:0,fontWeight:600 }}>
+                              {isTextExpanded ? Tr.showLess : Tr.showFullPost}
+                            </button>
+                          )}
+                        </>
+                      ) : <em style={{ fontSize:12,color:"var(--text-muted,#6b7280)" }}>{Tr.mediaPost}</em>}
+                    </div>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,padding:"0.5rem 1rem",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
+                      {p.media?.length > 0 && (
+                        <span style={{ fontSize:11,background:"#dbeafe",color:"#1e40af",borderRadius:99,padding:"2px 9px",fontWeight:700 }}>{p.media.length} file{p.media.length>1?"s":""}</span>
+                      )}
+                      <button onClick={() => togglePostComments(p.id)}
+                        style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}>
+                        {expandedPostComments[p.id] ? Tr.hide : Tr.showCommentsFn(p.commentCount ?? 0)}
+                      </button>
+                    </div>
                     {expandedPostComments[p.id] && (
-                      <tr key={`${p.id}-comments`}>
-                        <td colSpan={6} style={{ padding:"0 14px 12px 46px",background:"var(--bg-secondary,#f0f6fb)" }}>
-                          <div style={S.commentsWrap}>
-                            {!postCommentsList[p.id] ? (
-                              <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.loadingComments}</p>
-                            ) : postCommentsList[p.id].length === 0 ? (
-                              <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.noComments}</p>
-                            ) : (
-                              postCommentsList[p.id].map(c => (
-                                <div key={c.id} style={S.commentRow}>
-                                  <div style={{ flex:1 }}>
-                                    <span style={{ fontWeight:700,color:"var(--text-primary,#111827)",marginRight:"8px" }}>{c.authorName}</span>
-                                    <span style={{ color:"var(--text-secondary,#7a5868)" }}>{c.text}</span>
-                                    <span style={{ color:"var(--text-muted,#6b7280)",fontSize:"10px",marginLeft:"8px" }}>{timeAgo(c.createdAt)}</span>
-                                  </div>
-                                  <button
-                                    style={{ ...S.delBtn,padding:"3px 9px",fontSize:"10px" }}
-                                    onMouseEnter={e => e.currentTarget.style.background = "#f5dada"}
-                                    onMouseLeave={e => e.currentTarget.style.background = "none"}
-                                    onClick={() => deleteComment(p.id, c)}
-                                  >
-                                    {Tr.deleteLbl}
+                      <div style={{ padding:"0.6rem 1rem",background:"var(--bg-secondary,#f0f6fb)",borderBottom:"1px solid var(--border,#daeaf8)" }}>
+                        <div style={S.commentsWrap}>
+                          {!postCommentsList[p.id] ? (
+                            <p style={{ fontSize:12,color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.loadingComments}</p>
+                          ) : postCommentsList[p.id].length === 0 ? (
+                            <p style={{ fontSize:12,color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.noComments}</p>
+                          ) : postCommentsList[p.id].map(c => (
+                            <div key={c.id} style={S.commentRow}>
+                              <div style={{ flex:1 }}>
+                                <span style={{ fontWeight:700,color:"var(--text-primary,#111827)",marginRight:8 }}>{c.authorName}</span>
+                                <span style={{ color:"var(--text-secondary,#7a5868)" }}>{c.text}</span>
+                                <span style={{ color:"var(--text-muted,#6b7280)",fontSize:10,marginLeft:8 }}>{timeAgo(c.createdAt)}</span>
+                              </div>
+                              <button style={{ ...S.delBtn,padding:"3px 9px",fontSize:10 }}
+                                onMouseEnter={e => e.currentTarget.style.background = "#f5dada"}
+                                onMouseLeave={e => e.currentTarget.style.background = "none"}
+                                onClick={() => deleteComment(p.id, c)}>{Tr.deleteLbl}</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ display:"flex",gap:6,flexWrap:"wrap",padding:"0.55rem 1rem",background:"var(--bg-secondary,#f0f6fb)" }}>
+                      {canManageContent && <button onClick={() => pinPost(p.id, p.isPinned)}
+                        style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}>
+                        {p.isPinned ? Tr.unpinLbl : Tr.pinLbl}
+                      </button>}
+                      {canManageContent && <button onClick={() => deletePost(p.id)}
+                        style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
+                        {Tr.deleteLbl}
+                      </button>}
+                      {!canManageContent && <span style={{ fontSize:11,color:"var(--text-muted)" }}>{Tr.viewOnly}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredPosts.length === 0 && <div className="empty-state"><p>{Tr.noPosts}</p></div>}
+            </div>
+          ) : (
+            <div className="card admin-table-card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table className="admin-posts-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
+                    {[Tr.colAuthor, Tr.colContent, Tr.colMedia, Tr.colComments, Tr.colPosted, Tr.colActions].map(h => (
+                      <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPosts.map(p => (
+                    <>
+                      <tr key={p.id}
+                        style={{ borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)",transition:"background 0.12s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <td style={{ padding:"11px 14px" }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                            <div style={{ width:28,height:28,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff" }}>
+                              {getInitials(p.authorName)}
+                            </div>
+                            <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)" }}>{p.authorName}</p>
+                          </div>
+                        </td>
+                        <td style={{ padding:"11px 14px",maxWidth:320 }}>
+                          {p.text ? (() => {
+                            const LIMIT = 120;
+                            const isLong = p.text.length > LIMIT;
+                            const isExpanded = expandedPostComments[`text-${p.id}`];
+                            return (
+                              <>
+                                <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:"0 0 2px" }}>
+                                  {isExpanded || !isLong ? p.text : `${p.text.slice(0, LIMIT)}…`}
+                                </p>
+                                {isLong && (
+                                  <button onClick={() => setExpandedPostComments(s => ({ ...s, [`text-${p.id}`]: !s[`text-${p.id}`] }))}
+                                    style={{ fontSize:10, color:"var(--brand,#4472b8)", background:"none", border:"none", cursor:"pointer", padding:0, fontWeight:600 }}>
+                                    {isExpanded ? Tr.showLess : Tr.showFullPost}
                                   </button>
-                                </div>
-                              ))
-                            )}
+                                )}
+                              </>
+                            );
+                          })() : <em style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>{Tr.mediaPost}</em>}
+                        </td>
+                        <td style={{ padding:"11px 14px" }}>
+                          {p.media?.length > 0
+                            ? <span style={{ fontSize:"11px",background:"#dbeafe",color:"#1e40af",borderRadius:"99px",padding:"2px 9px",fontWeight:700 }}>{p.media.length} file{p.media.length>1?"s":""}</span>
+                            : <span style={{ color:"#d9c8ce" }}>—</span>
+                          }
+                        </td>
+                        <td style={{ padding:"11px 14px" }}>
+                          <button
+                            style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}
+                            onClick={() => togglePostComments(p.id)}
+                          >
+                            {expandedPostComments[p.id] ? Tr.hide : Tr.showCommentsFn(p.commentCount ?? 0)}
+                          </button>
+                        </td>
+                        <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
+                        <td style={{ padding:"11px 14px" }}>
+                          <div className="admin-table-actions" style={{ display:"flex",gap:4 }}>
+                            {canManageContent && <button
+                              onClick={() => pinPost(p.id, p.isPinned)}
+                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}
+                            >{p.isPinned ? Tr.unpinLbl : Tr.pinLbl}</button>}
+                            {canManageContent && <button
+                              onClick={() => deletePost(p.id)}
+                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#eec3c3"}
+                              onMouseLeave={e => e.currentTarget.style.background = "#f5dada"}
+                            >{Tr.deleteLbl}</button>}
+                            {!canManageContent && <span style={{fontSize:11,color:"var(--text-muted)"}}>{Tr.viewOnly}</span>}
                           </div>
                         </td>
                       </tr>
-                    )}
-                  </>
-                ))}
-              </tbody>
-            </table>
-            {filteredPosts.length === 0 && <div className="empty-state"><p>{Tr.noPosts}</p></div>}
-          </div>
+                      {expandedPostComments[p.id] && (
+                        <tr key={`${p.id}-comments`}>
+                          <td colSpan={6} style={{ padding:"0 14px 12px 46px",background:"var(--bg-secondary,#f0f6fb)" }}>
+                            <div style={S.commentsWrap}>
+                              {!postCommentsList[p.id] ? (
+                                <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.loadingComments}</p>
+                              ) : postCommentsList[p.id].length === 0 ? (
+                                <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.noComments}</p>
+                              ) : (
+                                postCommentsList[p.id].map(c => (
+                                  <div key={c.id} style={S.commentRow}>
+                                    <div style={{ flex:1 }}>
+                                      <span style={{ fontWeight:700,color:"var(--text-primary,#111827)",marginRight:"8px" }}>{c.authorName}</span>
+                                      <span style={{ color:"var(--text-secondary,#7a5868)" }}>{c.text}</span>
+                                      <span style={{ color:"var(--text-muted,#6b7280)",fontSize:"10px",marginLeft:"8px" }}>{timeAgo(c.createdAt)}</span>
+                                    </div>
+                                    <button
+                                      style={{ ...S.delBtn,padding:"3px 9px",fontSize:"10px" }}
+                                      onMouseEnter={e => e.currentTarget.style.background = "#f5dada"}
+                                      onMouseLeave={e => e.currentTarget.style.background = "none"}
+                                      onClick={() => deleteComment(p.id, c)}
+                                    >
+                                      {Tr.deleteLbl}
+                                    </button>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+              {filteredPosts.length === 0 && <div className="empty-state"><p>{Tr.noPosts}</p></div>}
+            </div>
+          )}
           </>
             );
           })()}
@@ -2558,7 +2740,7 @@ export default function AdminPage() {
           {/* ── Mobile section nav ── */}
           {isMobile && (
             <div style={{ display:"flex", gap:0, marginBottom:"1rem", background:"var(--bg-secondary,#f0f6fb)", borderRadius:12, padding:3 }}>
-              {[["distribution", Tr.distributionLabel],["growth", Tr.growthLabel],["members", Tr.membersNavLabel]].map(([v,l]) => (
+              {[["distribution", Tr.distributionLabel],["growth", Tr.growthLabel]].map(([v,l]) => (
                 <button key={v} onClick={() => setMobileDataSection(v)} style={{
                   flex:1, padding:"8px 4px", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", transition:"all 0.15s", borderRadius:9,
                   background: mobileDataSection === v ? "var(--bg-primary,#fff)" : "transparent",
@@ -2589,7 +2771,7 @@ export default function AdminPage() {
       {tab === "reports" && (
         <div>
           {/* Reports header + inline filter bar */}
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+          <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
               {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>{Tr.pendingBadge(reports.filter(r=>r.status==="pending").length)}</span>
             </span>
@@ -2600,7 +2782,7 @@ export default function AdminPage() {
               placeholder={Tr.searchReporterPh}
               style={{ fontSize:12, width:220, flexShrink:0 }}
             />
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+            <div className="admin-filter-pills" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
                 { val:"all",       label:Tr.allFilter },
                 { val:"pending",   label:Tr.reportPending },
@@ -2630,9 +2812,77 @@ export default function AdminPage() {
               <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>{Tr.loading}</div>
             ) : filteredReports.length === 0 ? (
               <div className="empty-state"><p>{reports.length === 0 ? Tr.noReports : Tr.noReportsFiltered}</p></div>
+            ) : isMobile ? (
+              <div style={{ display:"flex",flexDirection:"column",gap:"0.65rem" }}>
+                {filteredReports.map(r => {
+                  const isExpandedR = expandedReportId === r.id;
+                  const statusColor = r.status === "resolved" ? { bg:"rgba(123,168,122,0.15)", text:"#7ba87a" } : r.status === "dismissed" ? { bg:"rgba(107,114,128,0.12)", text:"#6b7280" } : { bg:"rgba(233,65,91,0.12)", text:"#e9415b" };
+                  const statusLabel = r.status === "resolved" ? Tr.reportResolved : r.status === "dismissed" ? Tr.dismiss : Tr.reportPending;
+                  return (
+                    <div key={r.id} style={{ background:"var(--bg-primary,#fff)",border:"1.5px solid var(--border,#daeaf8)",borderRadius:14,overflow:"hidden",boxShadow:"0 1px 4px rgba(29,72,150,0.05)",opacity:r.status !== "pending" ? 0.75 : 1 }}>
+                      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"0.7rem 1rem",cursor:"pointer",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}
+                        onClick={() => setExpandedReportId(isExpandedR ? null : r.id)}>
+                        <div style={{ minWidth:0 }}>
+                          <p style={{ fontSize:12,margin:"0 0 2px",color:"var(--text-muted,#6b7280)",fontWeight:600 }}>
+                            <span style={{ color:"var(--text-primary,#111827)" }}>{r.reporterName||r.reporterId}</span>
+                            {" → "}
+                            <span style={{ color:"var(--text-primary,#111827)" }}>{r.reportedName||r.reportedId}</span>
+                          </p>
+                          <p style={{ fontSize:11,color:"var(--text-muted,#6b7280)",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.reason}</p>
+                        </div>
+                        <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0 }}>
+                          <span style={{ fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:99,background:statusColor.bg,color:statusColor.text,whiteSpace:"nowrap" }}>{statusLabel}</span>
+                          <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "—"}</span>
+                        </div>
+                      </div>
+                      {isExpandedR && (
+                        <div style={{ padding:"0.7rem 1rem",background:"var(--bg-secondary,#f0f6fb)",borderBottom:"1px solid var(--border,#daeaf8)" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",margin:"0 0 8px" }}>
+                            {Tr.conversationLabel(r.reporterName, r.reportedName)}
+                          </p>
+                          {(!r.messages || r.messages.length === 0) ? (
+                            <p style={{ fontSize:12,color:"var(--text-muted,#6b7280)",fontStyle:"italic",margin:0 }}>{Tr.noMessages}</p>
+                          ) : (
+                            <div style={{ display:"flex",flexDirection:"column",gap:6,maxHeight:280,overflowY:"auto" }}>
+                              {r.messages.map((m, i) => {
+                                const isReporter = m.senderId === r.reporterId;
+                                return (
+                                  <div key={i} style={{ display:"flex",flexDirection:isReporter?"row-reverse":"row",alignItems:"flex-end",gap:8 }}>
+                                    <div style={{ maxWidth:"80%",padding:"7px 12px",borderRadius:14,borderBottomRightRadius:isReporter?4:14,borderBottomLeftRadius:isReporter?14:4,background:isReporter?"#dbeafe":"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.08)",fontSize:12,color:"var(--text-primary,#111827)",wordBreak:"break-word" }}>
+                                      <p style={{ fontSize:10,fontWeight:700,color:isReporter?"#1d4896":"#e8735a",margin:"0 0 3px" }}>{m.senderName}</p>
+                                      <p style={{ margin:0 }}>{m.text || <em style={{ color:"var(--text-muted,#6b7280)" }}>image</em>}</p>
+                                      {m.sentAt && <p style={{ fontSize:9,color:"var(--text-muted,#6b7280)",margin:"3px 0 0",textAlign:isReporter?"right":"left" }}>{new Date(typeof m.sentAt==="object"&&m.sentAt.seconds?m.sentAt.seconds*1000:m.sentAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</p>}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div style={{ display:"flex",gap:6,flexWrap:"wrap",padding:"0.55rem 1rem",background:"var(--bg-secondary,#f0f6fb)" }}>
+                        {r.status === "pending" && (<>
+                          <button onClick={() => updateReportStatus(r.id, "resolved")}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #a3d9a5",background:"#f0fdf4",color:"#166534",cursor:"pointer" }}>
+                            {Tr.markResolved}
+                          </button>
+                          <button onClick={() => updateReportStatus(r.id, "dismissed")}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #d1d5db",background:"#f9fafb",color:"#6b7280",cursor:"pointer" }}>
+                            {Tr.dismiss}
+                          </button>
+                        </>)}
+                        <button onClick={() => setExpandedReportId(isExpandedR ? null : r.id)}
+                          style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer" }}>
+                          {isExpandedR ? "▲" : `▼ ${Tr.convoBtn}`}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-            <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-              <table style={{ ...S.table, minWidth: 560 }}>
+            <div className="card admin-table-card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+              <table className="admin-reports-table" style={{ ...S.table, minWidth: 560 }}>
                 <thead>
                   <tr>
                     {[Tr.reportFrom, Tr.reportedUser, Tr.reportReason, Tr.reportDate, Tr.reportStatus, ""].map(h => (
@@ -2670,7 +2920,7 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td style={S.td} onClick={e => e.stopPropagation()}>
-                          <div style={{ display:"flex", gap:4 }}>
+                          <div className="admin-table-actions" style={{ display:"flex", gap:4 }}>
                             {r.status === "pending" && (<>
                               <button onClick={() => updateReportStatus(r.id, "resolved")}
                                 style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #a3d9a5", background:"#f0fdf4", color:"#166534", cursor:"pointer", whiteSpace:"nowrap" }}>
