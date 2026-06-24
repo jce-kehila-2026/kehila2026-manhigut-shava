@@ -1737,9 +1737,9 @@ export default function AdminPage() {
     try {
       await deleteDoc(doc(db, "posts", postId, "comments", comment.id));
       const post = posts.find(p => p.id === postId);
-      const newCount = Math.max(0, (post?.commentsCount ?? 1) - 1);
-      await updateDoc(doc(db, "posts", postId), { commentsCount: newCount });
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: newCount } : p));
+      const newCount = Math.max(0, (post?.commentCount ?? 1) - 1);
+      await updateDoc(doc(db, "posts", postId), { commentCount: newCount });
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentCount: newCount } : p));
       setPostCommentsList(prev => ({
         ...prev,
         [postId]: (prev[postId] ?? []).filter(c => c.id !== comment.id),
@@ -2427,7 +2427,7 @@ export default function AdminPage() {
                           style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}
                           onClick={() => togglePostComments(p.id)}
                         >
-                          {expandedPostComments[p.id] ? Tr.hide : Tr.showCommentsFn(p.commentsCount ?? 0)}
+                          {expandedPostComments[p.id] ? Tr.hide : Tr.showCommentsFn(p.commentCount ?? 0)}
                         </button>
                       </td>
                       <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
