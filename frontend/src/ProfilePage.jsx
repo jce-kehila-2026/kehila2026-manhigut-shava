@@ -744,7 +744,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setBirthdayValue("");
       }
     }).catch(() => {
-      setForm({ firstName:"", lastName:"", phone:"", city:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
+      setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
       setPhotoURL(null);
       setCoverURL(null);
       setNetworksCount(0);
@@ -775,7 +775,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     form.firstName,
     form.lastName,
     form.phone,
-    form.city || form.region,
+    form.region,
     form.profession || form.currentRole,
     form.bio,
     form.birthDate || form.birthdate,
@@ -1322,7 +1322,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 setAdminEditFields({
                   firstName:  form.firstName  || "",
                   lastName:   form.lastName   || "",
-                  city:       form.city       || "",
+                  region:     form.region     || "",
                   profession: form.profession || "",
                   bio:        form.bio        || "",
                 });
@@ -1957,7 +1957,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               {[
                 { key:"firstName", label: t.profile?.firstName || "First Name" },
                 { key:"lastName",  label: t.profile?.lastName  || "Last Name"  },
-                { key:"city",      label: t.profile?.city      || "City"       },
+                { key:"region",    label: t.profile?.region    || "Region"     },
                 { key:"profession",label: t.profile?.profession|| "Profession" },
               ].map(({ key, label }) => (
                 <div key={key}>

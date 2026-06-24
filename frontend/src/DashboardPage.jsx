@@ -305,7 +305,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       {(() => {
         const fields = [
           profile?.firstName, profile?.lastName, profile?.phone,
-          profile?.city || profile?.region,
+          profile?.region,
           profile?.profession || profile?.currentRole,
           profile?.bio,
           profile?.birthDate || profile?.birthdate,
@@ -414,7 +414,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             {(() => {
               const fields = [
                 profile?.firstName, profile?.lastName, profile?.phone,
-                profile?.city || profile?.region,
+                profile?.region,
                 profile?.profession || profile?.currentRole,
                 profile?.bio,
                 profile?.birthDate || profile?.birthdate,

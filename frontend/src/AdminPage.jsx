@@ -36,7 +36,7 @@ const AT = {
     mostLikedPost:"הפוסט הכי אהוב", mediaPost:"(פוסט מדיה)", postBy:(n)=>`מאת ${n}`,
     searchPh:"חפשי משתמשת...", editUser:"עריכת משתמשת",
     firstName:"שם פרטי", lastName:"שם משפחה", phone:"טלפון",
-    city:"עיר", profession:"מקצוע", bio:"ביוגרפיה",
+    profession:"מקצוע", bio:"ביוגרפיה",
     adminPriv:"הרשאות מנהל", cancel:"ביטול", save:"שמרי שינויים", saving:"שומרת...",
     deleteLbl:"מחקי", editLbl:"ערכי", makeAdmin:"הפכי למנהלת", revokeAdmin:"הסרת הרשאות מנהל", editPermsBtn:"ערכי הרשאות",
     refresh:"רענון", filterByActor:"חפשי לפי שם...", filterByType:"סוג:",
@@ -147,7 +147,7 @@ const AT = {
     mostLikedPost:"Most Liked Post", mediaPost:"(media post)", postBy:(n)=>`by ${n}`,
     searchPh:"Search users...", editUser:"Edit User",
     firstName:"First Name", lastName:"Last Name", phone:"Phone",
-    city:"City", profession:"Profession", bio:"Bio",
+    profession:"Profession", bio:"Bio",
     adminPriv:"Admin privileges", cancel:"Cancel", save:"Save Changes", saving:"Saving…",
     deleteLbl:"Delete", editLbl:"Edit", makeAdmin:"Make Admin", revokeAdmin:"Revoke Admin", editPermsBtn:"Edit Permissions",
     refresh:"Refresh", filterByActor:"Filter by name...", filterByType:"Type:",
@@ -258,7 +258,7 @@ const AT = {
     mostLikedPost:"المنشور الأكثر إعجاباً", mediaPost:"(منشور وسائط)", postBy:(n)=>`بقلم ${n}`,
     searchPh:"ابحثي عن مستخدمة...", editUser:"تعديل المستخدمة",
     firstName:"الاسم الأول", lastName:"اسم العائلة", phone:"الهاتف",
-    city:"المدينة", profession:"المهنة", bio:"نبذة",
+    profession:"المهنة", bio:"نبذة",
     adminPriv:"صلاحيات المشرف", cancel:"إلغاء", save:"حفظ التغييرات", saving:"جارٍ الحفظ...",
     deleteLbl:"حذف", editLbl:"تعديل", makeAdmin:"تعيين مشرفة", revokeAdmin:"إلغاء صلاحيات المشرف", editPermsBtn:"تعديل الصلاحيات",
     refresh:"تحديث", filterByActor:"ابحثي بالاسم...", filterByType:"النوع:",
@@ -647,7 +647,6 @@ const EXPORT_FIELDS = [
   { key: "email",       label: "Email" },
   { key: "phone",       label: "Phone" },
   { key: "region",      label: "Region" },
-  { key: "city",        label: "City" },
   { key: "profession",  label: "Profession" },
   { key: "ethnicity",   label: "Ethnicity" },
   { key: "helpAreas",   label: "Help Areas" },
@@ -747,7 +746,7 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
     firstName:  u.firstName  ?? "",
     lastName:   u.lastName   ?? "",
     phone:      "",
-    city:       u.city       ?? "",
+    region:     u.region     ?? "",
     profession: u.profession ?? "",
     bio:        u.bio        ?? "",
     isAdmin:    u.isAdmin    ?? false,
@@ -812,8 +811,8 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
             <input name="phone" style={S.modalInput} value={fields.phone} onChange={handleChange} />
           </div>
           <div style={groupStyle}>
-            <label style={labelStyle}>{Tr?.city}</label>
-            <input name="city" style={S.modalInput} value={fields.city} onChange={handleChange} />
+            <label style={labelStyle}>{Tr?.region}</label>
+            <input name="region" style={S.modalInput} value={fields.region} onChange={handleChange} />
           </div>
         </div>
 
@@ -1080,7 +1079,7 @@ function DistributionDonutChart({ users, lang, Tr }) {
     filteredUsers.forEach(u => {
       let key = null;
       if (distType === "regions") {
-        const raw = u.region?.trim() || u.city?.trim();
+        const raw = u.region?.trim();
         key = raw ? translateAny(raw, lang) : null;
       } else if (distType === "professions") {
         const raw = u.profession?.trim();
@@ -1446,7 +1445,7 @@ export default function AdminPage() {
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
-  const [userSortBy, setUserSortBy] = useState("recent");   // recent | alpha | city | perms
+  const [userSortBy, setUserSortBy] = useState("recent");   // recent | alpha | region | perms
   const [userFilterAdmin, setUserFilterAdmin] = useState(false);
   const [userFilterOnline, setUserFilterOnline] = useState(false);
 
@@ -1779,7 +1778,7 @@ export default function AdminPage() {
       const s = (searchUser || userSearch).toLowerCase();
       const matchSearch = !s || (() => {
         const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-        return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
+        return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.region ?? "").toLowerCase().includes(s);
       })();
       const matchAdmin  = !userFilterAdmin  || !!u.isAdmin;
       const matchOnline = !userFilterOnline || isActuallyOnline(u);
@@ -1787,7 +1786,7 @@ export default function AdminPage() {
     })
     .sort((a, b) => {
       if (userSortBy === "alpha")  return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
-      if (userSortBy === "city")   return (a.city ?? "").localeCompare(b.city ?? "", "he");
+      if (userSortBy === "region") return (a.region ?? "").localeCompare(b.region ?? "", "he");
       if (userSortBy === "perms")  return (b.isAdmin ? 1 : 0) - (a.isAdmin ? 1 : 0);
       // default: recent (createdAt desc)
       return new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0);
@@ -2132,7 +2131,7 @@ export default function AdminPage() {
               {[
                 { val:"recent", label:Tr.sortRecent },
                 { val:"alpha",  label:Tr.sortAlpha },
-                { val:"city",   label:Tr.city },
+                { val:"region", label:Tr.region },
                 { val:"perms",  label:Tr.sortAdminsFirst },
               ].map(opt => (
                 <button key={opt.val} onClick={() => setUserSortBy(opt.val)}
@@ -2156,7 +2155,7 @@ export default function AdminPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
               <thead>
                 <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
-                  {[Tr.colMember, Tr.profession, Tr.city, Tr.colStatus, Tr.colJoined, Tr.colActions].map(h => (
+                  {[Tr.colMember, Tr.profession, Tr.region, Tr.colStatus, Tr.colJoined, Tr.colActions].map(h => (
                     <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -2182,7 +2181,7 @@ export default function AdminPage() {
                       </div>
                     </td>
                     <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.profession||"—"}</td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.city||"—"}</td>
+                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.region||"—"}</td>
                     <td style={{ padding:"11px 14px" }}>
                       <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
                         <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
@@ -2281,7 +2280,7 @@ export default function AdminPage() {
                   <tr>
                     <th style={S.th}>{Tr.colName}</th>
                     <th style={S.th}>{Tr.profession}</th>
-                    <th style={S.th}>{Tr.city}</th>
+                    <th style={S.th}>{Tr.region}</th>
                     <th style={S.th}>{Tr.colAdmin}</th>
                     <th style={S.th}>{Tr.colActions}</th>
                   </tr>
@@ -2296,7 +2295,7 @@ export default function AdminPage() {
                         <p style={S.name}>{u.firstName} {u.lastName}</p>
                       </td>
                       <td style={S.td}>{u.profession || "—"}</td>
-                      <td style={S.td}>{u.city || "—"}</td>
+                      <td style={S.td}>{u.region || "—"}</td>
                       <td style={S.td}>
                         {u.isAdmin ? <span style={S.adminBadge}>{Tr.adminBadge}</span> : <span style={{ color: "#d9c8ce" }}>—</span>}
                       </td>
@@ -2679,7 +2678,7 @@ export default function AdminPage() {
                               </div>
                             </td>
                             <td style={S.td}>{u.profession||"—"}</td>
-                            <td style={S.td}>{u.region||u.city||"—"}</td>
+                            <td style={S.td}>{u.region||"—"}</td>
                             <td style={{ ...S.td, whiteSpace:"nowrap", fontSize:11 }}>
                               {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
                             </td>

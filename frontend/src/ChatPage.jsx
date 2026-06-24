@@ -1038,7 +1038,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                 <Avatar url={u.avatarUrl} name={`${u.firstName} ${u.lastName}`} size={36} online={isActuallyOnline(u)} />
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{u.firstName} {u.lastName}</p>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang) || u.city || ""}</p>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang) || u.region || ""}</p>
                 </div>
               </button>
             ))}
