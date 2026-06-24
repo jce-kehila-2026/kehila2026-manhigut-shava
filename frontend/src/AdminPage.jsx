@@ -115,6 +115,20 @@ const AT = {
     conversationLabel:(a,b)=>`שיחה — ${a} ו${b}`, noMessages:"לא נלכדו הודעות.", convoBtn:"שיחה",
     clearFilter:"נקה סינון", actorNameLabel:"שם המשתמשת",
     fromDateLabel:"מתאריך", toDateLabel:"עד תאריך", clearBtn:"נקה",
+    allTypes:"כל הסוגים",
+    logTypeLabels:{
+      signup:"הרשמה", login:"כניסה", post:"פוסט", post_edit:"עריכת פוסט",
+      post_delete:"מחיקת פוסט", comment:"תגובה", comment_edit:"עריכת תגובה",
+      comment_delete:"מחיקת תגובה", request_sent:"בקשה נשלחה",
+      request_accepted:"בקשה התקבלה", request_declined:"בקשה נדחתה",
+      profile_update:"עדכון פרופיל", admin_edit_profile:"עריכת פרופיל (מנהלת)",
+      admin_delete_post:"מחיקת פוסט (מנהלת)", admin_delete_comment:"מחיקת תגובה (מנהלת)",
+    },
+    exportFieldLabels:{
+      firstName:"שם פרטי", lastName:"שם משפחה", email:"אימייל", phone:"טלפון",
+      region:"אזור", profession:"מקצוע", ethnicity:"קהילה/אתניות",
+      helpAreas:"תחומי עזרה", bio:"ביוגרפיה", linkedIn:"לינקדאין", createdAt:"הצטרפות",
+    },
     loadingLogs:"טוען יומן...", noLogsFiltered:"אין רשומות תואמות לסינון.",
     showingEntriesFn:(n,t)=>`מציג ${n} מתוך ${t} רשומות`,
     fieldsLabel:"שדות:", toLogLabel:"אל:",
@@ -226,6 +240,20 @@ const AT = {
     conversationLabel:(a,b)=>`Conversation — ${a} & ${b}`, noMessages:"No messages captured.", convoBtn:"Convo",
     clearFilter:"Clear filter", actorNameLabel:"Actor name",
     fromDateLabel:"From date", toDateLabel:"To date", clearBtn:"Clear",
+    allTypes:"All types",
+    logTypeLabels:{
+      signup:"Signup", login:"Login", post:"Post", post_edit:"Post Edit",
+      post_delete:"Post Delete", comment:"Comment", comment_edit:"Comment Edit",
+      comment_delete:"Comment Delete", request_sent:"Request Sent",
+      request_accepted:"Request Accepted", request_declined:"Request Declined",
+      profile_update:"Profile Update", admin_edit_profile:"Admin Edit Profile",
+      admin_delete_post:"Admin Delete Post", admin_delete_comment:"Admin Delete Comment",
+    },
+    exportFieldLabels:{
+      firstName:"First Name", lastName:"Last Name", email:"Email", phone:"Phone",
+      region:"Region", profession:"Profession", ethnicity:"Ethnicity",
+      helpAreas:"Help Areas", bio:"Bio", linkedIn:"LinkedIn", createdAt:"Joined",
+    },
     loadingLogs:"Loading logs…", noLogsFiltered:"No logs match the current filters.",
     showingEntriesFn:(n,t)=>`Showing ${n} of ${t} entries`,
     fieldsLabel:"Fields:", toLogLabel:"To:",
@@ -337,6 +365,20 @@ const AT = {
     conversationLabel:(a,b)=>`محادثة — ${a} و${b}`, noMessages:"لم يتم التقاط رسائل.", convoBtn:"محادثة",
     clearFilter:"مسح التصفية", actorNameLabel:"اسم المستخدمة",
     fromDateLabel:"من تاريخ", toDateLabel:"إلى تاريخ", clearBtn:"مسح",
+    allTypes:"جميع الأنواع",
+    logTypeLabels:{
+      signup:"تسجيل", login:"دخول", post:"منشور", post_edit:"تعديل منشور",
+      post_delete:"حذف منشور", comment:"تعليق", comment_edit:"تعديل تعليق",
+      comment_delete:"حذف تعليق", request_sent:"طلب مُرسَل",
+      request_accepted:"طلب مقبول", request_declined:"طلب مرفوض",
+      profile_update:"تحديث الملف", admin_edit_profile:"تعديل (مشرفة)",
+      admin_delete_post:"حذف منشور (مشرفة)", admin_delete_comment:"حذف تعليق (مشرفة)",
+    },
+    exportFieldLabels:{
+      firstName:"الاسم الأول", lastName:"اسم العائلة", email:"البريد الإلكتروني", phone:"الهاتف",
+      region:"المنطقة", profession:"المهنة", ethnicity:"المجتمع/الانتماء",
+      helpAreas:"مجالات المساعدة", bio:"نبذة", linkedIn:"لينكدإن", createdAt:"تاريخ الانضمام",
+    },
     loadingLogs:"جارٍ تحميل السجل...", noLogsFiltered:"لا توجد سجلات تطابق التصفية.",
     showingEntriesFn:(n,t)=>`عرض ${n} من ${t} سجل`,
     fieldsLabel:"الحقول:", toLogLabel:"إلى:",
@@ -1460,7 +1502,7 @@ export default function AdminPage() {
   /* ── Logs tab state ── */
   const [logs,          setLogs]          = useState([]);
   const [logsLoading,   setLogsLoading]   = useState(false);
-  const [logTypeFilter, setLogTypeFilter] = useState([]);
+  const [logTypeFilter, setLogTypeFilter] = useState("");
   const [logActorFilter, setLogActorFilter] = useState("");
   const [logDateFrom,   setLogDateFrom]   = useState("");
   const [logDateTo,     setLogDateTo]     = useState("");
@@ -1757,16 +1799,13 @@ export default function AdminPage() {
 
   /* ── Log filters ── */
   const filteredLogs = logs.filter(log => {
-    if (logTypeFilter.length > 0 && !logTypeFilter.includes(log.type)) return false;
+    if (logTypeFilter && logTypeFilter !== log.type) return false;
     if (logActorFilter && !(log.actorName ?? "").toLowerCase().includes(logActorFilter.toLowerCase())) return false;
     if (logDateFrom && log.timestamp < logDateFrom) return false;
     if (logDateTo   && log.timestamp > logDateTo + "T23:59:59") return false;
     return true;
   });
   const allLogTypes = [...new Set(logs.map(l => l.type))].filter(Boolean).sort();
-  const toggleLogType = (type) => {
-    setLogTypeFilter(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
-  };
 
   /* ── Filtered users (shared between Users + EditUsers tabs) ── */
   const filteredBySearch = users
@@ -1792,18 +1831,19 @@ export default function AdminPage() {
   const exportExcel = async () => {
     const fields = EXPORT_FIELDS.filter(f => selFields.includes(f.key));
     if (!fields.length) return;
+    const getColLabel = (key, fallback) => Tr.exportFieldLabels?.[key] ?? fallback;
     const rows = users.map(u => {
       const row = {};
       fields.forEach(({ key, label }) => {
         const v = u[key];
-        row[label] = Array.isArray(v) ? v.join("; ") : (v ?? "");
+        row[getColLabel(key, label)] = Array.isArray(v) ? v.join("; ") : (v ?? "");
       });
       return row;
     });
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Members");
-    ws.columns = fields.map(f => ({ header: f.label, key: f.label, width: 22 }));
+    ws.columns = fields.map(f => { const h = getColLabel(f.key, f.label); return { header: h, key: h, width: 22 }; });
     rows.forEach(row => ws.addRow(row));
     const buf = await wb.xlsx.writeBuffer();
     const url = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
@@ -1844,7 +1884,17 @@ export default function AdminPage() {
       });
       if (!rows.length) { setImportResult({ error: Tr.importEmpty }); setImportBusy(false); return; }
       const labelToKey = {};
+      // Accept English defaults
       EXPORT_FIELDS.forEach(({ key, label }) => { labelToKey[label.toLowerCase()] = key; });
+      // Also accept translated labels from every language so any exported file can be re-imported
+      Object.values(AT).forEach(langTr => {
+        if (langTr.exportFieldLabels) {
+          EXPORT_FIELDS.forEach(({ key }) => {
+            const tl = langTr.exportFieldLabels[key];
+            if (tl) labelToKey[tl.toLowerCase()] = key;
+          });
+        }
+      });
       const existing = new Set(users.map(u => (u.email || "").toLowerCase().trim()).filter(Boolean));
       const seen = new Set();
       const toCreate = [];
@@ -2477,8 +2527,11 @@ export default function AdminPage() {
                 return (
                   <div key={p.id} style={{ background:"var(--bg-primary,#fff)",border:"1.5px solid var(--border,#daeaf8)",borderRadius:14,overflow:"hidden",boxShadow:"0 1px 4px rgba(29,72,150,0.05)" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:9,padding:"0.7rem 1rem",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
-                      <div style={{ width:32,height:32,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff" }}>
-                        {getInitials(p.authorName)}
+                      <div style={{ width:32,height:32,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",overflow:"hidden" }}>
+                        {p.authorAvatar
+                          ? <img src={p.authorAvatar} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                          : getInitials(p.authorName)
+                        }
                       </div>
                       <div style={{ flex:1,minWidth:0 }}>
                         <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)",margin:0 }}>{p.authorName}</p>
@@ -2571,8 +2624,11 @@ export default function AdminPage() {
                       >
                         <td style={{ padding:"11px 14px" }}>
                           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                            <div style={{ width:28,height:28,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff" }}>
-                              {getInitials(p.authorName)}
+                            <div style={{ width:28,height:28,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",overflow:"hidden" }}>
+                              {p.authorAvatar
+                                ? <img src={p.authorAvatar} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                                : getInitials(p.authorName)
+                              }
                             </div>
                             <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)" }}>{p.authorName}</p>
                           </div>
@@ -2725,7 +2781,7 @@ export default function AdminPage() {
                     <label key={f.key} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, cursor:"pointer" }}>
                       <input type="checkbox" checked={selFields.includes(f.key)}
                         onChange={() => setSelFields(prev => prev.includes(f.key) ? prev.filter(k => k !== f.key) : [...prev, f.key])} />
-                      {f.label}
+                      {Tr.exportFieldLabels?.[f.key] ?? f.label}
                     </label>
                   ))}
                 </div>
@@ -2997,38 +3053,35 @@ export default function AdminPage() {
           } />
 
           {/* Filter card */}
-          <div style={{ background:"var(--bg-primary,#fff)",borderRadius:"16px",padding:"1.25rem",border:"1.5px solid var(--border,#daeaf8)",marginBottom:"1rem",boxShadow:"0 2px 8px rgba(29, 72, 150,0.05)",display:"flex",flexDirection:"column",gap:"0.75rem" }}>
+          <div style={{ background:"var(--bg-primary,#fff)",borderRadius:"16px",padding:"1.25rem",border:"1.5px solid var(--border,#daeaf8)",marginBottom:"1rem",boxShadow:"0 2px 8px rgba(29, 72, 150,0.05)" }}>
+            <div style={{ display:"flex",gap:"0.75rem",flexWrap:"wrap",alignItems:"flex-end" }}>
 
-            {/* Type filter pills */}
-            {allLogTypes.length > 0 && (
-              <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
-                {allLogTypes.map(type => {
-                  const cfg = getLogTypeConfig(type);
-                  const active = logTypeFilter.includes(type);
-                  return (
-                    <button key={type} onClick={() => toggleLogType(type)} style={{
-                      padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",
-                      border:`1.5px solid ${active ? cfg.borderColor : "var(--border,#f0dce0)"}`,
-                      background: active ? cfg.bg : "var(--bg-secondary,#f0f6fb)",
-                      color: active ? cfg.color : "var(--text-muted,#6b7280)",
-                      transition:"all 0.15s",
-                    }}>{cfg.label}</button>
-                  );
-                })}
-                {logTypeFilter.length > 0 && (
-                  <button onClick={() => setLogTypeFilter([])} style={{ padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",border:"1.5px solid var(--border,#f0dce0)",background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)" }}>
-                    {Tr.clearFilter}
-                  </button>
-                )}
-              </div>
-            )}
+              {/* Type filter dropdown */}
+              {allLogTypes.length > 0 && (
+                <div>
+                  <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.filterByType}</p>
+                  <select
+                    value={logTypeFilter}
+                    onChange={e => setLogTypeFilter(e.target.value)}
+                    style={{ ...S.logFilterInput, cursor:"pointer" }}
+                  >
+                    <option value="">{Tr.allTypes}</option>
+                    {allLogTypes.map(type => (
+                      <option key={type} value={type}>
+                        {Tr.logTypeLabels?.[type] ?? getLogTypeConfig(type).label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-            {/* Actor + Date range */}
-            <div style={{ display:"flex",gap:"0.75rem",flexWrap:"wrap",alignItems:"center" }}>
+              {/* Actor name */}
               <div>
                 <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.actorNameLabel}</p>
-                <input style={{ ...S.logFilterInput,width:"200px" }} type="text" placeholder={Tr.filterByActor} value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
+                <input style={{ ...S.logFilterInput,width:"180px" }} type="text" placeholder={Tr.filterByActor} value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
               </div>
+
+              {/* Date range */}
               <div>
                 <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.fromDateLabel}</p>
                 <input style={S.logFilterInput} type="date" value={logDateFrom} onChange={e => setLogDateFrom(e.target.value)} />
@@ -3037,9 +3090,11 @@ export default function AdminPage() {
                 <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.toDateLabel}</p>
                 <input style={S.logFilterInput} type="date" value={logDateTo} onChange={e => setLogDateTo(e.target.value)} />
               </div>
-              {(logActorFilter || logDateFrom || logDateTo) && (
-                <button onClick={() => { setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
-                  style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)",border:"1.5px solid var(--border,#f0dce0)",marginTop:"18px" }}>
+
+              {/* Clear all filters */}
+              {(logTypeFilter || logActorFilter || logDateFrom || logDateTo) && (
+                <button onClick={() => { setLogTypeFilter(""); setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
+                  style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)",border:"1.5px solid var(--border,#f0dce0)" }}>
                   {Tr.clearBtn}
                 </button>
               )}
@@ -3070,7 +3125,7 @@ export default function AdminPage() {
                       onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
                       onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
                     >
-                      <span style={S.logBadge(cfg.bg, cfg.color)}>{cfg.label}</span>
+                      <span style={S.logBadge(cfg.bg, cfg.color)}>{Tr.logTypeLabels?.[log.type] ?? cfg.label}</span>
                       <div style={{ flex:1,minWidth:0 }}>
                         <div style={{ display:"flex",alignItems:"baseline",gap:"8px",flexWrap:"wrap" }}>
                           <span style={S.logActor}>{log.actorName ?? log.actorId ?? "Unknown"}</span>
