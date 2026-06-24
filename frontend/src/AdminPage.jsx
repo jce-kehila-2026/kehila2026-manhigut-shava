@@ -1894,7 +1894,7 @@ export default function AdminPage() {
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}`, show: canManageContent },
     { id: "logs",      label: Tr.tabs.logs, show: canViewLogs },
     { id: "slideshow",  label: Tr.slideshowTitle, show: canManageContent },
-    { id: "blacklist",  label: `🚫 ${Tr.blacklistTab || "Blacklist"}${blacklist.length > 0 ? ` (${blacklist.length})` : ""}`, show: canManageUsers },
+    { id: "blacklist",  label: `${Tr.blacklistTab || "Blacklist"}${blacklist.length > 0 ? ` (${blacklist.length})` : ""}`, show: canManageUsers },
   ].filter(t => t.show);
 
   /* ─────────────────────────────────────── RENDER ─── */
@@ -2850,7 +2850,7 @@ export default function AdminPage() {
         <div>
           <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              🚫 {Tr.blacklistTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({blacklist.length})</span>
+              {Tr.blacklistTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({blacklist.length})</span>
             </span>
             <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchBlacklist}>{blacklistLoading ? "…" : `↻ ${Tr.refresh}`}</button>
           </div>
@@ -2879,7 +2879,7 @@ export default function AdminPage() {
                 onClick={addToBlacklist}
                 disabled={!blacklistEmail.trim() || blacklistAdding}
                 style={{ padding:"9px 22px", borderRadius:10, background:"#c25c5c", color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor: !blacklistEmail.trim() || blacklistAdding ? "not-allowed" : "pointer", opacity: !blacklistEmail.trim() || blacklistAdding ? 0.6 : 1, whiteSpace:"nowrap" }}>
-                {blacklistAdding ? "…" : `🚫 ${Tr.blacklistAddBtn}`}
+                {blacklistAdding ? "…" : Tr.blacklistAddBtn}
               </button>
             </div>
           </div>
