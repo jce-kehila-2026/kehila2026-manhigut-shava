@@ -2001,12 +2001,6 @@ export default function AdminPage() {
         }
       `}</style>
 
-      {/* Page header */}
-      <div style={S.header}>
-        <p style={S.title}>{Tr.pageTitle}</p>
-        <p style={S.sub}>{Tr.pageSub}</p>
-      </div>
-
       {/* Tabs */}
       <div style={S.tabs} className="admin-tabs">
         {TABS.map(t => (
