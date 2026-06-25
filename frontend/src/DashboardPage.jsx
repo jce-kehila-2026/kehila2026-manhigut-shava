@@ -189,12 +189,12 @@ const eyebrow = {
 };
 
 /* ── Quick-access circle with sonar rings ── */
-function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, tutId }) {
+function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, vertical, tutId }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const size = isMobile ? "min(90px, calc(25vw - 14px))" : "120px";
-  const imgSize = isMobile ? "min(58px, calc(17vw))" : "72px";
-  const ringInset = 22;
+  const size = isMobile ? "min(90px, calc(25vw - 14px))" : vertical ? "76px" : "120px";
+  const imgSize = isMobile ? "min(58px, calc(17vw))" : vertical ? "44px" : "72px";
+  const ringInset = vertical ? 14 : 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
     <div id={tutId} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
@@ -227,8 +227,8 @@ function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, 
             transition:"transform 0.26s", transform: hov ? "scale(1.12)" : "scale(1)", display:"block" }} />
         </div>
       </div>
-      <p style={{ fontSize: isMobile ? 12 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(44vw - 16px)" : 140, lineHeight: 1.2 }}>{title}</p>
-      {!isMobile && (
+      <p style={{ fontSize: isMobile ? 12 : vertical ? 11 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(44vw - 16px)" : 140, lineHeight: 1.2 }}>{title}</p>
+      {!isMobile && !vertical && (
         <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:130,
           lineHeight:1.5, fontWeight:400, minHeight:"2.4em",
           opacity: hov ? 1 : 0, transition:"opacity 0.18s ease" }}>{desc}</p>
@@ -341,18 +341,34 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
       {/* Two-column layout on desktop, single column on mobile */}
       <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: isMobile ? undefined : "1fr 300px", gap: "1.5rem", alignItems: "start" }}>
 
-        {/* LEFT (desktop) / TOP (mobile): circles + birthday soon + slideshow */}
+        {/* LEFT (desktop) / TOP (mobile): circles + slideshow */}
         <div>
-          <div style={{ display:"grid", gridTemplateColumns: "repeat(4,1fr)", gap: isMobile ? "0.4rem" : "1rem",
-            marginBottom:"1rem", padding: isMobile ? "0 0 0.25rem" : "0.25rem 0 0.75rem",
-            placeItems:"center" }}>
-            {quickCircles.map((item, i) => (
-              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={isMobile} onClick={() => onNavigate(item.action)} />
-            ))}
-          </div>
+          {/* Mobile: 4-column grid above slideshow */}
+          {isMobile && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"0.4rem",
+              marginBottom:"1rem", padding:"0 0 0.25rem", placeItems:"center" }}>
+              {quickCircles.map((item, i) => (
+                <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} onClick={() => onNavigate(item.action)} />
+              ))}
+            </div>
+          )}
 
+          {/* Desktop: circles column on left + slideshow on right */}
+          {!isMobile && (
+            <div style={{ display:"flex", gap:"1.5rem", alignItems:"flex-start" }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:"0.3rem", paddingInline:"0.25rem" }}>
+                {quickCircles.map((item, i) => (
+                  <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={false} vertical onClick={() => onNavigate(item.action)} />
+                ))}
+              </div>
+              <div style={{ flex:1 }}>
+                <SlideshowBanner maxHeight={520} />
+              </div>
+            </div>
+          )}
 
-          <SlideshowBanner maxHeight={isMobile ? 220 : 520} />
+          {/* Mobile slideshow */}
+          {isMobile && <SlideshowBanner maxHeight={220} />}
 
           {/* On mobile: help requests + suggestions appear below slideshow */}
           {isMobile && (
