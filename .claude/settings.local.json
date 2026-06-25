@@ -74,11 +74,13 @@
       "Bash(node -e \"require\\('fs'\\).readFileSync\\('src/AdminPage.jsx','utf8'\\)\")",
       "Read(//Users/shahdkarawi/Downloads/**)",
       "Bash(grep -iE \"\\\\.\\(png|jpg|jpeg|webp|svg\\)$\")",
-      "Bash(cp ~/Downloads/ChatSymbol.png ~/Downloads/CommunitySymbol.png ~/Downloads/FindHelpSymbol.png ~/Downloads/ProfileSymbol.png /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/public/)"
+      "Bash(cp ~/Downloads/ChatSymbol.png ~/Downloads/CommunitySymbol.png ~/Downloads/FindHelpSymbol.png ~/Downloads/ProfileSymbol.png /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/public/)",
+      "Bash(rm /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/assets/hero.png /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/assets/react.svg /Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/assets/vite.svg)"
     ],
     "additionalDirectories": [
       "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src",
-      "/Users/shahdkarawi/Downloads"
+      "/Users/shahdkarawi/Downloads",
+      "/Users/shahdkarawi/Documents/GitHub/kehila2026-manhigut-shava/frontend/src/assets"
     ]
   }
 }
