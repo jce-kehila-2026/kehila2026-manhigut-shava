@@ -90,7 +90,7 @@ function ConvItem({ conv, active, currentUid, allUsers, onClick }) {
   const otherId = conv.participants?.find((p) => p !== currentUid);
   const otherName = conv.participantNames?.[otherId] || "Unknown";
   const otherUser = allUsers.find((u) => u.id === otherId);
-  const otherAvatar = otherUser?.photoURL || otherUser?.avatarUrl || conv.participantAvatars?.[otherId] || null;
+  const otherAvatar = conv.participantAvatars?.[otherId] || otherUser?.photoURL || otherUser?.avatarUrl || null;
   const isOnline = isActuallyOnline(otherUser);
   const unread = conv.unreadCounts?.[currentUid] || 0;
   const lastMsg = conv.lastMessage;
@@ -731,7 +731,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
   const otherId = activeConv?.participants?.find((p) => p !== user?.uid) || activePeer?.id;
   const otherUser = allUsers.find((u) => u.id === otherId) || activePeer;
   const otherName = activeConv?.participantNames?.[otherId] || (activePeer ? `${activePeer.firstName} ${activePeer.lastName}`.trim() : "");
-  const otherAvatar = otherUser?.photoURL || otherUser?.avatarUrl || activeConv?.participantAvatars?.[otherId] || activePeer?.photoURL || activePeer?.avatarUrl || null;
+  const otherAvatar = activeConv?.participantAvatars?.[otherId] || otherUser?.photoURL || otherUser?.avatarUrl || activePeer?.photoURL || activePeer?.avatarUrl || null;
 
   /* Seen: other user has read all my messages */
   const lastMyMsgIdx = messages.map((m, i) => m.senderId === user?.uid ? i : -1).filter(i => i >= 0).pop();
@@ -829,7 +829,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           toUserId: recipientId,
           fromUserId: user.uid,
           fromUserName: senderName,
-          fromUserAvatar: profile?.avatarUrl || null,
+          fromUserAvatar: profile?.photoURL || profile?.avatarUrl || null,
           type: "new_message",
           conversationId: activeConvId,
           message: preview,
@@ -1035,10 +1035,10 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
                 onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
               >
-                <Avatar url={u.avatarUrl} name={`${u.firstName} ${u.lastName}`} size={36} online={isActuallyOnline(u)} />
+                <Avatar url={u.photoURL || u.avatarUrl} name={`${u.firstName} ${u.lastName}`} size={36} online={isActuallyOnline(u)} />
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{u.firstName} {u.lastName}</p>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang) || u.city || ""}</p>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang) || u.region || ""}</p>
                 </div>
               </button>
             ))}

@@ -73,23 +73,15 @@ export const translateReligion    = (value, lang) => translate(RELIGION_BY_LANG,
 export const translateEthnicity   = (value, lang) => translate(ETHNICITY_BY_LANG,    ETHNICITY_IDX,   value, lang);
 
 /*
- * Translate a single location value against both city and region tables.
- * The naive `translateCity(v) || translateRegion(v)` breaks because translateCity
- * returns the original string (truthy) when not found, so || never reaches
- * translateRegion. We compare the result to detect a real translation.
+ * Translate a single location value against the region table.
  */
 export function translateAny(value, lang) {
   if (!value) return value;
-  const fromCity = translateCity(value, lang);
-  if (fromCity !== value) return fromCity;
-  const fromRegion = translateRegion(value, lang);
-  if (fromRegion !== value) return fromRegion;
-  return value;
+  return translateRegion(value, lang);
 }
 
-/* Convenience: translate whichever of region or city is set, preferring region */
-export const translateLocation = (region, city, lang) => {
+/* Translate a region value */
+export const translateLocation = (region, lang) => {
   if (region) return translateAny(region, lang);
-  if (city)   return translateAny(city, lang);
   return "";
 };

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   collection, getDocs, addDoc, deleteDoc, doc, query,
   orderBy, updateDoc, limit, where, setDoc, getDoc,
@@ -24,19 +24,26 @@ const AT = {
     totalPosts:"סה\"כ פוסטים", conversations:"שיחות", admins:"מנהלות",
     activeMembers:"חברות פעילות", thisWeek:(n)=>`+${n} השבוע`,
     percentVerified:(p)=>`${p}% מאומתות`,
-    topProfessions:"מקצועות מובילות", topCities:"ערים מובילות", recentMembers:"חברות חדשות", noData:"אין נתונים עדיין",
+    topProfessions:"מקצועות מובילות", topRegionsLabel:"אזורים מובילים", recentMembers:"חברות חדשות", noData:"אין נתונים עדיין",
+    withHelpAreas:"עם תחומי עזרה",
+    postsSubLabel:(l,c)=>`${l} לייקים · ${c} תגובות`,
+    platformHealth:"בריאות הפלטפורמה",
+    verifiedMembers:"חברות מאומתות", helpAreaCoverage:"כיסוי תחומי עזרה", onlineRightNow:"מחוברות כרגע",
+    avgPostsPerMember:"פוסטים ממוצע לחברה", totalInteractions:"סך האינטראקציות",
+    viewAllMembers:"לכל החברות →",
+    quickActions:"פעולות מהירות",
+    manageUsers:"ניהול משתמשות", reviewReports:"בדיקת דיווחים", activityLogs:"יומן פעילות", dataAndAnalytics:"נתונים ואנליטיקה",
+    mostLikedPost:"הפוסט הכי אהוב", mediaPost:"(פוסט מדיה)", postBy:(n)=>`מאת ${n}`,
     searchPh:"חפשי משתמשת...", editUser:"עריכת משתמשת",
     firstName:"שם פרטי", lastName:"שם משפחה", phone:"טלפון",
-    city:"עיר", profession:"מקצוע", bio:"ביוגרפיה",
+    profession:"מקצוע", bio:"ביוגרפיה",
     adminPriv:"הרשאות מנהל", cancel:"ביטול", save:"שמרי שינויים", saving:"שומרת...",
     deleteLbl:"מחקי", editLbl:"ערכי", makeAdmin:"הפכי למנהלת", revokeAdmin:"הסרת הרשאות מנהל", editPermsBtn:"ערכי הרשאות",
     refresh:"רענון", filterByActor:"חפשי לפי שם...", filterByType:"סוג:",
     dataManage:"ניהול נתונים", downloadBtn:"הורדת אקסל", uploadBtn:"העלאת אקסל", importing:"מייבאת...",
     dirNote:"ייבוא יוצר רשומות מדריך בלבד (ללא חשבון התחברות).",
     created:"נוצרו", skippedDup:"דולגו (כפילות)", errorsLbl:"שגיאות", rowLbl:"שורה",
-    exportTitle:"ייצוא חברות לאקסל", exportSub:"בחרי אילו שדות לכלול בקובץ.", selectAll:"בחרי הכל", clearAll:"נקי", done:"סגרי",
-    goToOverview:"הצגת סטטיסטיקות", customizeStats:"התאמה אישית", customizeStatsSub:"בחרי אילו כרטיסי נתונים להציג בלשונית הנתונים.",
-    profileComplete:"פרופיל מלא",
+    exportTitle:"ייצוא חברות לאקסל", exportSub:"בחרי אילו שדות לכלול בקובץ.", selectAll:"בחרי הכל", clearAll:"נקי",
     importBadType:"קובץ לא תקין — רק .xlsx או .xls.", importEmpty:"הגיליון ריק.", importMissing:"שדות חסרים", importBadEmail:"אימייל לא תקין",
     noLogs:"אין רשומות עדיין.",
     confirmDeleteTitle:"מחיקת משתמשת", confirmDeleteMsg:(n)=>`האם את בטוחה שברצונך למחוק את ${n}? פעולה זו בלתי הפיכה.`,
@@ -65,17 +72,6 @@ const AT = {
     topSectors:"אתניות / קהילה", topReligions:"זהות דתית ולאומית", topRegions:"אזורי מגורים",
     region:"אזור", campus:"קמפוס", degree:"תואר", birthdate:"תאריך לידה",
     identity:"השתייכות לאומית-דתית", ethnicity:"קהילה/אתניות",
-    sortRecent:"אחרונות", sortAlpha:"א–ת", sortAdminsFirst:"מנהלות קודם",
-    colMember:"חברה", colStatus:"סטטוס", colJoined:"הצטרפות", colActions:"פעולות",
-    distributionLabel:"התפלגות", growthLabel:"צמיחה", membersNavLabel:"חברות",
-    regionsLabel:"אזורים", professionsLabel:"מקצועות", religionLabel:"דת",
-    noDataSelection:"אין נתונים לסינון זה", newMembersLabel:"חברות חדשות",
-    inPeriodLabel:"בתקופה", customLabel:"מותאם",
-    fromLabel:"מ-", toLabel:"עד-", todayLabel:"היום",
-    membersCountFn:(n)=>`${n} ${n===1?"חברה":"חברות"}`,
-    newestLabel:"חדשות", oldestLabel:"ישנות", noMembersInPeriod:"אין חברות בתקופה זו.",
-    searchReporterPh:"חפשי מדווחת או מדווח עליה...", allFilter:"הכל", dismissedLabel:"נדחה",
-    pendingBadge:(n)=>`(${n} ממתינות)`,
     logDesc: {
       signup:               (n)=>`${n} נרשמה`,
       login:                (n)=>`${n} התחברה`,
@@ -94,6 +90,57 @@ const AT = {
       admin_delete_comment: (n)=>`${n} (מנהלת) מחקה תגובה`,
       default:              (n,type)=>`${n} ביצעה פעולה: ${type}`,
     },
+    allMembers:"כל החברות", searchByNamePh:"חפשי לפי שם, אימייל, מקצוע...",
+    sortRecent:"אחרונות", sortAlpha:"א–ת", sortAdminsFirst:"מנהלות קודם",
+    adminsOnly:"מנהלות בלבד", onlineOnly:"מחוברות עכשיו",
+    colMember:"חברה", colStatus:"סטטוס", colJoined:"הצטרפות", colActions:"פעולות",
+    statusPending:"ממתינה", adminBadge:"מנהלת", onlineBadge:"מחוברת",
+    viewOnly:"צפייה בלבד", noMembersFound:"לא נמצאו חברות.",
+    allPosts:"כל הפוסטים", sortMostLiked:"הכי אהוב", pinnedOnly:"מוצמדים בלבד", hasMedia:"עם מדיה",
+    colAuthor:"מחברת", colContent:"תוכן", colMedia:"מדיה", colComments:"תגובות", colPosted:"פורסם",
+    showLess:"הצג פחות", showFullPost:"הצג פוסט מלא",
+    hide:"הסתר", showCommentsFn:(n)=>`הצג (${n})`,
+    loadingComments:"טוען תגובות...", noComments:"אין תגובות עדיין.",
+    pinLbl:"הצמד", unpinLbl:"הסר הצמדה", noPosts:"אין פוסטים עדיין.",
+    deletePostConfirm:"למחוק פוסט זה?", deleteCommentConfirm:"למחוק תגובה זו?",
+    distributionLabel:"התפלגות", growthLabel:"צמיחה", membersNavLabel:"חברות",
+    regionsLabel:"אזורים", professionsLabel:"מקצועות", religionLabel:"דת",
+    noDataSelection:"אין נתונים לסינון זה", newMembersLabel:"חברות חדשות",
+    inPeriodLabel:"בתקופה", customLabel:"מותאם",
+    fromLabel:"מ-", toLabel:"עד-", todayLabel:"היום",
+    membersCountFn:(n)=>`${n} ${n===1?"חברה":"חברות"}`,
+    newestLabel:"חדשות", oldestLabel:"ישנות", noMembersInPeriod:"אין חברות בתקופה זו.",
+    searchReporterPh:"חפשי מדווחת או מדווח עליה...", allFilter:"הכל", dismissedLabel:"נדחה",
+    noReportsFiltered:"אין דיווחים תואמים לסינון.",
+    conversationLabel:(a,b)=>`שיחה — ${a} ו${b}`, noMessages:"לא נלכדו הודעות.", convoBtn:"שיחה",
+    clearFilter:"נקה סינון", actorNameLabel:"שם המשתמשת",
+    fromDateLabel:"מתאריך", toDateLabel:"עד תאריך", clearBtn:"נקה",
+    allTypes:"כל הסוגים",
+    logTypeLabels:{
+      signup:"הרשמה", login:"כניסה", post:"פוסט", post_edit:"עריכת פוסט",
+      post_delete:"מחיקת פוסט", comment:"תגובה", comment_edit:"עריכת תגובה",
+      comment_delete:"מחיקת תגובה", request_sent:"בקשה נשלחה",
+      request_accepted:"בקשה התקבלה", request_declined:"בקשה נדחתה",
+      profile_update:"עדכון פרופיל", admin_edit_profile:"עריכת פרופיל (מנהלת)",
+      admin_delete_post:"מחיקת פוסט (מנהלת)", admin_delete_comment:"מחיקת תגובה (מנהלת)",
+    },
+    exportFieldLabels:{
+      firstName:"שם פרטי", lastName:"שם משפחה", email:"אימייל", phone:"טלפון",
+      region:"אזור", profession:"מקצוע", ethnicity:"קהילה/אתניות",
+      helpAreas:"תחומי עזרה", bio:"ביוגרפיה", linkedIn:"לינקדאין", createdAt:"הצטרפות",
+    },
+    loadingLogs:"טוען יומן...", noLogsFiltered:"אין רשומות תואמות לסינון.",
+    showingEntriesFn:(n,t)=>`מציג ${n} מתוך ${t} רשומות`,
+    fieldsLabel:"שדות:", toLogLabel:"אל:",
+    addedByLabel:"נוסף ע\"י", loading:"טוען...",
+    accessDenied:"גישה נדחתה", accessDeniedMsg:"אזור זה מוגבל למנהלות בלבד.",
+    slideshowTitle:"סרגל תמונות", slideshowCaptionPh:"כיתוב (רשות)",
+    slideshowMoveUp:"↑ העלה", slideshowUploading:"מעלה...",
+    slideshowUpload:"העלה תמונות", slideshowMultiple:"בחרי מספר",
+    slideshowEmpty:"אין תמונות לסרגל עדיין. העלי תמונה למעלה.",
+    chartMembers:"חברות", chartTotal:"סה\"כ",
+    editUsersSectionTitle:"עריכת משתמשות", noUsersMatch:"לא נמצאו משתמשות.", colAdmin:"מנהלת", colName:"שם",
+    pendingBadge:(n)=>`(${n} ממתינות)`,
   },
   en: {
     pageTitle: "Admin Dashboard", pageSub: "Platform management and analytics",
@@ -102,18 +149,26 @@ const AT = {
     totalPosts:"Total Posts", conversations:"Conversations", admins:"Admins",
     activeMembers:"Active members", thisWeek:(n)=>`+${n} this week`,
     percentVerified:(p)=>`${p}% verified`,
-    topProfessions:"Top Professions", topCities:"Top Cities", recentMembers:"Recent Members", noData:"No data yet",
+    topProfessions:"Top Professions", topRegionsLabel:"Top Regions", recentMembers:"Recent Members", noData:"No data yet",
+    withHelpAreas:"With Help Areas",
+    postsSubLabel:(l,c)=>`${l} likes · ${c} comments`,
+    platformHealth:"Platform Health",
+    verifiedMembers:"Verified members", helpAreaCoverage:"Help-area coverage", onlineRightNow:"Online right now",
+    avgPostsPerMember:"Avg posts / member", totalInteractions:"Total interactions",
+    viewAllMembers:"View all members →",
+    quickActions:"Quick Actions",
+    manageUsers:"Manage Users", reviewReports:"Review Reports", activityLogs:"Activity Logs", dataAndAnalytics:"Data & Analytics",
+    mostLikedPost:"Most Liked Post", mediaPost:"(media post)", postBy:(n)=>`by ${n}`,
     searchPh:"Search users...", editUser:"Edit User",
     firstName:"First Name", lastName:"Last Name", phone:"Phone",
-    city:"City", profession:"Profession", bio:"Bio",
+    profession:"Profession", bio:"Bio",
     adminPriv:"Admin privileges", cancel:"Cancel", save:"Save Changes", saving:"Saving…",
     deleteLbl:"Delete", editLbl:"Edit", makeAdmin:"Make Admin", revokeAdmin:"Revoke Admin", editPermsBtn:"Edit Permissions",
     refresh:"Refresh", filterByActor:"Filter by name...", filterByType:"Type:",
     dataManage:"Data Management", downloadBtn:"Download Excel", uploadBtn:"Upload Excel", importing:"Importing...",
     dirNote:"Import creates directory records only (no login account).",
     created:"Created", skippedDup:"Skipped (duplicate)", errorsLbl:"Errors", rowLbl:"Row",
-    exportTitle:"Export Members to Excel", exportSub:"Choose which fields to include.", selectAll:"Select all", clearAll:"Clear", done:"Done",
-    goToOverview:"View Statistics", customizeStats:"Customize Cards", customizeStatsSub:"Choose which stat cards to display in the data tab.",
+    exportTitle:"Export Members to Excel", exportSub:"Choose which fields to include.", selectAll:"Select all", clearAll:"Clear",
     importBadType:"Invalid file — only .xlsx or .xls.", importEmpty:"The sheet is empty.", importMissing:"missing fields", importBadEmail:"invalid email",
     noLogs:"No logs yet.",
     confirmDeleteTitle:"Delete User", confirmDeleteMsg:(n)=>`Are you sure you want to permanently delete ${n}? This cannot be undone.`,
@@ -142,17 +197,6 @@ const AT = {
     topSectors:"Ethnicity / Community", topReligions:"National & Religious Identity", topRegions:"Regions",
     region:"Region", campus:"Campus", degree:"Degree", birthdate:"Date of Birth",
     identity:"National-Religious Identity", ethnicity:"Community/Ethnicity",
-    sortRecent:"Recent", sortAlpha:"A–Z", sortAdminsFirst:"Admins first",
-    colMember:"Member", colStatus:"Status", colJoined:"Joined", colActions:"Actions",
-    distributionLabel:"Distribution", growthLabel:"Growth", membersNavLabel:"Members",
-    regionsLabel:"Regions", professionsLabel:"Professions", religionLabel:"Religion",
-    noDataSelection:"No data for this selection", newMembersLabel:"New Members",
-    inPeriodLabel:"in period", customLabel:"Custom",
-    fromLabel:"From", toLabel:"To", todayLabel:"Today",
-    membersCountFn:(n)=>`${n} member${n!==1?"s":""}`,
-    newestLabel:"Newest", oldestLabel:"Oldest", noMembersInPeriod:"No members in this period.",
-    searchReporterPh:"Search reporter or reported…", allFilter:"All", dismissedLabel:"Dismissed",
-    pendingBadge:(n)=>`(${n} pending)`,
     logDesc: {
       signup:               (n)=>`${n} signed up`,
       login:                (n)=>`${n} logged in`,
@@ -171,6 +215,57 @@ const AT = {
       admin_delete_comment: (n)=>`${n} (admin) deleted a comment`,
       default:              (n,type)=>`${n} performed action: ${type}`,
     },
+    allMembers:"All Members", searchByNamePh:"Search by name, email, profession…",
+    sortRecent:"Recent", sortAlpha:"A–Z", sortAdminsFirst:"Admins first",
+    adminsOnly:"Admins only", onlineOnly:"Online now",
+    colMember:"Member", colStatus:"Status", colJoined:"Joined", colActions:"Actions",
+    statusPending:"Pending", adminBadge:"Admin", onlineBadge:"Online",
+    viewOnly:"View only", noMembersFound:"No members found.",
+    allPosts:"All Posts", sortMostLiked:"Most liked", pinnedOnly:"Pinned only", hasMedia:"Has media",
+    colAuthor:"Author", colContent:"Content", colMedia:"Media", colComments:"Comments", colPosted:"Posted",
+    showLess:"Show less", showFullPost:"Show full post",
+    hide:"Hide", showCommentsFn:(n)=>`Show (${n})`,
+    loadingComments:"Loading comments…", noComments:"No comments yet.",
+    pinLbl:"Pin", unpinLbl:"Unpin", noPosts:"No posts yet.",
+    deletePostConfirm:"Delete this post?", deleteCommentConfirm:"Delete this comment?",
+    distributionLabel:"Distribution", growthLabel:"Growth", membersNavLabel:"Members",
+    regionsLabel:"Regions", professionsLabel:"Professions", religionLabel:"Religion",
+    noDataSelection:"No data for this selection", newMembersLabel:"New Members",
+    inPeriodLabel:"in period", customLabel:"Custom",
+    fromLabel:"From", toLabel:"To", todayLabel:"Today",
+    membersCountFn:(n)=>`${n} member${n!==1?"s":""}`,
+    newestLabel:"Newest", oldestLabel:"Oldest", noMembersInPeriod:"No members in this period.",
+    searchReporterPh:"Search reporter or reported…", allFilter:"All", dismissedLabel:"Dismissed",
+    noReportsFiltered:"No reports match the filters.",
+    conversationLabel:(a,b)=>`Conversation — ${a} & ${b}`, noMessages:"No messages captured.", convoBtn:"Convo",
+    clearFilter:"Clear filter", actorNameLabel:"Actor name",
+    fromDateLabel:"From date", toDateLabel:"To date", clearBtn:"Clear",
+    allTypes:"All types",
+    logTypeLabels:{
+      signup:"Signup", login:"Login", post:"Post", post_edit:"Post Edit",
+      post_delete:"Post Delete", comment:"Comment", comment_edit:"Comment Edit",
+      comment_delete:"Comment Delete", request_sent:"Request Sent",
+      request_accepted:"Request Accepted", request_declined:"Request Declined",
+      profile_update:"Profile Update", admin_edit_profile:"Admin Edit Profile",
+      admin_delete_post:"Admin Delete Post", admin_delete_comment:"Admin Delete Comment",
+    },
+    exportFieldLabels:{
+      firstName:"First Name", lastName:"Last Name", email:"Email", phone:"Phone",
+      region:"Region", profession:"Profession", ethnicity:"Ethnicity",
+      helpAreas:"Help Areas", bio:"Bio", linkedIn:"LinkedIn", createdAt:"Joined",
+    },
+    loadingLogs:"Loading logs…", noLogsFiltered:"No logs match the current filters.",
+    showingEntriesFn:(n,t)=>`Showing ${n} of ${t} entries`,
+    fieldsLabel:"Fields:", toLogLabel:"To:",
+    addedByLabel:"Added by", loading:"Loading…",
+    accessDenied:"Access Denied", accessDeniedMsg:"This area is restricted to administrators only.",
+    slideshowTitle:"Slideshow", slideshowCaptionPh:"Caption (optional)",
+    slideshowMoveUp:"↑ Move up", slideshowUploading:"Uploading...",
+    slideshowUpload:"Upload images", slideshowMultiple:"Select multiple",
+    slideshowEmpty:"No slideshow images yet. Upload one above.",
+    chartMembers:"members", chartTotal:"total",
+    editUsersSectionTitle:"Edit Users", noUsersMatch:"No users match your search.", colAdmin:"Admin", colName:"Name",
+    pendingBadge:(n)=>`(${n} pending)`,
   },
   ar: {
     pageTitle: "لوحة تحكم المشرف", pageSub: "إدارة المنصة والتحليلات",
@@ -179,19 +274,22 @@ const AT = {
     totalPosts:"إجمالي المنشورات", conversations:"المحادثات", admins:"المشرفات",
     activeMembers:"أعضاء نشطات", thisWeek:(n)=>`+${n} هذا الأسبوع`,
     percentVerified:(p)=>`${p}% موثّقات`,
-    topProfessions:"أبرز المهن", topCities:"أبرز المدن", recentMembers:"أعضاء جدد", noData:"لا توجد بيانات بعد",
+    topProfessions:"أبرز المهن", topRegionsLabel:"أبرز المناطق", recentMembers:"أعضاء جدد", noData:"لا توجد بيانات بعد",
+    withHelpAreas:"مع مجالات مساعدة",
+    postsSubLabel:(l,c)=>`${l} إعجاب · ${c} تعليق`,
+    platformHealth:"صحة المنصة",
+    verifiedMembers:"الأعضاء الموثّقات", helpAreaCoverage:"تغطية مجالات المساعدة", onlineRightNow:"متصلات الآن",
+    avgPostsPerMember:"متوسط المنشورات / عضو", totalInteractions:"إجمالي التفاعلات",
+    viewAllMembers:"عرض جميع الأعضاء →",
+    quickActions:"إجراءات سريعة",
+    manageUsers:"إدارة المستخدمات", reviewReports:"مراجعة البلاغات", activityLogs:"سجل النشاط", dataAndAnalytics:"البيانات والتحليلات",
+    mostLikedPost:"المنشور الأكثر إعجاباً", mediaPost:"(منشور وسائط)", postBy:(n)=>`بقلم ${n}`,
     searchPh:"ابحثي عن مستخدمة...", editUser:"تعديل المستخدمة",
     firstName:"الاسم الأول", lastName:"اسم العائلة", phone:"الهاتف",
-    city:"المدينة", profession:"المهنة", bio:"نبذة",
+    profession:"المهنة", bio:"نبذة",
     adminPriv:"صلاحيات المشرف", cancel:"إلغاء", save:"حفظ التغييرات", saving:"جارٍ الحفظ...",
     deleteLbl:"حذف", editLbl:"تعديل", makeAdmin:"تعيين مشرفة", revokeAdmin:"إلغاء صلاحيات المشرف", editPermsBtn:"تعديل الصلاحيات",
     refresh:"تحديث", filterByActor:"ابحثي بالاسم...", filterByType:"النوع:",
-    dataManage:"إدارة البيانات", downloadBtn:"تنزيل Excel", uploadBtn:"رفع Excel", importing:"جارٍ الاستيراد...",
-    dirNote:"الاستيراد ينشئ سجلات دليل فقط (بدون حساب تسجيل دخول).",
-    created:"أُنشئت", skippedDup:"تجاوزات (مكررة)", errorsLbl:"أخطاء", rowLbl:"صف",
-    exportTitle:"تصدير الأعضاء إلى Excel", exportSub:"اختاري الحقول التي تريدين تضمينها.", selectAll:"تحديد الكل", clearAll:"مسح", done:"إغلاق",
-    goToOverview:"عرض الإحصائيات", customizeStats:"تخصيص البطاقات", customizeStatsSub:"اختاري بطاقات الإحصائيات التي تريدين عرضها.",
-    importBadType:"ملف غير صالح — يُقبل .xlsx أو .xls فقط.", importEmpty:"الورقة فارغة.", importMissing:"حقول مفقودة", importBadEmail:"بريد إلكتروني غير صالح",
     noLogs:"لا توجد سجلات بعد.",
     confirmDeleteTitle:"حذف المستخدمة", confirmDeleteMsg:(n)=>`هل أنت متأكدة من حذف ${n}؟ لا يمكن التراجع عن هذا الإجراء.`,
     confirmDeleteBtn:"نعم، احذفي", confirmMakeAdminTitle:"منح صلاحيات المشرف",
@@ -219,17 +317,6 @@ const AT = {
     topSectors:"الانتماء / المجتمع", topReligions:"الهوية الوطنية والدينية", topRegions:"مناطق السكن",
     region:"المنطقة", campus:"الحرم الجامعي", degree:"الدرجة العلمية", birthdate:"تاريخ الميلاد",
     identity:"الهوية الوطنية-الدينية", ethnicity:"المجتمع/الانتماء",
-    sortRecent:"الأحدث", sortAlpha:"أ–ي", sortAdminsFirst:"المشرفات أولاً",
-    colMember:"عضوة", colStatus:"الحالة", colJoined:"تاريخ الانضمام", colActions:"الإجراءات",
-    distributionLabel:"التوزيع", growthLabel:"النمو", membersNavLabel:"الأعضاء",
-    regionsLabel:"المناطق", professionsLabel:"المهن", religionLabel:"الدين",
-    noDataSelection:"لا توجد بيانات لهذا الاختيار", newMembersLabel:"أعضاء جدد",
-    inPeriodLabel:"في الفترة", customLabel:"مخصص",
-    fromLabel:"من", toLabel:"إلى", todayLabel:"اليوم",
-    membersCountFn:(n)=>`${n} ${n===1?"عضوة":"أعضاء"}`,
-    newestLabel:"الأحدث", oldestLabel:"الأقدم", noMembersInPeriod:"لا يوجد أعضاء في هذه الفترة.",
-    searchReporterPh:"ابحثي عن المبلِّغة أو المُبلَّغ عنها...", allFilter:"الكل", dismissedLabel:"مرفوض",
-    pendingBadge:(n)=>`(${n} قيد الانتظار)`,
     logDesc: {
       signup:               (n)=>`${n} سجّلت`,
       login:                (n)=>`${n} سجّلت الدخول`,
@@ -248,26 +335,82 @@ const AT = {
       admin_delete_comment: (n)=>`${n} (مشرفة) حذفت تعليقاً`,
       default:              (n,type)=>`${n} نفّذت إجراء: ${type}`,
     },
+    dataManage:"إدارة البيانات", downloadBtn:"تنزيل Excel", uploadBtn:"رفع Excel", importing:"جارٍ الاستيراد...",
+    dirNote:"الاستيراد يُنشئ سجلات الدليل فقط (بدون حساب تسجيل دخول).",
+    created:"تم الإنشاء", skippedDup:"تم التخطي (مكرر)", errorsLbl:"أخطاء", rowLbl:"صف",
+    exportTitle:"تصدير الأعضاء إلى Excel", exportSub:"اختاري الحقول التي تريدين تضمينها.", selectAll:"تحديد الكل", clearAll:"مسح",
+    importBadType:"ملف غير صالح — يُقبل .xlsx أو .xls فقط.", importEmpty:"الورقة فارغة.", importMissing:"حقول مفقودة", importBadEmail:"بريد إلكتروني غير صالح",
+    allMembers:"جميع الأعضاء", searchByNamePh:"ابحثي بالاسم أو البريد الإلكتروني أو المهنة...",
+    sortRecent:"الأحدث", sortAlpha:"أ–ي", sortAdminsFirst:"المشرفات أولاً",
+    adminsOnly:"المشرفات فقط", onlineOnly:"متصلات الآن",
+    colMember:"عضوة", colStatus:"الحالة", colJoined:"تاريخ الانضمام", colActions:"الإجراءات",
+    statusPending:"قيد الانتظار", adminBadge:"مشرفة", onlineBadge:"متصلة",
+    viewOnly:"عرض فقط", noMembersFound:"لم يتم العثور على أعضاء.",
+    allPosts:"جميع المنشورات", sortMostLiked:"الأكثر إعجاباً", pinnedOnly:"المثبتة فقط", hasMedia:"بوسائط",
+    colAuthor:"الكاتبة", colContent:"المحتوى", colMedia:"الوسائط", colComments:"التعليقات", colPosted:"نُشر",
+    showLess:"عرض أقل", showFullPost:"عرض المنشور كاملاً",
+    hide:"إخفاء", showCommentsFn:(n)=>`عرض (${n})`,
+    loadingComments:"جارٍ تحميل التعليقات...", noComments:"لا توجد تعليقات بعد.",
+    pinLbl:"تثبيت", unpinLbl:"إلغاء التثبيت", noPosts:"لا توجد منشورات بعد.",
+    deletePostConfirm:"هل تريدين حذف هذا المنشور؟", deleteCommentConfirm:"هل تريدين حذف هذا التعليق؟",
+    distributionLabel:"التوزيع", growthLabel:"النمو", membersNavLabel:"الأعضاء",
+    regionsLabel:"المناطق", professionsLabel:"المهن", religionLabel:"الدين",
+    noDataSelection:"لا توجد بيانات لهذا الاختيار", newMembersLabel:"أعضاء جدد",
+    inPeriodLabel:"في الفترة", customLabel:"مخصص",
+    fromLabel:"من", toLabel:"إلى", todayLabel:"اليوم",
+    membersCountFn:(n)=>`${n} ${n===1?"عضوة":"أعضاء"}`,
+    newestLabel:"الأحدث", oldestLabel:"الأقدم", noMembersInPeriod:"لا يوجد أعضاء في هذه الفترة.",
+    searchReporterPh:"ابحثي عن المبلِّغة أو المُبلَّغ عنها...", allFilter:"الكل", dismissedLabel:"مرفوض",
+    noReportsFiltered:"لا توجد بلاغات تطابق التصفية.",
+    conversationLabel:(a,b)=>`محادثة — ${a} و${b}`, noMessages:"لم يتم التقاط رسائل.", convoBtn:"محادثة",
+    clearFilter:"مسح التصفية", actorNameLabel:"اسم المستخدمة",
+    fromDateLabel:"من تاريخ", toDateLabel:"إلى تاريخ", clearBtn:"مسح",
+    allTypes:"جميع الأنواع",
+    logTypeLabels:{
+      signup:"تسجيل", login:"دخول", post:"منشور", post_edit:"تعديل منشور",
+      post_delete:"حذف منشور", comment:"تعليق", comment_edit:"تعديل تعليق",
+      comment_delete:"حذف تعليق", request_sent:"طلب مُرسَل",
+      request_accepted:"طلب مقبول", request_declined:"طلب مرفوض",
+      profile_update:"تحديث الملف", admin_edit_profile:"تعديل (مشرفة)",
+      admin_delete_post:"حذف منشور (مشرفة)", admin_delete_comment:"حذف تعليق (مشرفة)",
+    },
+    exportFieldLabels:{
+      firstName:"الاسم الأول", lastName:"اسم العائلة", email:"البريد الإلكتروني", phone:"الهاتف",
+      region:"المنطقة", profession:"المهنة", ethnicity:"المجتمع/الانتماء",
+      helpAreas:"مجالات المساعدة", bio:"نبذة", linkedIn:"لينكدإن", createdAt:"تاريخ الانضمام",
+    },
+    loadingLogs:"جارٍ تحميل السجل...", noLogsFiltered:"لا توجد سجلات تطابق التصفية.",
+    showingEntriesFn:(n,t)=>`عرض ${n} من ${t} سجل`,
+    fieldsLabel:"الحقول:", toLogLabel:"إلى:",
+    addedByLabel:"أضيف بواسطة", loading:"جارٍ التحميل...",
+    accessDenied:"تم رفض الوصول", accessDeniedMsg:"هذه المنطقة مخصصة للمشرفات فقط.",
+    slideshowTitle:"عرض الشرائح", slideshowCaptionPh:"التسمية (اختياري)",
+    slideshowMoveUp:"↑ نقل للأعلى", slideshowUploading:"جارٍ الرفع...",
+    slideshowUpload:"رفع صور", slideshowMultiple:"اختر متعددة",
+    slideshowEmpty:"لا توجد صور للعرض بعد. ارفعي صورة أعلاه.",
+    chartMembers:"أعضاء", chartTotal:"إجمالي",
+    editUsersSectionTitle:"تعديل المستخدمات", noUsersMatch:"لا توجد مستخدمات تطابق البحث.", colAdmin:"مشرفة", colName:"الاسم",
+    pendingBadge:(n)=>`(${n} قيد الانتظار)`,
   },
 };
 
 /* ─── Styles (our S object — used by EditUsers, Logs, EditUserModal) ─── */
 const S = {
-  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)", flex: 1, overflow: "auto" },
+  page: { padding: "2rem 2.5rem", boxSizing: "border-box", width: "100%", maxWidth: "100%", fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)", flex: 1, overflowY: "auto", overflowX: "hidden" },
   denied: { textAlign: "center", padding: "4rem", color: "#c25c5c", fontSize: "1.1rem", fontWeight: 700 },
 
   header: { marginBottom: "1.75rem" },
   title: { fontSize: "22px", fontWeight: 800, color: "var(--text-primary,#111827)", margin: "0 0 3px" },
   sub: { fontSize: "13px", color: "var(--text-muted,#6b7280)", margin: 0 },
 
-  tabs: { display: "flex", gap: "4px", marginBottom: "1.5rem", flexWrap: "wrap", background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-md,10px)", padding: "4px", width: "fit-content" },
+  tabs: { display: "flex", gap: "4px", marginBottom: "1.5rem", flexWrap: "wrap", background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-md,10px)", padding: "4px", width: "100%", maxWidth: "100%", boxSizing: "border-box" },
   tab: (active) => ({
-    padding: "7px 16px", borderRadius: "var(--r-sm,8px)", border: "none", cursor: "pointer",
+    padding: "7px 14px", borderRadius: "var(--r-sm,8px)", border: "none", cursor: "pointer",
     fontSize: "13px", fontWeight: active ? 700 : 500, fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
     background: active ? "var(--bg-primary,#fff)" : "transparent",
     color: active ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
     boxShadow: active ? "var(--shadow-xs,0 1px 4px rgba(29, 72, 150,0.07))" : "none",
-    transition: "all 0.15s",
+    transition: "all 0.15s", whiteSpace: "nowrap", flex: "1 1 auto", textAlign: "center",
   }),
 
   table: { width: "100%", borderCollapse: "collapse" },
@@ -444,7 +587,7 @@ function avatarColor(name) {
 /* ── Stat card ── */
 function StatCard({ label, value, sub, color, icon, onClick }) {
   return (
-    <div className="card slide-up" style={{
+    <div className="card slide-up admin-stat-card" style={{
       padding: "1.25rem 1.5rem",
       borderLeft: `4px solid ${color}`,
       display: "flex", alignItems: "center", gap: "1rem",
@@ -455,16 +598,16 @@ function StatCard({ label, value, sub, color, icon, onClick }) {
       onMouseLeave={e => { e.currentTarget.style.boxShadow=""; e.currentTarget.style.transform=""; }}
       onClick={onClick}
     >
-      <div style={{
+      <div className="admin-stat-icon" style={{
         width: 44, height: 44, borderRadius: "var(--r-md,10px)",
         background: `${color}18`, display: "flex",
         alignItems: "center", justifyContent: "center",
         color, flexShrink: 0,
       }}>{icon}</div>
-      <div>
-        <p style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary,#111827)", lineHeight: 1 }}>{value}</p>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted,#6b7280)", marginTop: 3 }}>{label}</p>
-        {sub && <p style={{ fontSize: 11, color: color, marginTop: 1 }}>{sub}</p>}
+      <div style={{ minWidth: 0 }}>
+        <p className="stat-val" style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary,#111827)", lineHeight: 1 }}>{value}</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted,#6b7280)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</p>
+        {sub && <p style={{ fontSize: 11, color: color, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</p>}
       </div>
     </div>
   );
@@ -546,7 +689,6 @@ const EXPORT_FIELDS = [
   { key: "email",       label: "Email" },
   { key: "phone",       label: "Phone" },
   { key: "region",      label: "Region" },
-  { key: "city",        label: "City" },
   { key: "profession",  label: "Profession" },
   { key: "ethnicity",   label: "Ethnicity" },
   { key: "helpAreas",   label: "Help Areas" },
@@ -563,14 +705,14 @@ const PERM_KEYS = ["canManageUsers","canManageContent","canViewLogs","canManageA
 const DEFAULT_PERMS = Object.fromEntries(PERM_KEYS.map(k => [k, false]));
 
 /* ── Simple confirm modal ── */
-function ConfirmModal({ title, message, confirmLabel, onConfirm, onCancel, danger = true }) {
+function ConfirmModal({ title, message, confirmLabel, cancelLabel = "Cancel", onConfirm, onCancel, danger = true }) {
   return (
     <div style={S.overlay} onClick={onCancel}>
       <div style={{ ...S.modalBox, maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <p style={{ ...S.modalTitle, color: danger ? "#c25c5c" : "var(--text-primary,#111827)" }}>{title}</p>
         <p style={{ fontSize: 14, color: "var(--text-secondary,#7a5868)", lineHeight: 1.6, margin: 0 }}>{message}</p>
         <div style={S.modalActions}>
-          <button style={S.cancelModalBtn} onClick={onCancel}>Cancel</button>
+          <button style={S.cancelModalBtn} onClick={onCancel}>{cancelLabel}</button>
           <button style={{
             ...S.saveModalBtn,
             background: danger ? "#e9415b" : "var(--brand,#4472b8)",
@@ -646,7 +788,7 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
     firstName:  u.firstName  ?? "",
     lastName:   u.lastName   ?? "",
     phone:      "",
-    city:       u.city       ?? "",
+    region:     u.region     ?? "",
     profession: u.profession ?? "",
     bio:        u.bio        ?? "",
     isAdmin:    u.isAdmin    ?? false,
@@ -711,8 +853,8 @@ function EditUserModal({ u, adminUser, adminName, onClose, onSaved, Tr }) {
             <input name="phone" style={S.modalInput} value={fields.phone} onChange={handleChange} />
           </div>
           <div style={groupStyle}>
-            <label style={labelStyle}>{Tr?.city}</label>
-            <input name="city" style={S.modalInput} value={fields.city} onChange={handleChange} />
+            <label style={labelStyle}>{Tr?.region}</label>
+            <input name="region" style={S.modalInput} value={fields.region} onChange={handleChange} />
           </div>
         </div>
 
@@ -851,7 +993,7 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
               {item.badge && <span style={{ fontSize:10, background:"#d1fae5", color:"#065f46", borderRadius:99, padding:"1px 6px", fontWeight:700 }}>{item.badge}</span>}
             </div>
           ))}
-          {items.length === 0 && <p style={{ fontSize:13, color:"var(--text-muted,#6b7280)", textAlign:"center", marginTop:"2rem" }}>No data</p>}
+          {items.length === 0 && <p style={{ fontSize:13, color:"var(--text-muted,#6b7280)", textAlign:"center", marginTop:"2rem" }}>{Tr.noData}</p>}
         </div>
       </div>
     </div>
@@ -861,7 +1003,7 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
 /* ══════════════════════════════════════════════════════
    SLIDESHOW ADMIN COMPONENT
 ═══════════════════════════════════════════════════════ */
-function SlideshowAdmin() {
+function SlideshowAdmin({ Tr }) {
   const [images, setImages]       = useState([]);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -925,10 +1067,10 @@ function SlideshowAdmin() {
               <input
                 value={img.caption || ""}
                 onChange={e => updateCaption(i, e.target.value)}
-                placeholder="Caption (optional)"
+                placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
                 style={{ width:"100%", fontSize:12, padding:"4px 8px", borderRadius:6, border:"1px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", boxSizing:"border-box" }}
               />
-              <button onClick={() => moveUp(i)} disabled={i === 0} style={{ fontSize:11, padding:"3px 0", background:"none", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", color:"var(--text-muted)" }}>↑ Move up</button>
+              <button onClick={() => moveUp(i)} disabled={i === 0} style={{ fontSize:11, padding:"3px 0", background:"none", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", color:"var(--text-muted)" }}>{Tr?.slideshowMoveUp || "↑ Move up"}</button>
             </div>
             <button onClick={() => remove(i)} style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.55)", color:"#fff", border:"none", borderRadius:"50%", width:26, height:26, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
           </div>
@@ -936,18 +1078,21 @@ function SlideshowAdmin() {
 
         <label style={{ width:180, height:150, borderRadius:12, border:"2px dashed var(--border)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: uploading ? "wait" : "pointer", color:"var(--text-muted)", fontSize:13, gap:6, background:"var(--bg-secondary)" }}>
           <span style={{ fontSize:28 }}>+</span>
-          <span>{uploading ? "Uploading..." : "Upload images"}</span>
-          <span style={{ fontSize:10, color:"var(--text-muted)", marginTop:-4 }}>Select multiple</span>
+          <span>{uploading ? (Tr?.slideshowUploading || "Uploading...") : (Tr?.slideshowUpload || "Upload images")}</span>
+          <span style={{ fontSize:10, color:"var(--text-muted)", marginTop:-4 }}>{Tr?.slideshowMultiple || "Select multiple"}</span>
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
         </label>
       </div>
       {images.length === 0 && !uploading && (
-        <p style={{ fontSize:13, color:"var(--text-muted)", textAlign:"center", padding:"1rem 0" }}>No slideshow images yet. Upload one above.</p>
+        <p style={{ fontSize:13, color:"var(--text-muted)", textAlign:"center", padding:"1rem 0" }}>{Tr?.slideshowEmpty || "No slideshow images yet. Upload one above."}</p>
       )}
     </div>
   );
 }
 
+/* ══════════════════════════════════════════════════════
+   DISTRIBUTION DONUT CHART
+═══════════════════════════════════════════════════════ */
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 640);
   useEffect(() => {
@@ -958,9 +1103,6 @@ function useIsMobile() {
   return isMobile;
 }
 
-/* ══════════════════════════════════════════════════════
-   DISTRIBUTION DONUT CHART
-═══════════════════════════════════════════════════════ */
 function DistributionDonutChart({ users, lang, Tr }) {
   const [distType,  setDistType]  = useState("regions");
   const [timeframe, setTimeframe] = useState("all");
@@ -979,7 +1121,7 @@ function DistributionDonutChart({ users, lang, Tr }) {
     filteredUsers.forEach(u => {
       let key = null;
       if (distType === "regions") {
-        const raw = u.region?.trim() || u.city?.trim();
+        const raw = u.region?.trim();
         key = raw ? translateAny(raw, lang) : null;
       } else if (distType === "professions") {
         const raw = u.profession?.trim();
@@ -1195,6 +1337,7 @@ function MemberGrowthChart({ users, Tr }) {
 
   return (
     <div className="card" style={{ padding: "1.5rem" }}>
+      {/* Header row */}
       <div className="admin-growth-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"1.25rem", gap:12, flexWrap:"wrap" }}>
         <div>
           <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 6px" }}>
@@ -1205,6 +1348,8 @@ function MemberGrowthChart({ users, Tr }) {
             <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)", fontWeight:500 }}>{Tr?.inPeriodLabel || "in period"}</span>
           </div>
         </div>
+
+        {/* Preset selector — dropdown on mobile, pills on desktop */}
         {isMobile ? (
           <select value={preset} onChange={e => applyPreset(e.target.value)} style={{
             padding:"8px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
@@ -1237,6 +1382,8 @@ function MemberGrowthChart({ users, Tr }) {
           </div>
         )}
       </div>
+
+      {/* Custom date pickers */}
       {preset === "custom" && (
         <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:"1rem", flexWrap:"wrap" }}>
           <span style={{ fontSize:11, fontWeight:600, color:"var(--text-muted,#6b7280)" }}>{Tr?.fromLabel || "From"}</span>
@@ -1247,6 +1394,8 @@ function MemberGrowthChart({ users, Tr }) {
             style={{ fontSize:12, padding:"6px 10px", borderRadius:8, border:"1.5px solid var(--border,#daeaf8)", background:"var(--bg-primary,#fff)", color:"var(--text-primary,#111827)", fontFamily:"inherit" }} />
         </div>
       )}
+
+      {/* Chart */}
       <div style={{ position:"relative" }}>
         <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:"auto", display:"block", cursor:"crosshair", overflow:"visible" }}
           onMouseMove={e => {
@@ -1264,17 +1413,29 @@ function MemberGrowthChart({ users, Tr }) {
               <stop offset="100%" stopColor="#4472b8" stopOpacity="0.01" />
             </linearGradient>
           </defs>
+
+          {/* Horizontal grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map(pct => {
             const gy = H - py - pct * (H - py * 2);
             return <line key={pct} x1={px} x2={W - px} y1={gy} y2={gy} stroke="#e5e7eb" strokeWidth={pct === 0 ? 1.5 : 1} />;
           })}
+
+          {/* Gradient area */}
           {area && <path d={area} fill="url(#mgc-grad)" />}
+
+          {/* Line */}
           <polyline points={polyline} fill="none" stroke="#4472b8" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+
+          {/* Hover crosshair */}
           {hov && <line x1={hov.x} x2={hov.x} y1={py} y2={H - py} stroke="#4472b8" strokeWidth={1.5} strokeDasharray="4,3" opacity={0.4} />}
+
+          {/* Dots */}
           {pts.map((p, i) => (p.count > 0 || i === hoverIdx) && (
             <circle key={i} cx={p.x} cy={p.y} r={i === hoverIdx ? 5.5 : 3.5} fill="#4472b8" stroke="#fff" strokeWidth={2} />
           ))}
         </svg>
+
+        {/* Tooltip */}
         {hov && (
           <div style={{
             position:"absolute",
@@ -1295,6 +1456,8 @@ function MemberGrowthChart({ users, Tr }) {
           </div>
         )}
       </div>
+
+      {/* X-axis labels */}
       <div style={{ display:"flex", justifyContent:"space-between", marginTop:10 }}>
         <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{days[0]?.toLocaleDateString(undefined, { month:"short", day:"numeric" })}</span>
         {days.length > 6 && <span style={{ fontSize:10, color:"var(--text-muted,#6b7280)" }}>{days[Math.floor(days.length / 2)]?.toLocaleDateString(undefined, { month:"short", day:"numeric" })}</span>}
@@ -1311,24 +1474,20 @@ export default function AdminPage() {
   const { user, profile } = useAuth();
   const { lang } = useLang();
   const Tr = AT[lang] || AT.he;
-  const isMobile = useIsMobile();
   const [tab, setTab]     = useState("overview");
+  const [mobileDataSection, setMobileDataSection] = useState("distribution");
+  const isMobile = useIsMobile();
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchUser, setSearchUser] = useState("");
   const [statDetailType, setStatDetailType] = useState(null); // "members"|"online"|"verified"|"admins"|"posts"|"convs"
-  const [hiddenDataStats, setHiddenDataStats] = useState(new Set());
-  const [statsCustomizeOpen, setStatsCustomizeOpen] = useState(false);
-  const [mobileDataSection, setMobileDataSection] = useState("distribution");
-  const [recentTimeframe, setRecentTimeframe] = useState("all");
-  const [recentSort,      setRecentSort]      = useState("newest");
 
   /* ── Edit Users tab state ── */
   const [userSearch, setUserSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
-  const [userSortBy, setUserSortBy] = useState("recent");   // recent | alpha | city | perms
+  const [userSortBy, setUserSortBy] = useState("recent");   // recent | alpha | region | perms
   const [userFilterAdmin, setUserFilterAdmin] = useState(false);
   const [userFilterOnline, setUserFilterOnline] = useState(false);
 
@@ -1343,7 +1502,7 @@ export default function AdminPage() {
   /* ── Logs tab state ── */
   const [logs,          setLogs]          = useState([]);
   const [logsLoading,   setLogsLoading]   = useState(false);
-  const [logTypeFilter, setLogTypeFilter] = useState([]);
+  const [logTypeFilter, setLogTypeFilter] = useState("");
   const [logActorFilter, setLogActorFilter] = useState("");
   const [logDateFrom,   setLogDateFrom]   = useState("");
   const [logDateTo,     setLogDateTo]     = useState("");
@@ -1375,8 +1534,7 @@ export default function AdminPage() {
   const [selFields, setSelFields]       = useState(() => EXPORT_FIELDS.map(f => f.key));
   const [importBusy, setImportBusy]     = useState(false);
   const [importResult, setImportResult] = useState(null);
-  const fileRef   = useRef(null);
-  const chartsRef = useRef(null);
+  const fileRef = useRef(null);
 
   const adminName =
     profile?.firstName && profile?.lastName
@@ -1494,8 +1652,8 @@ export default function AdminPage() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted,#6b7280)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <h3>Access Denied</h3>
-          <p>This area is restricted to administrators only.</p>
+          <h3>{Tr.accessDenied}</h3>
+          <p>{Tr.accessDeniedMsg}</p>
         </div>
       </div>
     );
@@ -1522,22 +1680,30 @@ export default function AdminPage() {
 
   /* ── Profession distribution ── */
   const professionMap = {};
-  users.forEach(u => { if (u.profession) professionMap[u.profession] = (professionMap[u.profession] || 0) + 1; });
+  users.forEach(u => {
+    if (u.profession) {
+      const key = u.professionTranslations?.[lang] || translateProfession(u.profession, lang) || u.profession;
+      professionMap[key] = (professionMap[key] || 0) + 1;
+    }
+  });
   const topProfessions = Object.entries(professionMap).sort((a,b) => b[1]-a[1]).slice(0,5);
-
-  /* ── City distribution ── */
-  const cityMap = {};
-  users.forEach(u => { if (u.city) cityMap[u.city] = (cityMap[u.city] || 0) + 1; });
-  const topCities = Object.entries(cityMap).sort((a,b) => b[1]-a[1]).slice(0,5);
 
   /* ── Private fields distributions (admin only) ── */
   const ethnicityMap = {}, religionMap = {}, regionMap = {};
   users.forEach(u => {
-    if (u.ethnicity)  ethnicityMap[u.ethnicity]  = (ethnicityMap[u.ethnicity]  || 0) + 1;
-    /* religion field (new dropdown) takes priority; fall back to identity freetext */
+    if (u.ethnicity) {
+      const key = translateEthnicity(u.ethnicity, lang) || u.ethnicity;
+      ethnicityMap[key] = (ethnicityMap[key] || 0) + 1;
+    }
     const rel = u.religion || u.identity;
-    if (rel)          religionMap[rel]            = (religionMap[rel]            || 0) + 1;
-    if (u.region)     regionMap[u.region]         = (regionMap[u.region]         || 0) + 1;
+    if (rel) {
+      const key = translateReligion(rel, lang) || rel;
+      religionMap[key] = (religionMap[key] || 0) + 1;
+    }
+    if (u.region) {
+      const key = translateAny(u.region, lang);
+      regionMap[key] = (regionMap[key] || 0) + 1;
+    }
   });
   const topEthnicities = Object.entries(ethnicityMap).sort((a,b) => b[1]-a[1]).slice(0,8);
   const topReligions   = Object.entries(religionMap).sort((a,b) => b[1]-a[1]).slice(0,8);
@@ -1574,7 +1740,7 @@ export default function AdminPage() {
 
   /* ── Post operations ── */
   const deletePost = async (id) => {
-    if (!window.confirm("Delete this post?")) return;
+    if (!window.confirm(Tr.deletePostConfirm)) return;
     await deletePostWithCleanup(id);
     setPosts(prev => prev.filter(p => p.id !== id));
     logActivity({
@@ -1609,13 +1775,13 @@ export default function AdminPage() {
   };
 
   const deleteComment = async (postId, comment) => {
-    if (!window.confirm("Delete this comment?")) return;
+    if (!window.confirm(Tr.deleteCommentConfirm)) return;
     try {
       await deleteDoc(doc(db, "posts", postId, "comments", comment.id));
       const post = posts.find(p => p.id === postId);
-      const newCount = Math.max(0, (post?.commentsCount ?? 1) - 1);
-      await updateDoc(doc(db, "posts", postId), { commentsCount: newCount });
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: newCount } : p));
+      const newCount = Math.max(0, (post?.commentCount ?? 1) - 1);
+      await updateDoc(doc(db, "posts", postId), { commentCount: newCount });
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentCount: newCount } : p));
       setPostCommentsList(prev => ({
         ...prev,
         [postId]: (prev[postId] ?? []).filter(c => c.id !== comment.id),
@@ -1633,16 +1799,13 @@ export default function AdminPage() {
 
   /* ── Log filters ── */
   const filteredLogs = logs.filter(log => {
-    if (logTypeFilter.length > 0 && !logTypeFilter.includes(log.type)) return false;
+    if (logTypeFilter && logTypeFilter !== log.type) return false;
     if (logActorFilter && !(log.actorName ?? "").toLowerCase().includes(logActorFilter.toLowerCase())) return false;
     if (logDateFrom && log.timestamp < logDateFrom) return false;
     if (logDateTo   && log.timestamp > logDateTo + "T23:59:59") return false;
     return true;
   });
   const allLogTypes = [...new Set(logs.map(l => l.type))].filter(Boolean).sort();
-  const toggleLogType = (type) => {
-    setLogTypeFilter(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
-  };
 
   /* ── Filtered users (shared between Users + EditUsers tabs) ── */
   const filteredBySearch = users
@@ -1650,7 +1813,7 @@ export default function AdminPage() {
       const s = (searchUser || userSearch).toLowerCase();
       const matchSearch = !s || (() => {
         const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-        return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.city ?? "").toLowerCase().includes(s);
+        return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.region ?? "").toLowerCase().includes(s);
       })();
       const matchAdmin  = !userFilterAdmin  || !!u.isAdmin;
       const matchOnline = !userFilterOnline || isActuallyOnline(u);
@@ -1658,7 +1821,7 @@ export default function AdminPage() {
     })
     .sort((a, b) => {
       if (userSortBy === "alpha")  return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
-      if (userSortBy === "city")   return (a.city ?? "").localeCompare(b.city ?? "", "he");
+      if (userSortBy === "region") return (a.region ?? "").localeCompare(b.region ?? "", "he");
       if (userSortBy === "perms")  return (b.isAdmin ? 1 : 0) - (a.isAdmin ? 1 : 0);
       // default: recent (createdAt desc)
       return new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0);
@@ -1668,18 +1831,19 @@ export default function AdminPage() {
   const exportExcel = async () => {
     const fields = EXPORT_FIELDS.filter(f => selFields.includes(f.key));
     if (!fields.length) return;
+    const getColLabel = (key, fallback) => Tr.exportFieldLabels?.[key] ?? fallback;
     const rows = users.map(u => {
       const row = {};
       fields.forEach(({ key, label }) => {
         const v = u[key];
-        row[label] = Array.isArray(v) ? v.join("; ") : (v ?? "");
+        row[getColLabel(key, label)] = Array.isArray(v) ? v.join("; ") : (v ?? "");
       });
       return row;
     });
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Members");
-    ws.columns = fields.map(f => ({ header: f.label, key: f.label, width: 22 }));
+    ws.columns = fields.map(f => { const h = getColLabel(f.key, f.label); return { header: h, key: h, width: 22 }; });
     rows.forEach(row => ws.addRow(row));
     const buf = await wb.xlsx.writeBuffer();
     const url = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
@@ -1720,7 +1884,17 @@ export default function AdminPage() {
       });
       if (!rows.length) { setImportResult({ error: Tr.importEmpty }); setImportBusy(false); return; }
       const labelToKey = {};
+      // Accept English defaults
       EXPORT_FIELDS.forEach(({ key, label }) => { labelToKey[label.toLowerCase()] = key; });
+      // Also accept translated labels from every language so any exported file can be re-imported
+      Object.values(AT).forEach(langTr => {
+        if (langTr.exportFieldLabels) {
+          EXPORT_FIELDS.forEach(({ key }) => {
+            const tl = langTr.exportFieldLabels[key];
+            if (tl) labelToKey[tl.toLowerCase()] = key;
+          });
+        }
+      });
       const existing = new Set(users.map(u => (u.email || "").toLowerCase().trim()).filter(Boolean));
       const seen = new Set();
       const toCreate = [];
@@ -1769,15 +1943,72 @@ export default function AdminPage() {
     { id: "data",      label: Tr.showDataTab, show: canViewStats },
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}`, show: canManageContent },
     { id: "logs",      label: Tr.tabs.logs, show: canViewLogs },
-    { id: "slideshow",  label: Tr.admin?.slideshow || "Slideshow", show: canManageContent },
-    { id: "blacklist",  label: `🚫 ${Tr.blacklistTab || "Blacklist"}${blacklist.length > 0 ? ` (${blacklist.length})` : ""}`, show: canManageUsers },
+    { id: "slideshow",  label: Tr.slideshowTitle, show: canManageContent },
+    { id: "blacklist",  label: `${Tr.blacklistTab || "Blacklist"}${blacklist.length > 0 ? ` (${blacklist.length})` : ""}`, show: canManageUsers },
   ].filter(t => t.show);
 
   /* ─────────────────────────────────────── RENDER ─── */
   return (
-    <div style={S.page}>
+    <div style={S.page} className="admin-root">
+      <style>{`
+        @media (max-width: 640px) {
+          .admin-root { padding: 1rem 0.75rem !important; }
+
+          /* Tab bar wraps to two rows on mobile */
+          .admin-tabs {
+            width: 100% !important; max-width: 100% !important;
+            flex-wrap: wrap !important; box-sizing: border-box !important;
+          }
+          .admin-tabs button { white-space: nowrap !important; }
+          .admin-root { overflow-x: hidden !important; }
+
+          /* Stat cards: compact 2-column grid */
+          .admin-stat-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.55rem !important; margin-bottom: 0.85rem !important;
+          }
+          .admin-stat-card { padding: 0.7rem 0.8rem !important; gap: 0.55rem !important; }
+          .admin-stat-card .stat-val { font-size: 20px !important; line-height: 1 !important; }
+          .admin-stat-icon { width: 32px !important; height: 32px !important; }
+
+          /* Overview mid: single column, quick actions first */
+          .admin-overview-mid { grid-template-columns: 1fr !important; }
+          .admin-overview-quick { order: -1 !important; }
+
+          /* Quick action buttons: 2-per-row */
+          .admin-quick-btns {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 6px !important;
+          }
+
+          /* Search inputs full width on mobile */
+          .admin-search-input { width: 100% !important; min-width: unset !important; flex-shrink: 1 !important; }
+
+          /* Table card: reliable horizontal scroll on mobile */
+          .admin-table-card {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            max-width: 100%;
+          }
+
+          /* Filter bar: stack vertically on mobile for easier interaction */
+          .admin-filter-bar { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+          .admin-filter-pills { flex-wrap: wrap !important; }
+
+          /* Make action buttons in tables wrap */
+          .admin-table-actions { flex-wrap: wrap !important; gap: 4px !important; }
+        }
+      `}</style>
+
+      {/* Page header */}
+      <div style={S.header}>
+        <p style={S.title}>{Tr.pageTitle}</p>
+        <p style={S.sub}>{Tr.pageSub}</p>
+      </div>
+
       {/* Tabs */}
-      <div style={S.tabs}>
+      <div style={S.tabs} className="admin-tabs">
         {TABS.map(t => (
           <button key={t.id} style={S.tab(tab === t.id)} onClick={() => setTab(t.id)}>
             {t.label}
@@ -1794,17 +2025,18 @@ export default function AdminPage() {
       {/* ══ OVERVIEW TAB ══ */}
       {!loading && tab === "overview" && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+          {/* Stat cards */}
+          <div className="admin-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <StatCard label={Tr.totalMembers}  value={users.length}   color="#4472b8" sub={Tr.thisWeek(newThisWeek)}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
               onClick={() => setStatDetailType("members")} />
             <StatCard label={Tr.onlineNow}     value={onlineNow}      color="#7ba87a" sub={Tr.activeMembers}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>}
               onClick={() => setStatDetailType("online")} />
-            <StatCard label={Tr.withHelpAreas || "With Help Areas"} value={users.filter(u => u.helpAreas?.length > 0).length} color="#1d4896" sub={`${Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1)*100)}%`}
+            <StatCard label={Tr.withHelpAreas} value={users.filter(u => u.helpAreas?.length > 0).length} color="#1d4896" sub={`${Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1)*100)}%`}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
               onClick={() => setStatDetailType("helpAreas")} />
-            <StatCard label={Tr.totalPosts}    value={posts.length}   color="#8b5cf6" sub={`${totalLikes} · ${totalComments}`}
+            <StatCard label={Tr.totalPosts}    value={posts.length}   color="#8b5cf6" sub={Tr.postsSubLabel(totalLikes, totalComments)}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
               onClick={() => setStatDetailType("posts")} />
             <StatCard label={Tr.conversations}  value={convs.length}   color="#d4a574"
@@ -1815,80 +2047,116 @@ export default function AdminPage() {
               onClick={() => setStatDetailType("admins")} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "1.25rem" }}>
-            {/* Profession distribution */}
+          {/* Platform health + quick actions + recent members */}
+          <div className="admin-overview-mid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem", alignItems: "start" }}>
+
+            {/* Platform health */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topProfessions}</p>
-              {topProfessions.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)" }}>{Tr.noData}</p>}
-              {topProfessions.map(([prof, count]) => (
-                <div key={prof} style={{ marginBottom: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{prof}</span>
-                    <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)", fontWeight: 600 }}>{count}</span>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1.1rem" }}>{Tr.platformHealth}</p>
+              {[
+                { label: Tr.verifiedMembers, pct: Math.round(verifiedN / Math.max(users.length,1) * 100), color: "#7ba87a" },
+                { label: Tr.helpAreaCoverage, pct: Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1) * 100), color: "#4472b8" },
+                { label: Tr.onlineRightNow, pct: Math.round(onlineNow / Math.max(users.length,1) * 100), color: "#d4a574" },
+              ].map(m => (
+                <div key={m.label} style={{ marginBottom: "0.9rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{m.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: m.color }}>{m.pct}%</span>
                   </div>
-                  <div style={{ height: 6, background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "var(--brand,#4472b8)", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
+                  <div style={{ height: 6, background: "var(--bg-tertiary,#f0f6fb)", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${m.pct}%`, background: m.color, borderRadius: 99, transition: "width 0.7s ease" }} />
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* City distribution */}
-            <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.topCities}</p>
-              {topCities.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted,#6b7280)" }}>{Tr.noData}</p>}
-              {topCities.map(([city, count]) => (
-                <div key={city} style={{ marginBottom: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary,#7a5868)" }}>{city}</span>
-                    <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)", fontWeight: 600 }}>{count}</span>
-                  </div>
-                  <div style={{ height: 6, background: "var(--bg-tertiary,#f0f6fb)", borderRadius: "var(--r-full,99px)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(count/users.length)*100}%`, background: "#8b5cf6", borderRadius: "var(--r-full,99px)", transition: "width 0.8s ease" }} />
-                  </div>
+              <div style={{ marginTop: "1rem", paddingTop: "0.85rem", borderTop: "1px solid var(--bg-tertiary,#f0f6fb)", display: "flex", justifyContent: "space-between" }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 2px" }}>{Tr.avgPostsPerMember}</p>
+                  <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary,#111827)", margin: 0 }}>{(posts.length / Math.max(users.length,1)).toFixed(1)}</p>
                 </div>
-              ))}
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 2px" }}>{Tr.totalInteractions}</p>
+                  <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary,#111827)", margin: 0 }}>{(totalLikes + totalComments).toLocaleString()}</p>
+                </div>
+              </div>
             </div>
 
-            {/* Recent signups */}
+            {/* Recent members */}
             <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>{Tr.recentMembers}</p>
-              {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5).map(u => (
-                <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width:28,height:28,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>
-                    {getInitials(`${u.firstName} ${u.lastName}`)}
+              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1rem" }}>{Tr.recentMembers}</p>
+              {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6).map(u => (
+                <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0", borderBottom: "1px solid var(--bg-tertiary,#f0f6fb)" }}>
+                  <div style={{ width:30,height:30,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0,overflow:"hidden" }}>
+                    {(u.photoURL || u.avatarUrl)
+                      ? <img src={u.photoURL || u.avatarUrl} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                      : getInitials(`${u.firstName} ${u.lastName}`)
+                    }
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
-                    <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{u.firstName} {u.lastName}</p>
-                    <p style={{ fontSize:10,color:"var(--text-muted,#6b7280)" }}>{timeAgo(u.createdAt)}</p>
+                    <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",margin:0 }}>{u.firstName} {u.lastName}</p>
+                    <p style={{ fontSize:10,color:"var(--text-muted,#6b7280)",margin:0 }}>{u.profession || timeAgo(u.createdAt)}</p>
                   </div>
-                  {u.emailVerified && <span className="badge badge-green">✓</span>}
+                  <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap",flexShrink:0 }}>{timeAgo(u.createdAt)}</span>
                 </div>
               ))}
+              {canManageUsers && (
+                <button onClick={() => setTab("users")} style={{ marginTop: "0.85rem", width: "100%", fontSize: 12, fontWeight: 600, padding: "7px", borderRadius: 8, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-secondary,#f0f6fb)", color: "var(--text-primary,#111827)", cursor: "pointer" }}>
+                  {Tr.viewAllMembers}
+                </button>
+              )}
             </div>
 
-            {/* Top posts */}
-            <div className="card" style={{ padding: "1.25rem" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>Top Posts</p>
-              {posts.slice().sort((a,b)=>(b.likesCount||0)-(a.likesCount||0)).slice(0,4).map(p => (
-                <div key={p.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid var(--bg-tertiary,#f0f6fb)" }}>
-                  <p style={{ fontSize:12,color:"var(--text-primary,#111827)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2 }}>
-                    {p.text || "(media post)"}
-                  </p>
-                  <div style={{ display:"flex", gap:10 }}>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",display:"flex",alignItems:"center",gap:2 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                      {p.likesCount||0}
-                    </span>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",display:"flex",alignItems:"center",gap:2 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                      {p.commentCount||0}
-                    </span>
-                    <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)" }}>by {p.authorName}</span>
-                  </div>
+            {/* Quick actions + top post */}
+            <div className="admin-overview-quick" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              {/* Quick actions */}
+              <div className="card" style={{ padding: "1.25rem" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.85rem" }}>{Tr.quickActions}</p>
+                <div className="admin-quick-btns" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {canManageUsers && (
+                    <button onClick={() => setTab("users")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4472b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      {Tr.manageUsers}
+                    </button>
+                  )}
+                  {canManageContent && (
+                    <button onClick={() => setTab("reports")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c25c5c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      {Tr.reviewReports}
+                    </button>
+                  )}
+                  {canViewLogs && (
+                    <button onClick={() => setTab("logs")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      {Tr.activityLogs}
+                    </button>
+                  )}
+                  {canViewStats && (
+                    <button onClick={() => setTab("data")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 13px", borderRadius: 9, border: "1.5px solid var(--border,#daeaf8)", background: "var(--bg-primary,#fff)", color: "var(--text-primary,#111827)", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                      {Tr.dataAndAnalytics}
+                    </button>
+                  )}
                 </div>
-              ))}
-              {posts.length === 0 && <p style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>No posts yet</p>}
+              </div>
+
+              {/* Top post */}
+              {posts.length > 0 && (() => {
+                const top = posts.slice().sort((a,b) => (b.likesCount||0) - (a.likesCount||0))[0];
+                return (
+                  <div className="card" style={{ padding: "1.25rem" }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.75rem" }}>{Tr.mostLikedPost}</p>
+                    <p style={{ fontSize: 13, color: "var(--text-primary,#111827)", fontWeight: 500, margin: "0 0 8px", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {top.text || Tr.mediaPost}
+                    </p>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#c25c5c", display: "flex", alignItems: "center", gap: 4 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        {top.likesCount||0}
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)" }}>{Tr.postBy(top.authorName)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
           </div>
@@ -1911,23 +2179,23 @@ export default function AdminPage() {
       {!loading && tab === "users" && (
         <>
           {/* Members header + inline filter bar */}
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+          <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              All Members <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredBySearch.length})</span>
+              {Tr.allMembers} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredBySearch.length})</span>
             </span>
             <input
-              className="input"
-              placeholder="Search by name, email, profession…"
+              className="input admin-search-input"
+              placeholder={Tr.searchByNamePh}
               value={searchUser}
               onChange={e => setSearchUser(e.target.value)}
               style={{ fontSize:12, width:220, flexShrink:0 }}
             />
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+            <div className="admin-filter-pills" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
-                { val:"recent", label:"Recent" },
-                { val:"alpha",  label:"A–Z" },
-                { val:"city",   label:"City" },
-                { val:"perms",  label:"Admins first" },
+                { val:"recent", label:Tr.sortRecent },
+                { val:"alpha",  label:Tr.sortAlpha },
+                { val:"region", label:Tr.region },
+                { val:"perms",  label:Tr.sortAdminsFirst },
               ].map(opt => (
                 <button key={opt.val} onClick={() => setUserSortBy(opt.val)}
                   style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
@@ -1938,146 +2206,228 @@ export default function AdminPage() {
               ))}
               <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
                 <input type="checkbox" checked={userFilterAdmin} onChange={e => setUserFilterAdmin(e.target.checked)} style={{ cursor:"pointer" }} />
-                Admins only
+                {Tr.adminsOnly}
               </label>
               <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
                 <input type="checkbox" checked={userFilterOnline} onChange={e => setUserFilterOnline(e.target.checked)} style={{ cursor:"pointer" }} />
-                Online now
+                {Tr.onlineOnly}
               </label>
             </div>
           </div>
-          <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
-              <thead>
-                <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
-                  {["Member","Profession","City","Status","Joined","Actions"].map(h => (
-                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBySearch.map((u) => (
-                  <React.Fragment key={u.id}>
-                  <tr
-                    style={{ borderBottom: expandedUserId === u.id ? "none" : "1px solid var(--bg-tertiary,#f0f6fb)", transition:"background 0.12s", cursor:"pointer" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
-                    onMouseLeave={e => e.currentTarget.style.background = expandedUserId === u.id ? "var(--bg-secondary,#f0f6fb)" : "transparent"}
-                    onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}
-                  >
-                    <td style={{ padding:"11px 14px" }}>
-                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        {u.avatarUrl
-                          ? <img src={u.avatarUrl} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover" }} alt="" />
-                          : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
-                        }
-                        <div>
-                          <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)" }}>{u.firstName} {u.lastName}</p>
-                        </div>
+          {isMobile ? (
+            <div style={{ display:"flex",flexDirection:"column",gap:"0.65rem" }}>
+              {filteredBySearch.map(u => {
+                const isExpandedU = expandedUserId === u.id;
+                const uName = `${u.firstName||""} ${u.lastName||""}`.trim();
+                const uAv = u.photoURL || u.avatarUrl;
+                return (
+                  <div key={u.id} style={{ background:"var(--bg-primary,#fff)",border:"1.5px solid var(--border,#daeaf8)",borderRadius:14,overflow:"hidden",boxShadow:"0 1px 4px rgba(29,72,150,0.05)" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:10,padding:"0.75rem 1rem",cursor:"pointer" }}
+                      onClick={() => setExpandedUserId(isExpandedU ? null : u.id)}>
+                      <div style={{ width:38,height:38,borderRadius:"50%",flexShrink:0,background:avatarColor(uName),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,overflow:"hidden" }}>
+                        {uAv ? <img src={uAv} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} /> : getInitials(uName)}
                       </div>
-                    </td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.profession||"—"}</td>
-                    <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.city||"—"}</td>
-                    <td style={{ padding:"11px 14px" }}>
-                      <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
-                        <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
-                          {u.emailVerified ? "Verified" : "Pending"}
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:14,fontWeight:700,color:"var(--text-primary,#111827)",margin:"0 0 2px" }}>{uName||"—"}</p>
+                        <p style={{ fontSize:11,color:"var(--text-muted,#6b7280)",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                          {[u.profession,u.region].filter(Boolean).join(" · ")||"—"}
+                        </p>
+                      </div>
+                      <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,flexShrink:0 }}>
+                        <span className={`badge ${u.emailVerified?"badge-green":"badge-yellow"}`} style={{ fontSize:10 }}>
+                          {u.emailVerified ? Tr.verified : Tr.statusPending}
                         </span>
-                        {u.isAdmin && <span className="badge badge-purple">Admin</span>}
-                        {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● Online</span>}
+                        {u.isAdmin && <span className="badge badge-purple" style={{ fontSize:10 }}>{Tr.adminBadge}</span>}
+                        {isActuallyOnline(u) && <span className="badge badge-green" style={{ fontSize:10,background:"#f0fdf4" }}>● {Tr.onlineBadge}</span>}
                       </div>
-                    </td>
-                    <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>
-                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
-                    </td>
-                    <td style={{ padding:"11px 14px" }}>
-                      {u.id !== user?.uid && (
-                        <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
-                          {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)",color:"var(--text-primary,#111827)",cursor:"pointer",whiteSpace:"nowrap" }}>
-                            {Tr.editUser || "Edit"}
-                          </button>}
-                          {canManageAdmins && (u.isAdmin ? (<>
-                            <button onClick={() => setEditPermsTarget(u)}
-                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer",whiteSpace:"nowrap" }}>
-                              {Tr.editPermsBtn}
-                            </button>
-                            <button onClick={() => setConfirmRevokeTarget(u)}
-                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
-                              {Tr.revokeAdmin}
-                            </button>
-                          </>) : (
-                            <button onClick={() => setMakeAdminConfirmTarget(u)}
-                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
-                              {Tr.makeAdmin}
-                            </button>
-                          ))}
-                          {canManageUsers && <button onClick={() => setConfirmDeleteTarget(u)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
-                            {Tr.deleteLbl}
-                          </button>}
-                          {!canManageUsers && !canManageAdmins && <span style={{fontSize:11,color:"var(--text-muted)"}}>View only</span>}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                  {/* Expanded detail row */}
-                  {expandedUserId === u.id && (
-                    <tr key={`${u.id}-detail`}>
-                      <td colSpan={7} style={{ background:"var(--bg-secondary,#f0f6fb)", padding:"12px 20px 14px 48px", borderBottom:"2px solid var(--border,#daeaf8)" }}
-                        onClick={e => e.stopPropagation()}>
-                        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:"10px 24px" }}>
+                    </div>
+                    {isExpandedU && (
+                      <div style={{ padding:"0.65rem 1rem",borderTop:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)" }}>
+                        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 16px" }}>
                           {[
-                            { label: Tr.region,    val: u.region },
-                            { label: Tr.campus,    val: u.campus },
-                            { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
-                            { label: Tr.birthdate, val: u.birthdate },
-                            { label: Tr.identity,  val: u.identity },
-                            { label: Tr.ethnicity, val: u.ethnicity },
-                            { label: Tr.bio,       val: u.bio },
-                          ].map(({ label, val }) => val ? (
+                            { label:Tr.colJoined, val:u.createdAt ? new Date(u.createdAt).toLocaleDateString() : null },
+                            { label:Tr.campus,    val:u.campus },
+                            { label:Tr.degree,    val:[u.bachelorDegree,u.masterDegree].filter(Boolean).join(" · ")||null },
+                            { label:Tr.birthdate, val:u.birthdate },
+                            { label:Tr.identity,  val:translateReligion(u.identity,lang)||u.identity },
+                            { label:Tr.ethnicity, val:translateEthnicity(u.ethnicity,lang)||u.ethnicity },
+                            { label:Tr.bio,       val:u.bio },
+                          ].map(({label,val}) => val ? (
                             <div key={label}>
-                              <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 2px" }}>{label}</p>
-                              <p style={{ fontSize:12, color:"var(--text-secondary,#7a5868)", margin:0, wordBreak:"break-word" }}>{val}</p>
+                              <p style={{ fontSize:9,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 1px" }}>{label}</p>
+                              <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",margin:0,wordBreak:"break-word" }}>{val}</p>
                             </div>
                           ) : null)}
                         </div>
+                      </div>
+                    )}
+                    {u.id !== user?.uid && (
+                      <div style={{ display:"flex",gap:6,flexWrap:"wrap",padding:"0.6rem 1rem",borderTop:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)" }}>
+                        {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
+                          style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-primary,#fff)",color:"var(--text-primary,#111827)",cursor:"pointer" }}>
+                          {Tr.editUser||"Edit"}
+                        </button>}
+                        {canManageAdmins && (u.isAdmin ? (<>
+                          <button onClick={e => { e.stopPropagation(); setEditPermsTarget(u); }}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer" }}>
+                            {Tr.editPermsBtn}
+                          </button>
+                          <button onClick={e => { e.stopPropagation(); setConfirmRevokeTarget(u); }}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer" }}>
+                            {Tr.revokeAdmin}
+                          </button>
+                        </>) : (
+                          <button onClick={e => { e.stopPropagation(); setMakeAdminConfirmTarget(u); }}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer" }}>
+                            {Tr.makeAdmin}
+                          </button>
+                        ))}
+                        {canManageUsers && <button onClick={e => { e.stopPropagation(); setConfirmDeleteTarget(u); }}
+                          style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
+                          {Tr.deleteLbl}
+                        </button>}
+                        {!canManageUsers && !canManageAdmins && <span style={{ fontSize:11,color:"var(--text-muted)" }}>{Tr.viewOnly}</span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {filteredBySearch.length === 0 && <div className="empty-state"><p>{Tr.noMembersFound}</p></div>}
+            </div>
+          ) : (
+            <div className="card admin-table-card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table className="admin-users-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
+                    {[Tr.colMember, Tr.profession, Tr.region, Tr.colStatus, Tr.colJoined, Tr.colActions].map(h => (
+                      <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBySearch.map((u) => (
+                    <React.Fragment key={u.id}>
+                    <tr
+                      style={{ borderBottom: expandedUserId === u.id ? "none" : "1px solid var(--bg-tertiary,#f0f6fb)", transition:"background 0.12s", cursor:"pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
+                      onMouseLeave={e => e.currentTarget.style.background = expandedUserId === u.id ? "var(--bg-secondary,#f0f6fb)" : "transparent"}
+                      onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}
+                    >
+                      <td style={{ padding:"11px 14px" }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                          {(u.photoURL || u.avatarUrl)
+                            ? <img src={u.photoURL || u.avatarUrl} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover" }} alt="" />
+                            : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
+                          }
+                          <div>
+                            <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)" }}>{u.firstName} {u.lastName}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.profession||"—"}</td>
+                      <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.region||"—"}</td>
+                      <td style={{ padding:"11px 14px" }}>
+                        <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                          <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
+                            {u.emailVerified ? Tr.verified : Tr.statusPending}
+                          </span>
+                          {u.isAdmin && <span className="badge badge-purple">{Tr.adminBadge}</span>}
+                          {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● {Tr.onlineBadge}</span>}
+                        </div>
+                      </td>
+                      <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                      </td>
+                      <td style={{ padding:"11px 14px" }}>
+                        {u.id !== user?.uid && (
+                          <div className="admin-table-actions" style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
+                            {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
+                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)",color:"var(--text-primary,#111827)",cursor:"pointer",whiteSpace:"nowrap" }}>
+                              {Tr.editUser || "Edit"}
+                            </button>}
+                            {canManageAdmins && (u.isAdmin ? (<>
+                              <button onClick={() => setEditPermsTarget(u)}
+                                style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                {Tr.editPermsBtn}
+                              </button>
+                              <button onClick={() => setConfirmRevokeTarget(u)}
+                                style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                {Tr.revokeAdmin}
+                              </button>
+                            </>) : (
+                              <button onClick={() => setMakeAdminConfirmTarget(u)}
+                                style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #c4b5fd",background:"#ede9fe",color:"#6d28d9",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                {Tr.makeAdmin}
+                              </button>
+                            ))}
+                            {canManageUsers && <button onClick={() => setConfirmDeleteTarget(u)}
+                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
+                              {Tr.deleteLbl}
+                            </button>}
+                            {!canManageUsers && !canManageAdmins && <span style={{fontSize:11,color:"var(--text-muted)"}}>{Tr.viewOnly}</span>}
+                          </div>
+                        )}
                       </td>
                     </tr>
-                  )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-            {filteredBySearch.length === 0 && (
-              <div className="empty-state"><p>No members found.</p></div>
-            )}
-          </div>
+                    {/* Expanded detail row */}
+                    {expandedUserId === u.id && (
+                      <tr key={`${u.id}-detail`}>
+                        <td colSpan={7} style={{ background:"var(--bg-secondary,#f0f6fb)", padding:"12px 20px 14px 48px", borderBottom:"2px solid var(--border,#daeaf8)" }}
+                          onClick={e => e.stopPropagation()}>
+                          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:"10px 24px" }}>
+                            {[
+                              { label: Tr.region,    val: u.region },
+                              { label: Tr.campus,    val: u.campus },
+                              { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
+                              { label: Tr.birthdate, val: u.birthdate },
+                              { label: Tr.identity,  val: translateReligion(u.identity, lang) || u.identity },
+                              { label: Tr.ethnicity, val: translateEthnicity(u.ethnicity, lang) || u.ethnicity },
+                              { label: Tr.bio,       val: u.bio },
+                            ].map(({ label, val }) => val ? (
+                              <div key={label}>
+                                <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 2px" }}>{label}</p>
+                                <p style={{ fontSize:12, color:"var(--text-secondary,#7a5868)", margin:0, wordBreak:"break-word" }}>{val}</p>
+                              </div>
+                            ) : null)}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+              {filteredBySearch.length === 0 && (
+                <div className="empty-state"><p>{Tr.noMembersFound}</p></div>
+              )}
+            </div>
+          )}
         </>
       )}
 
       {/* ══ EDIT USERS TAB ══ */}
       {!loading && tab === "editUsers" && (
         <div>
-          <SectionHeader title="Edit Users" count={users.length} />
+          <SectionHeader title={Tr.editUsersSectionTitle} count={users.length} />
           <input
             style={S.searchInput}
             type="text"
-            placeholder="Search by name, email, profession…"
+            placeholder={Tr.searchByNamePh}
             value={userSearch}
             onChange={e => setUserSearch(e.target.value)}
           />
           <div style={S.tableWrap}>
             {filteredBySearch.length === 0 ? (
-              <p style={S.empty}>No users match your search.</p>
+              <p style={S.empty}>{Tr.noUsersMatch}</p>
             ) : (
               <table style={S.table}>
                 <thead>
                   <tr>
-                    <th style={S.th}>Name</th>
-                    <th style={S.th}>Profession</th>
-                    <th style={S.th}>City</th>
-                    <th style={S.th}>Admin</th>
-                    <th style={S.th}>Actions</th>
+                    <th style={S.th}>{Tr.colName}</th>
+                    <th style={S.th}>{Tr.profession}</th>
+                    <th style={S.th}>{Tr.region}</th>
+                    <th style={S.th}>{Tr.colAdmin}</th>
+                    <th style={S.th}>{Tr.colActions}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2090,9 +2440,9 @@ export default function AdminPage() {
                         <p style={S.name}>{u.firstName} {u.lastName}</p>
                       </td>
                       <td style={S.td}>{u.profession || "—"}</td>
-                      <td style={S.td}>{u.city || "—"}</td>
+                      <td style={S.td}>{u.region || "—"}</td>
                       <td style={S.td}>
-                        {u.isAdmin ? <span style={S.adminBadge}>Admin</span> : <span style={{ color: "#d9c8ce" }}>—</span>}
+                        {u.isAdmin ? <span style={S.adminBadge}>{Tr.adminBadge}</span> : <span style={{ color: "#d9c8ce" }}>—</span>}
                       </td>
                       <td style={S.td}>
                         <button
@@ -2101,7 +2451,7 @@ export default function AdminPage() {
                           onMouseLeave={e => e.currentTarget.style.background = "none"}
                           onClick={() => setEditingUser(u)}
                         >
-                          Edit
+                          {Tr.editLbl}
                         </button>
                       </td>
                     </tr>
@@ -2133,22 +2483,22 @@ export default function AdminPage() {
             return (
           <>
           {/* Posts header + inline filter bar */}
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+          <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              All Posts <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredPosts.length})</span>
+              {Tr.allPosts} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({filteredPosts.length})</span>
             </span>
             <input
-              className="input"
+              className="input admin-search-input"
               value={postSearch}
               onChange={e => setPostSearch(e.target.value)}
-              placeholder={Tr.searchPh || "Search posts..."}
+              placeholder={Tr.searchPh}
               style={{ fontSize:12, width:200, flexShrink:0 }}
             />
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+            <div className="admin-filter-pills" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
-                { val:"recent", label:"Recent" },
-                { val:"alpha",  label:"A–Z" },
-                { val:"likes",  label:"Most liked" },
+                { val:"recent", label:Tr.sortRecent },
+                { val:"alpha",  label:Tr.sortAlpha },
+                { val:"likes",  label:Tr.sortMostLiked },
               ].map(opt => (
                 <button key={opt.val} onClick={() => setPostSortBy(opt.val)}
                   style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
@@ -2159,127 +2509,219 @@ export default function AdminPage() {
               ))}
               <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
                 <input type="checkbox" checked={postFilterPinned} onChange={e => setPostFilterPinned(e.target.checked)} style={{ cursor:"pointer" }} />
-                Pinned only
+                {Tr.pinnedOnly}
               </label>
               <label style={{ fontSize:11, fontWeight:600, color:"var(--text-secondary)", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
                 <input type="checkbox" checked={postFilterMedia} onChange={e => setPostFilterMedia(e.target.checked)} style={{ cursor:"pointer" }} />
-                Has media
+                {Tr.hasMedia}
               </label>
             </div>
           </div>
-          <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
-              <thead>
-                <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
-                  {["Author","Content","Media","Comments","Posted","Actions"].map(h => (
-                    <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPosts.map(p => (
-                  <>
-                    <tr key={p.id}
-                      style={{ borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)",transition:"background 0.12s" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      <td style={{ padding:"11px 14px" }}>
-                        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                          <div style={{ width:28,height:28,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff" }}>
-                            {getInitials(p.authorName)}
-                          </div>
-                          <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)" }}>{p.authorName}</p>
-                        </div>
-                      </td>
-                      <td style={{ padding:"11px 14px",maxWidth:320 }}>
-                        {p.text ? (() => {
-                          const LIMIT = 120;
-                          const isLong = p.text.length > LIMIT;
-                          const isExpanded = expandedPostComments[`text-${p.id}`];
-                          return (
-                            <>
-                              <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:"0 0 2px" }}>
-                                {isExpanded || !isLong ? p.text : `${p.text.slice(0, LIMIT)}…`}
-                              </p>
-                              {isLong && (
-                                <button onClick={() => setExpandedPostComments(s => ({ ...s, [`text-${p.id}`]: !s[`text-${p.id}`] }))}
-                                  style={{ fontSize:10, color:"var(--brand,#4472b8)", background:"none", border:"none", cursor:"pointer", padding:0, fontWeight:600 }}>
-                                  {isExpanded ? "Show less" : "Show full post"}
-                                </button>
-                              )}
-                            </>
-                          );
-                        })() : <em style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>Media post</em>}
-                      </td>
-                      <td style={{ padding:"11px 14px" }}>
-                        {p.media?.length > 0
-                          ? <span style={{ fontSize:"11px",background:"#dbeafe",color:"#1e40af",borderRadius:"99px",padding:"2px 9px",fontWeight:700 }}>{p.media.length} file{p.media.length>1?"s":""}</span>
-                          : <span style={{ color:"#d9c8ce" }}>—</span>
+          {isMobile ? (
+            <div style={{ display:"flex",flexDirection:"column",gap:"0.65rem" }}>
+              {filteredPosts.map(p => {
+                const textKey = `text-${p.id}`;
+                const isTextExpanded = expandedPostComments[textKey];
+                const LIMIT = 160;
+                const isLong = p.text && p.text.length > LIMIT;
+                return (
+                  <div key={p.id} style={{ background:"var(--bg-primary,#fff)",border:"1.5px solid var(--border,#daeaf8)",borderRadius:14,overflow:"hidden",boxShadow:"0 1px 4px rgba(29,72,150,0.05)" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:9,padding:"0.7rem 1rem",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
+                      <div style={{ width:32,height:32,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",overflow:"hidden" }}>
+                        {p.authorAvatar
+                          ? <img src={p.authorAvatar} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                          : getInitials(p.authorName)
                         }
-                      </td>
-                      <td style={{ padding:"11px 14px" }}>
-                        <button
-                          style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}
-                          onClick={() => togglePostComments(p.id)}
-                        >
-                          {expandedPostComments[p.id] ? "Hide" : `Show (${p.commentsCount ?? 0})`}
-                        </button>
-                      </td>
-                      <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
-                      <td style={{ padding:"11px 14px" }}>
-                        <div style={{ display:"flex",gap:4 }}>
-                          {canManageContent && <button
-                            onClick={() => pinPost(p.id, p.isPinned)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}
-                          >{p.isPinned ? "Unpin" : "Pin"}</button>}
-                          {canManageContent && <button
-                            onClick={() => deletePost(p.id)}
-                            style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#eec3c3"}
-                            onMouseLeave={e => e.currentTarget.style.background = "#f5dada"}
-                          >Delete</button>}
-                          {!canManageContent && <span style={{fontSize:11,color:"var(--text-muted)"}}>View only</span>}
-                        </div>
-                      </td>
-                    </tr>
+                      </div>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)",margin:0 }}>{p.authorName}</p>
+                      </div>
+                      <div style={{ display:"flex",alignItems:"center",gap:6,flexShrink:0 }}>
+                        {p.isPinned && <span style={{ fontSize:10,background:"#fef9c3",color:"#92400e",borderRadius:99,padding:"2px 8px",fontWeight:700 }}>📌</span>}
+                        <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</span>
+                      </div>
+                    </div>
+                    <div style={{ padding:"0.6rem 1rem",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
+                      {p.text ? (
+                        <>
+                          <p style={{ fontSize:13,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:"0 0 4px",lineHeight:1.5 }}>
+                            {isTextExpanded || !isLong ? p.text : `${p.text.slice(0,LIMIT)}…`}
+                          </p>
+                          {isLong && (
+                            <button onClick={() => setExpandedPostComments(s => ({ ...s, [textKey]: !s[textKey] }))}
+                              style={{ fontSize:11,color:"var(--brand,#4472b8)",background:"none",border:"none",cursor:"pointer",padding:0,fontWeight:600 }}>
+                              {isTextExpanded ? Tr.showLess : Tr.showFullPost}
+                            </button>
+                          )}
+                        </>
+                      ) : <em style={{ fontSize:12,color:"var(--text-muted,#6b7280)" }}>{Tr.mediaPost}</em>}
+                    </div>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,padding:"0.5rem 1rem",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}>
+                      {p.media?.length > 0 && (
+                        <span style={{ fontSize:11,background:"#dbeafe",color:"#1e40af",borderRadius:99,padding:"2px 9px",fontWeight:700 }}>{p.media.length} file{p.media.length>1?"s":""}</span>
+                      )}
+                      <button onClick={() => togglePostComments(p.id)}
+                        style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}>
+                        {expandedPostComments[p.id] ? Tr.hide : Tr.showCommentsFn(p.commentCount ?? 0)}
+                      </button>
+                    </div>
                     {expandedPostComments[p.id] && (
-                      <tr key={`${p.id}-comments`}>
-                        <td colSpan={6} style={{ padding:"0 14px 12px 46px",background:"var(--bg-secondary,#f0f6fb)" }}>
-                          <div style={S.commentsWrap}>
-                            {!postCommentsList[p.id] ? (
-                              <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>Loading comments…</p>
-                            ) : postCommentsList[p.id].length === 0 ? (
-                              <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>No comments yet.</p>
-                            ) : (
-                              postCommentsList[p.id].map(c => (
-                                <div key={c.id} style={S.commentRow}>
-                                  <div style={{ flex:1 }}>
-                                    <span style={{ fontWeight:700,color:"var(--text-primary,#111827)",marginRight:"8px" }}>{c.authorName}</span>
-                                    <span style={{ color:"var(--text-secondary,#7a5868)" }}>{c.text}</span>
-                                    <span style={{ color:"var(--text-muted,#6b7280)",fontSize:"10px",marginLeft:"8px" }}>{timeAgo(c.createdAt)}</span>
-                                  </div>
-                                  <button
-                                    style={{ ...S.delBtn,padding:"3px 9px",fontSize:"10px" }}
-                                    onMouseEnter={e => e.currentTarget.style.background = "#f5dada"}
-                                    onMouseLeave={e => e.currentTarget.style.background = "none"}
-                                    onClick={() => deleteComment(p.id, c)}
-                                  >
-                                    Delete
+                      <div style={{ padding:"0.6rem 1rem",background:"var(--bg-secondary,#f0f6fb)",borderBottom:"1px solid var(--border,#daeaf8)" }}>
+                        <div style={S.commentsWrap}>
+                          {!postCommentsList[p.id] ? (
+                            <p style={{ fontSize:12,color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.loadingComments}</p>
+                          ) : postCommentsList[p.id].length === 0 ? (
+                            <p style={{ fontSize:12,color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.noComments}</p>
+                          ) : postCommentsList[p.id].map(c => (
+                            <div key={c.id} style={S.commentRow}>
+                              <div style={{ flex:1 }}>
+                                <span style={{ fontWeight:700,color:"var(--text-primary,#111827)",marginRight:8 }}>{c.authorName}</span>
+                                <span style={{ color:"var(--text-secondary,#7a5868)" }}>{c.text}</span>
+                                <span style={{ color:"var(--text-muted,#6b7280)",fontSize:10,marginLeft:8 }}>{timeAgo(c.createdAt)}</span>
+                              </div>
+                              <button style={{ ...S.delBtn,padding:"3px 9px",fontSize:10 }}
+                                onMouseEnter={e => e.currentTarget.style.background = "#f5dada"}
+                                onMouseLeave={e => e.currentTarget.style.background = "none"}
+                                onClick={() => deleteComment(p.id, c)}>{Tr.deleteLbl}</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ display:"flex",gap:6,flexWrap:"wrap",padding:"0.55rem 1rem",background:"var(--bg-secondary,#f0f6fb)" }}>
+                      {canManageContent && <button onClick={() => pinPost(p.id, p.isPinned)}
+                        style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}>
+                        {p.isPinned ? Tr.unpinLbl : Tr.pinLbl}
+                      </button>}
+                      {canManageContent && <button onClick={() => deletePost(p.id)}
+                        style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
+                        {Tr.deleteLbl}
+                      </button>}
+                      {!canManageContent && <span style={{ fontSize:11,color:"var(--text-muted)" }}>{Tr.viewOnly}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredPosts.length === 0 && <div className="empty-state"><p>{Tr.noPosts}</p></div>}
+            </div>
+          ) : (
+            <div className="card admin-table-card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table className="admin-posts-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-secondary,#f0f6fb)" }}>
+                    {[Tr.colAuthor, Tr.colContent, Tr.colMedia, Tr.colComments, Tr.colPosted, Tr.colActions].map(h => (
+                      <th key={h} style={{ padding:"10px 14px",textAlign:"left",fontSize:11,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--border,#daeaf8)",whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPosts.map(p => (
+                    <>
+                      <tr key={p.id}
+                        style={{ borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)",transition:"background 0.12s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <td style={{ padding:"11px 14px" }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                            <div style={{ width:28,height:28,borderRadius:"50%",flexShrink:0,background:avatarColor(p.authorName),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",overflow:"hidden" }}>
+                              {p.authorAvatar
+                                ? <img src={p.authorAvatar} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                                : getInitials(p.authorName)
+                              }
+                            </div>
+                            <p style={{ fontSize:12,fontWeight:600,color:"var(--text-primary,#111827)" }}>{p.authorName}</p>
+                          </div>
+                        </td>
+                        <td style={{ padding:"11px 14px",maxWidth:320 }}>
+                          {p.text ? (() => {
+                            const LIMIT = 120;
+                            const isLong = p.text.length > LIMIT;
+                            const isExpanded = expandedPostComments[`text-${p.id}`];
+                            return (
+                              <>
+                                <p style={{ fontSize:12,color:"var(--text-secondary,#7a5868)",wordBreak:"break-word",whiteSpace:"pre-wrap",margin:"0 0 2px" }}>
+                                  {isExpanded || !isLong ? p.text : `${p.text.slice(0, LIMIT)}…`}
+                                </p>
+                                {isLong && (
+                                  <button onClick={() => setExpandedPostComments(s => ({ ...s, [`text-${p.id}`]: !s[`text-${p.id}`] }))}
+                                    style={{ fontSize:10, color:"var(--brand,#4472b8)", background:"none", border:"none", cursor:"pointer", padding:0, fontWeight:600 }}>
+                                    {isExpanded ? Tr.showLess : Tr.showFullPost}
                                   </button>
-                                </div>
-                              ))
-                            )}
+                                )}
+                              </>
+                            );
+                          })() : <em style={{fontSize:12,color:"var(--text-muted,#6b7280)"}}>{Tr.mediaPost}</em>}
+                        </td>
+                        <td style={{ padding:"11px 14px" }}>
+                          {p.media?.length > 0
+                            ? <span style={{ fontSize:"11px",background:"#dbeafe",color:"#1e40af",borderRadius:"99px",padding:"2px 9px",fontWeight:700 }}>{p.media.length} file{p.media.length>1?"s":""}</span>
+                            : <span style={{ color:"#d9c8ce" }}>—</span>
+                          }
+                        </td>
+                        <td style={{ padding:"11px 14px" }}>
+                          <button
+                            style={{ background:"none",border:"1px solid var(--border,#f0dce0)",borderRadius:"7px",padding:"4px 10px",fontSize:"11px",fontWeight:700,cursor:"pointer",color:"var(--text-secondary,#7a5868)" }}
+                            onClick={() => togglePostComments(p.id)}
+                          >
+                            {expandedPostComments[p.id] ? Tr.hide : Tr.showCommentsFn(p.commentCount ?? 0)}
+                          </button>
+                        </td>
+                        <td style={{ padding:"11px 14px",fontSize:11,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{timeAgo(p.createdAt)}</td>
+                        <td style={{ padding:"11px 14px" }}>
+                          <div className="admin-table-actions" style={{ display:"flex",gap:4 }}>
+                            {canManageContent && <button
+                              onClick={() => pinPost(p.id, p.isPinned)}
+                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #e8c992",background:"#faedd6",color:"#7a5a2e",cursor:"pointer" }}
+                            >{p.isPinned ? Tr.unpinLbl : Tr.pinLbl}</button>}
+                            {canManageContent && <button
+                              onClick={() => deletePost(p.id)}
+                              style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#eec3c3"}
+                              onMouseLeave={e => e.currentTarget.style.background = "#f5dada"}
+                            >{Tr.deleteLbl}</button>}
+                            {!canManageContent && <span style={{fontSize:11,color:"var(--text-muted)"}}>{Tr.viewOnly}</span>}
                           </div>
                         </td>
                       </tr>
-                    )}
-                  </>
-                ))}
-              </tbody>
-            </table>
-            {filteredPosts.length === 0 && <div className="empty-state"><p>No posts yet.</p></div>}
-          </div>
+                      {expandedPostComments[p.id] && (
+                        <tr key={`${p.id}-comments`}>
+                          <td colSpan={6} style={{ padding:"0 14px 12px 46px",background:"var(--bg-secondary,#f0f6fb)" }}>
+                            <div style={S.commentsWrap}>
+                              {!postCommentsList[p.id] ? (
+                                <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.loadingComments}</p>
+                              ) : postCommentsList[p.id].length === 0 ? (
+                                <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>{Tr.noComments}</p>
+                              ) : (
+                                postCommentsList[p.id].map(c => (
+                                  <div key={c.id} style={S.commentRow}>
+                                    <div style={{ flex:1 }}>
+                                      <span style={{ fontWeight:700,color:"var(--text-primary,#111827)",marginRight:"8px" }}>{c.authorName}</span>
+                                      <span style={{ color:"var(--text-secondary,#7a5868)" }}>{c.text}</span>
+                                      <span style={{ color:"var(--text-muted,#6b7280)",fontSize:"10px",marginLeft:"8px" }}>{timeAgo(c.createdAt)}</span>
+                                    </div>
+                                    <button
+                                      style={{ ...S.delBtn,padding:"3px 9px",fontSize:"10px" }}
+                                      onMouseEnter={e => e.currentTarget.style.background = "#f5dada"}
+                                      onMouseLeave={e => e.currentTarget.style.background = "none"}
+                                      onClick={() => deleteComment(p.id, c)}
+                                    >
+                                      {Tr.deleteLbl}
+                                    </button>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+              {filteredPosts.length === 0 && <div className="empty-state"><p>{Tr.noPosts}</p></div>}
+            </div>
+          )}
           </>
             );
           })()}
@@ -2339,7 +2781,7 @@ export default function AdminPage() {
                     <label key={f.key} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, cursor:"pointer" }}>
                       <input type="checkbox" checked={selFields.includes(f.key)}
                         onChange={() => setSelFields(prev => prev.includes(f.key) ? prev.filter(k => k !== f.key) : [...prev, f.key])} />
-                      {f.label}
+                      {Tr.exportFieldLabels?.[f.key] ?? f.label}
                     </label>
                   ))}
                 </div>
@@ -2351,10 +2793,10 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Mobile section nav */}
+          {/* ── Mobile section nav ── */}
           {isMobile && (
             <div style={{ display:"flex", gap:0, marginBottom:"1rem", background:"var(--bg-secondary,#f0f6fb)", borderRadius:12, padding:3 }}>
-              {[["distribution", Tr.distributionLabel],["growth", Tr.growthLabel],["members", Tr.membersNavLabel]].map(([v,l]) => (
+              {[["distribution", Tr.distributionLabel],["growth", Tr.growthLabel]].map(([v,l]) => (
                 <button key={v} onClick={() => setMobileDataSection(v)} style={{
                   flex:1, padding:"8px 4px", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", transition:"all 0.15s", borderRadius:9,
                   background: mobileDataSection === v ? "var(--bg-primary,#fff)" : "transparent",
@@ -2365,7 +2807,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Donut + Line Chart */}
+          {/* ── Row 1: Donut + Line Chart ── */}
           {isMobile ? (
             <>
               {mobileDataSection === "distribution" && <DistributionDonutChart users={users} lang={lang} Tr={Tr} />}
@@ -2378,136 +2820,30 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Recent Members */}
-          {(!isMobile || mobileDataSection === "members") && (() => {
-            const cutoffMs = { "7d":7,"30d":30,"90d":90,"6m":180,"1y":365 }[recentTimeframe];
-            const cutoff   = cutoffMs ? Date.now() - cutoffMs * 86400000 : null;
-            const filtered = users.filter(u => !cutoff || (u.createdAt && new Date(u.createdAt) >= cutoff));
-            const sorted   = [...filtered].sort((a, b) => {
-              if (recentSort === "oldest")     return new Date(a.createdAt||0) - new Date(b.createdAt||0);
-              if (recentSort === "alpha")      return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
-              if (recentSort === "profession") return (a.profession||"").localeCompare(b.profession||"", "he");
-              return new Date(b.createdAt||0) - new Date(a.createdAt||0);
-            });
-            return (
-              <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-                <div className="admin-data-members-hdr" style={{ padding:"1rem 1.5rem", borderBottom:"1px solid var(--border,#daeaf8)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
-                  <div>
-                    <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 2px" }}>{Tr.recentMembers}</p>
-                    <span style={{ fontSize:12, color:"var(--text-muted,#6b7280)" }}>{Tr.membersCountFn(sorted.length)}</span>
-                  </div>
-                  {isMobile ? (
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      <select value={recentTimeframe} onChange={e => setRecentTimeframe(e.target.value)} style={{
-                        padding:"7px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
-                        borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
-                        fontFamily:"inherit", cursor:"pointer",
-                      }}>
-                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr.allFilter]].map(([v,l]) => (
-                          <option key={v} value={v}>{l}</option>
-                        ))}
-                      </select>
-                      <select value={recentSort} onChange={e => setRecentSort(e.target.value)} style={{
-                        padding:"7px 10px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)",
-                        borderRadius:9, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-primary,#111827)",
-                        fontFamily:"inherit", cursor:"pointer",
-                      }}>
-                        {[["newest",Tr.newestLabel],["oldest",Tr.oldestLabel],["alpha",Tr.sortAlpha],["profession",Tr.profession]].map(([v,l]) => (
-                          <option key={v} value={v}>{l}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <div className="admin-data-controls-row" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
-                      <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-                        {[["7d","7d"],["30d","30d"],["90d","90d"],["6m","6m"],["1y","1y"],["all",Tr.allFilter]].map(([v,l]) => (
-                          <button key={v} onClick={() => setRecentTimeframe(v)} style={{
-                            fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
-                            background: recentTimeframe===v ? "var(--bg-primary,#fff)" : "transparent",
-                            color:      recentTimeframe===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
-                            boxShadow:  recentTimeframe===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                          }}>{l}</button>
-                        ))}
-                      </div>
-                      <div style={{ display:"flex", background:"var(--bg-secondary,#f0f6fb)", borderRadius:8, padding:2, gap:1 }}>
-                        {[["newest",Tr.newestLabel],["oldest",Tr.oldestLabel],["alpha",Tr.sortAlpha],["profession",Tr.profession]].map(([v,l]) => (
-                          <button key={v} onClick={() => setRecentSort(v)} style={{
-                            fontSize:11, fontWeight:600, padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", transition:"all 0.15s",
-                            background: recentSort===v ? "var(--bg-primary,#fff)" : "transparent",
-                            color:      recentSort===v ? "var(--text-primary,#111827)" : "var(--text-muted,#6b7280)",
-                            boxShadow:  recentSort===v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                          }}>{l}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {sorted.length === 0
-                  ? <div className="empty-state"><p>{Tr.noMembersInPeriod}</p></div>
-                  : (
-                    <table style={{ ...S.table, minWidth:520 }}>
-                      <thead>
-                        <tr>
-                          {[Tr.colMember, Tr.profession, Tr.region, Tr.colJoined].map(h => (
-                            <th key={h} style={S.th}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sorted.map(u => (
-                          <tr key={u.id} style={S.row}
-                            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
-                            onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
-                          >
-                            <td style={S.td}>
-                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                                <div style={{ width:32, height:32, borderRadius:"50%", flexShrink:0, background:avatarColor(`${u.firstName} ${u.lastName}`), display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"#fff" }}>
-                                  {getInitials(`${u.firstName} ${u.lastName}`)}
-                                </div>
-                                <div>
-                                  <p style={{ fontSize:13, fontWeight:700, color:"var(--text-primary,#111827)", margin:0 }}>{u.firstName} {u.lastName}</p>
-                                  <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:0 }}>{u.email||""}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td style={S.td}>{u.profession||"—"}</td>
-                            <td style={S.td}>{u.region||u.city||"—"}</td>
-                            <td style={{ ...S.td, whiteSpace:"nowrap", fontSize:11 }}>
-                              {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )
-                }
-              </div>
-            );
-          })()}
         </>
       )}
 
-            {/* ══ REPORTS TAB ══ */}
+      {/* ══ REPORTS TAB ══ */}
       {tab === "reports" && (
         <div>
           {/* Reports header + inline filter bar */}
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
+          <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({reports.filter(r=>r.status==="pending").length} pending)</span>
+              {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>{Tr.pendingBadge(reports.filter(r=>r.status==="pending").length)}</span>
             </span>
             <input
-              className="input"
+              className="input admin-search-input"
               value={reportSearch}
               onChange={e => setReportSearch(e.target.value)}
-              placeholder="Search reporter or reported…"
+              placeholder={Tr.searchReporterPh}
               style={{ fontSize:12, width:220, flexShrink:0 }}
             />
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+            <div className="admin-filter-pills" style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
               {[
-                { val:"all",       label:"All" },
-                { val:"pending",   label:"Pending" },
-                { val:"resolved",  label:"Resolved" },
-                { val:"dismissed", label:"Dismissed" },
+                { val:"all",       label:Tr.allFilter },
+                { val:"pending",   label:Tr.reportPending },
+                { val:"resolved",  label:Tr.reportResolved },
+                { val:"dismissed", label:Tr.dismissedLabel },
               ].map(opt => (
                 <button key={opt.val} onClick={() => setReportStatusFilter(opt.val)}
                   style={{ fontSize:11, fontWeight:600, padding:"4px 10px", borderRadius:99, border:"none", cursor:"pointer",
@@ -2518,6 +2854,7 @@ export default function AdminPage() {
               ))}
             </div>
             <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchReports}>{reportsLoading ? "…" : `↻ ${Tr.refresh}`}</button>
+
           </div>
           {(() => {
             const filteredReports = reports.filter(r => {
@@ -2528,12 +2865,80 @@ export default function AdminPage() {
               return matchStatus && matchSearch;
             });
             return reportsLoading ? (
-              <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>Loading…</div>
+              <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted,#6b7280)" }}>{Tr.loading}</div>
             ) : filteredReports.length === 0 ? (
-              <div className="empty-state"><p>{reports.length === 0 ? Tr.noReports : "No reports match the filters."}</p></div>
+              <div className="empty-state"><p>{reports.length === 0 ? Tr.noReports : Tr.noReportsFiltered}</p></div>
+            ) : isMobile ? (
+              <div style={{ display:"flex",flexDirection:"column",gap:"0.65rem" }}>
+                {filteredReports.map(r => {
+                  const isExpandedR = expandedReportId === r.id;
+                  const statusColor = r.status === "resolved" ? { bg:"rgba(123,168,122,0.15)", text:"#7ba87a" } : r.status === "dismissed" ? { bg:"rgba(107,114,128,0.12)", text:"#6b7280" } : { bg:"rgba(233,65,91,0.12)", text:"#e9415b" };
+                  const statusLabel = r.status === "resolved" ? Tr.reportResolved : r.status === "dismissed" ? Tr.dismiss : Tr.reportPending;
+                  return (
+                    <div key={r.id} style={{ background:"var(--bg-primary,#fff)",border:"1.5px solid var(--border,#daeaf8)",borderRadius:14,overflow:"hidden",boxShadow:"0 1px 4px rgba(29,72,150,0.05)",opacity:r.status !== "pending" ? 0.75 : 1 }}>
+                      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"0.7rem 1rem",cursor:"pointer",borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}
+                        onClick={() => setExpandedReportId(isExpandedR ? null : r.id)}>
+                        <div style={{ minWidth:0 }}>
+                          <p style={{ fontSize:12,margin:"0 0 2px",color:"var(--text-muted,#6b7280)",fontWeight:600 }}>
+                            <span style={{ color:"var(--text-primary,#111827)" }}>{r.reporterName||r.reporterId}</span>
+                            {" → "}
+                            <span style={{ color:"var(--text-primary,#111827)" }}>{r.reportedName||r.reportedId}</span>
+                          </p>
+                          <p style={{ fontSize:11,color:"var(--text-muted,#6b7280)",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.reason}</p>
+                        </div>
+                        <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0 }}>
+                          <span style={{ fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:99,background:statusColor.bg,color:statusColor.text,whiteSpace:"nowrap" }}>{statusLabel}</span>
+                          <span style={{ fontSize:10,color:"var(--text-muted,#6b7280)",whiteSpace:"nowrap" }}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "—"}</span>
+                        </div>
+                      </div>
+                      {isExpandedR && (
+                        <div style={{ padding:"0.7rem 1rem",background:"var(--bg-secondary,#f0f6fb)",borderBottom:"1px solid var(--border,#daeaf8)" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"var(--text-muted,#6b7280)",textTransform:"uppercase",letterSpacing:"0.08em",margin:"0 0 8px" }}>
+                            {Tr.conversationLabel(r.reporterName, r.reportedName)}
+                          </p>
+                          {(!r.messages || r.messages.length === 0) ? (
+                            <p style={{ fontSize:12,color:"var(--text-muted,#6b7280)",fontStyle:"italic",margin:0 }}>{Tr.noMessages}</p>
+                          ) : (
+                            <div style={{ display:"flex",flexDirection:"column",gap:6,maxHeight:280,overflowY:"auto" }}>
+                              {r.messages.map((m, i) => {
+                                const isReporter = m.senderId === r.reporterId;
+                                return (
+                                  <div key={i} style={{ display:"flex",flexDirection:isReporter?"row-reverse":"row",alignItems:"flex-end",gap:8 }}>
+                                    <div style={{ maxWidth:"80%",padding:"7px 12px",borderRadius:14,borderBottomRightRadius:isReporter?4:14,borderBottomLeftRadius:isReporter?14:4,background:isReporter?"#dbeafe":"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.08)",fontSize:12,color:"var(--text-primary,#111827)",wordBreak:"break-word" }}>
+                                      <p style={{ fontSize:10,fontWeight:700,color:isReporter?"#1d4896":"#e8735a",margin:"0 0 3px" }}>{m.senderName}</p>
+                                      <p style={{ margin:0 }}>{m.text || <em style={{ color:"var(--text-muted,#6b7280)" }}>image</em>}</p>
+                                      {m.sentAt && <p style={{ fontSize:9,color:"var(--text-muted,#6b7280)",margin:"3px 0 0",textAlign:isReporter?"right":"left" }}>{new Date(typeof m.sentAt==="object"&&m.sentAt.seconds?m.sentAt.seconds*1000:m.sentAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</p>}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div style={{ display:"flex",gap:6,flexWrap:"wrap",padding:"0.55rem 1rem",background:"var(--bg-secondary,#f0f6fb)" }}>
+                        {r.status === "pending" && (<>
+                          <button onClick={() => updateReportStatus(r.id, "resolved")}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #a3d9a5",background:"#f0fdf4",color:"#166534",cursor:"pointer" }}>
+                            {Tr.markResolved}
+                          </button>
+                          <button onClick={() => updateReportStatus(r.id, "dismissed")}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #d1d5db",background:"#f9fafb",color:"#6b7280",cursor:"pointer" }}>
+                            {Tr.dismiss}
+                          </button>
+                        </>)}
+                        <button onClick={() => setExpandedReportId(isExpandedR ? null : r.id)}
+                          style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer" }}>
+                          {isExpandedR ? "▲" : `▼ ${Tr.convoBtn}`}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-            <div className="card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-              <table style={{ ...S.table, minWidth: 560 }}>
+            <div className="card admin-table-card" style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+              <table className="admin-reports-table" style={{ ...S.table, minWidth: 560 }}>
                 <thead>
                   <tr>
                     {[Tr.reportFrom, Tr.reportedUser, Tr.reportReason, Tr.reportDate, Tr.reportStatus, ""].map(h => (
@@ -2571,7 +2976,7 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td style={S.td} onClick={e => e.stopPropagation()}>
-                          <div style={{ display:"flex", gap:4 }}>
+                          <div className="admin-table-actions" style={{ display:"flex", gap:4 }}>
                             {r.status === "pending" && (<>
                               <button onClick={() => updateReportStatus(r.id, "resolved")}
                                 style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #a3d9a5", background:"#f0fdf4", color:"#166534", cursor:"pointer", whiteSpace:"nowrap" }}>
@@ -2584,7 +2989,7 @@ export default function AdminPage() {
                             </>)}
                             <button onClick={() => setExpandedReportId(expandedReportId === r.id ? null : r.id)}
                               style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #93c5fd", background:"#eff6ff", color:"#1d4896", cursor:"pointer" }}>
-                              {expandedReportId === r.id ? "▲" : "▼ Convo"}
+                              {expandedReportId === r.id ? "▲" : `▼ ${Tr.convoBtn}`}
                             </button>
                           </div>
                         </td>
@@ -2594,10 +2999,10 @@ export default function AdminPage() {
                           <td colSpan={6} style={{ background:"var(--bg-secondary,#f0f6fb)", padding:"1rem 1.5rem 1.25rem", borderBottom:"2px solid var(--border,#daeaf8)" }}
                             onClick={e => e.stopPropagation()}>
                             <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 10px" }}>
-                              Conversation — {r.reporterName} &amp; {r.reportedName}
+                              {Tr.conversationLabel(r.reporterName, r.reportedName)}
                             </p>
                             {(!r.messages || r.messages.length === 0) ? (
-                              <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", fontStyle:"italic", margin:0 }}>No messages captured.</p>
+                              <p style={{ fontSize:12, color:"var(--text-muted,#6b7280)", fontStyle:"italic", margin:0 }}>{Tr.noMessages}</p>
                             ) : (
                               <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:340, overflowY:"auto", paddingRight:4 }}>
                                 {r.messages.map((m, i) => {
@@ -2648,50 +3053,49 @@ export default function AdminPage() {
           } />
 
           {/* Filter card */}
-          <div style={{ background:"var(--bg-primary,#fff)",borderRadius:"16px",padding:"1.25rem",border:"1.5px solid var(--border,#daeaf8)",marginBottom:"1rem",boxShadow:"0 2px 8px rgba(29, 72, 150,0.05)",display:"flex",flexDirection:"column",gap:"0.75rem" }}>
+          <div style={{ background:"var(--bg-primary,#fff)",borderRadius:"16px",padding:"1.25rem",border:"1.5px solid var(--border,#daeaf8)",marginBottom:"1rem",boxShadow:"0 2px 8px rgba(29, 72, 150,0.05)" }}>
+            <div style={{ display:"flex",gap:"0.75rem",flexWrap:"wrap",alignItems:"flex-end" }}>
 
-            {/* Type filter pills */}
-            {allLogTypes.length > 0 && (
-              <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
-                {allLogTypes.map(type => {
-                  const cfg = getLogTypeConfig(type);
-                  const active = logTypeFilter.includes(type);
-                  return (
-                    <button key={type} onClick={() => toggleLogType(type)} style={{
-                      padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",
-                      border:`1.5px solid ${active ? cfg.borderColor : "var(--border,#f0dce0)"}`,
-                      background: active ? cfg.bg : "var(--bg-secondary,#f0f6fb)",
-                      color: active ? cfg.color : "var(--text-muted,#6b7280)",
-                      transition:"all 0.15s",
-                    }}>{cfg.label}</button>
-                  );
-                })}
-                {logTypeFilter.length > 0 && (
-                  <button onClick={() => setLogTypeFilter([])} style={{ padding:"4px 12px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",border:"1.5px solid var(--border,#f0dce0)",background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)" }}>
-                    Clear filter
-                  </button>
-                )}
-              </div>
-            )}
+              {/* Type filter dropdown */}
+              {allLogTypes.length > 0 && (
+                <div>
+                  <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.filterByType}</p>
+                  <select
+                    value={logTypeFilter}
+                    onChange={e => setLogTypeFilter(e.target.value)}
+                    style={{ ...S.logFilterInput, cursor:"pointer" }}
+                  >
+                    <option value="">{Tr.allTypes}</option>
+                    {allLogTypes.map(type => (
+                      <option key={type} value={type}>
+                        {Tr.logTypeLabels?.[type] ?? getLogTypeConfig(type).label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-            {/* Actor + Date range */}
-            <div style={{ display:"flex",gap:"0.75rem",flexWrap:"wrap",alignItems:"center" }}>
+              {/* Actor name */}
               <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>Actor name</p>
-                <input style={{ ...S.logFilterInput,width:"200px" }} type="text" placeholder="Filter by actor…" value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.actorNameLabel}</p>
+                <input style={{ ...S.logFilterInput,width:"180px" }} type="text" placeholder={Tr.filterByActor} value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
               </div>
+
+              {/* Date range */}
               <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>From date</p>
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.fromDateLabel}</p>
                 <input style={S.logFilterInput} type="date" value={logDateFrom} onChange={e => setLogDateFrom(e.target.value)} />
               </div>
               <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>To date</p>
+                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.toDateLabel}</p>
                 <input style={S.logFilterInput} type="date" value={logDateTo} onChange={e => setLogDateTo(e.target.value)} />
               </div>
-              {(logActorFilter || logDateFrom || logDateTo) && (
-                <button onClick={() => { setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
-                  style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)",border:"1.5px solid var(--border,#f0dce0)",marginTop:"18px" }}>
-                  Clear
+
+              {/* Clear all filters */}
+              {(logTypeFilter || logActorFilter || logDateFrom || logDateTo) && (
+                <button onClick={() => { setLogTypeFilter(""); setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
+                  style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)",border:"1.5px solid var(--border,#f0dce0)" }}>
+                  {Tr.clearBtn}
                 </button>
               )}
             </div>
@@ -2699,15 +3103,15 @@ export default function AdminPage() {
 
           {/* Log entries */}
           <div style={S.logPanel}>
-            {logsLoading && <p style={S.empty}>Loading logs…</p>}
+            {logsLoading && <p style={S.empty}>{Tr.loadingLogs}</p>}
             {!logsLoading && filteredLogs.length === 0 && (
-              <p style={S.empty}>{logs.length === 0 ? "No activity logs yet." : "No logs match the current filters."}</p>
+              <p style={S.empty}>{logs.length === 0 ? Tr.noLogs : Tr.noLogsFiltered}</p>
             )}
             {!logsLoading && filteredLogs.length > 0 && (
               <div style={S.logList}>
                 <div style={{ padding:"10px 1.25rem 6px",background:"var(--bg-primary,#fff)",borderBottom:"1px solid var(--border,#daeaf8)" }}>
                   <p style={{ fontSize:"12px",color:"var(--text-muted,#6b7280)",margin:0 }}>
-                    Showing {filteredLogs.length} of {logs.length} entries
+                    {Tr.showingEntriesFn(filteredLogs.length, logs.length)}
                   </p>
                 </div>
                 {filteredLogs.map(log => {
@@ -2721,7 +3125,7 @@ export default function AdminPage() {
                       onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
                       onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
                     >
-                      <span style={S.logBadge(cfg.bg, cfg.color)}>{cfg.label}</span>
+                      <span style={S.logBadge(cfg.bg, cfg.color)}>{Tr.logTypeLabels?.[log.type] ?? cfg.label}</span>
                       <div style={{ flex:1,minWidth:0 }}>
                         <div style={{ display:"flex",alignItems:"baseline",gap:"8px",flexWrap:"wrap" }}>
                           <span style={S.logActor}>{log.actorName ?? log.actorId ?? "Unknown"}</span>
@@ -2732,9 +3136,9 @@ export default function AdminPage() {
                             {log.details.text
                               ? `"${log.details.text}"`
                               : log.details.editedFields
-                              ? `Fields: ${log.details.editedFields.join(", ")}`
+                              ? `${Tr.fieldsLabel} ${log.details.editedFields.join(", ")}`
                               : log.details.toUserName
-                              ? `To: ${log.details.toUserName}`
+                              ? `${Tr.toLogLabel} ${log.details.toUserName}`
                               : null}
                           </p>
                         )}
@@ -2754,7 +3158,7 @@ export default function AdminPage() {
         <div>
           <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              🚫 {Tr.blacklistTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({blacklist.length})</span>
+              {Tr.blacklistTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({blacklist.length})</span>
             </span>
             <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchBlacklist}>{blacklistLoading ? "…" : `↻ ${Tr.refresh}`}</button>
           </div>
@@ -2783,7 +3187,7 @@ export default function AdminPage() {
                 onClick={addToBlacklist}
                 disabled={!blacklistEmail.trim() || blacklistAdding}
                 style={{ padding:"9px 22px", borderRadius:10, background:"#c25c5c", color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor: !blacklistEmail.trim() || blacklistAdding ? "not-allowed" : "pointer", opacity: !blacklistEmail.trim() || blacklistAdding ? 0.6 : 1, whiteSpace:"nowrap" }}>
-                {blacklistAdding ? "…" : `🚫 ${Tr.blacklistAddBtn}`}
+                {blacklistAdding ? "…" : Tr.blacklistAddBtn}
               </button>
             </div>
           </div>
@@ -2798,7 +3202,7 @@ export default function AdminPage() {
               <table style={{ ...S.table, minWidth:400 }}>
                 <thead>
                   <tr>
-                    {[Tr.blacklistEmail, Tr.blacklistReason, "Added by", Tr.reportDate, ""].map(h => (
+                    {[Tr.blacklistEmail, Tr.blacklistReason, Tr.addedByLabel, Tr.reportDate, ""].map(h => (
                       <th key={h} style={{ ...S.th, whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
@@ -2831,8 +3235,8 @@ export default function AdminPage() {
       {/* ══ SLIDESHOW TAB ══ */}
       {tab === "slideshow" && (
         <div>
-          <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", marginBottom:"1rem" }}>{Tr.admin?.slideshow || "Slideshow"}</h2>
-          <SlideshowAdmin />
+          <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", marginBottom:"1rem" }}>{Tr.slideshowTitle}</h2>
+          <SlideshowAdmin Tr={Tr} />
         </div>
       )}
 
@@ -2857,6 +3261,7 @@ export default function AdminPage() {
           title={Tr.confirmDeleteTitle}
           message={Tr.confirmDeleteMsg(`${confirmDeleteTarget.firstName} ${confirmDeleteTarget.lastName}`)}
           confirmLabel={Tr.confirmDeleteBtn}
+          cancelLabel={Tr.cancel}
           onConfirm={() => doDeleteUser(confirmDeleteTarget.id)}
           onCancel={() => setConfirmDeleteTarget(null)}
         />
@@ -2869,6 +3274,7 @@ export default function AdminPage() {
           title={Tr.revokeAdmin}
           message={Tr.confirmRevokeAdminMsg(`${confirmRevokeTarget.firstName} ${confirmRevokeTarget.lastName}`)}
           confirmLabel={Tr.confirmRevokeAdminBtn}
+          cancelLabel={Tr.cancel}
           onConfirm={() => doRevokeAdmin(confirmRevokeTarget.id)}
           onCancel={() => setConfirmRevokeTarget(null)}
         />
@@ -2881,6 +3287,7 @@ export default function AdminPage() {
           title={Tr.confirmMakeAdminTitle}
           message={Tr.confirmMakeAdminMsg(`${makeAdminConfirmTarget.firstName} ${makeAdminConfirmTarget.lastName}`)}
           confirmLabel={Tr.confirmMakeAdminBtn}
+          cancelLabel={Tr.cancel}
           onConfirm={() => { setPermsTarget(makeAdminConfirmTarget); setMakeAdminConfirmTarget(null); }}
           onCancel={() => setMakeAdminConfirmTarget(null)}
         />

@@ -14,10 +14,7 @@
       "Bash(git push *)",
       "Bash(git fetch *)",
       "Bash(git cherry-pick *)",
-      "Bash(git show *)",
-      "Bash(cat hooks/useIsMobile.js)",
-      "Bash(cat hooks/useIsMobile.jsx)",
-      "Bash(cat hooks/useIsMobile.ts)"
+      "Bash(git show *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\.claude\\projects\\c--Users-HP-Desktop-kehila2026-manhigut-shava\\memory"

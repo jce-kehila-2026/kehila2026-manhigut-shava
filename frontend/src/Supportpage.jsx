@@ -39,7 +39,7 @@ const T = {
     msgBtn: "שלחי הודעה",
     reqSent: "בקשה נשלחה",
     delete: "מחקי",
-    cityBilingual: "חיפוש עובד בעברית, ערבית ואנגלית",
+    searchBilingual: "חיפוש עובד בעברית, ערבית ואנגלית",
     roleLabel: "תפקיד",
     otherLbl: "אחר",
     otherPh: "כתבי כאן...",
@@ -104,7 +104,7 @@ const T = {
     msgBtn: "Message",
     reqSent: "Request Sent",
     delete: "Delete",
-    cityBilingual: "Search works in Hebrew, Arabic and English",
+    searchBilingual: "Search works in Hebrew, Arabic and English",
     roleLabel: "Role",
     otherLbl: "Other",
     otherPh: "Type here...",
@@ -169,7 +169,7 @@ const T = {
     msgBtn: "إرسال رسالة",
     reqSent: "تم إرسال الطلب",
     delete: "حذف",
-    cityBilingual: "البحث يعمل بالعبرية والعربية والإنجليزية",
+    searchBilingual: "البحث يعمل بالعبرية والعربية والإنجليزية",
     roleLabel: "المنصب",
     otherLbl: "أخرى",
     otherPh: "اكتبي هنا...",
@@ -646,7 +646,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       const matchRegion = regionQ
         ? (() => {
             const variants = REGION_ALL_LANGS[regionQ] || [regionQ];
-            return variants.some(v => (u.region ?? "").includes(v) || (u.city ?? "").includes(v));
+            return variants.some(v => (u.region ?? "").includes(v));
           })()
         : true;
       const matchArea   = areaQ
@@ -690,7 +690,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           || (u.bio ?? "").toLowerCase().includes(name);
         const matchRegion = !region || (() => {
           const variants = REGION_ALL_LANGS[region] || [region];
-          return variants.some(v => (u.region ?? "").includes(v) || (u.city ?? "").includes(v));
+          return variants.some(v => (u.region ?? "").includes(v));
         })();
         const matchArea = !area || (() => {
           const isCanonical = !!AREAS_ALL_LANGS[area];
@@ -887,7 +887,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     cardTop: { display: "flex", alignItems: "center", gap: "1rem" },
     name:       { fontSize: "15px", fontWeight: "700", color: "var(--text-primary)", margin: 0 },
     profession: { fontSize: "13px", color: "var(--text-secondary)", margin: 0 },
-    cityTag: {
+    regionTag: {
       fontSize: "12px", color: dark ? "#7aaecc" : "#1d4896",
       background: dark ? "rgba(68,114,184,0.16)" : "#daeaf8",
       border: `1px solid ${dark ? "rgba(68,114,184,0.3)" : "#c8e0f4"}`,
@@ -1001,6 +1001,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   return (
     <div style={S.page}>
 
+      <p style={{ ...S.pageTitle, marginBottom: "1rem" }}>{Tr.title}</p>
+
       {/* ── Tab bar ── */}
       <div style={{
         display: "flex", overflowX: "auto", flexWrap: "nowrap",
@@ -1109,7 +1111,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               {showRegionSuggests && otherRegion.trim().length >= 1 && (() => {
                 const q = otherRegion.trim().toLowerCase();
                 const opts = [...new Set(
-                  allUsers.flatMap(u => [u.city, u.region].filter(Boolean))
+                  allUsers.flatMap(u => [u.region].filter(Boolean))
                     .filter(v => v.toLowerCase().includes(q) && !REGIONS_KEYS.includes(v))
                 )].slice(0, 8);
                 return opts.length > 0 ? (
@@ -1253,7 +1255,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                       <span style={{ fontWeight:600, color:"var(--text-primary)" }}>{getFullName(u)}</span>
                     </td>
                     <td style={{ padding:"10px 12px", color:"var(--text-secondary)" }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "—"}</td>
-                    <td style={{ padding:"10px 12px", color:"var(--text-muted)" }}>{translateLocation(u.region, u.city, lang) || "—"}</td>
+                    <td style={{ padding:"10px 12px", color:"var(--text-muted)" }}>{translateLocation(u.region, lang) || "—"}</td>
                     <td style={{ padding:"10px 12px", borderRadius:"0 10px 10px 0" }}>
                       <div style={{ display:"flex", gap:6 }}>
                         <button className="view-btn" style={{ ...S.viewBtn, flex:"none", padding:"6px 14px" }}
@@ -1290,7 +1292,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     <p style={S.profession}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "—"}</p>
                   </div>
                 </div>
-                {(u.region || u.city) && <span style={S.cityTag}>{translateLocation(u.region, u.city, lang)}</span>}
+                {u.region && <span style={S.regionTag}>{translateLocation(u.region, lang)}</span>}
                 {u.helpAreas?.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                     {u.helpAreas.slice(0, 3).map(a => (
@@ -1418,9 +1420,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 {(u.currentRole || u.profession) && (
                   <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole || u.profession, lang)}</p>
                 )}
-                {(u.region || u.city) && (
+                {u.region && (
                   <span style={{ fontSize: "11px", color: dark ? "#7aaecc" : "#1d4896", background: dark ? "rgba(68,114,184,0.16)" : "#daeaf8", borderRadius: "99px", padding: "2px 9px" }}>
-                    {translateLocation(u.region, u.city, lang)}
+                    {translateLocation(u.region, lang)}
                   </span>
                 )}
                 {!cantSendHelp(u) && (
@@ -1464,10 +1466,10 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               </p>
             </div>
             <div style={S.infoBlock}>
-              {(selectedUser.region || selectedUser.city) && (
+              {selectedUser.region && (
                 <div style={S.infoRow}>
                   <p style={S.infoLabel}>{Tr.regionLabel}</p>
-                  <p style={S.infoValue}>{translateLocation(selectedUser.region, selectedUser.city, lang)}</p>
+                  <p style={S.infoValue}>{translateLocation(selectedUser.region, lang)}</p>
                 </div>
               )}
               {selectedUser.campus && (
