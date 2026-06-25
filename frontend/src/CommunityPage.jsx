@@ -553,9 +553,17 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
               </div>
             </div>
           </div>
-        ) : (
-          post.text && <p style={{ fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{renderTextWithLinks(displayText)}</p>
-        )}
+        ) : (<>
+          {post.text && (
+            <TranslateButton
+              text={post.text}
+              isTranslated={!!translatedText}
+              onTranslated={t => setTranslatedText(t)}
+              onReverted={() => setTranslatedText(null)}
+            />
+          )}
+          {post.text && <p style={{ fontSize: 14.5, color: "var(--text-primary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{renderTextWithLinks(displayText)}</p>}
+        </>)}
 
         {post.repostOf && (
           <div style={{
@@ -724,14 +732,6 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
           </button>
         )}
 
-        {post.text && (
-          <TranslateButton
-            text={post.text}
-            isTranslated={!!translatedText}
-            onTranslated={t => setTranslatedText(t)}
-            onReverted={() => setTranslatedText(null)}
-          />
-        )}
       </div>
 
       {/* Repost modal */}
