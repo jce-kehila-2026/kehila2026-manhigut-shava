@@ -192,9 +192,9 @@ const eyebrow = {
 function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, vertical, tutId }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const size = isMobile ? "min(90px, calc(25vw - 14px))" : vertical ? "76px" : "120px";
-  const imgSize = isMobile ? "min(58px, calc(17vw))" : vertical ? "44px" : "72px";
-  const ringInset = vertical ? 14 : 22;
+  const size = isMobile ? "min(90px, calc(25vw - 14px))" : vertical ? "110px" : "120px";
+  const imgSize = isMobile ? "min(58px, calc(17vw))" : vertical ? "64px" : "72px";
+  const ringInset = vertical ? 18 : 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
     <div id={tutId} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
@@ -356,7 +356,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           {/* Desktop: circles column on left + slideshow on right */}
           {!isMobile && (
             <div style={{ display:"flex", gap:"1.5rem", alignItems:"flex-start" }}>
-              <div style={{ display:"flex", flexDirection:"column", gap:"0.3rem", paddingInline:"0.25rem" }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:"0.75rem", paddingInline:"0.25rem" }}>
                 {quickCircles.map((item, i) => (
                   <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={false} vertical onClick={() => onNavigate(item.action)} />
                 ))}
