@@ -189,11 +189,11 @@ const eyebrow = {
 };
 
 /* ── Quick-access circle with sonar rings ── */
-function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, tutId }) {
+function QuickCircle({ icon, title, desc, coral, floatIdx, onClick, isMobile, tutId }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
   const size = isMobile ? "min(90px, calc(25vw - 14px))" : "120px";
-  const imgSize = isMobile ? "min(58px, calc(17vw))" : "72px";
+  const iconScale = isMobile ? 1.1 : 1.5;
   const ringInset = 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
@@ -222,19 +222,11 @@ function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, 
           transform: hov ? "scale(1.08)" : "scale(1)",
           boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
           position:"relative", zIndex:1,
+          color,
         }}>
-          <img
-            src={imgSrc}
-            alt={title}
-            style={{
-              width: imgSize,
-              height: imgSize,
-              objectFit: "contain",
-              transition: "transform 0.26s",
-              transform: hov ? "scale(1.12)" : "scale(1)",
-              display: "block",
-            }}
-          />
+          <span style={{ transform:`scale(${iconScale}) ${hov ? "scale(1.1)" : ""}`, transition:"transform 0.26s", display:"flex" }}>
+            {icon}
+          </span>
         </div>
       </div>
       <p style={{ fontSize: isMobile ? 12 : 13, fontWeight:700, color, margin:0, textAlign:"center", maxWidth: isMobile ? "calc(44vw - 16px)" : 140, lineHeight: 1.2 }}>{title}</p>
@@ -292,10 +284,10 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const pendingRequests = helpRequests.filter((r) => !r.status);
 
   const quickCircles = [
-    { imgSrc: "/FindHelpSymbol.png",   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
-    { imgSrc: "/CommunitySymbol.png",  title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
-    { imgSrc: "/ChatSymbol.png",       title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: true  },
-    { imgSrc: "/ProfileSymbol.png",    title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
+    { icon: Icon.support,   title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
+    { icon: Icon.community, title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
+    { icon: Icon.chat,      title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: true  },
+    { icon: Icon.profile,   title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
   ];
 
   return (
