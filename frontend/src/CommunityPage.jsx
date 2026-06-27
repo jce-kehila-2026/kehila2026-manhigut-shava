@@ -673,26 +673,6 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
 
         {currentUser && post.authorId !== currentUser.uid && (
           <button
-            onClick={() => onMessage?.(post.authorId)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "7px 14px", borderRadius: "var(--r-full)",
-              background: "transparent", color: "var(--text-muted)",
-              border: "none", fontSize: 13, fontWeight: 500, cursor: onMessage ? "pointer" : "not-allowed",
-              transition: "all var(--t-fast)",
-            }}
-            onMouseEnter={(e) => { if (onMessage) e.currentTarget.style.background = "var(--bg-hover)"; }}
-            onMouseLeave={(e) => { if (onMessage) e.currentTarget.style.background = "transparent"; }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 4h16v12H5.5L4 17.5V4z"/><path d="M22 6l-6 4-6-4"/>
-            </svg>
-            <span>{t.community.message}</span>
-          </button>
-        )}
-
-        {currentUser && post.authorId !== currentUser.uid && (
-          <button
             onClick={() => setShowRepostModal(true)}
             style={{
               display: "flex", alignItems: "center", gap: 6,
