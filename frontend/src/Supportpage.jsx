@@ -582,7 +582,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [sortMode,         setSortMode]         = useState("recent");
   const [showRegionSuggests, setShowRegionSuggests] = useState(false);
   const [pendingRequestTarget, setPendingRequestTarget] = useState(null);
-  const [activeTab, setActiveTab] = useState("helpFeed");
+  const [activeTab, setActiveTab] = useState("helpFeed"); // kept for compat, not used in main layout
+  const [reqsExpanded, setReqsExpanded] = useState(false);
+  const [recvExpanded, setRecvExpanded] = useState(false);
   const [unifiedQuery, setUnifiedQuery] = useState("");
   const [showUnifiedSuggest, setShowUnifiedSuggest] = useState(false);
   const [unifiedDropPos, setUnifiedDropPos] = useState(null);
@@ -1038,153 +1040,151 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   return (
     <div style={S.page}>
 
-      {/* ── Tab bar ── */}
-      <div style={{
-        display: "flex", overflowX: "auto", flexWrap: "nowrap",
-        borderBottom: "2px solid var(--border)", marginBottom: "1.5rem",
-        scrollbarWidth: "none", gap: 0,
-      }}>
-        {[
-          { key: "helpFeed",    labelHe: "פוסטים לעזרה", labelEn: "Help Feed",   labelAr: "منشورات المساعدة" },
-          { key: "search",      labelHe: "חיפוש ישיר",   labelEn: "Find a Member", labelAr: "بحث مباشر" },
-          { key: "myReqs",      labelHe: "הבקשות שלי",   labelEn: "My Requests", labelAr: "طلباتي",        badge: sentRequests.length },
-          { key: "received",    labelHe: "קיבלתי",        labelEn: "Received",    labelAr: "الواردة",        badge: receivedRequests.filter(r => !r.status).length },
-        ].map(({ key, labelHe, labelEn, labelAr, badge }) => {
-          const label = lang === "he" ? labelHe : lang === "ar" ? labelAr : labelEn;
-          const active = activeTab === key;
-          return (
-            <button key={key} onClick={() => setActiveTab(key)} style={{
-              flexShrink: 0, padding: "9px 16px",
-              background: "none", border: "none",
-              borderBottom: active ? "2.5px solid #4472b8" : "2.5px solid transparent",
-              marginBottom: "-2px",
-              color: active ? "#4472b8" : "var(--text-muted)",
-              fontSize: 13, fontWeight: active ? 700 : 500,
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-              whiteSpace: "nowrap", transition: "color 0.15s",
-              fontFamily: "inherit",
-            }}>
-              {label}
-              {badge > 0 && (
-                <span style={{ background: "#4472b8", color: "#fff", borderRadius: 99, fontSize: 10, fontWeight: 700, padding: "1px 6px", minWidth: 16, textAlign: "center" }}>{badge}</span>
-              )}
-            </button>
-          );
-        })}
+      {/* ── Page header: title + request badges ── */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:"1.25rem", flexWrap:"wrap", direction:dir }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <h1 style={{ margin:0, fontSize:isMobile?17:21, fontWeight:800, color:"var(--text-primary)", letterSpacing:"-0.01em" }}>
+            {lang==="he"?"תמיכה ועזרה":lang==="ar"?"الدعم والمساعدة":"Support & Help"}
+          </h1>
+        </div>
+        {sentRequests.length > 0 && (
+          <button onClick={()=>setReqsExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c7d9f5"}`, background:dark?"rgba(68,114,184,0.13)":"#eef4ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            {lang==="he"?`הבקשות שלי`:lang==="ar"?"طلباتي":"My Requests"}
+            <span style={{ background:"#4472b8", color:"#fff", borderRadius:99, fontSize:10, padding:"1px 6px", minWidth:16, textAlign:"center" }}>{sentRequests.length}</span>
+          </button>
+        )}
+        {receivedRequests.length > 0 && (
+          <button onClick={()=>setRecvExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(232,115,90,0.35)":"#f5cdc3"}`, background:dark?"rgba(232,115,90,0.1)":"#fff5f2", color:"#e8735a", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            {lang==="he"?"קיבלתי":lang==="ar"?"الواردة":"Received"}
+            {receivedRequests.filter(r=>!r.status).length > 0 && (
+              <span style={{ background:"#e8735a", color:"#fff", borderRadius:99, fontSize:10, padding:"1px 6px", minWidth:16, textAlign:"center" }}>{receivedRequests.filter(r=>!r.status).length}</span>
+            )}
+          </button>
+        )}
       </div>
 
-      {/* ── Help Feed Tab ── */}
-      {activeTab === "helpFeed" && (
-        <HelpPostFeed onViewProfile={onViewProfile} />
-      )}
-
-      {/* ── Search Tab ── */}
-      {activeTab === "search" && (
-      <div style={{ display:"flex", direction:"ltr", gap:"1.5rem", alignItems:"flex-start" }}>
-
-        {/* ── MAIN COLUMN ── */}
-        <div style={{ flex:1, minWidth:0, direction:dir }}>
-
-          {/* Unified search bar row */}
-          <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:"1rem", flexWrap:isMobile?"wrap":"nowrap" }}>
-
-            {/* Search input */}
-            <div style={{ position:"relative", flex:1, minWidth:0 }}>
-              <input
-                ref={unifiedInputRef}
-                className="support-input"
-                style={{ ...S.input, paddingInlineStart:42 }}
-                type="text"
-                placeholder={lang==="he"?"שם, תחום, אזור...":lang==="ar"?"الاسم، المجال، المنطقة...":"Name, profession, area..."}
-                value={unifiedQuery}
-                onChange={(e) => { setUnifiedQuery(e.target.value); openUnifiedSuggest(); }}
-                onFocus={openUnifiedSuggest}
-                onBlur={() => setTimeout(() => setShowUnifiedSuggest(false), 160)}
-                onKeyDown={(e) => { if (e.key === "Enter") setShowUnifiedSuggest(false); }}
-                autoComplete="off"
-              />
-              <span style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"right":"left"]:14, color:"var(--text-muted)", pointerEvents:"none", display:"flex" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              </span>
-              {unifiedQuery.trim().length > 0 && (
-                <button
-                  onMouseDown={() => { setUnifiedQuery(""); setShowUnifiedSuggest(false); }}
-                  style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:10, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"4px", display:"flex", alignItems:"center", borderRadius:"50%" }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              )}
-              {/* Autocomplete */}
-              {showUnifiedSuggest && unifiedSuggestions.length > 0 && unifiedDropPos && (
-                <div style={{ position:"fixed", top:unifiedDropPos.top, left:unifiedDropPos.left, width:unifiedDropPos.width, background:"var(--bg-primary)", borderRadius:"13px", border:"1.5px solid var(--border)", boxShadow:"0 8px 28px rgba(29,72,150,0.14)", overflow:"hidden", zIndex:9999, animation:"dropIn 0.16s ease", minWidth:220 }}>
-                  {unifiedSuggestions.map((u) => (
-                    <button key={u.id} className="suggest-item"
-                      onMouseDown={() => { setUnifiedQuery(getFullName(u)); setShowUnifiedSuggest(false); }}
-                      style={{ width:"100%", display:"flex", alignItems:"center", gap:"10px", padding:"9px 14px", background:"transparent", border:"none", borderBottom:"1px solid var(--border)", cursor:"pointer", textAlign:isRTL?"right":"left", transition:"background 0.12s" }}
-                    >
-                      <MemberAvatar user={u} size={32} fontSize={11} />
-                      <div style={{ minWidth:0 }}>
-                        <p style={{ fontSize:"13px", fontWeight:"700", color:"var(--text-primary)", margin:0, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{getFullName(u)}</p>
-                        {(u.currentRole || u.profession) && (
-                          <p style={{ fontSize:"11px", color:"var(--text-muted)", margin:0 }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole || u.profession, lang)}</p>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+      {/* ── Expandable: My Requests ── */}
+      {reqsExpanded && (
+        <div style={{ marginBottom:"1rem", background:"var(--bg-primary)", borderRadius:16, border:"1.5px solid var(--border)", borderInlineStart:"3px solid #4472b8", padding:"1rem", direction:dir }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" }}>
+            <p style={{ ...S.sectionLabel, margin:0 }}>{Tr.myReqs}</p>
+            <button onClick={()=>setReqsExpanded(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:20, lineHeight:1 }}>×</button>
+          </div>
+          {sentRequests.length === 0 ? <div style={S.emptyBox}>{Tr.noSentRequests}</div> : (
+            <div style={S.myReqGrid}>
+              {sentRequests.map((r) => (
+                <div key={r.id} style={S.myReqCard}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <p style={S.myReqName}>{r.toUserName||"—"}</p>
+                    <button title={Tr.delete} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex" }} onClick={()=>handleDeleteSentRequest(r.id)} onMouseEnter={e=>e.currentTarget.style.color="#e8735a"} onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}>{deleteIconSvg}</button>
+                  </div>
+                  {r.requestMessage && <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0", background:"var(--bg-secondary)", borderRadius:"9px", padding:"7px 10px", border:"1px solid var(--border)", lineHeight:"1.5", fontStyle:"italic" }}>{r.requestMessage}</p>}
+                  <StatusPill status={r.status} Tr={Tr} />
                 </div>
-              )}
-            </div>
-
-            {/* Sort toggle */}
-            <div style={{ display:"flex", gap:4, background:"var(--bg-secondary)", borderRadius:10, padding:3, border:"1.5px solid var(--border)", flexShrink:0 }}>
-              {[
-                { key:"recent", label:lang==="he"?"אחרונות":lang==="ar"?"الأحدث":"Recent" },
-                { key:"alpha",  label:lang==="he"?"א–ת":lang==="ar"?"أ–ي":"A–Z" },
-              ].map(({ key, label }) => (
-                <button key={key} onClick={() => setSortMode(key)} style={{ padding:"6px 12px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, transition:"all 0.15s", background:sortMode===key?"#4472b8":"transparent", color:sortMode===key?"#fff":"var(--text-muted)" }}>{label}</button>
               ))}
             </div>
+          )}
+        </div>
+      )}
 
-            {/* Layout toggle (desktop only) */}
-            {!isMobile && (
-              <div style={{ display:"flex", gap:4, background:"var(--bg-secondary)", borderRadius:10, padding:3, border:"1.5px solid var(--border)", flexShrink:0 }}>
-                {[
-                  { mode:"cards", icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
-                  { mode:"table", icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg> },
-                ].map(({ mode, icon }) => (
-                  <button key={mode} onClick={() => setLayoutMode(mode)} style={{ display:"flex", alignItems:"center", padding:"6px 8px", borderRadius:8, border:"none", cursor:"pointer", background:layoutMode===mode?"#4472b8":"transparent", color:layoutMode===mode?"#fff":"var(--text-muted)", transition:"all 0.15s" }}>{icon}</button>
-                ))}
-              </div>
-            )}
-
-            {/* Mobile: filters toggle */}
-            {isMobile && (
-              <button onClick={() => setFiltersOpen(o => !o)} style={{ display:"flex", alignItems:"center", gap:5, padding:"9px 14px", borderRadius:12, border:"1.5px solid var(--border)", background:(filtersOpen||hasFilters)?"rgba(68,114,184,0.1)":"var(--bg-secondary)", color:hasFilters?"#4472b8":"var(--text-secondary)", fontSize:13, fontWeight:600, cursor:"pointer", flexShrink:0, fontFamily:"inherit" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-                {lang==="he"?"פילטרים":lang==="ar"?"الفلاتر":"Filters"}
-                {hasFilters && <span style={{ background:"#4472b8", color:"#fff", borderRadius:99, fontSize:9, fontWeight:700, padding:"0 5px", minWidth:14, textAlign:"center" }}>•</span>}
-              </button>
-            )}
+      {/* ── Expandable: Received Requests ── */}
+      {recvExpanded && (
+        <div style={{ marginBottom:"1rem", background:"var(--bg-primary)", borderRadius:16, border:"1.5px solid var(--border)", borderInlineStart:"3px solid #e8735a", padding:"1rem", direction:dir }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" }}>
+            <p style={{ ...S.sectionLabel, margin:0 }}>{Tr.recvReqs}</p>
+            <button onClick={()=>setRecvExpanded(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:20, lineHeight:1 }}>×</button>
           </div>
+          {receivedRequests.length === 0 ? <div style={S.emptyBox}>{Tr.noReceivedRequests}</div> : (
+            <div style={S.myReqGrid}>
+              {receivedRequests.map((r) => (
+                <div key={r.id} style={S.receivedReqCard}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <div>
+                      <p style={S.myReqName}>{r.fromUserName||"—"}</p>
+                      {r.fromUserProfession && <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0" }}>{r.fromUserProfession}</p>}
+                    </div>
+                    <button title={Tr.delete} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex" }} onClick={()=>handleDeleteReceivedRequest(r.id)} onMouseEnter={e=>e.currentTarget.style.color="#e8735a"} onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}>{deleteIconSvg}</button>
+                  </div>
+                  {r.requestMessage && (
+                    <div style={{ background:dark?"rgba(68,114,184,0.1)":"#f5f8ff", border:`1.5px solid ${dark?"rgba(68,114,184,0.25)":"#daeaf8"}`, borderInlineStart:"3px solid #4472b8", borderRadius:"10px", padding:"8px 12px", margin:"4px 0" }}>
+                      <p style={{ fontSize:"10px", fontWeight:"700", color:dark?"#7aaecc":"#4472b8", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 4px" }}>{Tr.reqMsgReceived}</p>
+                      <p style={{ fontSize:"13px", color:"var(--text-primary)", margin:0, lineHeight:"1.55" }}>{r.requestMessage}</p>
+                    </div>
+                  )}
+                  {!r.status ? (
+                    <div style={S.receivedReqActions}>
+                      <button style={S.acceptBtn} onClick={()=>handleRespondRequest(r.id,"accepted")}>{Tr.accept}</button>
+                      <button style={S.declineBtn} onClick={()=>handleRespondRequest(r.id,"declined")}>{Tr.decline}</button>
+                    </div>
+                  ) : <StatusPill status={r.status} Tr={Tr} />}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-          {/* Mobile: collapsible filter panel */}
-          {isMobile && filtersOpen && (
-            <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem", marginBottom:"1rem", direction:dir }}>
-              {/* Profession filter */}
-              <div style={{ marginBottom:"0.75rem" }}>
-                <label style={S.label}>{lang==="he"?"תחום / מקצוע":lang==="ar"?"المجال / المهنة":"Profession / Field"}</label>
-                <input className="support-input" style={{ ...S.input, fontSize:13, marginTop:6 }}
+      {/* ── Main layout: Posts (left) + Find Member (right) ── */}
+      <div style={{ display:"flex", direction:"ltr", gap:"1.25rem", alignItems:"flex-start" }}>
+
+        {/* ── LEFT: Help Posts Feed ── */}
+        <div style={{ flex:1.5, minWidth:0 }}>
+          <HelpPostFeed onViewProfile={onViewProfile} />
+        </div>
+
+        {/* ── RIGHT: Find a Member panel (desktop only) ── */}
+        {!isMobile && (
+          <div style={{ width:296, flexShrink:0, position:"sticky", top:16, alignSelf:"flex-start", direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto" }}>
+
+            {/* Search box */}
+            <div style={{ background:"var(--bg-primary)", borderRadius:16, border:"1.5px solid var(--border)", padding:"1rem", marginBottom:"0.75rem" }}>
+              <p style={{ ...S.sectionLabel, margin:"0 0 0.6rem" }}>{lang==="he"?"חיפוש ישיר":lang==="ar"?"بحث مباشر":"Find a Member"}</p>
+              <div style={{ position:"relative", marginBottom:"0.5rem" }}>
+                <input ref={unifiedInputRef} className="support-input" style={{ ...S.input, paddingInlineStart:36, fontSize:13 }}
                   type="text"
-                  placeholder={lang==="he"?"חפשי מקצוע...":lang==="ar"?"ابحثي عن مهنة...":"Search profession..."}
-                  value={professionFilter}
-                  onChange={(e) => setProfessionFilter(e.target.value)}
+                  placeholder={lang==="he"?"שם, תחום, אזור...":lang==="ar"?"الاسم، المجال، المنطقة...":"Name, profession, area..."}
+                  value={unifiedQuery}
+                  onChange={(e) => { setUnifiedQuery(e.target.value); openUnifiedSuggest(); }}
+                  onFocus={openUnifiedSuggest}
+                  onBlur={() => setTimeout(() => setShowUnifiedSuggest(false), 160)}
+                  onKeyDown={(e) => { if (e.key === "Enter") setShowUnifiedSuggest(false); }}
                   autoComplete="off"
                 />
+                <span style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"right":"left"]:10, color:"var(--text-muted)", pointerEvents:"none", display:"flex" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                </span>
+                {unifiedQuery.trim().length > 0 && (
+                  <button onMouseDown={() => { setUnifiedQuery(""); setShowUnifiedSuggest(false); }}
+                    style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:8, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"3px", display:"flex", borderRadius:"50%" }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                )}
+                {showUnifiedSuggest && unifiedSuggestions.length > 0 && (
+                  <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"var(--bg-primary)", border:"1.5px solid var(--border)", borderRadius:12, boxShadow:"0 6px 20px rgba(29,72,150,0.12)", maxHeight:150, overflowY:"auto", zIndex:300, direction:dir }}>
+                    {unifiedSuggestions.map((s,i) => (
+                      <button key={s} type="button" onMouseDown={()=>{setUnifiedQuery(s);setShowUnifiedSuggest(false);}} style={{ width:"100%", textAlign:isRTL?"right":"left", padding:"8px 12px", background:"transparent", border:"none", borderBottom:i<unifiedSuggestions.length-1?"1px solid var(--border)":"none", fontSize:12, color:"var(--text-primary)", cursor:"pointer", fontFamily:"inherit" }}>{s}</button>
+                    ))}
+                  </div>
+                )}
               </div>
-              {/* Area multi-select */}
-              <div style={{ marginBottom:"0.75rem" }}>
+
+              {/* Filters */}
+              <div style={{ marginBottom:"0.4rem" }}>
+                <label style={S.label}>{lang==="he"?"מקצוע / תחום":lang==="ar"?"المجال / المهنة":"Profession / Field"}</label>
+                <div style={{ position:"relative", marginTop:3 }}>
+                  <input className="support-input" style={{ ...S.input, fontSize:12 }}
+                    type="text" placeholder={lang==="he"?"חפשי...":lang==="ar"?"ابحثي...":"Search..."} value={professionFilter} onChange={(e) => setProfessionFilter(e.target.value)} autoComplete="off"
+                  />
+                  {professionFilter && (
+                    <button onMouseDown={()=>setProfessionFilter("")} style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:8, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"3px", display:"flex" }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div style={{ marginBottom:"0.4rem" }}>
                 <label style={S.label}>{Tr.helpAreaLbl}</label>
-                <div style={{ marginTop:6 }}>
+                <div style={{ marginTop:3 }}>
                   <MultiSelectDropdown
                     options={(Tr.helpAreas||[]).map((label,i)=>({ value:AREAS_KEYS[i], label }))}
                     selectedValues={selectedAreas}
@@ -1193,299 +1193,138 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   />
                 </div>
               </div>
-              {/* Region */}
-              <div style={{ marginBottom:"0.5rem" }}>
+              <div style={{ marginBottom:"0.4rem" }}>
                 <label style={S.label}>{Tr.regionLbl}</label>
-                <div style={{ marginTop:6 }}>
+                <div style={{ marginTop:3 }}>
                   <AreaDropdown value={selectedRegion} onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}} areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع المناطق...":"All regions..."} isRTL={isRTL}/>
+                  {selectedRegion==="OTHER" && (
+                    <div style={{ position:"relative", marginTop:6 }}>
+                      <input className="support-input" style={{ ...S.input, fontSize:12 }} type="text" placeholder={Tr.otherPh} value={otherRegion} onChange={(e)=>{setOtherRegion(e.target.value);setShowRegionSuggests(true);}} onBlur={()=>setTimeout(()=>setShowRegionSuggests(false),160)} autoComplete="off"/>
+                      {showRegionSuggests && otherRegion.trim().length>=1 && (() => {
+                        const q = otherRegion.trim().toLowerCase();
+                        const opts = [...new Set(allUsers.flatMap(u=>[u.region].filter(Boolean)).filter(v=>v.toLowerCase().includes(q)&&!REGIONS_KEYS.includes(v)))].slice(0,6);
+                        return opts.length>0 ? (
+                          <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--bg-primary)",border:"1.5px solid var(--border)",borderRadius:10,boxShadow:"0 4px 16px rgba(29,72,150,0.1)",maxHeight:140,overflowY:"auto",zIndex:300}}>
+                            {opts.map((s,i)=><button key={s} type="button" onMouseDown={()=>{setOtherRegion(s);setShowRegionSuggests(false);}} style={{width:"100%",textAlign:isRTL?"right":"left",padding:"8px 12px",background:"transparent",border:"none",borderBottom:i<opts.length-1?"1px solid var(--border)":"none",fontSize:12,color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",direction:isRTL?"rtl":"ltr"}}>{s}</button>)}
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
               {hasFilters && (
-                <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}} style={{ marginTop:"0.5rem", background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"4px 0", fontFamily:"inherit" }}>
+                <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}}
+                  style={{ background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"2px 0", display:"block", fontFamily:"inherit" }}>
                   {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
                 </button>
               )}
             </div>
-          )}
 
-          {/* ── Pre-search state: prompt + recommended ── */}
-          {!searched && (
-            <div style={{ direction:dir }}>
-              <div style={{ textAlign:"center", padding:"1.5rem 1rem 2rem", background:"var(--bg-primary)", borderRadius:18, border:"1.5px solid var(--border)", marginBottom:"1.5rem" }}>
-                <img src="/FindHelpSymbol.png" style={{ width:60, height:60, objectFit:"contain", display:"block", margin:"0 auto 0.5rem" }} alt="" />
-                <p style={{ fontSize:16, fontWeight:700, color:"var(--text-primary)", margin:"0 0 6px" }}>
-                  {lang==="he"?"חפשי חברות שיכולות לעזור לך":lang==="ar"?"ابحثي عن عضوات يمكنهن مساعدتك":"Find members who can help you"}
-                </p>
-                <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>
-                  {lang==="he"?"הקלידי שם, תחום מקצועי, או אזור — או השתמשי בפילטרים":lang==="ar"?"اكتبي اسماً أو مجالاً أو منطقة — أو استخدمي الفلاتر":"Type a name, profession, or region — or use the filters"}
-                </p>
+            {/* Search results */}
+            {!searched && !hasFilters && (
+              <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem", textAlign:"center" }}>
+                <svg style={{ opacity:0.25, marginBottom:6 }} width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <p style={{ fontSize:12, color:"var(--text-muted)", margin:0 }}>{Tr.noFilter}</p>
               </div>
-              {recommended.length > 0 && (
-                <>
-                  <p style={{ ...S.sectionLabel, marginBottom:"0.85rem" }}>{Tr.recommended}</p>
-                  <div style={S.recGrid}>
-                    {recommended.map((u) => (
-                      <div key={u.id} style={{ ...S.recCard, cursor:"pointer" }}
-                        onClick={()=>onViewProfile?onViewProfile(u.id):setSelectedUser(u)}
-                        onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(29,72,150,0.12)";}}
-                        onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 2px 8px rgba(29,72,150,0.05)";}}
-                      >
-                        <div style={{position:"relative"}}><MemberAvatar user={u} size={48}/>{isOnline(u)&&<span style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#7ba87a",border:"2px solid var(--bg-primary)"}}/>}</div>
-                        <p style={{fontSize:"13px",fontWeight:"700",color:"var(--text-primary)",margin:0}}>{getFullName(u)}</p>
-                        {(u.currentRole||u.profession)&&<p style={{fontSize:"11px",color:"var(--text-muted)",margin:0}}>{u.professionTranslations?.[lang]||translateProfession(u.currentRole||u.profession,lang)}</p>}
-                        {u.region&&<span style={{fontSize:"11px",color:dark?"#7aaecc":"#1d4896",background:dark?"rgba(68,114,184,0.16)":"#daeaf8",borderRadius:"99px",padding:"2px 9px"}}>{translateLocation(u.region,lang)}</span>}
-                        {!cantSendHelp(u)&&<button style={requested[u.id]?{...S.reqDoneBtn,width:"100%",padding:"6px 0",fontSize:"12px"}:{...S.reqBtn,width:"100%",padding:"6px 0",fontSize:"12px"}} onClick={(e)=>{e.stopPropagation();initiateRequest(u);}}>{requested[u.id]?Tr.sent:Tr.sendReq}</button>}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* No results */}
-          {searched && !loading && sortedResults.length === 0 && (
-            <div style={S.emptyBox}>{Tr.noResults}</div>
-          )}
-
-          {/* Result count */}
-          {searched && !loading && sortedResults.length > 0 && (
-            <p style={{ fontSize:"12px", color:"var(--text-muted)", margin:"0 0 0.75rem", direction:dir }}>
-              {sortedResults.length} {Tr.resultsFound}
-            </p>
-          )}
-
-          {/* Results */}
-          {sortedResults.length > 0 && (
-            layoutMode === "table" ? (
-              <div style={{ marginBottom:"2rem", overflowX:"auto" }}>
-                <table style={{ width:"100%", borderCollapse:"separate", borderSpacing:"0 6px", fontSize:13 }}>
-                  <thead>
-                    <tr>{[Tr.nameLbl,Tr.roleLabel,Tr.regionLabel,""].map((h,i)=><th key={i} style={{textAlign:isRTL?"right":"left",padding:"6px 12px",fontSize:11,fontWeight:700,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1.5px solid var(--border)"}}>{h}</th>)}</tr>
-                  </thead>
-                  <tbody>
-                    {sortedResults.map((u) => (
-                      <tr key={u.id} style={{ background:"var(--bg-primary)", transition:"background 0.15s", cursor:"pointer" }}
-                        onMouseEnter={e=>e.currentTarget.style.background="var(--bg-hover)"}
-                        onMouseLeave={e=>e.currentTarget.style.background="var(--bg-primary)"}
-                      >
-                        <td style={{ padding:"10px 12px", borderRadius:"10px 0 0 10px", display:"flex", alignItems:"center", gap:10 }}>
-                          <MemberAvatar user={u} size={34} fontSize={12} />
-                          <span style={{ fontWeight:600, color:"var(--text-primary)" }}>{getFullName(u)}</span>
-                        </td>
-                        <td style={{ padding:"10px 12px", color:"var(--text-secondary)" }}>{u.professionTranslations?.[lang]||translateProfession(u.currentRole??u.profession,lang)||"—"}</td>
-                        <td style={{ padding:"10px 12px", color:"var(--text-muted)" }}>{translateLocation(u.region,lang)||"—"}</td>
-                        <td style={{ padding:"10px 12px", borderRadius:"0 10px 10px 0" }}>
-                          <div style={{ display:"flex", gap:6 }}>
-                            <button className="view-btn" style={{...S.viewBtn,flex:"none",padding:"6px 14px"}} onClick={()=>onViewProfile?onViewProfile(u.id):setSelectedUser(u)}>{Tr.viewProfile}</button>
-                            {!cantSendHelp(u)&&<button className={requested[u.id]?"":"req-btn"} style={{...(requested[u.id]?S.reqDoneBtn:S.reqBtn),flex:"none",padding:"6px 14px"}} onClick={()=>initiateRequest(u)}>{requested[u.id]?Tr.sent:Tr.sendReq}</button>}
+            )}
+            {searched && results.length === 0 && (
+              <div style={{ ...S.emptyBox, fontSize:12 }}>{Tr.noResults}</div>
+            )}
+            {searched && results.length > 0 && (
+              <div>
+                <p style={{ ...S.sectionLabel, marginBottom:"0.5rem", fontSize:11 }}>{results.length} {Tr.resultsFound}</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+                  {sortedResults.map((u) => {
+                    const name = getFullName(u);
+                    const prof = u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "";
+                    const sent = !!requested[u.id];
+                    return (
+                      <div key={u.id} style={{ background:"var(--bg-primary)", borderRadius:12, border:"1.5px solid var(--border)", padding:"0.65rem 0.75rem" }}>
+                        <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6 }}>
+                          <MemberAvatar user={u} size={34} fontSize={13} />
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <p style={{ margin:0, fontSize:12, fontWeight:700, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                            {prof && <p style={{ margin:0, fontSize:10, color:"var(--text-secondary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prof}</p>}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div style={{ ...S.resultsGrid, marginBottom:"2rem" }}>
-                {sortedResults.map((u,i) => (
-                  <div key={u.id} className="result-card" style={{ ...S.card, animationDelay:`${i*0.05}s` }}>
-                    <div style={S.cardTop}>
-                      <div style={{position:"relative"}}>
-                        <MemberAvatar user={u}/>
-                        {isOnline(u)&&<span style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#7ba87a",border:"2px solid var(--bg-primary)"}}/>}
+                        </div>
+                        <div style={{ display:"flex", gap:5 }}>
+                          <button onClick={() => setSelectedUser(u)} style={{ flex:1, padding:"5px 0", borderRadius:8, border:"1.5px solid var(--border)", background:"none", color:"var(--text-secondary)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{Tr.viewProfile}</button>
+                          <button onClick={() => initiateRequest(u)} disabled={sent||cantSendHelp(u)} style={{ flex:1, padding:"5px 0", borderRadius:8, border:"none", background:sent?"var(--bg-secondary)":"#4472b8", color:sent?"var(--text-muted)":"#fff", fontSize:11, fontWeight:600, cursor:sent?"default":"pointer", fontFamily:"inherit" }}>
+                            {sent ? Tr.sent : Tr.sendReq}
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <p style={S.name}>{getFullName(u)}</p>
-                        <p style={S.profession}>{u.professionTranslations?.[lang]||translateProfession(u.currentRole??u.profession,lang)||"—"}</p>
-                      </div>
-                    </div>
-                    {u.region&&<span style={S.regionTag}>{translateLocation(u.region,lang)}</span>}
-                    {u.helpAreas?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{u.helpAreas.slice(0,3).map(a=><span key={a} style={{fontSize:10,background:dark?"rgba(68,114,184,0.14)":"#f0f6fb",color:dark?"#7aaecc":"#4472b8",borderRadius:99,padding:"2px 8px",border:`1px solid ${dark?"rgba(68,114,184,0.28)":"#daeaf8"}`}}>{a}</span>)}</div>}
-                    <div style={S.cardActions}>
-                      <button className="view-btn" style={S.viewBtn} onClick={()=>onViewProfile?onViewProfile(u.id):setSelectedUser(u)}>{Tr.viewProfile}</button>
-                      {!cantSendHelp(u)&&<button className={requested[u.id]?"":"req-btn"} style={requested[u.id]?S.reqDoneBtn:S.reqBtn} onClick={()=>initiateRequest(u)}>{requested[u.id]?Tr.sent:Tr.sendReq}</button>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-
-          {/* Recommended after results */}
-          {searched && sortedResults.length > 0 && recommended.length > 0 && (
-            <div style={{ borderTop:"1.5px solid var(--border)", paddingTop:"1.5rem", marginTop:"0.5rem", direction:dir }}>
-              <p style={S.sectionLabel}>{Tr.recommended}</p>
-              <div style={S.recGrid}>
-                {recommended.map((u) => (
-                  <div key={u.id} style={{ ...S.recCard, cursor:"pointer" }}
-                    onClick={()=>onViewProfile?onViewProfile(u.id):setSelectedUser(u)}
-                    onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(29,72,150,0.12)";}}
-                    onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 2px 8px rgba(29,72,150,0.05)";}}
-                  >
-                    <div style={{position:"relative"}}><MemberAvatar user={u} size={48}/>{isOnline(u)&&<span style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#7ba87a",border:"2px solid var(--bg-primary)"}}/>}</div>
-                    <p style={{fontSize:"13px",fontWeight:"700",color:"var(--text-primary)",margin:0}}>{getFullName(u)}</p>
-                    {(u.currentRole||u.profession)&&<p style={{fontSize:"11px",color:"var(--text-muted)",margin:0}}>{u.professionTranslations?.[lang]||translateProfession(u.currentRole||u.profession,lang)}</p>}
-                    {u.region&&<span style={{fontSize:"11px",color:dark?"#7aaecc":"#1d4896",background:dark?"rgba(68,114,184,0.16)":"#daeaf8",borderRadius:"99px",padding:"2px 9px"}}>{translateLocation(u.region,lang)}</span>}
-                    {!cantSendHelp(u)&&<button style={requested[u.id]?{...S.reqDoneBtn,width:"100%",padding:"6px 0",fontSize:"12px"}:{...S.reqBtn,width:"100%",padding:"6px 0",fontSize:"12px"}} onClick={(e)=>{e.stopPropagation();initiateRequest(u);}}>{requested[u.id]?Tr.sent:Tr.sendReq}</button>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>{/* end main column */}
-
-        {/* ── FILTER PANEL (right side on desktop) ── */}
-        {!isMobile && (
-          <div style={{ width:260, flexShrink:0, direction:dir, background:"var(--bg-primary)", borderRadius:18, border:"1.5px solid var(--border)", padding:"1.25rem 1rem", position:"sticky", top:16, alignSelf:"flex-start" }}>
-            <p style={{ ...S.sectionLabel, marginBottom:"1rem" }}>{lang==="he"?"פילטרים":lang==="ar"?"الفلاتر":"Filters"}</p>
-
-            {/* Profession / General field */}
-            <div style={S.group}>
-              <label style={S.label}>{lang==="he"?"תחום / מקצוע":lang==="ar"?"المجال / المهنة":"Profession / Field"}</label>
-              <div style={{ position:"relative" }}>
-                <input className="support-input" style={{ ...S.input, fontSize:13 }}
-                  type="text"
-                  placeholder={lang==="he"?"חפשי מקצוע...":lang==="ar"?"ابحثي عن مهنة...":"Search profession..."}
-                  value={professionFilter}
-                  onChange={(e) => setProfessionFilter(e.target.value)}
-                  autoComplete="off"
-                />
-                {professionFilter && (
-                  <button onMouseDown={()=>setProfessionFilter("")} style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:10, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"4px", display:"flex" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Help areas — multi-select dropdown */}
-            <div style={{ ...S.group, marginBottom:"1rem" }}>
-              <label style={S.label}>{Tr.helpAreaLbl}</label>
-              <div style={{ marginTop:6 }}>
-                <MultiSelectDropdown
-                  options={(Tr.helpAreas||[]).map((label,i)=>({ value:AREAS_KEYS[i], label }))}
-                  selectedValues={selectedAreas}
-                  onChange={setSelectedAreas}
-                  placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."}
-                />
-              </div>
-            </div>
-
-            <div style={S.group}>
-              <label style={S.label}>{Tr.regionLbl}</label>
-              <AreaDropdown
-                value={selectedRegion}
-                onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}}
-                areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]}
-                placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع המناطق...":"All regions..."}
-                isRTL={isRTL}
-              />
-              {selectedRegion === "OTHER" && (
-                <div style={{ position:"relative", marginTop:8 }}>
-                  <input className="support-input" style={S.input} type="text" placeholder={Tr.otherPh}
-                    value={otherRegion}
-                    onChange={(e)=>{setOtherRegion(e.target.value);setShowRegionSuggests(true);}}
-                    onBlur={()=>setTimeout(()=>setShowRegionSuggests(false),160)}
-                    autoComplete="off"
-                  />
-                  {showRegionSuggests && otherRegion.trim().length>=1 && (() => {
-                    const q = otherRegion.trim().toLowerCase();
-                    const opts = [...new Set(allUsers.flatMap(u=>[u.region].filter(Boolean)).filter(v=>v.toLowerCase().includes(q)&&!REGIONS_KEYS.includes(v)))].slice(0,8);
-                    return opts.length>0 ? (
-                      <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--bg-primary)",border:"1.5px solid var(--border)",borderRadius:12,boxShadow:"0 6px 20px rgba(29,72,150,0.12)",maxHeight:180,overflowY:"auto",zIndex:300,animation:"dropIn 0.14s ease"}}>
-                        {opts.map((s,i)=><button key={s} type="button" onMouseDown={()=>{setOtherRegion(s);setShowRegionSuggests(false);}} style={{width:"100%",textAlign:isRTL?"right":"left",padding:"9px 14px",background:"transparent",border:"none",borderBottom:i<opts.length-1?"1px solid var(--border)":"none",fontSize:13,color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",direction:isRTL?"rtl":"ltr"}}>{s}</button>)}
-                      </div>
-                    ) : null;
-                  })()}
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-
-            {hasFilters && (
-              <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}}
-                style={{ background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"4px 0", display:"block", fontFamily:"inherit" }}>
-                {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
-              </button>
+              </div>
             )}
           </div>
         )}
 
-      </div>
+      </div>{/* end main two-col */}
+
+      {/* ── Mobile: collapsible search panel ── */}
+      {isMobile && (
+        <div style={{ marginTop:"1rem", direction:dir }}>
+          <button onClick={()=>setFiltersOpen(v=>!v)} style={{ width:"100%", padding:"10px 16px", borderRadius:12, border:"1.5px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.5rem" }}>
+            <span>{lang==="he"?"חיפוש חברה":lang==="ar"?"البحث عن عضوة":"Find a Member"}</span>
+            <span style={{ opacity:0.5, fontSize:11 }}>{filtersOpen?"▲":"▼"}</span>
+          </button>
+          {filtersOpen && (
+            <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem" }}>
+              <div style={{ position:"relative", marginBottom:"0.5rem" }}>
+                <input ref={unifiedInputRef} className="support-input" style={{ ...S.input, paddingInlineStart:36, fontSize:13 }}
+                  type="text" placeholder={lang==="he"?"שם, תחום, אזור...":lang==="ar"?"الاسم، المجال...":"Name, profession, area..."} value={unifiedQuery}
+                  onChange={(e)=>{ setUnifiedQuery(e.target.value); openUnifiedSuggest(); }} onFocus={openUnifiedSuggest} onBlur={()=>setTimeout(()=>setShowUnifiedSuggest(false),160)} autoComplete="off"
+                />
+                <span style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"right":"left"]:10, color:"var(--text-muted)", pointerEvents:"none", display:"flex" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                </span>
+              </div>
+              <div style={{ marginBottom:"0.4rem" }}>
+                <label style={S.label}>{lang==="he"?"מקצוע":lang==="ar"?"المهنة":"Profession"}</label>
+                <input className="support-input" style={{ ...S.input, fontSize:12, marginTop:3 }} type="text" placeholder={lang==="he"?"חפשי...":lang==="ar"?"ابحثي...":"Search..."} value={professionFilter} onChange={(e)=>setProfessionFilter(e.target.value)} autoComplete="off"/>
+              </div>
+              <div style={{ marginBottom:"0.4rem" }}>
+                <label style={S.label}>{Tr.helpAreaLbl}</label>
+                <div style={{ marginTop:3 }}>
+                  <MultiSelectDropdown options={(Tr.helpAreas||[]).map((label,i)=>({ value:AREAS_KEYS[i], label }))} selectedValues={selectedAreas} onChange={setSelectedAreas} placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."}/>
+                </div>
+              </div>
+              <div style={{ marginBottom:"0.4rem" }}>
+                <label style={S.label}>{Tr.regionLbl}</label>
+                <div style={{ marginTop:3 }}>
+                  <AreaDropdown value={selectedRegion} onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}} areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع المناطق...":"All regions..."} isRTL={isRTL}/>
+                </div>
+              </div>
+              {hasFilters && <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}} style={{ background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"3px 0", fontFamily:"inherit" }}>{lang==="he"?"נקי":lang==="ar"?"مسح":"Clear"}</button>}
+              {searched && results.length > 0 && (
+                <div style={{ marginTop:"0.75rem" }}>
+                  <p style={{ ...S.sectionLabel, marginBottom:"0.4rem", fontSize:11 }}>{results.length} {Tr.resultsFound}</p>
+                  <div style={{ display:"flex", flexDirection:"column", gap:"0.4rem" }}>
+                    {sortedResults.map((u) => {
+                      const name = getFullName(u);
+                      const sent = !!requested[u.id];
+                      return (
+                        <div key={u.id} style={{ display:"flex", gap:8, alignItems:"center", background:"var(--bg-secondary)", borderRadius:10, border:"1px solid var(--border)", padding:"0.55rem 0.65rem" }}>
+                          <MemberAvatar user={u} size={30} fontSize={12} />
+                          <p style={{ margin:0, fontSize:12, fontWeight:700, color:"var(--text-primary)", flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                          <button onClick={()=>initiateRequest(u)} disabled={sent} style={{ padding:"4px 10px", borderRadius:8, border:"none", background:sent?"var(--bg-secondary)":"#4472b8", color:sent?"var(--text-muted)":"#fff", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                            {sent?"✓":Tr.sendReq}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {searched && results.length === 0 && <p style={{ fontSize:12, color:"var(--text-muted)", marginTop:"0.5rem" }}>{Tr.noResults}</p>}
+            </div>
+          )}
+        </div>
       )}
-
-      {/* ── My Requests Tab ── */}
-      {activeTab === "myReqs" && <>
-        <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.myReqs}</p>
-        {sentRequests.length === 0 ? (
-          <div style={S.emptyBox}>{Tr.noSentRequests}</div>
-        ) : (
-          <div style={S.myReqGrid}>
-            {sentRequests.map((r) => (
-              <div key={r.id} style={S.myReqCard}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <p style={S.myReqName}>{r.toUserName || "—"}</p>
-                  <button title={Tr.delete}
-                    style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex", alignItems:"center" }}
-                    onClick={() => handleDeleteSentRequest(r.id)}
-                    onMouseEnter={e=>e.currentTarget.style.color="#e8735a"}
-                    onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}
-                  >{deleteIconSvg}</button>
-                </div>
-                {r.requestMessage && (
-                  <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0", background:"var(--bg-secondary)", borderRadius:"9px", padding:"7px 10px", border:"1px solid var(--border)", lineHeight:"1.5", fontStyle:"italic" }}>
-                    {r.requestMessage}
-                  </p>
-                )}
-                <StatusPill status={r.status} Tr={Tr} />
-              </div>
-            ))}
-          </div>
-        )}
-      </> /* end myReqs tab */}
-
-      {/* ── Received Tab ── */}
-      {activeTab === "received" && <>
-        <p style={{ ...S.sectionLabel, margin: "0 0 1rem" }}>{Tr.recvReqs}</p>
-        {receivedRequests.length === 0 ? (
-          <div style={S.emptyBox}>{Tr.noReceivedRequests}</div>
-        ) : (
-          <div style={S.myReqGrid}>
-            {receivedRequests.map((r) => (
-              <div key={r.id} style={S.receivedReqCard}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div>
-                    <p style={S.myReqName}>{r.fromUserName || "—"}</p>
-                    {r.fromUserProfession && (
-                      <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: "2px 0 0" }}>{r.fromUserProfession}</p>
-                    )}
-                  </div>
-                  <button title={Tr.delete}
-                    style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex", alignItems:"center" }}
-                    onClick={() => handleDeleteReceivedRequest(r.id)}
-                    onMouseEnter={e=>e.currentTarget.style.color="#e8735a"}
-                    onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}
-                  >{deleteIconSvg}</button>
-                </div>
-                {r.requestMessage && (
-                  <div style={{ background: dark ? "rgba(68,114,184,0.1)" : "#f5f8ff", border: `1.5px solid ${dark ? "rgba(68,114,184,0.25)" : "#daeaf8"}`, borderInlineStart:"3px solid #4472b8", borderRadius:"10px", padding:"8px 12px", margin:"4px 0" }}>
-                    <p style={{ fontSize:"10px", fontWeight:"700", color: dark ? "#7aaecc" : "#4472b8", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 4px" }}>{Tr.reqMsgReceived}</p>
-                    <p style={{ fontSize:"13px", color:"var(--text-primary)", margin:0, lineHeight:"1.55" }}>{r.requestMessage}</p>
-                  </div>
-                )}
-                {!r.status ? (
-                  <div style={S.receivedReqActions}>
-                    <button style={S.acceptBtn} onClick={() => handleRespondRequest(r.id, "accepted")}>{Tr.accept}</button>
-                    <button style={S.declineBtn} onClick={() => handleRespondRequest(r.id, "declined")}>{Tr.decline}</button>
-                  </div>
-                ) : (
-                  <StatusPill status={r.status} Tr={Tr} />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </> /* end received tab */}
 
       {/* Profile modal */}
       {selectedUser && (

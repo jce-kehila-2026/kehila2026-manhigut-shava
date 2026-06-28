@@ -448,7 +448,7 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
 }
 
 /* ── Help Request Modal (inline, minimal) ── */
-function HelpRequestModal({ toUid, toName, fromProfile, user, onClose, onSent, lang }) {
+function HelpRequestModal({ toUid: toUserId, toName, fromProfile, user, onClose, onSent, lang }) {
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
   const dir = lang === "he" || lang === "ar" ? "rtl" : "ltr";
@@ -458,18 +458,18 @@ function HelpRequestModal({ toUid, toName, fromProfile, user, onClose, onSent, l
     setSending(true);
     try {
       await addDoc(collection(db, "helpRequests"), {
-        fromUid: user.uid,
+        fromUserId: user.uid,
         fromUserName: `${fromProfile?.firstName || ""} ${fromProfile?.lastName || ""}`.trim() || user.email,
         fromUserEmail: user.email,
         fromUserProfession: fromProfile?.profession || fromProfile?.currentRole || "",
         fromUserPhotoURL: fromProfile?.photoURL || null,
-        toUid,
+        toUserId: toUid,
         toUserName: toName,
         message: msg.trim(),
         status: "pending",
         createdAt: serverTimestamp(),
       });
-      const convId = await getOrCreateConversation(user.uid, toUid);
+      const convId = await getOrCreateConversation(user.uid, toUserId);
       if (msg.trim()) await sendHelpRequestPrompt(convId, user.uid, msg.trim());
       onSent();
       onClose();
