@@ -1600,7 +1600,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
 
                 {/* Ethnicity + Religion side by side */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.75rem", marginBottom:"0.75rem", alignItems:"end" }}>
+                <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"0.75rem", marginBottom:"0.75rem", alignItems:"end" }}>
                   <div style={S.group}>
                     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"0.4rem", minHeight:"32px" }}>
                       <label style={S.label}>{t.profile.ethnicity}<OptionalTag /></label>
