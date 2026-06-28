@@ -288,7 +288,7 @@ html.dark-mode .badge-blue   { background: #1a2236; color: #7aaecc; border-color
 /* ── Mobile (≤768px) ── */
 @media (max-width: 768px) {
   body { overflow: auto; height: auto; }
-  #root { height: auto; min-height: 100vh; }
+  #root { height: auto; min-height: 100vh; min-height: 100dvh; }
 
   .hide-mobile  { display: none !important; }
   .hide-desktop { display: revert !important; }

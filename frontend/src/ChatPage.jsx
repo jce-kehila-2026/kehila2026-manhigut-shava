@@ -890,6 +890,13 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
     }
   }, [openChatWithUserId, allUsers]);
 
+  const didAutoSelect = useRef(false);
+  useEffect(() => {
+    if (isMobile || didAutoSelect.current || activeConvId || conversations.length === 0 || openChatWithUserId) return;
+    didAutoSelect.current = true;
+    setActiveConvId(conversations[0].id);
+  }, [conversations, isMobile, openChatWithUserId]);
+
   const getDateLabel = (msg, prev) => {
     if (!prev) return formatDateLabel(msg.createdAt, t);
     if (formatDateLabel(msg.createdAt, t) !== formatDateLabel(prev.createdAt, t)) return formatDateLabel(msg.createdAt, t);
