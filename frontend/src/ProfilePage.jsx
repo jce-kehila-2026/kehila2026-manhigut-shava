@@ -1073,20 +1073,22 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       borderRadius:99, fontSize:12, fontWeight:700, cursor:"pointer",
       backdropFilter:"blur(6px)", transition:"background 0.18s",
     },
-    /* ── Profile info section: avatar pokes up into cover, name sits BELOW avatar ── */
+    /* ── Profile info section: avatar pokes up into cover, name sits BESIDE avatar ── */
     profileInfoSection: {
       position:"relative", flexShrink:0,
       background: T.bg,
-      paddingTop: isMobile ? 56 : 56,
-      padding: isMobile ? "56px 1rem 10px" : "56px 2rem 6px",
+      paddingTop: "10px",
+      paddingBottom: isMobile ? "12px" : "10px",
+      paddingInlineStart: isMobile ? "calc(96px + 1.5rem)" : "calc(112px + 2.5rem)",
+      paddingInlineEnd: isMobile ? "1rem" : "2rem",
       display:"flex",
-      flexDirection: isMobile ? "column" : "row",
-      justifyContent:"space-between", alignItems:"flex-start",
-      gap: isMobile ? 8 : 0,
+      flexDirection:"row",
+      justifyContent:"space-between", alignItems:"center",
+      gap:8,
     },
     avatarWrap: {
       position:"absolute",
-      top: isMobile ? -44 : -52,
+      top: isMobile ? -30 : -50,
       ...(isRTL ? { right: isMobile ? "1rem" : "2rem" } : { left: isMobile ? "1rem" : "2rem" }),
       zIndex:2,
     },
@@ -1113,7 +1115,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       padding:0, fontSize:12, color:"#1d4896",
       transition:"background 0.18s, color 0.18s, border-color 0.18s",
     },
-    profileMetaText: { flex: isMobile ? "none" : 1, minWidth:0 },
+    profileMetaText: { flex:1, minWidth:0 },
     profileName: { fontSize: isMobile ? 18 : 22, fontWeight:800, color:T.text, margin:"0 0 3px", lineHeight:1.2 },
     profilePro:  { fontSize:13, color:T.sub, margin:"0 0 5px" },
     profileActions: { display:"flex", gap:8, alignItems:"flex-start", flexShrink:0, paddingTop:2, flexWrap:"wrap" },
@@ -1521,13 +1523,13 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   </div>
                 </div>
 
-                <div style={S.group}>
+                <div style={{ ...S.group, flex:1, display:"flex", flexDirection:"column" }}>
                   <label style={S.label}>{t.profile.bio}</label>
                   {isOwner && <RequiredHint show={!form.bio?.trim()} />}
-                  <div style={S.bioWrap}>
+                  <div style={{ ...S.bioWrap, flex:1, display:"flex", flexDirection:"column" }}>
                     <textarea
                       className="profile-textarea"
-                      style={{ ...S.textarea, minHeight:"110px" }}
+                      style={{ ...S.textarea, flex:1, minHeight:"110px", resize:"none" }}
                       name="bio"
                       value={form.bio}
                       onChange={(e) => { if (e.target.value.length <= BIO_LIMIT) handleChange(e); }}
