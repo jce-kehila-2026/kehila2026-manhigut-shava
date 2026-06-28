@@ -833,11 +833,12 @@ export default function DashboardPage() {
           zIndex: 2,
         }} />
         {/* Logo row */}
-        <div style={{
+        <div onClick={() => navigate("home")} style={{
           display: "flex", alignItems: "center", gap: 10,
           paddingLeft: sidebarExpanded ? 12 : 0,
           marginBottom: "0.85rem", flexShrink: 0,
           justifyContent: sidebarExpanded ? "flex-start" : "center",
+          cursor: "pointer",
         }}>
           <div style={{
             width: 42, height: 42, borderRadius: 14, flexShrink: 0,
