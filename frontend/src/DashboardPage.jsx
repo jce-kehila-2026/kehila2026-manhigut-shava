@@ -853,7 +853,7 @@ export default function DashboardPage() {
             <img src="/NewLogoNGO.png"
               onError={e => { e.currentTarget.parentElement.style.background = "linear-gradient(135deg,#4472b8,#1d4896)"; e.currentTarget.style.display = "none"; }}
               alt="BogrotNet"
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              style={{ width: "100%", height: "100%", objectFit: "contain", transform: isRTL ? "scaleX(-1)" : "none" }}
             />
           </div>
           {sidebarExpanded && (

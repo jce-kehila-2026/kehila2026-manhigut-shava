@@ -96,6 +96,13 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
   };
 
   const handleSelect = opt => {
+    // "Other" → stay open and clear query so user can type their custom profession
+    const isOther = ["אחר", "Other", "أخرى"].includes(opt.label);
+    if (isOther) {
+      setQuery("");
+      setTimeout(() => inputRef.current?.focus(), 0);
+      return;
+    }
     setOpen(false);
     setQuery("");
     onChange(opt.enValue, opt.translations);

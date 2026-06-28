@@ -1595,48 +1595,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   </div>
                 </div>
 
-                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                  <label style={S.label}>{t.profile.linkedIn}<OptionalTag /></label>
-                  <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder={t.profile.linkedInPlaceholder} />
-                </div>
-
-                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                  <label style={S.label}>{t.profile?.facebook || "Facebook"}<OptionalTag /></label>
-                  <input
-                    className="profile-input"
-                    name="facebookURL" value={form.facebookURL || ""}
-                    onChange={handleChange}
-                    placeholder="https://facebook.com/..."
-                    style={{
-                      width:"100%", boxSizing:"border-box",
-                      padding:"12px 14px", fontSize:"14px",
-                      border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
-                      color:T.text, background:T.inputBg, fontFamily:"inherit",
-                      transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
-                    }}
-                    disabled={isReadOnly}
-                  />
-                </div>
-
-                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                  <label style={S.label}>{t.profile?.contactEmail || "Contact Email"}<OptionalTag /></label>
-                  <input
-                    className="profile-input"
-                    name="contactEmail" value={form.contactEmail || ""}
-                    onChange={handleChange}
-                    placeholder="email@example.com"
-                    style={{
-                      width:"100%", boxSizing:"border-box",
-                      padding:"12px 14px", fontSize:"14px",
-                      border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
-                      color:T.text, background:T.inputBg, fontFamily:"inherit",
-                      transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
-                    }}
-                    disabled={isReadOnly}
-                    type="email"
-                  />
-                </div>
-
                 {/* Ethnicity + Religion side by side */}
                 <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"0.75rem", marginBottom:"0.75rem", alignItems:"end" }}>
                   <div style={S.group}>
@@ -1695,9 +1653,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                       firstName:form.firstName, lastName:form.lastName, phone:form.phone,
                       profession:form.profession, professionTranslations:form.professionTranslations ?? null, birthDate:form.birthDate, bio:form.bio,
                       region:form.region, regionTranslations:form.regionTranslations ?? null, institution:form.institution, institutionTranslations:form.institutionTranslations ?? null, graduationYear:form.graduationYear,
-                      linkedIn: safeUrl(form.linkedIn),
-                      facebookURL: safeUrl(form.facebookURL),
-                      contactEmail: form.contactEmail || "",
                       experience:form.experience, goals:form.goals,
                       ethnicity:form.ethnicity, ethnicityPrivate:form.ethnicityPrivate,
                       religion:form.religion,   religionPrivate:form.religionPrivate,
@@ -1733,7 +1688,47 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 {t.profile.resetPassword}
               </button>
             </div>
+            {/* Social links + contact email */}
             <div style={{ borderTop:`1px solid ${T.cardBorder}`, marginTop:"1.25rem", paddingTop:"1.25rem" }}>
+              <p style={{ fontSize:"11px", fontWeight:"700", color:T.sub, textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 0.9rem" }}>
+                {lang==="he"?"קישורים ויצירת קשר":lang==="ar"?"الروابط والتواصل":"Links & Contact"}
+              </p>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", gap:"0.75rem", marginBottom:"0.75rem" }}>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.linkedIn}<OptionalTag /></label>
+                  <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder={t.profile.linkedInPlaceholder} />
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile?.facebook || "Facebook"}<OptionalTag /></label>
+                  <PlainInput name="facebookURL" value={form.facebookURL || ""} onChange={handleChange} placeholder="https://facebook.com/..." />
+                </div>
+              </div>
+              <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                <label style={S.label}>{t.profile?.contactEmail || "Contact Email"}<OptionalTag /></label>
+                <input
+                  className="profile-input"
+                  name="contactEmail" value={form.contactEmail || ""}
+                  onChange={handleChange}
+                  placeholder="email@example.com"
+                  type="email"
+                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.text, background:T.inputBg, fontFamily:"inherit", transition:"border-color 0.2s" }}
+                />
+              </div>
+              <button
+                style={{ ...getSaveBtnStyle("account"), marginBottom:"1rem" }}
+                className={savingKey === "account" ? "save-btn-shimmer" : ""}
+                onClick={() => handleSaveSection("account", {
+                  linkedIn: safeUrl(form.linkedIn),
+                  facebookURL: safeUrl(form.facebookURL),
+                  contactEmail: form.contactEmail || "",
+                })}
+                disabled={!!savingKey}
+              >
+                {saveBtnLabel("account")}
+              </button>
+            </div>
+
+            <div style={{ borderTop:`1px solid ${T.cardBorder}`, paddingTop:"1.25rem" }}>
               <button
                 onClick={logout}
                 style={{

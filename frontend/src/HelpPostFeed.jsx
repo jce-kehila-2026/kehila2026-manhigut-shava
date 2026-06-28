@@ -457,22 +457,32 @@ function HelpRequestModal({ toUid: toUserId, toName, fromProfile, user, onClose,
     if (sending) return;
     setSending(true);
     try {
-      await addDoc(collection(db, "helpRequests"), {
+      const fromName = `${fromProfile?.firstName || ""} ${fromProfile?.lastName || ""}`.trim() || user.email;
+      const reqRef = await addDoc(collection(db, "helpRequests"), {
         fromUserId: user.uid,
-        fromUserName: `${fromProfile?.firstName || ""} ${fromProfile?.lastName || ""}`.trim() || user.email,
+        fromUserName: fromName,
         fromUserEmail: user.email,
         fromUserProfession: fromProfile?.profession || fromProfile?.currentRole || "",
         fromUserPhotoURL: fromProfile?.photoURL || null,
-        toUserId: toUid,
+        toUserId: toUserId,
         toUserName: toName,
         message: msg.trim(),
         status: "pending",
         createdAt: serverTimestamp(),
       });
-      const convId = await getOrCreateConversation(user.uid, toUserId);
-      if (msg.trim()) await sendHelpRequestPrompt(convId, user.uid, msg.trim());
+      // also open/create a DM conversation and send the request as a prompt
+      try {
+        const p1 = fromProfile || { firstName: user.email, lastName: "", photoURL: null };
+        const p2 = { firstName: toName, lastName: "", photoURL: null };
+        const convId = await getOrCreateConversation(user.uid, toUserId, p1, p2);
+        await sendHelpRequestPrompt(convId, user.uid, fromName, reqRef.id, msg.trim(), [toUserId]);
+      } catch (dmErr) {
+        console.error("DM send error:", dmErr);
+      }
       onSent();
       onClose();
+    } catch (err) {
+      console.error("Help request error:", err);
     } finally {
       setSending(false);
     }

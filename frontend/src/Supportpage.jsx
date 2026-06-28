@@ -585,6 +585,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [activeTab, setActiveTab] = useState("helpFeed"); // kept for compat, not used in main layout
   const [reqsExpanded, setReqsExpanded] = useState(false);
   const [recvExpanded, setRecvExpanded] = useState(false);
+  const [searchPanelOpen, setSearchPanelOpen] = useState(true);
   const [unifiedQuery, setUnifiedQuery] = useState("");
   const [showUnifiedSuggest, setShowUnifiedSuggest] = useState(false);
   const [unifiedDropPos, setUnifiedDropPos] = useState(null);
@@ -1132,132 +1133,215 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           <HelpPostFeed onViewProfile={onViewProfile} />
         </div>
 
-        {/* ── RIGHT: Find a Member panel (desktop only) ── */}
+        {/* ── RIGHT: Find a Member panel (desktop only, collapsible) ── */}
         {!isMobile && (
-          <div style={{ width:296, flexShrink:0, position:"sticky", top:16, alignSelf:"flex-start", direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto" }}>
+          <div style={{ flexShrink:0, display:"flex", alignItems:"flex-start", position:"sticky", top:16, alignSelf:"flex-start" }}>
 
-            {/* Search box */}
-            <div style={{ background:"var(--bg-primary)", borderRadius:16, border:"1.5px solid var(--border)", padding:"1rem", marginBottom:"0.75rem" }}>
-              <p style={{ ...S.sectionLabel, margin:"0 0 0.6rem" }}>{lang==="he"?"חיפוש ישיר":lang==="ar"?"بحث مباشر":"Find a Member"}</p>
-              <div style={{ position:"relative", marginBottom:"0.5rem" }}>
-                <input ref={unifiedInputRef} className="support-input" style={{ ...S.input, paddingInlineStart:36, fontSize:13 }}
-                  type="text"
-                  placeholder={lang==="he"?"שם, תחום, אזור...":lang==="ar"?"الاسم، المجال، المنطقة...":"Name, profession, area..."}
-                  value={unifiedQuery}
-                  onChange={(e) => { setUnifiedQuery(e.target.value); openUnifiedSuggest(); }}
-                  onFocus={openUnifiedSuggest}
-                  onBlur={() => setTimeout(() => setShowUnifiedSuggest(false), 160)}
-                  onKeyDown={(e) => { if (e.key === "Enter") setShowUnifiedSuggest(false); }}
-                  autoComplete="off"
-                />
-                <span style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"right":"left"]:10, color:"var(--text-muted)", pointerEvents:"none", display:"flex" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                </span>
-                {unifiedQuery.trim().length > 0 && (
-                  <button onMouseDown={() => { setUnifiedQuery(""); setShowUnifiedSuggest(false); }}
-                    style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:8, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"3px", display:"flex", borderRadius:"50%" }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                )}
-                {showUnifiedSuggest && unifiedSuggestions.length > 0 && (
-                  <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"var(--bg-primary)", border:"1.5px solid var(--border)", borderRadius:12, boxShadow:"0 6px 20px rgba(29,72,150,0.12)", maxHeight:150, overflowY:"auto", zIndex:300, direction:dir }}>
-                    {unifiedSuggestions.map((s,i) => (
-                      <button key={s} type="button" onMouseDown={()=>{setUnifiedQuery(s);setShowUnifiedSuggest(false);}} style={{ width:"100%", textAlign:isRTL?"right":"left", padding:"8px 12px", background:"transparent", border:"none", borderBottom:i<unifiedSuggestions.length-1?"1px solid var(--border)":"none", fontSize:12, color:"var(--text-primary)", cursor:"pointer", fontFamily:"inherit" }}>{s}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Filters */}
-              <div style={{ marginBottom:"0.4rem" }}>
-                <label style={S.label}>{lang==="he"?"מקצוע / תחום":lang==="ar"?"المجال / المهنة":"Profession / Field"}</label>
-                <div style={{ position:"relative", marginTop:3 }}>
-                  <input className="support-input" style={{ ...S.input, fontSize:12 }}
-                    type="text" placeholder={lang==="he"?"חפשי...":lang==="ar"?"ابحثي...":"Search..."} value={professionFilter} onChange={(e) => setProfessionFilter(e.target.value)} autoComplete="off"
-                  />
-                  {professionFilter && (
-                    <button onMouseDown={()=>setProfessionFilter("")} style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:8, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"3px", display:"flex" }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div style={{ marginBottom:"0.4rem" }}>
-                <label style={S.label}>{Tr.helpAreaLbl}</label>
-                <div style={{ marginTop:3 }}>
-                  <MultiSelectDropdown
-                    options={(Tr.helpAreas||[]).map((label,i)=>({ value:AREAS_KEYS[i], label }))}
-                    selectedValues={selectedAreas}
-                    onChange={setSelectedAreas}
-                    placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."}
-                  />
-                </div>
-              </div>
-              <div style={{ marginBottom:"0.4rem" }}>
-                <label style={S.label}>{Tr.regionLbl}</label>
-                <div style={{ marginTop:3 }}>
-                  <AreaDropdown value={selectedRegion} onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}} areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع المناطق...":"All regions..."} isRTL={isRTL}/>
-                  {selectedRegion==="OTHER" && (
-                    <div style={{ position:"relative", marginTop:6 }}>
-                      <input className="support-input" style={{ ...S.input, fontSize:12 }} type="text" placeholder={Tr.otherPh} value={otherRegion} onChange={(e)=>{setOtherRegion(e.target.value);setShowRegionSuggests(true);}} onBlur={()=>setTimeout(()=>setShowRegionSuggests(false),160)} autoComplete="off"/>
-                      {showRegionSuggests && otherRegion.trim().length>=1 && (() => {
-                        const q = otherRegion.trim().toLowerCase();
-                        const opts = [...new Set(allUsers.flatMap(u=>[u.region].filter(Boolean)).filter(v=>v.toLowerCase().includes(q)&&!REGIONS_KEYS.includes(v)))].slice(0,6);
-                        return opts.length>0 ? (
-                          <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--bg-primary)",border:"1.5px solid var(--border)",borderRadius:10,boxShadow:"0 4px 16px rgba(29,72,150,0.1)",maxHeight:140,overflowY:"auto",zIndex:300}}>
-                            {opts.map((s,i)=><button key={s} type="button" onMouseDown={()=>{setOtherRegion(s);setShowRegionSuggests(false);}} style={{width:"100%",textAlign:isRTL?"right":"left",padding:"8px 12px",background:"transparent",border:"none",borderBottom:i<opts.length-1?"1px solid var(--border)":"none",fontSize:12,color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",direction:isRTL?"rtl":"ltr"}}>{s}</button>)}
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {hasFilters && (
-                <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}}
-                  style={{ background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"2px 0", display:"block", fontFamily:"inherit" }}>
-                  {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
-                </button>
+            {/* Toggle strip — the "tab" on the left edge of the panel */}
+            <div style={{ width:32, display:"flex", flexDirection:"column", alignItems:"center", gap:6, paddingTop:4, marginInlineEnd: searchPanelOpen ? 8 : 0 }}>
+              <button
+                onClick={() => setSearchPanelOpen(v => !v)}
+                title={searchPanelOpen ? (lang==="he"?"סגור":lang==="ar"?"إغلاق":"Collapse") : (lang==="he"?"חיפוש ישיר":lang==="ar"?"بحث مباشر":"Find a Member")}
+                style={{ width:32, height:32, borderRadius:10, border:"1.5px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-muted)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"background 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+                onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary)"}
+              >
+                {/* Arrow points left to open (since panel is on the right), right to collapse */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: searchPanelOpen ? "rotate(0deg)" : "rotate(180deg)", transition:"transform 0.2s" }}>
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              {!searchPanelOpen && (
+                <svg style={{ opacity:0.3, marginTop:4 }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               )}
             </div>
 
-            {/* Search results */}
-            {!searched && !hasFilters && (
-              <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem", textAlign:"center" }}>
-                <svg style={{ opacity:0.25, marginBottom:6 }} width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <p style={{ fontSize:12, color:"var(--text-muted)", margin:0 }}>{Tr.noFilter}</p>
-              </div>
-            )}
-            {searched && results.length === 0 && (
-              <div style={{ ...S.emptyBox, fontSize:12 }}>{Tr.noResults}</div>
-            )}
-            {searched && results.length > 0 && (
-              <div>
-                <p style={{ ...S.sectionLabel, marginBottom:"0.5rem", fontSize:11 }}>{results.length} {Tr.resultsFound}</p>
-                <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
-                  {sortedResults.map((u) => {
-                    const name = getFullName(u);
-                    const prof = u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "";
-                    const sent = !!requested[u.id];
-                    return (
-                      <div key={u.id} style={{ background:"var(--bg-primary)", borderRadius:12, border:"1.5px solid var(--border)", padding:"0.65rem 0.75rem" }}>
-                        <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6 }}>
-                          <MemberAvatar user={u} size={34} fontSize={13} />
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <p style={{ margin:0, fontSize:12, fontWeight:700, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
-                            {prof && <p style={{ margin:0, fontSize:10, color:"var(--text-secondary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prof}</p>}
-                          </div>
+            {/* Panel body — hidden when collapsed */}
+            {searchPanelOpen && (
+              <div style={{ width:288, direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto" }}>
+
+                {/* Search input box */}
+                <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"0.85rem", marginBottom:"0.6rem" }}>
+                  <p style={{ ...S.sectionLabel, margin:"0 0 0.55rem", fontSize:11 }}>{lang==="he"?"חיפוש ישיר":lang==="ar"?"بحث مباشر":"Find a Member"}</p>
+                  <div style={{ position:"relative" }}>
+                    <input ref={unifiedInputRef} className="support-input" style={{ ...S.input, paddingInlineStart:32, fontSize:13 }}
+                      type="text"
+                      placeholder={lang==="he"?"שם, אזור...":lang==="ar"?"الاسم، المنطقة...":"Name, area..."}
+                      value={unifiedQuery}
+                      onChange={(e) => { setUnifiedQuery(e.target.value); openUnifiedSuggest(); }}
+                      onFocus={openUnifiedSuggest}
+                      onBlur={() => setTimeout(() => setShowUnifiedSuggest(false), 160)}
+                      onKeyDown={(e) => { if (e.key === "Enter") setShowUnifiedSuggest(false); }}
+                      autoComplete="off"
+                    />
+                    <span style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"right":"left"]:9, color:"var(--text-muted)", pointerEvents:"none", display:"flex" }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    </span>
+                    {unifiedQuery.trim().length > 0 && (
+                      <button onMouseDown={() => { setUnifiedQuery(""); setShowUnifiedSuggest(false); }}
+                        style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:7, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"2px", display:"flex", borderRadius:"50%" }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    )}
+                    {showUnifiedSuggest && unifiedSuggestions.length > 0 && (
+                      <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"var(--bg-primary)", border:"1.5px solid var(--border)", borderRadius:12, boxShadow:"0 6px 20px rgba(29,72,150,0.12)", maxHeight:150, overflowY:"auto", zIndex:300, direction:dir }}>
+                        {unifiedSuggestions.map((s,i) => (
+                          <button key={s} type="button" onMouseDown={()=>{setUnifiedQuery(s);setShowUnifiedSuggest(false);}} style={{ width:"100%", textAlign:isRTL?"right":"left", padding:"7px 11px", background:"transparent", border:"none", borderBottom:i<unifiedSuggestions.length-1?"1px solid var(--border)":"none", fontSize:12, color:"var(--text-primary)", cursor:"pointer", fontFamily:"inherit" }}>{s}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Filters box */}
+                <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"0.85rem", marginBottom:"0.6rem" }}>
+                  <p style={{ ...S.sectionLabel, margin:"0 0 0.55rem", fontSize:11 }}>{lang==="he"?"פילטרים":lang==="ar"?"الفلاتر":"Filters"}</p>
+                  <div style={{ marginBottom:"0.45rem" }}>
+                    <label style={S.label}>{Tr.helpAreaLbl}</label>
+                    <div style={{ marginTop:3 }}>
+                      <MultiSelectDropdown
+                        options={(Tr.helpAreas||[]).map((label,i)=>({ value:AREAS_KEYS[i], label }))}
+                        selectedValues={selectedAreas}
+                        onChange={setSelectedAreas}
+                        placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom:"0.45rem" }}>
+                    <label style={S.label}>{Tr.regionLbl}</label>
+                    <div style={{ marginTop:3 }}>
+                      <AreaDropdown value={selectedRegion} onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}} areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع المناطق...":"All regions..."} isRTL={isRTL}/>
+                      {selectedRegion==="OTHER" && (
+                        <div style={{ position:"relative", marginTop:5 }}>
+                          <input className="support-input" style={{ ...S.input, fontSize:12 }} type="text" placeholder={Tr.otherPh} value={otherRegion} onChange={(e)=>{setOtherRegion(e.target.value);setShowRegionSuggests(true);}} onBlur={()=>setTimeout(()=>setShowRegionSuggests(false),160)} autoComplete="off"/>
+                          {showRegionSuggests && otherRegion.trim().length>=1 && (() => {
+                            const q = otherRegion.trim().toLowerCase();
+                            const opts = [...new Set(allUsers.flatMap(u=>[u.region].filter(Boolean)).filter(v=>v.toLowerCase().includes(q)&&!REGIONS_KEYS.includes(v)))].slice(0,6);
+                            return opts.length>0 ? (
+                              <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--bg-primary)",border:"1.5px solid var(--border)",borderRadius:10,boxShadow:"0 4px 16px rgba(29,72,150,0.1)",maxHeight:140,overflowY:"auto",zIndex:300}}>
+                                {opts.map((s,i)=><button key={s} type="button" onMouseDown={()=>{setOtherRegion(s);setShowRegionSuggests(false);}} style={{width:"100%",textAlign:isRTL?"right":"left",padding:"7px 11px",background:"transparent",border:"none",borderBottom:i<opts.length-1?"1px solid var(--border)":"none",fontSize:12,color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",direction:isRTL?"rtl":"ltr"}}>{s}</button>)}
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
-                        <div style={{ display:"flex", gap:5 }}>
-                          <button onClick={() => setSelectedUser(u)} style={{ flex:1, padding:"5px 0", borderRadius:8, border:"1.5px solid var(--border)", background:"none", color:"var(--text-secondary)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{Tr.viewProfile}</button>
-                          <button onClick={() => initiateRequest(u)} disabled={sent||cantSendHelp(u)} style={{ flex:1, padding:"5px 0", borderRadius:8, border:"none", background:sent?"var(--bg-secondary)":"#4472b8", color:sent?"var(--text-muted)":"#fff", fontSize:11, fontWeight:600, cursor:sent?"default":"pointer", fontFamily:"inherit" }}>
-                            {sent ? Tr.sent : Tr.sendReq}
-                          </button>
+                      )}
+                    </div>
+                  </div>
+                  {hasFilters && (
+                    <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}}
+                      style={{ background:"none", border:"none", color:"#e8735a", fontSize:11, fontWeight:600, cursor:"pointer", padding:"2px 0", display:"block", fontFamily:"inherit" }}>
+                      {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
+                    </button>
+                  )}
+                </div>
+
+                {/* Sort + layout controls */}
+                {searched && sortedResults.length > 0 && (
+                  <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:"0.5rem", flexWrap:"wrap" }}>
+                    <div style={{ display:"flex", gap:3, background:"var(--bg-secondary)", borderRadius:8, padding:2, border:"1px solid var(--border)" }}>
+                      {[
+                        { key:"recent", label:lang==="he"?"אחרונים":lang==="ar"?"الأحدث":"Recent" },
+                        { key:"alpha",  label:lang==="he"?"א–ת":lang==="ar"?"أ–ي":"A–Z" },
+                      ].map(({ key, label }) => (
+                        <button key={key} onClick={() => setSortMode(key)} style={{ padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:600, background:sortMode===key?"var(--bg-primary)":"transparent", color:sortMode===key?"var(--text-primary)":"var(--text-muted)", boxShadow:sortMode===key?"0 1px 3px rgba(0,0,0,0.08)":"none", fontFamily:"inherit" }}>{label}</button>
+                      ))}
+                    </div>
+                    <div style={{ display:"flex", gap:3, background:"var(--bg-secondary)", borderRadius:8, padding:2, border:"1px solid var(--border)" }}>
+                      {[
+                        { mode:"cards", icon:<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
+                        { mode:"list",  icon:<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+                      ].map(({ mode, icon }) => (
+                        <button key={mode} onClick={() => setLayoutMode(mode)} style={{ width:26, height:26, borderRadius:6, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:layoutMode===mode?"var(--bg-primary)":"transparent", color:layoutMode===mode?"var(--text-primary)":"var(--text-muted)", boxShadow:layoutMode===mode?"0 1px 3px rgba(0,0,0,0.08)":"none" }}>{icon}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Search results */}
+                {!searched && !hasFilters && (
+                  <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1.25rem 1rem", textAlign:"center" }}>
+                    <img src="/FindHelpSymbol.png" style={{ width:48, height:48, objectFit:"contain", display:"block", margin:"0 auto 0.5rem", opacity:0.7 }} alt="" />
+                    <p style={{ fontSize:12, color:"var(--text-muted)", margin:0 }}>{Tr.noFilter}</p>
+                    {recommended.length > 0 && (
+                      <div style={{ marginTop:"0.85rem", textAlign:isRTL?"right":"left" }}>
+                        <p style={{ ...S.sectionLabel, fontSize:10, marginBottom:"0.5rem" }}>{Tr.recommended}</p>
+                        <div style={{ display:"flex", flexDirection:"column", gap:"0.45rem" }}>
+                          {recommended.slice(0,4).map(u => {
+                            const name = getFullName(u);
+                            const prof = u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "";
+                            const sent = !!requested[u.id];
+                            return (
+                              <div key={u.id} style={{ display:"flex", gap:9, alignItems:"center", padding:"0.5rem 0.6rem", borderRadius:10, border:"1px solid var(--border)", background:"var(--bg-secondary)", cursor:"pointer" }}
+                                onClick={() => setSelectedUser(u)}>
+                                <MemberAvatar user={u} size={40} fontSize={14} />
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <p style={{ margin:0, fontSize:12, fontWeight:700, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                                  {prof && <p style={{ margin:0, fontSize:10, color:"var(--text-secondary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prof}</p>}
+                                </div>
+                                {!cantSendHelp(u) && (
+                                  <button onClick={e=>{e.stopPropagation();initiateRequest(u);}} disabled={sent} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:sent?"var(--bg-secondary)":"#4472b8", color:sent?"var(--text-muted)":"#fff", fontSize:10, fontWeight:700, cursor:sent?"default":"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                                    {sent?"✓":Tr.sendReq}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </div>
+                )}
+                {searched && results.length === 0 && (
+                  <div style={{ ...S.emptyBox, fontSize:12 }}>{Tr.noResults}</div>
+                )}
+                {searched && sortedResults.length > 0 && (
+                  <div style={{ display:"flex", flexDirection:"column", gap: layoutMode==="list"?"0.3rem":"0.5rem" }}>
+                    {sortedResults.map((u) => {
+                      const name = getFullName(u);
+                      const prof = u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "";
+                      const sent = !!requested[u.id];
+                      if (layoutMode === "list") {
+                        return (
+                          <div key={u.id} style={{ display:"flex", gap:8, alignItems:"center", padding:"0.45rem 0.6rem", borderRadius:10, border:"1px solid var(--border)", background:"var(--bg-primary)", cursor:"pointer" }}
+                            onClick={() => setSelectedUser(u)}>
+                            <MemberAvatar user={u} size={36} fontSize={13} />
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <p style={{ margin:0, fontSize:12, fontWeight:700, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                              {prof && <p style={{ margin:0, fontSize:10, color:"var(--text-secondary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prof}</p>}
+                            </div>
+                            {!cantSendHelp(u) && (
+                              <button onClick={e=>{e.stopPropagation();initiateRequest(u);}} disabled={sent} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:sent?"var(--bg-secondary)":"#4472b8", color:sent?"var(--text-muted)":"#fff", fontSize:10, fontWeight:700, cursor:sent?"default":"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                                {sent?"✓":Tr.sendReq}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={u.id} style={{ background:"var(--bg-primary)", borderRadius:12, border:"1.5px solid var(--border)", padding:"0.7rem", cursor:"pointer" }}
+                          onClick={() => setSelectedUser(u)}>
+                          <div style={{ display:"flex", gap:9, alignItems:"center", marginBottom:8 }}>
+                            <MemberAvatar user={u} size={48} fontSize={16} />
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <p style={{ margin:0, fontSize:13, fontWeight:700, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                              {prof && <p style={{ margin:0, fontSize:11, color:"var(--text-secondary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prof}</p>}
+                              {u.region && <span style={{ fontSize:10, color:"var(--text-muted)" }}>{translateLocation(u.region, lang)}</span>}
+                            </div>
+                          </div>
+                          <div style={{ display:"flex", gap:5 }} onClick={e=>e.stopPropagation()}>
+                            <button onClick={() => setSelectedUser(u)} style={{ flex:1, padding:"5px 0", borderRadius:8, border:"1.5px solid var(--border)", background:"none", color:"var(--text-secondary)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{Tr.viewProfile}</button>
+                            {!cantSendHelp(u) && (
+                              <button onClick={() => initiateRequest(u)} disabled={sent} style={{ flex:1, padding:"5px 0", borderRadius:8, border:"none", background:sent?"var(--bg-secondary)":"#4472b8", color:sent?"var(--text-muted)":"#fff", fontSize:11, fontWeight:600, cursor:sent?"default":"pointer", fontFamily:"inherit" }}>
+                                {sent ? Tr.sent : Tr.sendReq}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
