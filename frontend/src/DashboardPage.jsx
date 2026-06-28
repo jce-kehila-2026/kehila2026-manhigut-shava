@@ -14,6 +14,7 @@ import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 import { SlideshowBanner } from "./components/SlideshowBanner";
 import { TutorialPopup } from "./components/TutorialPopup";
 import { translateProfession } from "./utils/translateProfile";
+import { HelpPostsWidget } from "./HelpPostFeed";
 
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
@@ -521,6 +522,9 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                 </div>
               </div>
             )}
+
+            {/* Recent Help Posts */}
+            <HelpPostsWidget />
 
           </div>
         )}{/* end right sidebar */}

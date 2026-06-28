@@ -8,6 +8,8 @@ import { logActivity } from "./activityLogger";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { getOrCreateConversation, sendHelpRequestPrompt } from "./hooks/useMessages";
 import { translateProfession, translateLocation } from "./utils/translateProfile";
+import MultiSelectDropdown from "./components/MultiSelectDropdown";
+import HelpPostFeed from "./HelpPostFeed";
 
 /* ─── Translation ─── */
 const T = {
@@ -580,7 +582,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [sortMode,         setSortMode]         = useState("recent");
   const [showRegionSuggests, setShowRegionSuggests] = useState(false);
   const [pendingRequestTarget, setPendingRequestTarget] = useState(null);
-  const [activeTab, setActiveTab] = useState("search");
+  const [activeTab, setActiveTab] = useState("helpFeed");
   const [unifiedQuery, setUnifiedQuery] = useState("");
   const [showUnifiedSuggest, setShowUnifiedSuggest] = useState(false);
   const [unifiedDropPos, setUnifiedDropPos] = useState(null);
@@ -1043,9 +1045,10 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         scrollbarWidth: "none", gap: 0,
       }}>
         {[
-          { key: "search",      labelHe: "חיפוש עזרה",  labelEn: "Find Help",   labelAr: "بحث عن مساعدة" },
-          { key: "myReqs",      labelHe: "הבקשות שלי",  labelEn: "My Requests", labelAr: "طلباتي",        badge: sentRequests.length },
-          { key: "received",    labelHe: "קיבלתי",       labelEn: "Received",    labelAr: "الواردة",        badge: receivedRequests.filter(r => !r.status).length },
+          { key: "helpFeed",    labelHe: "פוסטים לעזרה", labelEn: "Help Feed",   labelAr: "منشورات المساعدة" },
+          { key: "search",      labelHe: "חיפוש ישיר",   labelEn: "Find a Member", labelAr: "بحث مباشر" },
+          { key: "myReqs",      labelHe: "הבקשות שלי",   labelEn: "My Requests", labelAr: "طلباتي",        badge: sentRequests.length },
+          { key: "received",    labelHe: "קיבלתי",        labelEn: "Received",    labelAr: "الواردة",        badge: receivedRequests.filter(r => !r.status).length },
         ].map(({ key, labelHe, labelEn, labelAr, badge }) => {
           const label = lang === "he" ? labelHe : lang === "ar" ? labelAr : labelEn;
           const active = activeTab === key;
@@ -1069,6 +1072,11 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           );
         })}
       </div>
+
+      {/* ── Help Feed Tab ── */}
+      {activeTab === "helpFeed" && (
+        <HelpPostFeed onViewProfile={onViewProfile} />
+      )}
 
       {/* ── Search Tab ── */}
       {activeTab === "search" && (
@@ -1173,27 +1181,16 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   autoComplete="off"
                 />
               </div>
-              {/* Area pills */}
+              {/* Area multi-select */}
               <div style={{ marginBottom:"0.75rem" }}>
                 <label style={S.label}>{Tr.helpAreaLbl}</label>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:"5px", marginTop:6 }}>
-                  {(Tr.helpAreas || []).map((label, i) => {
-                    const key = AREAS_KEYS[i];
-                    const active = selectedAreas.includes(key);
-                    return (
-                      <button key={key} onClick={() => toggleArea(key)} style={{
-                        display:"flex", alignItems:"center", gap:4,
-                        padding:"5px 10px", borderRadius:99, fontSize:11, fontWeight:600,
-                        border:`1.5px solid ${active ? "#4472b8" : "var(--border)"}`,
-                        background: active ? (dark ? "rgba(68,114,184,0.2)" : "#eef4ff") : "var(--bg-secondary)",
-                        color: active ? "#1d4896" : "var(--text-secondary)",
-                        cursor:"pointer", transition:"all 0.13s", fontFamily:"inherit",
-                      }}>
-                        {active && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4472b8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                        {label}
-                      </button>
-                    );
-                  })}
+                <div style={{ marginTop:6 }}>
+                  <MultiSelectDropdown
+                    options={(Tr.helpAreas||[]).map((label,i)=>({ value:AREAS_KEYS[i], label }))}
+                    selectedValues={selectedAreas}
+                    onChange={setSelectedAreas}
+                    placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."}
+                  />
                 </div>
               </div>
               {/* Region */}
@@ -1362,27 +1359,16 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               </div>
             </div>
 
-            {/* Help areas — pill-tick multi-select */}
+            {/* Help areas — multi-select dropdown */}
             <div style={{ ...S.group, marginBottom:"1rem" }}>
               <label style={S.label}>{Tr.helpAreaLbl}</label>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:"5px", marginTop:6 }}>
-                {(Tr.helpAreas || []).map((label, i) => {
-                  const key = AREAS_KEYS[i];
-                  const active = selectedAreas.includes(key);
-                  return (
-                    <button key={key} onClick={() => toggleArea(key)} style={{
-                      display:"flex", alignItems:"center", gap:4,
-                      padding:"5px 10px", borderRadius:99, fontSize:11, fontWeight:600,
-                      border:`1.5px solid ${active ? "#4472b8" : "var(--border)"}`,
-                      background: active ? (dark ? "rgba(68,114,184,0.2)" : "#eef4ff") : "var(--bg-secondary)",
-                      color: active ? "#1d4896" : "var(--text-secondary)",
-                      cursor:"pointer", transition:"all 0.13s", fontFamily:"inherit",
-                    }}>
-                      {active && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4472b8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                      {label}
-                    </button>
-                  );
-                })}
+              <div style={{ marginTop:6 }}>
+                <MultiSelectDropdown
+                  options={(Tr.helpAreas||[]).map((label,i)=>({ value:AREAS_KEYS[i], label }))}
+                  selectedValues={selectedAreas}
+                  onChange={setSelectedAreas}
+                  placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."}
+                />
               </div>
             </div>
 
