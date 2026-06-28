@@ -560,10 +560,11 @@ const S = {
     transition: "background 0.15s",
   },
   logFilterInput: {
-    padding: "7px 12px", fontSize: "12px",
-    border: "1.5px solid var(--border,#f0dce0)", borderRadius: "9px",
-    color: "var(--text-primary,#1a2e42)", background: "var(--bg-secondary,#f0f6fb)",
+    padding: "7px 12px", fontSize: "13px",
+    border: "1.5px solid var(--border,#daeaf8)", borderRadius: "9px",
+    color: "var(--text-primary,#111827)", background: "var(--bg-secondary,#fdf9f7)",
     fontFamily: "var(--font,'Figtree','Heebo',system-ui,sans-serif)",
+    width: "100%", boxSizing: "border-box",
   },
 };
 
@@ -3048,51 +3049,75 @@ export default function AdminPage() {
 
           {/* Filter card */}
           <div style={{ background:"var(--bg-primary,#fff)",borderRadius:"16px",padding:"1.25rem",border:"1.5px solid var(--border,#daeaf8)",marginBottom:"1rem",boxShadow:"0 2px 8px rgba(29, 72, 150,0.05)" }}>
-            <div style={{ display:"flex",gap:"0.75rem",flexWrap:"wrap",alignItems:"flex-end" }}>
-
-              {/* Type filter dropdown */}
-              {allLogTypes.length > 0 && (
-                <div>
-                  <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.filterByType}</p>
-                  <select
-                    value={logTypeFilter}
-                    onChange={e => setLogTypeFilter(e.target.value)}
-                    style={{ ...S.logFilterInput, cursor:"pointer" }}
-                  >
-                    <option value="">{Tr.allTypes}</option>
-                    {allLogTypes.map(type => (
-                      <option key={type} value={type}>
-                        {Tr.logTypeLabels?.[type] ?? getLogTypeConfig(type).label}
-                      </option>
-                    ))}
-                  </select>
+            {isMobile ? (
+              /* Mobile: two rows */
+              <div style={{ display:"flex",flexDirection:"column",gap:"0.75rem" }}>
+                <div style={{ display:"flex",gap:"0.75rem",alignItems:"flex-end" }}>
+                  {allLogTypes.length > 0 && (
+                    <div style={{ flexShrink:0 }}>
+                      <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.filterByType}</p>
+                      <select value={logTypeFilter} onChange={e => setLogTypeFilter(e.target.value)}
+                        style={{ ...S.logFilterInput, cursor:"pointer", width:"auto", appearance:"none", WebkitAppearance:"none", paddingRight:"28px", backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat:"no-repeat", backgroundPosition:"right 9px center" }}>
+                        <option value="">{Tr.allTypes}</option>
+                        {allLogTypes.map(type => <option key={type} value={type}>{Tr.logTypeLabels?.[type] ?? getLogTypeConfig(type).label}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.actorNameLabel}</p>
+                    <input style={S.logFilterInput} type="text" placeholder={Tr.filterByActor} value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
+                  </div>
                 </div>
-              )}
-
-              {/* Actor name */}
-              <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.actorNameLabel}</p>
-                <input style={{ ...S.logFilterInput,width:"180px" }} type="text" placeholder={Tr.filterByActor} value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
+                <div style={{ display:"flex",gap:"0.75rem",alignItems:"flex-end" }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.fromDateLabel}</p>
+                    <input style={S.logFilterInput} type="date" value={logDateFrom} onChange={e => setLogDateFrom(e.target.value)} />
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.toDateLabel}</p>
+                    <input style={S.logFilterInput} type="date" value={logDateTo} onChange={e => setLogDateTo(e.target.value)} />
+                  </div>
+                  {(logTypeFilter || logActorFilter || logDateFrom || logDateTo) && (
+                    <button onClick={() => { setLogTypeFilter(""); setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
+                      style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)",border:"1.5px solid var(--border,#daeaf8)" }}>
+                      {Tr.clearBtn}
+                    </button>
+                  )}
+                </div>
               </div>
-
-              {/* Date range */}
-              <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.fromDateLabel}</p>
-                <input style={S.logFilterInput} type="date" value={logDateFrom} onChange={e => setLogDateFrom(e.target.value)} />
+            ) : (
+              /* Desktop: single row */
+              <div style={{ display:"flex",gap:"0.75rem",alignItems:"flex-end" }}>
+                {allLogTypes.length > 0 && (
+                  <div style={{ flexShrink:0 }}>
+                    <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.filterByType}</p>
+                    <select value={logTypeFilter} onChange={e => setLogTypeFilter(e.target.value)}
+                      style={{ ...S.logFilterInput, cursor:"pointer", width:"auto", appearance:"none", WebkitAppearance:"none", paddingRight:"28px", backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat:"no-repeat", backgroundPosition:"right 9px center" }}>
+                      <option value="">{Tr.allTypes}</option>
+                      {allLogTypes.map(type => <option key={type} value={type}>{Tr.logTypeLabels?.[type] ?? getLogTypeConfig(type).label}</option>)}
+                    </select>
+                  </div>
+                )}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.actorNameLabel}</p>
+                  <input style={S.logFilterInput} type="text" placeholder={Tr.filterByActor} value={logActorFilter} onChange={e => setLogActorFilter(e.target.value)} />
+                </div>
+                <div style={{ flexShrink:0 }}>
+                  <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.fromDateLabel}</p>
+                  <input style={{ ...S.logFilterInput, width:"auto" }} type="date" value={logDateFrom} onChange={e => setLogDateFrom(e.target.value)} />
+                </div>
+                <div style={{ flexShrink:0 }}>
+                  <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.toDateLabel}</p>
+                  <input style={{ ...S.logFilterInput, width:"auto" }} type="date" value={logDateTo} onChange={e => setLogDateTo(e.target.value)} />
+                </div>
+                {(logTypeFilter || logActorFilter || logDateFrom || logDateTo) && (
+                  <button onClick={() => { setLogTypeFilter(""); setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
+                    style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)",border:"1.5px solid var(--border,#daeaf8)",flexShrink:0,alignSelf:"flex-end" }}>
+                    {Tr.clearBtn}
+                  </button>
+                )}
               </div>
-              <div>
-                <p style={{ ...S.modalLabel,marginBottom:"3px" }}>{Tr.toDateLabel}</p>
-                <input style={S.logFilterInput} type="date" value={logDateTo} onChange={e => setLogDateTo(e.target.value)} />
-              </div>
-
-              {/* Clear all filters */}
-              {(logTypeFilter || logActorFilter || logDateFrom || logDateTo) && (
-                <button onClick={() => { setLogTypeFilter(""); setLogActorFilter(""); setLogDateFrom(""); setLogDateTo(""); }}
-                  style={{ ...S.refreshBtn,background:"var(--bg-tertiary,#f0f6fb)",color:"var(--text-muted,#6b7280)",border:"1.5px solid var(--border,#f0dce0)" }}>
-                  {Tr.clearBtn}
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Log entries */}
