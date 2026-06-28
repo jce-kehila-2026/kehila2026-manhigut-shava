@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { collection, getDocs, addDoc, query, where, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
@@ -560,10 +560,10 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const isMobile = useIsMobile();
 
   const [memberName,     setMemberName]     = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("");
-  const [selectedArea,   setSelectedArea]   = useState("");
-  const [otherRegion,    setOtherRegion]    = useState("");
-  const [otherArea,      setOtherArea]      = useState("");
+  const [selectedRegion,   setSelectedRegion]   = useState("");
+  const [selectedAreas,    setSelectedAreas]    = useState([]);
+  const [professionFilter, setProfessionFilter] = useState("");
+  const [otherRegion,      setOtherRegion]      = useState("");
   const [layoutMode,       setLayoutMode]       = useState("cards");
   const [results,          setResults]          = useState([]);
   const [searched,         setSearched]         = useState(false);
@@ -578,8 +578,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [showSuggest,      setShowSuggest]      = useState(false);
   const [dropPos,          setDropPos]          = useState(null);
   const [sortMode,         setSortMode]         = useState("recent");
-  const [showAreaSuggests,    setShowAreaSuggests]    = useState(false);
-  const [showRegionSuggests,  setShowRegionSuggests]  = useState(false);
+  const [showRegionSuggests, setShowRegionSuggests] = useState(false);
   const [pendingRequestTarget, setPendingRequestTarget] = useState(null);
   const [activeTab, setActiveTab] = useState("search");
   const [unifiedQuery, setUnifiedQuery] = useState("");
@@ -590,8 +589,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const unifiedInputRef = useRef(null);
 
   const effectiveRegion = selectedRegion === "OTHER" ? otherRegion : selectedRegion;
-  const effectiveArea   = selectedArea   === "OTHER" ? otherArea   : selectedArea;
-  const hasFilters = !!(selectedArea || selectedRegion);
+  const hasFilters = selectedAreas.length > 0 || !!selectedRegion || !!professionFilter.trim();
+  const toggleArea = (key) => setSelectedAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
 
   useEffect(() => {
     if (!user) return;
@@ -695,21 +694,19 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     if (!allUsers.length) return;
     const q      = unifiedQuery.trim().toLowerCase();
     const region = selectedRegion === "OTHER" ? otherRegion.trim() : selectedRegion.trim();
-    const area   = selectedArea   === "OTHER" ? otherArea.trim()   : selectedArea.trim();
-    if (!q && !region && !area) { setResults([]); setSearched(false); return; }
+    const pf     = professionFilter.trim().toLowerCase();
+    if (!q && !region && !selectedAreas.length && !pf) { setResults([]); setSearched(false); return; }
     const id = setTimeout(() => {
       const filtered = allUsers.filter((u) => {
         const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
         const matchUnified = !q || (() => {
           if (fullName.includes(q)) return true;
-          // Region match via unified query (multilingual)
           const uRegion = (u.region ?? "").toLowerCase();
           const regionViaQuery = Object.entries(REGION_ALL_LANGS).some(([key, variants]) =>
             variants.some(v => v.toLowerCase().includes(q)) &&
             (u.region === key || variants.some(v => uRegion.includes(v.toLowerCase())))
           ) || uRegion.includes(q);
           if (regionViaQuery) return true;
-          // Area/profession match via keyword expansion
           const terms = expandSearchTerms(q);
           return terms.some(t =>
             (u.helpAreas ?? []).some(a => a.toLowerCase().includes(t))
@@ -722,29 +719,37 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           const variants = REGION_ALL_LANGS[region] || [region];
           return variants.some(v => (u.region ?? "").includes(v));
         })();
-        const matchArea = !area || (() => {
-          const isCanonical = !!AREAS_ALL_LANGS[area];
+        const matchArea = !selectedAreas.length || selectedAreas.some(areaKey => {
+          const isCanonical = !!AREAS_ALL_LANGS[areaKey];
           if (isCanonical) {
-            const variants = AREAS_ALL_LANGS[area];
+            const variants = AREAS_ALL_LANGS[areaKey];
             return (u.helpAreas ?? []).some(a => variants.some(v => a === v || a.includes(v)))
-              || (u.profession ?? "").toLowerCase().includes(area.toLowerCase())
-              || (u.currentRole ?? "").toLowerCase().includes(area.toLowerCase());
+              || (u.profession ?? "").toLowerCase().includes(areaKey.toLowerCase())
+              || (u.currentRole ?? "").toLowerCase().includes(areaKey.toLowerCase());
           }
-          const terms = expandSearchTerms(area);
+          const terms = expandSearchTerms(areaKey);
           return terms.some(t =>
             (u.helpAreas ?? []).some(a => a.toLowerCase().includes(t))
             || (u.profession ?? "").toLowerCase().includes(t)
             || (u.currentRole ?? "").toLowerCase().includes(t)
             || (u.bio ?? "").toLowerCase().includes(t)
           );
+        });
+        const matchProfession = !pf || (() => {
+          const terms = expandSearchTerms(pf);
+          return terms.some(t =>
+            (u.profession ?? "").toLowerCase().includes(t)
+            || (u.currentRole ?? "").toLowerCase().includes(t)
+            || (u.bio ?? "").toLowerCase().includes(t)
+          );
         })();
-        return matchUnified && matchRegion && matchArea;
+        return matchUnified && matchRegion && matchArea && matchProfession;
       });
       setResults(filtered);
       setSearched(true);
     }, 300);
     return () => clearTimeout(id);
-  }, [unifiedQuery, selectedRegion, selectedArea, otherRegion, otherArea, allUsers]);
+  }, [unifiedQuery, selectedRegion, selectedAreas, otherRegion, professionFilter, allUsers]);
 
   const sortedResults = sortMode === "alpha"
     ? [...results].sort((a, b) => getFullName(a).localeCompare(getFullName(b), undefined, { sensitivity: "base" }))
@@ -1157,22 +1162,49 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           {/* Mobile: collapsible filter panel */}
           {isMobile && filtersOpen && (
             <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem", marginBottom:"1rem", direction:dir }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.75rem" }}>
-                <div>
-                  <label style={S.label}>{Tr.helpAreaLbl}</label>
-                  <div style={{ marginTop:6 }}>
-                    <AreaDropdown value={selectedArea} onChange={(k)=>{setSelectedArea(k);setOtherArea("");}} areas={[...([...(Tr.helpAreas||[]).map((label,i)=>({label,key:AREAS_KEYS[i]}))].sort((a,b)=>a.label.localeCompare(b.label,"he"))),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."} isRTL={isRTL}/>
-                  </div>
+              {/* Profession filter */}
+              <div style={{ marginBottom:"0.75rem" }}>
+                <label style={S.label}>{lang==="he"?"תחום / מקצוע":lang==="ar"?"المجال / المهنة":"Profession / Field"}</label>
+                <input className="support-input" style={{ ...S.input, fontSize:13, marginTop:6 }}
+                  type="text"
+                  placeholder={lang==="he"?"חפשי מקצוע...":lang==="ar"?"ابحثي عن مهنة...":"Search profession..."}
+                  value={professionFilter}
+                  onChange={(e) => setProfessionFilter(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              {/* Area pills */}
+              <div style={{ marginBottom:"0.75rem" }}>
+                <label style={S.label}>{Tr.helpAreaLbl}</label>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:"5px", marginTop:6 }}>
+                  {(Tr.helpAreas || []).map((label, i) => {
+                    const key = AREAS_KEYS[i];
+                    const active = selectedAreas.includes(key);
+                    return (
+                      <button key={key} onClick={() => toggleArea(key)} style={{
+                        display:"flex", alignItems:"center", gap:4,
+                        padding:"5px 10px", borderRadius:99, fontSize:11, fontWeight:600,
+                        border:`1.5px solid ${active ? "#4472b8" : "var(--border)"}`,
+                        background: active ? (dark ? "rgba(68,114,184,0.2)" : "#eef4ff") : "var(--bg-secondary)",
+                        color: active ? "#1d4896" : "var(--text-secondary)",
+                        cursor:"pointer", transition:"all 0.13s", fontFamily:"inherit",
+                      }}>
+                        {active && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4472b8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div>
-                  <label style={S.label}>{Tr.regionLbl}</label>
-                  <div style={{ marginTop:6 }}>
-                    <AreaDropdown value={selectedRegion} onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}} areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع المناطق...":"All regions..."} isRTL={isRTL}/>
-                  </div>
+              </div>
+              {/* Region */}
+              <div style={{ marginBottom:"0.5rem" }}>
+                <label style={S.label}>{Tr.regionLbl}</label>
+                <div style={{ marginTop:6 }}>
+                  <AreaDropdown value={selectedRegion} onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}} areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع المناطق...":"All regions..."} isRTL={isRTL}/>
                 </div>
               </div>
               {hasFilters && (
-                <button onClick={()=>{setSelectedArea("");setSelectedRegion("");setOtherArea("");setOtherRegion("");}} style={{ marginTop:"0.75rem", background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"4px 0", fontFamily:"inherit" }}>
+                <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}} style={{ marginTop:"0.5rem", background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"4px 0", fontFamily:"inherit" }}>
                   {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
                 </button>
               )}
@@ -1183,7 +1215,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           {!searched && (
             <div style={{ direction:dir }}>
               <div style={{ textAlign:"center", padding:"1.5rem 1rem 2rem", background:"var(--bg-primary)", borderRadius:18, border:"1.5px solid var(--border)", marginBottom:"1.5rem" }}>
-                <img src="/FindHelpSymbol.png" style={{ width:60, height:60, objectFit:"contain", marginBottom:"0.5rem" }} alt="" />
+                <img src="/FindHelpSymbol.png" style={{ width:60, height:60, objectFit:"contain", display:"block", margin:"0 auto 0.5rem" }} alt="" />
                 <p style={{ fontSize:16, fontWeight:700, color:"var(--text-primary)", margin:"0 0 6px" }}>
                   {lang==="he"?"חפשי חברות שיכולות לעזור לך":lang==="ar"?"ابحثي عن عضوات يمكنهن مساعدتك":"Find members who can help you"}
                 </p>
@@ -1311,34 +1343,47 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           <div style={{ width:260, flexShrink:0, direction:dir, background:"var(--bg-primary)", borderRadius:18, border:"1.5px solid var(--border)", padding:"1.25rem 1rem", position:"sticky", top:16, alignSelf:"flex-start" }}>
             <p style={{ ...S.sectionLabel, marginBottom:"1rem" }}>{lang==="he"?"פילטרים":lang==="ar"?"الفلاتر":"Filters"}</p>
 
+            {/* Profession / General field */}
             <div style={S.group}>
+              <label style={S.label}>{lang==="he"?"תחום / מקצוע":lang==="ar"?"المجال / المهنة":"Profession / Field"}</label>
+              <div style={{ position:"relative" }}>
+                <input className="support-input" style={{ ...S.input, fontSize:13 }}
+                  type="text"
+                  placeholder={lang==="he"?"חפשי מקצוע...":lang==="ar"?"ابحثي عن مهنة...":"Search profession..."}
+                  value={professionFilter}
+                  onChange={(e) => setProfessionFilter(e.target.value)}
+                  autoComplete="off"
+                />
+                {professionFilter && (
+                  <button onMouseDown={()=>setProfessionFilter("")} style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:10, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"4px", display:"flex" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Help areas — pill-tick multi-select */}
+            <div style={{ ...S.group, marginBottom:"1rem" }}>
               <label style={S.label}>{Tr.helpAreaLbl}</label>
-              <AreaDropdown
-                value={selectedArea}
-                onChange={(k)=>{setSelectedArea(k);setOtherArea("");}}
-                areas={[...([...(Tr.helpAreas||[]).map((label,i)=>({label,key:AREAS_KEYS[i]}))].sort((a,b)=>a.label.localeCompare(b.label,"he"))),{label:Tr.otherLbl,key:"OTHER"}]}
-                placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."}
-                isRTL={isRTL}
-              />
-              {selectedArea === "OTHER" && (
-                <div style={{ position:"relative", marginTop:8 }}>
-                  <input className="support-input" style={S.input} type="text" placeholder={Tr.otherPh}
-                    value={otherArea}
-                    onChange={(e)=>{setOtherArea(e.target.value);setShowAreaSuggests(true);}}
-                    onBlur={()=>setTimeout(()=>setShowAreaSuggests(false),160)}
-                    autoComplete="off"
-                  />
-                  {showAreaSuggests && otherArea.trim().length>=1 && (() => {
-                    const q = otherArea.trim().toLowerCase();
-                    const opts = [...new Set(allUsers.flatMap(u=>[u.profession,u.currentRole,...(u.helpAreas||[])]).filter(v=>v&&v.toLowerCase().includes(q)))].slice(0,8);
-                    return opts.length>0 ? (
-                      <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--bg-primary)",border:"1.5px solid var(--border)",borderRadius:12,boxShadow:"0 6px 20px rgba(29,72,150,0.12)",maxHeight:180,overflowY:"auto",zIndex:300,animation:"dropIn 0.14s ease"}}>
-                        {opts.map((s,i)=><button key={s} type="button" onMouseDown={()=>{setOtherArea(s);setShowAreaSuggests(false);}} style={{width:"100%",textAlign:isRTL?"right":"left",padding:"9px 14px",background:"transparent",border:"none",borderBottom:i<opts.length-1?"1px solid var(--border)":"none",fontSize:13,color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",direction:isRTL?"rtl":"ltr"}}>{s}</button>)}
-                      </div>
-                    ) : null;
-                  })()}
-                </div>
-              )}
+              <div style={{ display:"flex", flexWrap:"wrap", gap:"5px", marginTop:6 }}>
+                {(Tr.helpAreas || []).map((label, i) => {
+                  const key = AREAS_KEYS[i];
+                  const active = selectedAreas.includes(key);
+                  return (
+                    <button key={key} onClick={() => toggleArea(key)} style={{
+                      display:"flex", alignItems:"center", gap:4,
+                      padding:"5px 10px", borderRadius:99, fontSize:11, fontWeight:600,
+                      border:`1.5px solid ${active ? "#4472b8" : "var(--border)"}`,
+                      background: active ? (dark ? "rgba(68,114,184,0.2)" : "#eef4ff") : "var(--bg-secondary)",
+                      color: active ? "#1d4896" : "var(--text-secondary)",
+                      cursor:"pointer", transition:"all 0.13s", fontFamily:"inherit",
+                    }}>
+                      {active && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4472b8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div style={S.group}>
@@ -1372,7 +1417,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
             </div>
 
             {hasFilters && (
-              <button onClick={()=>{setSelectedArea("");setSelectedRegion("");setOtherArea("");setOtherRegion("");}}
+              <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}}
                 style={{ background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"4px 0", display:"block", fontFamily:"inherit" }}>
                 {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
               </button>
