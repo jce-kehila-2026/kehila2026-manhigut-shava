@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { doc, updateDoc, writeBatch, collection, getDocs, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, writeBatch, collection, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -239,28 +239,12 @@ function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, 
 
 /* ── Home page (overview) ── */
 function HomePage({ user, profile, onNavigate, onViewProfile }) {
-  const [suggested, setSuggested]       = useState([]);
-  const [helpRequests, setHelpRequests] = useState([]);
+  const [members, setMembers]           = useState([]);
+  const [featuredIdx, setFeaturedIdx]   = useState(0);
+  const [featuredFade, setFeaturedFade] = useState(true);
   const { t, lang } = useLang();
-  const isMobile = useIsMobile(1024); // single-column below 1024px (covers split-screen & tablets)
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(
-      collection(db, "helpRequests"),
-      where("toId", "==", user.uid),
-      orderBy("createdAt", "desc"),
-      limit(20)
-    );
-    const unsub = onSnapshot(q, snap =>
-      setHelpRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    );
-    return unsub;
-  }, [user]);
-
-  const initials = profile
-    ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
-    : "?";
+  const isMobile = useIsMobile(1024);
+  const stripRef = useRef(null);
 
   useEffect(() => {
     if (!user) return;
@@ -272,14 +256,25 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         convsSnap.docs.flatMap(d => (d.data().participants || []).filter(id => id !== user.uid))
       );
       const others = usersSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .filter((u) => u.id !== user.uid && u.profession && !alreadyTalkedTo.has(u.id));
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(u => u.id !== user.uid && !alreadyTalkedTo.has(u.id));
       others.sort((a, b) => ((b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1));
-      setSuggested(others.slice(0, 4));
+      setMembers(others.slice(0, 16));
     });
   }, [user]);
 
-  const pendingRequests = helpRequests.filter((r) => !r.status);
+  const stepFeatured = (dir) => {
+    if (!members.length) return;
+    setFeaturedFade(false);
+    setTimeout(() => {
+      setFeaturedIdx(i => (i + dir + members.length) % members.length);
+      setFeaturedFade(true);
+    }, 220);
+  };
+
+  const scrollStrip = (dir) => {
+    stripRef.current?.scrollBy({ left: dir * 180, behavior: "smooth" });
+  };
 
   const quickCircles = [
     { imgSrc: "/FindHelpSymbol.png",  title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
@@ -288,10 +283,64 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
     { imgSrc: "/ProfileSymbol.png",   title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
   ];
 
-  return (
-    <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", maxWidth: "100%", padding: isMobile ? "1.25rem 1rem 1.5rem" : "2.25rem 2.75rem" }}>
+  const profilePct = (() => {
+    const fields = [
+      profile?.firstName, profile?.lastName, profile?.phone,
+      profile?.region, profile?.profession || profile?.currentRole,
+      profile?.bio, profile?.birthDate || profile?.birthdate,
+      profile?.helpAreas?.length > 0,
+    ];
+    return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  })();
 
-      {/* Shared keyframes */}
+  const featured = members[featuredIdx] ?? null;
+
+  /* Circular nav arrow — LP-style */
+  const navArrow = (onClick, pts) => (
+    <button onClick={onClick} style={{
+      width:40, height:40, borderRadius:"50%", flexShrink:0,
+      border:"2px solid #daeaf8", background:"var(--bg-primary)",
+      color:"#4472b8", cursor:"pointer",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      boxShadow:"0 5px 22px rgba(68,114,184,0.10)",
+      transition:"all 0.22s cubic-bezier(0.2,0.8,0.2,1)",
+    }}
+    onMouseEnter={e => Object.assign(e.currentTarget.style, { background:"#4472b8", borderColor:"#4472b8", color:"#fff", transform:"scale(1.1)", boxShadow:"0 10px 32px rgba(68,114,184,0.28)" })}
+    onMouseLeave={e => Object.assign(e.currentTarget.style, { background:"var(--bg-primary)", borderColor:"#daeaf8", color:"#4472b8", transform:"scale(1)", boxShadow:"0 5px 22px rgba(68,114,184,0.10)" })}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points={pts}/>
+      </svg>
+    </button>
+  );
+
+  /* LP-style section eyebrow */
+  const sectionEyebrow = (label) => (
+    <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase", color:"#4472b8", margin:"0 0 0.6rem", fontFamily:"'Figtree',system-ui,sans-serif" }}>
+      {label}
+    </p>
+  );
+
+  /* LP-style member avatar circle */
+  const memberAvatar = (m, size, borderPx = 3) => {
+    const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
+    const av = avatarUrl(m);
+    const initials = name.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0,2).toUpperCase();
+    return (
+      <div style={{ width:size, height:size, borderRadius:"50%", overflow:"hidden", flexShrink:0,
+        background:"linear-gradient(135deg,#4472b8,#6da3d4)",
+        border:`${borderPx}px solid #daeaf8`,
+        boxShadow:"0 4px 16px rgba(68,114,184,0.22)",
+        display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {av
+          ? <img src={av} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt="" />
+          : <span style={{ color:"#fff", fontSize:size*0.34, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{initials}</span>}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ flex:1, minHeight:0, overflowY:"auto", overflowX:"hidden", maxWidth:"100%",
+      padding: isMobile ? "1.25rem 1rem 1.5rem" : "1.75rem 2rem" }}>
       <style>{`
         @keyframes qc-float-0{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
         @keyframes qc-float-1{0%,100%{transform:translateY(-5px)}50%{transform:translateY(8px)}}
@@ -299,234 +348,235 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         @keyframes qc-float-3{0%,100%{transform:translateY(-4px)}50%{transform:translateY(9px)}}
         @keyframes qc-ring{0%{opacity:0.7;transform:scale(0.7)}100%{opacity:0;transform:scale(2.2)}}
         @keyframes qc-pop{from{opacity:0;transform:translateY(22px) scale(0.88)}to{opacity:1;transform:none}}
+        @keyframes hp-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+        .hp-col{animation:hp-rise 0.58s cubic-bezier(0.16,1,0.3,1) both}
+        .hp-col:nth-child(1){animation-delay:0.05s}
+        .hp-col:nth-child(2){animation-delay:0.17s}
+        .hp-col:nth-child(3){animation-delay:0.29s}
+        .strip-scroll::-webkit-scrollbar{display:none}
+        .strip-scroll{-ms-overflow-style:none;scrollbar-width:none}
+        .strip-pip{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform 0.25s cubic-bezier(0.2,0.8,0.2,1)}
+        .strip-pip:hover{transform:translateY(-6px)}
+        .hp-member-card{
+          background:var(--bg-primary);border-radius:20px;
+          border:1px solid #daeaf8;
+          box-shadow:0 4px 20px rgba(0,0,0,0.04);
+          transition:box-shadow 0.25s ease,transform 0.25s ease,border-color 0.25s ease;
+        }
+        .hp-member-card:hover{
+          box-shadow:0 16px 48px rgba(68,114,184,0.13);
+          transform:translateY(-4px);
+          border-color:#4472b8;
+        }
       `}</style>
 
-      {/* Profile nudge — slim strip at top on mobile, sidebar card on desktop */}
-      {(() => {
-        const fields = [
-          profile?.firstName, profile?.lastName, profile?.phone,
-          profile?.region,
-          profile?.profession || profile?.currentRole,
-          profile?.bio,
-          profile?.birthDate || profile?.birthdate,
-          profile?.helpAreas?.length > 0,
-        ];
-        const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
-        if (pct >= 100) return null;
-        if (isMobile) return (
-          <div onClick={() => onNavigate("profile")} style={{
-            display:"flex", alignItems:"center", gap:10,
-            background:"var(--bg-primary,#fff)",
-            border:"1px solid rgba(232,115,90,0.2)",
-            borderRadius:10, padding:"8px 12px",
-            cursor:"pointer", marginBottom:"0.75rem",
-          }}>
-            <div style={{ flex:1 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:"var(--text-primary,#111827)" }}>
-                  {t.dash?.completeProfileTitle || "Complete your profile"}
-                </span>
-                <span style={{ fontSize:13, fontWeight:800, color:"#e8735a" }}>{pct}%</span>
-              </div>
-              <div style={{ height:4, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
-                <div style={{ height:"100%", width:`${pct}%`, borderRadius:99, background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
+      {isMobile ? (
+        /* ── MOBILE layout ── */
+        <div>
+          {profilePct < 100 && (
+            <div onClick={() => onNavigate("profile")} style={{
+              display:"flex", alignItems:"center", gap:10,
+              background:"var(--bg-primary)", border:"1px solid rgba(232,115,90,0.2)",
+              borderRadius:14, padding:"10px 14px", cursor:"pointer", marginBottom:"1rem",
+              boxShadow:"0 2px 8px rgba(232,115,90,0.06)",
+            }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:"var(--text-primary)" }}>
+                    {t.dash?.completeProfileTitle || "Complete your profile"}
+                  </span>
+                  <span style={{ fontSize:13, fontWeight:800, color:"#e8735a" }}>{profilePct}%</span>
+                </div>
+                <div style={{ height:4, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${profilePct}%`, borderRadius:99, background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
+                </div>
               </div>
             </div>
-            <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)", whiteSpace:"nowrap" }}>→</span>
+          )}
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"0.4rem", marginBottom:"1rem", placeItems:"center" }}>
+            {quickCircles.map((item, i) => (
+              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} onClick={() => onNavigate(item.action)} />
+            ))}
           </div>
-        );
-        return null; // desktop version rendered inside right sidebar below
-      })()}
 
-      {/* Two-column layout on desktop, single column on mobile */}
-      <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: isMobile ? undefined : "1fr 300px", gap: "1.5rem", alignItems: "start" }}>
+          <SlideshowBanner maxHeight={220} />
 
-        {/* LEFT (desktop) / TOP (mobile): circles + slideshow */}
-        <div>
-          {/* Mobile: 4-column grid above slideshow */}
-          {isMobile && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"0.4rem",
-              marginBottom:"1rem", padding:"0 0 0.25rem", placeItems:"center" }}>
+          {members.length > 0 && (
+            <div style={{ marginTop:"1.5rem" }}>
+              {sectionEyebrow(t.dash?.us || "Us")}
+              <div className="strip-scroll" style={{ display:"flex", gap:14, overflowX:"auto", paddingBottom:8, paddingTop:4 }}>
+                {members.map(m => {
+                  const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
+                  return (
+                    <div key={m.id} className="strip-pip" onClick={() => onViewProfile(m.id)}>
+                      {memberAvatar(m, 54, 2)}
+                      <p style={{ fontSize:9, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:58, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {name.split(" ")[0]}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── DESKTOP 3-column layout ── */
+        <>
+          {profilePct < 100 && (
+            <div onClick={() => onNavigate("profile")} style={{
+              display:"flex", alignItems:"center", gap:14,
+              background:"var(--bg-primary)", border:"1px solid rgba(232,115,90,0.2)",
+              borderRadius:16, padding:"0.75rem 1.25rem", cursor:"pointer", marginBottom:"1.75rem",
+              animation:"hp-rise 0.4s ease both",
+              boxShadow:"0 2px 10px rgba(232,115,90,0.07)", transition:"box-shadow 0.25s ease, transform 0.25s ease",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow="0 8px 24px rgba(232,115,90,0.14)"; e.currentTarget.style.transform="translateY(-2px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow="0 2px 10px rgba(232,115,90,0.07)"; e.currentTarget.style.transform="none"; }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:"var(--text-primary)" }}>
+                    {t.dash?.completeProfileTitle || "Complete your profile"}
+                  </span>
+                  <span style={{ fontSize:14, fontWeight:800, color:"#e8735a" }}>{profilePct}%</span>
+                </div>
+                <div style={{ height:5, borderRadius:99, background:"rgba(68,114,184,0.12)", overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${profilePct}%`, borderRadius:99, background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
+                </div>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8735a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+          )}
+
+          <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1.15fr) auto minmax(0,1fr)", gap:"2.25rem", alignItems:"start" }}>
+
+            {/* ── COL 1: Moments ── */}
+            <div className="hp-col">
+              {sectionEyebrow(t.dash?.moments || "Moments")}
+              <SlideshowBanner maxHeight={480} />
+            </div>
+
+            {/* ── COL 2: Shortcuts ── */}
+            <div className="hp-col" style={{ display:"flex", flexDirection:"column", gap:"0.6rem", paddingTop:"1.9rem" }}>
               {quickCircles.map((item, i) => (
-                <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} onClick={() => onNavigate(item.action)} />
+                <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={false} vertical onClick={() => onNavigate(item.action)} />
               ))}
             </div>
-          )}
 
-          {/* Desktop: circles column on left + slideshow on right */}
-          {!isMobile && (
-            <div style={{ display:"flex", gap:"1.5rem", alignItems:"flex-start" }}>
-              <div style={{ display:"flex", flexDirection:"column", gap:"0.75rem", paddingInline:"0.25rem" }}>
-                {quickCircles.map((item, i) => (
-                  <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={false} vertical onClick={() => onNavigate(item.action)} />
-                ))}
-              </div>
-              <div style={{ flex:1 }}>
-                <SlideshowBanner maxHeight={520} />
-              </div>
-            </div>
-          )}
+            {/* ── COL 3: Us ── */}
+            <div className="hp-col">
+              {sectionEyebrow(t.dash?.us || "Us")}
 
-          {/* Mobile slideshow */}
-          {isMobile && <SlideshowBanner maxHeight={220} />}
+              {/* Featured member card — LP LeaderCard style */}
+              {featured && (
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:"1.5rem" }}>
+                  {members.length > 1 && navArrow(() => stepFeatured(-1), "15 18 9 12 15 6")}
 
-          {/* On mobile: help requests + suggestions appear below slideshow */}
-          {isMobile && (
-            <>
-              {pendingRequests.length > 0 && (
-                <div style={{ marginTop:"0.75rem" }}>
-                  <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
-                    {pendingRequests.slice(0, 2).map((r) => (
-                      <div key={r.id} style={{ padding:"0.7rem 0.85rem", display:"flex", alignItems:"center", gap:"0.65rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:10, borderLeft:"3px solid #e8735a" }}>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0 }}>{r.fromUserName}</p>
-                          <p style={{ fontSize:10, color:"var(--text-muted)", margin:0 }}>{r.fromUserProfession || r.fromUserEmail}</p>
-                        </div>
-                        <button onClick={() => onNavigate("members")} style={{ padding:"4px 10px", borderRadius:99, background:"var(--brand)", color:"#fff", border:"none", fontSize:10, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
-                          {t.dash.viewReq}
-                        </button>
+                  <div
+                    className="hp-member-card"
+                    style={{
+                      flex:1, padding:"1.5rem",
+                      display:"flex", flexDirection:"column", gap:"1rem",
+                      opacity: featuredFade ? 1 : 0,
+                      transform: featuredFade ? "translateY(0)" : "translateY(8px)",
+                      transition: "opacity 0.22s ease, transform 0.22s ease, box-shadow 0.25s ease, border-color 0.25s ease",
+                    }}
+                  >
+                    {/* Avatar row */}
+                    <div style={{ display:"flex", alignItems:"center", gap:"1rem" }}>
+                      <div onClick={() => onViewProfile(featured.id)} style={{ cursor:"pointer" }}>
+                        {memberAvatar(featured, 72, 3)}
                       </div>
-                    ))}
+                      <div style={{ minWidth:0 }}>
+                        <h3 style={{ fontSize:17, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif", margin:"0 0 3px", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {`${featured.firstName || ""} ${featured.lastName || ""}`.trim() || featured.email}
+                        </h3>
+                        {featured.profession && (
+                          <p style={{ fontSize:11, fontWeight:700, color:"#4472b8", margin:0, letterSpacing:"0.06em", textTransform:"uppercase" }}>
+                            {featured.professionTranslations?.[lang] || translateProfession(featured.profession, lang)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bio quote block */}
+                    {(featured.bio || featured.region) && (
+                      <div style={{ background:"#f0f6fb", borderRadius:12, padding:"0.85rem 1rem", borderLeft:"3.5px solid #e8735a" }}>
+                        <p style={{ fontSize:13, color:"#374151", lineHeight:1.75, margin:0, fontStyle:"italic",
+                          display:"-webkit-box", WebkitLineClamp:4, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                          "{featured.bio || featured.region}"
+                        </p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => onViewProfile(featured.id)}
+                      style={{
+                        alignSelf:"flex-start", padding:"7px 18px", borderRadius:99,
+                        background:"transparent", border:"2px solid #daeaf8",
+                        color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer",
+                        transition:"all 0.22s cubic-bezier(0.2,0.8,0.2,1)",
+                        fontFamily:"'Figtree',system-ui,sans-serif",
+                      }}
+                      onMouseEnter={e => Object.assign(e.currentTarget.style, { background:"#4472b8", borderColor:"#4472b8", color:"#fff", boxShadow:"0 8px 22px rgba(68,114,184,0.28)", transform:"translateY(-1px)" })}
+                      onMouseLeave={e => Object.assign(e.currentTarget.style, { background:"transparent", borderColor:"#daeaf8", color:"#4472b8", boxShadow:"none", transform:"none" })}
+                    >
+                      {t.dash?.viewProfile || "View profile"}
+                    </button>
                   </div>
+
+                  {members.length > 1 && navArrow(() => stepFeatured(1), "9 18 15 12 9 6")}
                 </div>
               )}
-              {suggested.length > 0 && (
-                <div style={{ marginTop:"0.75rem" }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.5rem" }}>
-                    <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
-                    <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"0.4rem" }}>
-                    {suggested.slice(0, 3).map((u) => {
-                      const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
-                      const online = isActuallyOnline(u);
-                      const av = avatarUrl(u);
+
+              {/* Horizontal member strip */}
+              {members.length > 0 && (
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  {navArrow(() => scrollStrip(-1), "15 18 9 12 15 6")}
+                  <div ref={stripRef} className="strip-scroll" style={{ flex:1, display:"flex", gap:12, overflowX:"auto", padding:"6px 2px 10px" }}>
+                    {members.map((m, i) => {
+                      const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
+                      const active = i === featuredIdx;
                       return (
-                        <div key={u.id} onClick={() => onViewProfile(u.id)} style={{ display:"flex", alignItems:"center", gap:"0.6rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:10, padding:"0.55rem 0.75rem", cursor:"pointer" }}>
-                          <div style={{ position:"relative", flexShrink:0, width:30, height:30, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#e8735a)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                            {av ? <img src={av} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{name[0]?.toUpperCase()}</span>}
-                            {online && <div style={{ position:"absolute", bottom:0, right:0, width:7, height:7, borderRadius:"50%", background:"#4ade80", border:"1.5px solid var(--bg-primary)" }} />}
+                        <div key={m.id} className="strip-pip" onClick={() => {
+                          setFeaturedFade(false);
+                          setTimeout(() => { setFeaturedIdx(i); setFeaturedFade(true); }, 220);
+                          onViewProfile(m.id);
+                        }}>
+                          <div style={{
+                            width:52, height:52, borderRadius:"50%", overflow:"hidden", flexShrink:0,
+                            background:"linear-gradient(135deg,#4472b8,#6da3d4)",
+                            border: active ? "3px solid #4472b8" : "3px solid #daeaf8",
+                            boxShadow: active ? "0 0 0 3px rgba(68,114,184,0.18), 0 4px 16px rgba(68,114,184,0.22)" : "0 4px 16px rgba(68,114,184,0.12)",
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                            transition:"border-color 0.2s, box-shadow 0.2s",
+                          }}>
+                            {avatarUrl(m)
+                              ? <img src={avatarUrl(m)} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt="" />
+                              : <span style={{ color:"#fff", fontSize:18, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>}
                           </div>
-                          <div style={{ minWidth:0 }}>
-                            <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
-                            {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang)}</p>}
-                          </div>
+                          <p style={{
+                            fontSize:9, margin:0, textAlign:"center", maxWidth:58,
+                            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                            color: active ? "#4472b8" : "var(--text-muted)",
+                            fontWeight: active ? 700 : 400, transition:"color 0.18s",
+                          }}>
+                            {name.split(" ")[0]}
+                          </p>
                         </div>
                       );
                     })}
                   </div>
+                  {navArrow(() => scrollStrip(1), "9 18 15 12 9 6")}
                 </div>
               )}
-            </>
-          )}
-        </div>
-
-        {/* RIGHT sidebar — desktop only */}
-        {!isMobile && (
-          <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
-
-            {/* Compact profile nudge (desktop sidebar) */}
-            {(() => {
-              const fields = [
-                profile?.firstName, profile?.lastName, profile?.phone,
-                profile?.region,
-                profile?.profession || profile?.currentRole,
-                profile?.bio,
-                profile?.birthDate || profile?.birthdate,
-                profile?.helpAreas?.length > 0,
-              ];
-              const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
-              if (pct >= 100) return null;
-              return (
-                <div onClick={() => onNavigate("profile")} style={{
-                  background:"var(--bg-primary,#fff)",
-                  border:"1px solid rgba(232,115,90,0.22)",
-                  borderRadius:14, padding:"0.9rem 1rem",
-                  cursor:"pointer",
-                  boxShadow:"0 2px 10px rgba(232,115,90,0.07)",
-                  transition:"transform 0.18s, box-shadow 0.18s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 6px 18px rgba(232,115,90,0.14)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow="0 2px 10px rgba(232,115,90,0.07)"; }}
-                >
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"var(--text-primary,#111827)" }}>
-                      {t.dash?.completeProfileTitle || "Complete Your Profile"}
-                    </span>
-                    <span style={{ fontSize:16, fontWeight:800, color:"#e8735a" }}>{pct}%</span>
-                  </div>
-                  <div style={{ height:5, borderRadius:99, background:"rgba(68,114,184,0.13)", overflow:"hidden" }}>
-                    <div style={{ height:"100%", width:`${pct}%`, borderRadius:99, background:"linear-gradient(90deg,#4472b8,#e8735a)", transition:"width 0.6s" }} />
-                  </div>
-                  <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:"5px 0 0", fontWeight:500 }}>
-                    {t.dash?.completeProfileCta || "Tap to complete →"}
-                  </p>
-                </div>
-              );
-            })()}
-
-            {/* Help Requests */}
-            {pendingRequests.length > 0 && (
-              <div>
-                <p style={eyebrow}>{t.dash.pendingHelp} ({pendingRequests.length})</p>
-                <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
-                  {pendingRequests.slice(0, 3).map((r) => (
-                    <div key={r.id} style={{ padding:"0.85rem 1rem", display:"flex", alignItems:"center", gap:"0.75rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:12, borderLeft:"3px solid #e8735a" }}>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", marginBottom:1 }}>{r.fromUserName}</p>
-                        <p style={{ fontSize:10, color:"var(--text-muted)" }}>{r.fromUserProfession || r.fromUserEmail}</p>
-                      </div>
-                      <button onClick={() => onNavigate("members")} style={{ padding:"5px 12px", borderRadius:99, background:"var(--brand)", color:"#fff", border:"none", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
-                        {t.dash.viewReq}
-                      </button>
-                    </div>
-                  ))}
-                  {pendingRequests.length > 3 && (
-                    <button onClick={() => onNavigate("members")} style={{ fontSize:12, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontWeight:600, padding:"2px 0" }}>
-                      {t.dash.moreReqs(pendingRequests.length - 3)}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Suggested members */}
-            {suggested.length > 0 && (
-              <div>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.6rem" }}>
-                  <p style={{ ...eyebrow, marginBottom:0 }}>{t.dash.suggestedMembers}</p>
-                  <button onClick={() => onNavigate("members")} style={{ fontSize:11, color:"var(--brand)", background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>{t.dash.viewAll}</button>
-                </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
-                  {suggested.map((u) => {
-                    const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
-                    const online = isActuallyOnline(u);
-                    const av = avatarUrl(u);
-                    return (
-                      <div key={u.id} onClick={() => onViewProfile(u.id)} style={{ display:"flex", alignItems:"center", gap:"0.65rem", background:"var(--bg-primary)", border:"1px solid var(--border)", borderRadius:12, padding:"0.65rem 0.85rem", cursor:"pointer", transition:"box-shadow 0.18s" }}
-                        onMouseEnter={e => e.currentTarget.style.boxShadow="0 4px 14px rgba(68,114,184,0.12)"}
-                        onMouseLeave={e => e.currentTarget.style.boxShadow=""}>
-                        <div style={{ position:"relative", flexShrink:0, width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#4472b8,#e8735a)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-                          {av ? <img src={av} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{name[0]?.toUpperCase()}</span>}
-                          {online && <div style={{ position:"absolute", bottom:1, right:1, width:8, height:8, borderRadius:"50%", background:"#4ade80", border:"1.5px solid var(--bg-primary)" }} />}
-                        </div>
-                        <div style={{ minWidth:0 }}>
-                          <p style={{ fontSize:12, fontWeight:600, color:"var(--text-primary)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
-                          {u.profession && <p style={{ fontSize:10, color:"var(--text-muted)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.professionTranslations?.[lang] || translateProfession(u.profession, lang)}</p>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
+            </div>
           </div>
-        )}{/* end right sidebar */}
-      </div>{/* end two-column grid */}
-
-
+        </>
+      )}
     </div>
   );
 }
