@@ -557,6 +557,24 @@ export default function DashboardPage() {
     return () => { window.removeEventListener("online", goOnline); window.removeEventListener("offline", goOffline); };
   }, []);
 
+  /* Sync browser history with app navigation so the browser back button stays within the app */
+  useEffect(() => {
+    window.history.replaceState({ section: "home", profileTarget: null, chatTarget: null }, "");
+
+    const handlePopState = (event) => {
+      const state = event.state;
+      if (!state?.section) return;
+      setSection(state.section);
+      sessionStorage.setItem("section", state.section);
+      setProfileTarget(state.profileTarget ?? null);
+      setChatTarget(state.chatTarget ?? null);
+      setNavHistory([state.section]);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   /* Tab switch — resets back-history so pressing back never returns to a random tab */
   const switchTab = useCallback((s) => {
     sessionStorage.setItem("section", s);
@@ -564,24 +582,20 @@ export default function DashboardPage() {
     setProfileTarget(null);
     setChatTarget(null);
     setNavHistory([s]);
+    window.history.pushState({ section: s, profileTarget: null, chatTarget: null }, "");
   }, []);
 
   /* Deep navigation — view profile, open specific chat, etc. — pushes history */
   const navigate = useCallback((s, options = {}) => {
     sessionStorage.setItem("section", s);
     setSection(s);
-    if (s === "profile") {
-      setProfileTarget(options.userId || null);
-      setChatTarget(null);
-    } else if (s === "chat") {
-      setChatTarget(options.userId || null);
-      setProfileTarget(null);
-    } else {
-      setProfileTarget(null);
-      setChatTarget(null);
-    }
+    const newProfileTarget = s === "profile" ? (options.userId || null) : null;
+    const newChatTarget = s === "chat" ? (options.userId || null) : null;
+    setProfileTarget(newProfileTarget);
+    setChatTarget(newChatTarget);
     setNavHistory((prev) => {
       if (prev[prev.length - 1] === s) return prev;
+      window.history.pushState({ section: s, profileTarget: newProfileTarget, chatTarget: newChatTarget }, "");
       return [...prev, s];
     });
   }, []);
