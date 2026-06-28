@@ -615,37 +615,6 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
   );
 }
 
-/* ─── AI Help Area Suggestion (keyword matching) ─── */
-const PROFESSION_HELP_MAP = [
-  { keywords: ["רופ","doctor","physic","medical","רפו","בריאות","health","nurse","אח","אחות"], areas: ["קידום קריירה ותעסוקה","אוזן קשבת"] },
-  { keywords: ["עורך","עורכת","lawyer","law","legal","משפט","עו\"ד"], areas: ["קידום קריירה ותעסוקה","ניהול פיננסי","אוזן קשבת"] },
-  { keywords: ["מורה","teacher","מחנך","מחנכת","professor","lecture","הוראה","חינוך","education","pedagog"], areas: ["פיתוח מנהיגות וניהול","קידום קריירה ותעסוקה","אוזן קשבת"] },
-  { keywords: ["מהנדס","מהנדסת","engineer","software","developer","תוכנה","היי-טק","hi-tech","tech","טכנולוגי","data","cyber","קוד"], areas: ["חיבור למגזר הפרטי","יזמות עסקית וחברתית","קידום קריירה ותעסוקה"] },
-  { keywords: ["כלכל","economist","finance","פינ","accountant","רואה חשבון","בנק","השקע","invest"], areas: ["ניהול פיננסי","חיבור למגזר הפרטי","יזמות עסקית וחברתית"] },
-  { keywords: ["עיתונ","journal","media","תקשורת","journalist","כתב","news","content","תוכן"], areas: ["הובלת מאבקים אזרחיים","ניהול קמפיינים פוליטיים","חיבור למגזר הפרטי"] },
-  { keywords: ["ניהול","manage","ceo","director","מנהל","מנהלת","executive","מנכ"], areas: ["פיתוח מנהיגות וניהול","ניהול צוותים","חיבור למגזר הפרטי"] },
-  { keywords: ["שיווק","market","מכיר","sales","פרסום","brand","pr","יחסי ציבור"], areas: ["חיבור למגזר הפרטי","יזמות עסקית וחברתית","ניהול קמפיינים פוליטיים"] },
-  { keywords: ["ארכיטקט","architect","design","מעצב","מעצבת","graphic","ui","ux","creati"], areas: ["חיבור למגזר הפרטי","יזמות עסקית וחברתית"] },
-  { keywords: ["פסיכ","psycholog","therapist","counselor","social worker","עו\"ס","רגש","נפש"], areas: ["אוזן קשבת","הובלת מאבקים אזרחיים","קידום קריירה ותעסוקה"] },
-  { keywords: ["מדינ","politic","govern","ממשל","diplomat","public service","שירות ציבורי"], areas: ["חיבור למגזר הציבורי","ניהול קמפיינים פוליטיים","התמודדות לתפקידים","הובלת מאבקים אזרחיים"] },
-  { keywords: ["סטארט","startup","entrepreneur","יזם","יזמת","venture","business own"], areas: ["יזמות עסקית וחברתית","חיבור למגזר הפרטי","ניהול פיננסי"] },
-  { keywords: ["חוקר","researcher","research","מחקר","academic","scientist","מדע"], areas: ["קידום קריירה ותעסוקה","פיתוח מנהיגות וניהול"] },
-  { keywords: ["צבא","military","army","security","ביטחון","officer","קצין"], areas: ["פיתוח מנהיגות וניהול","ניהול צוותים","חיבור למגזר הציבורי"] },
-  { keywords: ["אמנות","art","music","מוסיקאי","musician","actor","שחקן","תיאטרון","film","קולנוע"], areas: ["הובלת מאבקים אזרחיים","יזמות עסקית וחברתית"] },
-];
-
-function suggestHelpAreas(profession) {
-  if (!profession?.trim()) return [];
-  const lower = profession.toLowerCase();
-  const matches = new Set();
-  for (const { keywords, areas } of PROFESSION_HELP_MAP) {
-    if (keywords.some(k => lower.includes(k))) {
-      areas.forEach(a => matches.add(a));
-    }
-  }
-  return [...matches];
-}
-
 
 export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommunity }) {
   const { user, profile: authProfile, refreshProfile, logout } = useAuth();
@@ -694,7 +663,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [birthdayValue, setBirthdayValue] = useState("");
   const [activeTab, setActiveTab] = useState(null);
-  const [bioRewriting, setBioRewriting] = useState(false);
 
   /* ── Load profile + network count ── */
   useEffect(() => {
@@ -1506,32 +1474,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     {form.bio.length}/{BIO_LIMIT}
                   </span>
                 </div>
-                {import.meta.env.VITE_GEMINI_KEY && form.bio?.trim()?.length > 10 && isOwner && (
-                  <div style={{ display:"flex", justifyContent:"flex-end", marginTop:4 }}>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setBioRewriting(true);
-                        const key = import.meta.env.VITE_GEMINI_KEY;
-                        const prompt = `שפר את הביוגרפיה הבאה לפרופיל מקצועי ברשת עמיתות. שמור על קול אישי ואמין. החזר רק את הטקסט המשופר:\n\n${form.bio}`;
-                        try {
-                          const res = await fetch(
-                            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`,
-                            { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] }) }
-                          );
-                          const data = await res.json();
-                          const improved = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                          if (improved) setForm(p => ({ ...p, bio: improved.slice(0, BIO_LIMIT) }));
-                        } catch {}
-                        setBioRewriting(false);
-                      }}
-                      disabled={bioRewriting}
-                      style={{ fontSize:11, fontWeight:700, padding:"5px 12px", borderRadius:99, border:"1.5px solid var(--brand,#4472b8)", background:"none", color:"var(--brand,#4472b8)", cursor:"pointer", display:"flex", alignItems:"center", gap:5, opacity: bioRewriting ? 0.6 : 1 }}
-                    >
-                      {bioRewriting ? "✨ כותב..." : "✨ שפר עם AI"}
-                    </button>
-                  </div>
-                )}
               </div>
 
               <div style={S.row}>
@@ -1589,28 +1531,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               <div style={{ ...S.group, marginBottom:"1rem" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
                   <label style={S.label}>{t.profile.helpAreas}</label>
-                  {isOwner && (
-                    <button
-                      type="button"
-                      disabled={!form.profession?.trim()}
-                      onClick={() => {
-                        const suggestions = suggestHelpAreas(form.profession);
-                        if (!suggestions.length) return;
-                        setForm(p => ({
-                          ...p,
-                          helpAreas: [...new Set([...(p.helpAreas || []), ...suggestions])],
-                        }));
-                      }}
-                      style={{
-                        fontSize:11, fontWeight:700, padding:"4px 10px",
-                        borderRadius:99, border:"1.5px solid var(--brand,#4472b8)",
-                        background:"none", color:"var(--brand,#4472b8)",
-                        cursor: form.profession?.trim() ? "pointer" : "not-allowed",
-                        opacity: form.profession?.trim() ? 1 : 0.4,
-                        display:"flex", alignItems:"center", gap:4,
-                      }}
-                    >✨ {t.profile?.aiSuggest || "AI Suggest"}</button>
-                  )}
                 </div>
                 <MultiChips
                   selectedValues={form.helpAreas || []}
