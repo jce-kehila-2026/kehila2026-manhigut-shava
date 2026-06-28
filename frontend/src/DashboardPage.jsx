@@ -852,9 +852,11 @@ export default function DashboardPage() {
               style={{ width: "100%", height: "100%", objectFit: "contain" }}
             />
           </div>
-          <span style={{ fontSize: sidebarExpanded ? 15 : 9, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em", lineHeight: 1.2, textAlign: "center" }}>
-            {sidebarExpanded ? "BogrotNet YWP" : <><span>BogrotNet</span><br/><span>YWP</span></>}
-          </span>
+          {sidebarExpanded && (
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em" }}>
+              BogrotNet
+            </span>
+          )}
         </div>
 
         {/* Expand/collapse toggle */}

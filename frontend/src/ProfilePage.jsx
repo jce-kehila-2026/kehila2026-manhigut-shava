@@ -737,6 +737,16 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [uploadingCover, setUploadingCover] = useState(false);
   const onCoverCropComplete = useCallback((_, pixels) => setCoverCroppedPixels(pixels), []);
 
+  /* ── Avatar crop modal state ── */
+  const [avatarCropOpen, setAvatarCropOpen] = useState(false);
+  const [avatarRawSrc, setAvatarRawSrc] = useState(null);
+  const [avatarCrop, setAvatarCrop] = useState({ x: 0, y: 0 });
+  const [avatarZoom, setAvatarZoom] = useState(1);
+  const [avatarRotation, setAvatarRotation] = useState(0);
+  const [avatarCroppedPixels, setAvatarCroppedPixels] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const onAvatarCropComplete = useCallback((_, pixels) => setAvatarCroppedPixels(pixels), []);
+
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", professionTranslations:null, bio:"", birthDate:"",
     ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", regionTranslations:null, institution:"", institutionTranslations:null, graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
@@ -891,17 +901,43 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     onMessage(viewUserId);
   };
 
-  /* ── Photo upload ── */
-  const handlePhotoUpload = async (e) => {
+  /* ── Photo upload: open crop modal ── */
+  const handlePhotoUpload = (e) => {
     if (!isOwner || !user) return;
     const file = e.target.files[0];
     if (!file) return;
-    const storageRef = ref(storage, `avatars/${user.uid}`);
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-    setPhotoURL(url);
-    await updateDoc(doc(db, "users", user.uid), { photoURL: url });
-    refreshProfile();
+    e.target.value = "";
+    const objectUrl = URL.createObjectURL(file);
+    setAvatarRawSrc(objectUrl);
+    setAvatarCrop({ x: 0, y: 0 });
+    setAvatarZoom(1);
+    setAvatarRotation(0);
+    setAvatarCroppedPixels(null);
+    setAvatarCropOpen(true);
+  };
+
+  /* ── Photo upload: apply crop then upload ── */
+  const handleAvatarCropConfirm = async () => {
+    if (!avatarCroppedPixels || !avatarRawSrc || !user) return;
+    setUploadingAvatar(true);
+    setError("");
+    try {
+      const blob = await getCroppedBlob(avatarRawSrc, avatarCroppedPixels, avatarRotation);
+      const storageRef = ref(storage, `avatars/${user.uid}`);
+      await uploadBytes(storageRef, blob);
+      const url = await getDownloadURL(storageRef);
+      setPhotoURL(url);
+      await updateDoc(doc(db, "users", user.uid), { photoURL: url });
+      setAvatarCropOpen(false);
+      URL.revokeObjectURL(avatarRawSrc);
+      setAvatarRawSrc(null);
+      refreshProfile();
+    } catch (err) {
+      console.error("Avatar crop/upload failed:", err);
+      setError(t.profile.errorGeneral);
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   /* ── Cover photo: open crop modal ── */
@@ -1955,6 +1991,52 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   style={{ flex:2, padding:"11px", background:uploadingCover ? "#1d3a6e" : "#4472b8", color:"#fff", border:"none", borderRadius:12, fontSize:14, fontWeight:700, cursor: uploadingCover ? "not-allowed" : "pointer", opacity: (!coverCroppedPixels && !uploadingCover) ? 0.5 : 1, transition:"background 0.2s" }}
                 >
                   {uploadingCover ? "Uploading…" : "Apply & Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Avatar Crop Modal ── */}
+      {avatarCropOpen && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.88)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}>
+          <div style={{ background:"#111827", borderRadius:22, width:"100%", maxWidth:500, display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 32px 80px rgba(0,0,0,0.5)", animation:"modalPop 0.28s cubic-bezier(.34,1.56,.64,1) both" }}>
+            <div style={{ padding:"1.1rem 1.5rem 0.75rem", borderBottom:"1px solid #1f2937", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <span style={{ color:"#f9fafb", fontSize:15, fontWeight:700 }}>Edit Profile Photo</span>
+              <button onClick={() => { setAvatarCropOpen(false); URL.revokeObjectURL(avatarRawSrc); setAvatarRawSrc(null); }} style={{ background:"none", border:"none", color:"#9ca3af", cursor:"pointer", fontSize:20, lineHeight:1, padding:"2px 6px" }}>×</button>
+            </div>
+            <div style={{ position:"relative", height:320, background:"#000" }}>
+              <Cropper
+                image={avatarRawSrc}
+                crop={avatarCrop}
+                zoom={avatarZoom}
+                rotation={avatarRotation}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setAvatarCrop}
+                onZoomChange={setAvatarZoom}
+                onRotationChange={setAvatarRotation}
+                onCropComplete={onAvatarCropComplete}
+              />
+            </div>
+            <div style={{ padding:"1.1rem 1.5rem 1.5rem", display:"flex", flexDirection:"column", gap:"0.85rem" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ color:"#9ca3af", fontSize:12, fontWeight:600, width:52 }}>Zoom</span>
+                <input className="crop-slider" type="range" min={1} max={3} step={0.01} value={avatarZoom} onChange={e => setAvatarZoom(Number(e.target.value))} style={{ flex:1 }} />
+                <span style={{ color:"#6b7280", fontSize:11, minWidth:32, textAlign:"right" }}>{Math.round(avatarZoom * 100)}%</span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ color:"#9ca3af", fontSize:12, fontWeight:600, width:52 }}>Rotate</span>
+                <input className="crop-slider" type="range" min={-180} max={180} step={1} value={avatarRotation} onChange={e => setAvatarRotation(Number(e.target.value))} style={{ flex:1 }} />
+                <span style={{ color:"#6b7280", fontSize:11, minWidth:32, textAlign:"right" }}>{avatarRotation}°</span>
+              </div>
+              <div style={{ display:"flex", gap:10, marginTop:"0.25rem" }}>
+                <button onClick={() => { setAvatarCropOpen(false); URL.revokeObjectURL(avatarRawSrc); setAvatarRawSrc(null); }} style={{ flex:1, padding:"11px", background:"#374151", color:"#d1d5db", border:"none", borderRadius:12, fontSize:14, fontWeight:600, cursor:"pointer" }}>Cancel</button>
+                <button onClick={handleAvatarCropConfirm} disabled={uploadingAvatar || !avatarCroppedPixels}
+                  style={{ flex:2, padding:"11px", background:uploadingAvatar ? "#1d3a6e" : "#4472b8", color:"#fff", border:"none", borderRadius:12, fontSize:14, fontWeight:700, cursor:uploadingAvatar ? "not-allowed" : "pointer", opacity:(!avatarCroppedPixels && !uploadingAvatar) ? 0.5 : 1, transition:"background 0.2s" }}>
+                  {uploadingAvatar ? "Uploading…" : "Apply & Save"}
                 </button>
               </div>
             </div>

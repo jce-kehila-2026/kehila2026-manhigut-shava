@@ -1041,7 +1041,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           { key: "search",      labelHe: "חיפוש עזרה",  labelEn: "Find Help",   labelAr: "بحث عن مساعدة" },
           { key: "myReqs",      labelHe: "הבקשות שלי",  labelEn: "My Requests", labelAr: "طلباتي",        badge: sentRequests.length },
           { key: "received",    labelHe: "קיבלתי",       labelEn: "Received",    labelAr: "الواردة",        badge: receivedRequests.filter(r => !r.status).length },
-          { key: "recommended", labelHe: "מומלצות",      labelEn: "Recommended", labelAr: "الموصى بهن" },
         ].map(({ key, labelHe, labelEn, labelAr, badge }) => {
           const label = lang === "he" ? labelHe : lang === "ar" ? labelAr : labelEn;
           const active = activeTab === key;
@@ -1184,7 +1183,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           {!searched && (
             <div style={{ direction:dir }}>
               <div style={{ textAlign:"center", padding:"1.5rem 1rem 2rem", background:"var(--bg-primary)", borderRadius:18, border:"1.5px solid var(--border)", marginBottom:"1.5rem" }}>
-                <div style={{ fontSize:34, marginBottom:"0.5rem" }}>🔍</div>
+                <img src="/FindHelpSymbol.png" style={{ width:60, height:60, objectFit:"contain", marginBottom:"0.5rem" }} alt="" />
                 <p style={{ fontSize:16, fontWeight:700, color:"var(--text-primary)", margin:"0 0 6px" }}>
                   {lang==="he"?"חפשי חברות שיכולות לעזור לך":lang==="ar"?"ابحثي عن عضوات يمكنهن مساعدتك":"Find members who can help you"}
                 </p>
@@ -1456,51 +1455,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           </div>
         )}
       </> /* end received tab */}
-
-      {/* ── Recommended Tab ── */}
-      {activeTab === "recommended" && <>
-        <p style={S.sectionLabel}>{Tr.recommended}</p>
-        {recommended.length === 0 ? (
-          <div style={S.emptyBox}>{Tr.noResults}</div>
-        ) : (
-          <div style={S.recGrid}>
-            {recommended.map((u) => (
-              <div key={u.id}
-                style={{ ...S.recCard, cursor: onViewProfile ? "pointer" : "default" }}
-                onClick={() => onViewProfile ? onViewProfile(u.id) : setSelectedUser(u)}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(29,72,150,0.12)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 8px rgba(29,72,150,0.05)"; }}
-              >
-                <div style={{ position: "relative" }}>
-                  <MemberAvatar user={u} size={48} />
-                  {isOnline(u) && (
-                    <span style={{ position: "absolute", bottom: 1, right: 1, width: 10, height: 10, borderRadius: "50%", background: "#7ba87a", border: "2px solid var(--bg-primary)" }} />
-                  )}
-                </div>
-                <p style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>{getFullName(u)}</p>
-                {(u.currentRole || u.profession) && (
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole || u.profession, lang)}</p>
-                )}
-                {u.region && (
-                  <span style={{ fontSize: "11px", color: dark ? "#7aaecc" : "#1d4896", background: dark ? "rgba(68,114,184,0.16)" : "#daeaf8", borderRadius: "99px", padding: "2px 9px" }}>
-                    {translateLocation(u.region, lang)}
-                  </span>
-                )}
-                {!cantSendHelp(u) && (
-                  <button
-                    style={requested[u.id]
-                      ? { ...S.reqDoneBtn, width: "100%", padding: "6px 0", fontSize: "12px" }
-                      : { ...S.reqBtn, width: "100%", padding: "6px 0", fontSize: "12px" }}
-                    onClick={(e) => { e.stopPropagation(); initiateRequest(u); }}
-                  >
-                    {requested[u.id] ? Tr.sent : Tr.sendReq}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </> /* end recommended tab */}
 
       {/* Profile modal */}
       {selectedUser && (
