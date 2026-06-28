@@ -956,7 +956,7 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
     title = Tr.conversations;
     items = convs.slice(0, 50).map(c => {
       const names = Object.values(c.participantNames || {}).join(" & ");
-      return { id: c.id, name: names || "Conversation", sub: c.lastMessage?.text?.slice(0,60) || "" };
+      return { id: c.id, name: names || "Conversation" };
     });
   }
 
