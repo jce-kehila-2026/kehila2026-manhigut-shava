@@ -582,10 +582,16 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [showRegionSuggests,  setShowRegionSuggests]  = useState(false);
   const [pendingRequestTarget, setPendingRequestTarget] = useState(null);
   const [activeTab, setActiveTab] = useState("search");
+  const [unifiedQuery, setUnifiedQuery] = useState("");
+  const [showUnifiedSuggest, setShowUnifiedSuggest] = useState(false);
+  const [unifiedDropPos, setUnifiedDropPos] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const nameInputRef = useRef(null);
+  const unifiedInputRef = useRef(null);
 
   const effectiveRegion = selectedRegion === "OTHER" ? otherRegion : selectedRegion;
   const effectiveArea   = selectedArea   === "OTHER" ? otherArea   : selectedArea;
+  const hasFilters = !!(selectedArea || selectedRegion);
 
   useEffect(() => {
     if (!user) return;
@@ -628,6 +634,17 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         return (u.firstName ?? "").toLowerCase().startsWith(q)
           || (u.lastName ?? "").toLowerCase().startsWith(q);
       }).slice(0, 8)
+    : [];
+
+  const openUnifiedSuggest = () => {
+    if (unifiedInputRef.current) {
+      const r = unifiedInputRef.current.getBoundingClientRect();
+      setUnifiedDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+    setShowUnifiedSuggest(true);
+  };
+  const unifiedSuggestions = unifiedQuery.trim().length > 0
+    ? allUsers.filter((u) => getFullName(u).toLowerCase().includes(unifiedQuery.toLowerCase().trim())).slice(0, 6)
     : [];
 
   const runSearch = (overrideArea, overrideRegion) => {
@@ -673,21 +690,34 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     setLoading(false);
   };
 
-  /* Live search — inline filter so there are no stale-closure issues */
+  /* Live search — unified bar + right-panel filters */
   useEffect(() => {
     if (!allUsers.length) return;
-    const name   = memberName.trim().toLowerCase();
+    const q      = unifiedQuery.trim().toLowerCase();
     const region = selectedRegion === "OTHER" ? otherRegion.trim() : selectedRegion.trim();
     const area   = selectedArea   === "OTHER" ? otherArea.trim()   : selectedArea.trim();
-    if (!name && !region && !area) { setResults([]); setSearched(false); return; }
+    if (!q && !region && !area) { setResults([]); setSearched(false); return; }
     const id = setTimeout(() => {
       const filtered = allUsers.filter((u) => {
         const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
-        const matchName   = !name
-          || fullName.includes(name)
-          || (u.profession ?? "").toLowerCase().includes(name)
-          || (u.currentRole ?? "").toLowerCase().includes(name)
-          || (u.bio ?? "").toLowerCase().includes(name);
+        const matchUnified = !q || (() => {
+          if (fullName.includes(q)) return true;
+          // Region match via unified query (multilingual)
+          const uRegion = (u.region ?? "").toLowerCase();
+          const regionViaQuery = Object.entries(REGION_ALL_LANGS).some(([key, variants]) =>
+            variants.some(v => v.toLowerCase().includes(q)) &&
+            (u.region === key || variants.some(v => uRegion.includes(v.toLowerCase())))
+          ) || uRegion.includes(q);
+          if (regionViaQuery) return true;
+          // Area/profession match via keyword expansion
+          const terms = expandSearchTerms(q);
+          return terms.some(t =>
+            (u.helpAreas ?? []).some(a => a.toLowerCase().includes(t))
+            || (u.profession ?? "").toLowerCase().includes(t)
+            || (u.currentRole ?? "").toLowerCase().includes(t)
+            || (u.bio ?? "").toLowerCase().includes(t)
+          );
+        })();
         const matchRegion = !region || (() => {
           const variants = REGION_ALL_LANGS[region] || [region];
           return variants.some(v => (u.region ?? "").includes(v));
@@ -708,13 +738,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
             || (u.bio ?? "").toLowerCase().includes(t)
           );
         })();
-        return matchName && matchRegion && matchArea;
+        return matchUnified && matchRegion && matchArea;
       });
       setResults(filtered);
       setSearched(true);
     }, 300);
     return () => clearTimeout(id);
-  }, [memberName, selectedRegion, selectedArea, otherRegion, otherArea, allUsers]);
+  }, [unifiedQuery, selectedRegion, selectedArea, otherRegion, otherArea, allUsers]);
 
   const sortedResults = sortMode === "alpha"
     ? [...results].sort((a, b) => getFullName(a).localeCompare(getFullName(b), undefined, { sensitivity: "base" }))
@@ -1037,289 +1067,322 @@ export default function SupportPage({ onViewProfile, onMessage }) {
       </div>
 
       {/* ── Search Tab ── */}
-      {activeTab === "search" && <>
+      {activeTab === "search" && (
+      <div style={{ display:"flex", direction:"ltr", gap:"1.5rem", alignItems:"flex-start" }}>
 
-      {/* Search Card */}
-      <div style={S.searchCard}>
-        {/* Help area (first — most important) */}
-        <div style={S.group}>
-          <label style={S.label}>{Tr.helpAreaLbl}</label>
-          <AreaDropdown
-            value={selectedArea}
-            onChange={(key) => { setSelectedArea(key); setOtherArea(""); }}
-            areas={[
-              ...[...(Tr.helpAreas || []).map((label, i) => ({ label, key: AREAS_KEYS[i] }))]
-                .sort((a, b) => a.label.localeCompare(b.label, "he")),
-              { label: Tr.otherLbl, key: "OTHER" },
-            ]}
-            placeholder={lang === "he" ? "כל התחומים..." : lang === "ar" ? "جميع المجالات..." : "All areas..."}
-            isRTL={isRTL}
-          />
-          {selectedArea === "OTHER" && (
-            <div style={{ position: "relative", marginTop: 8 }}>
-              <input className="support-input" style={S.input}
-                type="text" placeholder={Tr.otherPh}
-                value={otherArea}
-                onChange={(e) => { setOtherArea(e.target.value); setShowAreaSuggests(true); }}
-                onBlur={() => setTimeout(() => setShowAreaSuggests(false), 160)}
+        {/* ── MAIN COLUMN ── */}
+        <div style={{ flex:1, minWidth:0, direction:dir }}>
+
+          {/* Unified search bar row */}
+          <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:"1rem", flexWrap:isMobile?"wrap":"nowrap" }}>
+
+            {/* Search input */}
+            <div style={{ position:"relative", flex:1, minWidth:0 }}>
+              <input
+                ref={unifiedInputRef}
+                className="support-input"
+                style={{ ...S.input, paddingInlineStart:42 }}
+                type="text"
+                placeholder={lang==="he"?"שם, תחום, אזור...":lang==="ar"?"الاسم، المجال، المنطقة...":"Name, profession, area..."}
+                value={unifiedQuery}
+                onChange={(e) => { setUnifiedQuery(e.target.value); openUnifiedSuggest(); }}
+                onFocus={openUnifiedSuggest}
+                onBlur={() => setTimeout(() => setShowUnifiedSuggest(false), 160)}
+                onKeyDown={(e) => { if (e.key === "Enter") setShowUnifiedSuggest(false); }}
                 autoComplete="off"
               />
-              {showAreaSuggests && otherArea.trim().length >= 1 && (() => {
-                const q = otherArea.trim().toLowerCase();
-                const opts = [...new Set(
-                  allUsers.flatMap(u => [u.profession, u.currentRole, ...(u.helpAreas||[])])
-                    .filter(v => v && v.toLowerCase().includes(q))
-                )].slice(0, 8);
-                return opts.length > 0 ? (
-                  <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"var(--bg-primary)", border:"1.5px solid var(--border)", borderRadius:12, boxShadow:"0 6px 20px rgba(29,72,150,0.12)", maxHeight:180, overflowY:"auto", zIndex:300, animation:"dropIn 0.14s ease" }}>
-                    {opts.map((s, i) => (
-                      <button key={s} type="button" onMouseDown={() => { setOtherArea(s); setShowAreaSuggests(false); }}
-                        style={{ width:"100%", textAlign:isRTL?"right":"left", padding:"9px 14px", background:"transparent", border:"none", borderBottom: i<opts.length-1?"1px solid var(--border)":"none", fontSize:13, color:"var(--text-primary)", cursor:"pointer", fontFamily:"inherit", direction:isRTL?"rtl":"ltr" }}
-                      >{s}</button>
-                    ))}
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          )}
-        </div>
-
-        {/* Region */}
-        <div style={S.group}>
-          <label style={S.label}>{Tr.regionLbl}</label>
-          <AreaDropdown
-            value={selectedRegion}
-            onChange={(key) => { setSelectedRegion(key); setOtherRegion(""); }}
-            areas={[
-              ...(Tr.regions || []).map((label, i) => ({ label, key: REGIONS_KEYS[i] })),
-              { label: Tr.otherLbl, key: "OTHER" },
-            ]}
-            placeholder={lang === "he" ? "כל האזורים..." : lang === "ar" ? "جميع المناطق..." : "All regions..."}
-            isRTL={isRTL}
-          />
-          {selectedRegion === "OTHER" && (
-            <div style={{ position: "relative", marginTop: 8 }}>
-              <input className="support-input" style={S.input}
-                type="text" placeholder={Tr.otherPh}
-                value={otherRegion}
-                onChange={(e) => { setOtherRegion(e.target.value); setShowRegionSuggests(true); }}
-                onBlur={() => setTimeout(() => setShowRegionSuggests(false), 160)}
-                autoComplete="off"
-              />
-              {showRegionSuggests && otherRegion.trim().length >= 1 && (() => {
-                const q = otherRegion.trim().toLowerCase();
-                const opts = [...new Set(
-                  allUsers.flatMap(u => [u.region].filter(Boolean))
-                    .filter(v => v.toLowerCase().includes(q) && !REGIONS_KEYS.includes(v))
-                )].slice(0, 8);
-                return opts.length > 0 ? (
-                  <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"var(--bg-primary)", border:"1.5px solid var(--border)", borderRadius:12, boxShadow:"0 6px 20px rgba(29,72,150,0.12)", maxHeight:180, overflowY:"auto", zIndex:300, animation:"dropIn 0.14s ease" }}>
-                    {opts.map((s, i) => (
-                      <button key={s} type="button" onMouseDown={() => { setOtherRegion(s); setShowRegionSuggests(false); }}
-                        style={{ width:"100%", textAlign:isRTL?"right":"left", padding:"9px 14px", background:"transparent", border:"none", borderBottom: i<opts.length-1?"1px solid var(--border)":"none", fontSize:13, color:"var(--text-primary)", cursor:"pointer", fontFamily:"inherit", direction:isRTL?"rtl":"ltr" }}
-                      >{s}</button>
-                    ))}
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          )}
-        </div>
-
-        {/* Member name */}
-        <div style={S.group}>
-          <label style={S.label}>{Tr.nameLbl}</label>
-          <div style={{ position: "relative" }}>
-            <input
-              ref={nameInputRef}
-              className="support-input"
-              style={S.input}
-              type="text"
-              placeholder={Tr.namePh}
-              value={memberName}
-              onChange={(e) => { setMemberName(e.target.value); openSuggest(); }}
-              onFocus={openSuggest}
-              onBlur={() => setTimeout(() => setShowSuggest(false), 160)}
-              onKeyDown={(e) => e.key === "Enter" && runSearch()}
-              autoComplete="off"
-            />
-          </div>
-          {showSuggest && memberName.trim().length > 0 && dropPos && (
-            <div style={{
-              position: "fixed", top: dropPos.top, left: dropPos.left,
-              width: dropPos.width, background: "var(--bg-primary)",
-              borderRadius: "13px", border: "1.5px solid var(--border)",
-              boxShadow: "0 8px 28px rgba(29,72,150,0.14)",
-              overflow: "hidden", zIndex: 9999, animation: "dropIn 0.16s ease", minWidth: 220,
-            }}>
-              {suggestions.length > 0 ? suggestions.map((u) => (
-                <button key={u.id} className="suggest-item"
-                  onMouseDown={() => { setMemberName(getFullName(u)); setShowSuggest(false); }}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", gap: "10px",
-                    padding: "9px 14px", background: "transparent", border: "none",
-                    borderBottom: "1px solid var(--border)", cursor: "pointer",
-                    textAlign: isRTL ? "right" : "left", transition: "background 0.12s",
-                  }}
+              <span style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"right":"left"]:14, color:"var(--text-muted)", pointerEvents:"none", display:"flex" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </span>
+              {unifiedQuery.trim().length > 0 && (
+                <button
+                  onMouseDown={() => { setUnifiedQuery(""); setShowUnifiedSuggest(false); }}
+                  style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"left":"right"]:10, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:"4px", display:"flex", alignItems:"center", borderRadius:"50%" }}
                 >
-                  <MemberAvatar user={u} size={32} fontSize={11} />
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {getFullName(u)}
-                    </p>
-                    {(u.currentRole || u.profession) && (
-                      <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole || u.profession, lang)}</p>
-                    )}
-                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
-              )) : (
-                <div style={{ padding: "11px 14px", fontSize: "13px", color: "var(--text-muted)" }}>
-                  {allUsers.length === 0 ? "…" : "—"}
+              )}
+              {/* Autocomplete */}
+              {showUnifiedSuggest && unifiedSuggestions.length > 0 && unifiedDropPos && (
+                <div style={{ position:"fixed", top:unifiedDropPos.top, left:unifiedDropPos.left, width:unifiedDropPos.width, background:"var(--bg-primary)", borderRadius:"13px", border:"1.5px solid var(--border)", boxShadow:"0 8px 28px rgba(29,72,150,0.14)", overflow:"hidden", zIndex:9999, animation:"dropIn 0.16s ease", minWidth:220 }}>
+                  {unifiedSuggestions.map((u) => (
+                    <button key={u.id} className="suggest-item"
+                      onMouseDown={() => { setUnifiedQuery(getFullName(u)); setShowUnifiedSuggest(false); }}
+                      style={{ width:"100%", display:"flex", alignItems:"center", gap:"10px", padding:"9px 14px", background:"transparent", border:"none", borderBottom:"1px solid var(--border)", cursor:"pointer", textAlign:isRTL?"right":"left", transition:"background 0.12s" }}
+                    >
+                      <MemberAvatar user={u} size={32} fontSize={11} />
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ fontSize:"13px", fontWeight:"700", color:"var(--text-primary)", margin:0, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{getFullName(u)}</p>
+                        {(u.currentRole || u.profession) && (
+                          <p style={{ fontSize:"11px", color:"var(--text-muted)", margin:0 }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole || u.profession, lang)}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <button className="search-btn" style={S.searchBtn} onClick={() => runSearch()}>
-            {loading ? Tr.searching : Tr.searchBtn}
-          </button>
-          {/* Sort toggle */}
-          <div style={{ display: "flex", gap: 4, background: "var(--bg-secondary)", borderRadius: 10, padding: 3, border: "1.5px solid var(--border)" }}>
-            {[
-              { key: "recent", label: lang === "he" ? "פעילות אחרונה" : lang === "ar" ? "الأحدث نشاطاً" : "Most Recent" },
-              { key: "alpha",  label: lang === "he" ? "א–ת" : lang === "ar" ? "أ–ي" : "A–Z" },
-            ].map(({ key, label }) => (
-              <button key={key} onClick={() => setSortMode(key)} style={{
-                padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-                fontSize: 12, fontWeight: 600, transition: "all 0.15s",
-                background: sortMode === key ? "#4472b8" : "transparent",
-                color: sortMode === key ? "#fff" : "var(--text-muted)",
-              }}>{label}</button>
-            ))}
-          </div>
-          {/* Layout toggle */}
-          <div style={{ display: "flex", gap: 4, background: "var(--bg-secondary)", borderRadius: 10, padding: 3, border: "1.5px solid var(--border)" }}>
-            {[
-              { mode: "cards", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>, label: Tr.layoutCards },
-              { mode: "table", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>, label: Tr.layoutTable },
-            ].map(({ mode, icon, label }) => (
-              <button key={mode} title={label}
-                style={{ display:"flex",alignItems:"center",gap:4, padding:"6px 10px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:600,
-                  background: layoutMode===mode ? "#4472b8" : "transparent",
-                  color: layoutMode===mode ? "#fff" : "var(--text-muted)",
-                  transition:"all 0.15s" }}
-                onClick={() => setLayoutMode(mode)}
-              >{icon} {label}</button>
-            ))}
-          </div>
-        </div>
-      </div>
+            {/* Sort toggle */}
+            <div style={{ display:"flex", gap:4, background:"var(--bg-secondary)", borderRadius:10, padding:3, border:"1.5px solid var(--border)", flexShrink:0 }}>
+              {[
+                { key:"recent", label:lang==="he"?"אחרונות":lang==="ar"?"الأحدث":"Recent" },
+                { key:"alpha",  label:lang==="he"?"א–ת":lang==="ar"?"أ–ي":"A–Z" },
+              ].map(({ key, label }) => (
+                <button key={key} onClick={() => setSortMode(key)} style={{ padding:"6px 12px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, transition:"all 0.15s", background:sortMode===key?"#4472b8":"transparent", color:sortMode===key?"#fff":"var(--text-muted)" }}>{label}</button>
+              ))}
+            </div>
 
-      {/* Empty states */}
-      {!searched && (
-        <div style={S.emptyBox}>{Tr.noFilter}</div>
-      )}
-      {searched && !loading && sortedResults.length === 0 && (
-        <div style={S.emptyBox}>{Tr.noResults}</div>
-      )}
-
-      {/* Results */}
-      {searched && !loading && sortedResults.length > 0 && (
-        <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "0 0 0.75rem", direction: dir }}>
-          {sortedResults.length} {Tr.resultsFound}
-        </p>
-      )}
-      {sortedResults.length > 0 && (
-        layoutMode === "table" ? (
-          <div style={{ marginBottom: "2rem", overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 6px", fontSize: 13 }}>
-              <thead>
-                <tr>
-                  {[Tr.nameLbl, Tr.roleLabel, Tr.regionLabel, ""].map((h,i) => (
-                    <th key={i} style={{ textAlign: isRTL?"right":"left", padding:"6px 12px", fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", borderBottom:"1.5px solid var(--border)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedResults.map((u) => (
-                  <tr key={u.id} style={{ background:"var(--bg-primary)", transition:"background 0.15s", cursor:"pointer" }}
-                    onMouseEnter={e=>e.currentTarget.style.background="var(--bg-hover)"}
-                    onMouseLeave={e=>e.currentTarget.style.background="var(--bg-primary)"}
-                  >
-                    <td style={{ padding:"10px 12px", borderRadius:"10px 0 0 10px", display:"flex", alignItems:"center", gap:10 }}>
-                      <MemberAvatar user={u} size={34} fontSize={12} />
-                      <span style={{ fontWeight:600, color:"var(--text-primary)" }}>{getFullName(u)}</span>
-                    </td>
-                    <td style={{ padding:"10px 12px", color:"var(--text-secondary)" }}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "—"}</td>
-                    <td style={{ padding:"10px 12px", color:"var(--text-muted)" }}>{translateLocation(u.region, lang) || "—"}</td>
-                    <td style={{ padding:"10px 12px", borderRadius:"0 10px 10px 0" }}>
-                      <div style={{ display:"flex", gap:6 }}>
-                        <button className="view-btn" style={{ ...S.viewBtn, flex:"none", padding:"6px 14px" }}
-                          onClick={() => onViewProfile ? onViewProfile(u.id) : setSelectedUser(u)}>{Tr.viewProfile}</button>
-                        {!cantSendHelp(u) && (
-                          <button className={requested[u.id]?"":"req-btn"}
-                            style={{ ...(requested[u.id]?S.reqDoneBtn:S.reqBtn), flex:"none", padding:"6px 14px" }}
-                            onClick={() => initiateRequest(u)}>
-                            {requested[u.id] ? Tr.sent : Tr.sendReq}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+            {/* Layout toggle (desktop only) */}
+            {!isMobile && (
+              <div style={{ display:"flex", gap:4, background:"var(--bg-secondary)", borderRadius:10, padding:3, border:"1.5px solid var(--border)", flexShrink:0 }}>
+                {[
+                  { mode:"cards", icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
+                  { mode:"table", icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg> },
+                ].map(({ mode, icon }) => (
+                  <button key={mode} onClick={() => setLayoutMode(mode)} style={{ display:"flex", alignItems:"center", padding:"6px 8px", borderRadius:8, border:"none", cursor:"pointer", background:layoutMode===mode?"#4472b8":"transparent", color:layoutMode===mode?"#fff":"var(--text-muted)", transition:"all 0.15s" }}>{icon}</button>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            )}
+
+            {/* Mobile: filters toggle */}
+            {isMobile && (
+              <button onClick={() => setFiltersOpen(o => !o)} style={{ display:"flex", alignItems:"center", gap:5, padding:"9px 14px", borderRadius:12, border:"1.5px solid var(--border)", background:(filtersOpen||hasFilters)?"rgba(68,114,184,0.1)":"var(--bg-secondary)", color:hasFilters?"#4472b8":"var(--text-secondary)", fontSize:13, fontWeight:600, cursor:"pointer", flexShrink:0, fontFamily:"inherit" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                {lang==="he"?"פילטרים":lang==="ar"?"الفلاتر":"Filters"}
+                {hasFilters && <span style={{ background:"#4472b8", color:"#fff", borderRadius:99, fontSize:9, fontWeight:700, padding:"0 5px", minWidth:14, textAlign:"center" }}>•</span>}
+              </button>
+            )}
           </div>
-        ) : (
-          <div style={{ ...S.resultsGrid, marginBottom: "2rem" }}>
-            {sortedResults.map((u, i) => (
-              <div key={u.id} className="result-card"
-                style={{ ...S.card, animationDelay: `${i * 0.05}s` }}
-              >
-                <div style={S.cardTop}>
-                  <div style={{ position: "relative" }}>
-                    <MemberAvatar user={u} />
-                    {isOnline(u) && (
-                      <span style={{ position: "absolute", bottom: 1, right: 1, width: 10, height: 10, borderRadius: "50%", background: "#7ba87a", border: "2px solid var(--bg-primary)" }} />
-                    )}
-                  </div>
-                  <div>
-                    <p style={S.name}>{getFullName(u)}</p>
-                    <p style={S.profession}>{u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "—"}</p>
+
+          {/* Mobile: collapsible filter panel */}
+          {isMobile && filtersOpen && (
+            <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem", marginBottom:"1rem", direction:dir }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.75rem" }}>
+                <div>
+                  <label style={S.label}>{Tr.helpAreaLbl}</label>
+                  <div style={{ marginTop:6 }}>
+                    <AreaDropdown value={selectedArea} onChange={(k)=>{setSelectedArea(k);setOtherArea("");}} areas={[...([...(Tr.helpAreas||[]).map((label,i)=>({label,key:AREAS_KEYS[i]}))].sort((a,b)=>a.label.localeCompare(b.label,"he"))),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."} isRTL={isRTL}/>
                   </div>
                 </div>
-                {u.region && <span style={S.regionTag}>{translateLocation(u.region, lang)}</span>}
-                {u.helpAreas?.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                    {u.helpAreas.slice(0, 3).map(a => (
-                      <span key={a} style={{ fontSize: 10, background: dark ? "rgba(68,114,184,0.14)" : "#f0f6fb", color: dark ? "#7aaecc" : "#4472b8", borderRadius: 99, padding: "2px 8px", border: `1px solid ${dark ? "rgba(68,114,184,0.28)" : "#daeaf8"}` }}>{a}</span>
-                    ))}
+                <div>
+                  <label style={S.label}>{Tr.regionLbl}</label>
+                  <div style={{ marginTop:6 }}>
+                    <AreaDropdown value={selectedRegion} onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}} areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع المناطق...":"All regions..."} isRTL={isRTL}/>
                   </div>
-                )}
-                <div style={S.cardActions}>
-                  <button className="view-btn" style={S.viewBtn}
-                    onClick={() => onViewProfile ? onViewProfile(u.id) : setSelectedUser(u)}>
-                    {Tr.viewProfile}
-                  </button>
-                  {!cantSendHelp(u) && (
-                    <button
-                      className={requested[u.id] ? "" : "req-btn"}
-                      style={requested[u.id] ? S.reqDoneBtn : S.reqBtn}
-                      onClick={() => initiateRequest(u)}
-                    >
-                      {requested[u.id] ? Tr.sent : Tr.sendReq}
-                    </button>
-                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        )
-      )}
+              {hasFilters && (
+                <button onClick={()=>{setSelectedArea("");setSelectedRegion("");setOtherArea("");setOtherRegion("");}} style={{ marginTop:"0.75rem", background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"4px 0", fontFamily:"inherit" }}>
+                  {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
+                </button>
+              )}
+            </div>
+          )}
 
-      </> /* end search tab */}
+          {/* ── Pre-search state: prompt + recommended ── */}
+          {!searched && (
+            <div style={{ direction:dir }}>
+              <div style={{ textAlign:"center", padding:"1.5rem 1rem 2rem", background:"var(--bg-primary)", borderRadius:18, border:"1.5px solid var(--border)", marginBottom:"1.5rem" }}>
+                <div style={{ fontSize:34, marginBottom:"0.5rem" }}>🔍</div>
+                <p style={{ fontSize:16, fontWeight:700, color:"var(--text-primary)", margin:"0 0 6px" }}>
+                  {lang==="he"?"חפשי חברות שיכולות לעזור לך":lang==="ar"?"ابحثي عن عضوات يمكنهن مساعدتك":"Find members who can help you"}
+                </p>
+                <p style={{ fontSize:13, color:"var(--text-muted)", margin:0 }}>
+                  {lang==="he"?"הקלידי שם, תחום מקצועי, או אזור — או השתמשי בפילטרים":lang==="ar"?"اكتبي اسماً أو مجالاً أو منطقة — أو استخدمي الفلاتر":"Type a name, profession, or region — or use the filters"}
+                </p>
+              </div>
+              {recommended.length > 0 && (
+                <>
+                  <p style={{ ...S.sectionLabel, marginBottom:"0.85rem" }}>{Tr.recommended}</p>
+                  <div style={S.recGrid}>
+                    {recommended.map((u) => (
+                      <div key={u.id} style={{ ...S.recCard, cursor:"pointer" }}
+                        onClick={()=>onViewProfile?onViewProfile(u.id):setSelectedUser(u)}
+                        onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(29,72,150,0.12)";}}
+                        onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 2px 8px rgba(29,72,150,0.05)";}}
+                      >
+                        <div style={{position:"relative"}}><MemberAvatar user={u} size={48}/>{isOnline(u)&&<span style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#7ba87a",border:"2px solid var(--bg-primary)"}}/>}</div>
+                        <p style={{fontSize:"13px",fontWeight:"700",color:"var(--text-primary)",margin:0}}>{getFullName(u)}</p>
+                        {(u.currentRole||u.profession)&&<p style={{fontSize:"11px",color:"var(--text-muted)",margin:0}}>{u.professionTranslations?.[lang]||translateProfession(u.currentRole||u.profession,lang)}</p>}
+                        {u.region&&<span style={{fontSize:"11px",color:dark?"#7aaecc":"#1d4896",background:dark?"rgba(68,114,184,0.16)":"#daeaf8",borderRadius:"99px",padding:"2px 9px"}}>{translateLocation(u.region,lang)}</span>}
+                        {!cantSendHelp(u)&&<button style={requested[u.id]?{...S.reqDoneBtn,width:"100%",padding:"6px 0",fontSize:"12px"}:{...S.reqBtn,width:"100%",padding:"6px 0",fontSize:"12px"}} onClick={(e)=>{e.stopPropagation();initiateRequest(u);}}>{requested[u.id]?Tr.sent:Tr.sendReq}</button>}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* No results */}
+          {searched && !loading && sortedResults.length === 0 && (
+            <div style={S.emptyBox}>{Tr.noResults}</div>
+          )}
+
+          {/* Result count */}
+          {searched && !loading && sortedResults.length > 0 && (
+            <p style={{ fontSize:"12px", color:"var(--text-muted)", margin:"0 0 0.75rem", direction:dir }}>
+              {sortedResults.length} {Tr.resultsFound}
+            </p>
+          )}
+
+          {/* Results */}
+          {sortedResults.length > 0 && (
+            layoutMode === "table" ? (
+              <div style={{ marginBottom:"2rem", overflowX:"auto" }}>
+                <table style={{ width:"100%", borderCollapse:"separate", borderSpacing:"0 6px", fontSize:13 }}>
+                  <thead>
+                    <tr>{[Tr.nameLbl,Tr.roleLabel,Tr.regionLabel,""].map((h,i)=><th key={i} style={{textAlign:isRTL?"right":"left",padding:"6px 12px",fontSize:11,fontWeight:700,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1.5px solid var(--border)"}}>{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {sortedResults.map((u) => (
+                      <tr key={u.id} style={{ background:"var(--bg-primary)", transition:"background 0.15s", cursor:"pointer" }}
+                        onMouseEnter={e=>e.currentTarget.style.background="var(--bg-hover)"}
+                        onMouseLeave={e=>e.currentTarget.style.background="var(--bg-primary)"}
+                      >
+                        <td style={{ padding:"10px 12px", borderRadius:"10px 0 0 10px", display:"flex", alignItems:"center", gap:10 }}>
+                          <MemberAvatar user={u} size={34} fontSize={12} />
+                          <span style={{ fontWeight:600, color:"var(--text-primary)" }}>{getFullName(u)}</span>
+                        </td>
+                        <td style={{ padding:"10px 12px", color:"var(--text-secondary)" }}>{u.professionTranslations?.[lang]||translateProfession(u.currentRole??u.profession,lang)||"—"}</td>
+                        <td style={{ padding:"10px 12px", color:"var(--text-muted)" }}>{translateLocation(u.region,lang)||"—"}</td>
+                        <td style={{ padding:"10px 12px", borderRadius:"0 10px 10px 0" }}>
+                          <div style={{ display:"flex", gap:6 }}>
+                            <button className="view-btn" style={{...S.viewBtn,flex:"none",padding:"6px 14px"}} onClick={()=>onViewProfile?onViewProfile(u.id):setSelectedUser(u)}>{Tr.viewProfile}</button>
+                            {!cantSendHelp(u)&&<button className={requested[u.id]?"":"req-btn"} style={{...(requested[u.id]?S.reqDoneBtn:S.reqBtn),flex:"none",padding:"6px 14px"}} onClick={()=>initiateRequest(u)}>{requested[u.id]?Tr.sent:Tr.sendReq}</button>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ ...S.resultsGrid, marginBottom:"2rem" }}>
+                {sortedResults.map((u,i) => (
+                  <div key={u.id} className="result-card" style={{ ...S.card, animationDelay:`${i*0.05}s` }}>
+                    <div style={S.cardTop}>
+                      <div style={{position:"relative"}}>
+                        <MemberAvatar user={u}/>
+                        {isOnline(u)&&<span style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#7ba87a",border:"2px solid var(--bg-primary)"}}/>}
+                      </div>
+                      <div>
+                        <p style={S.name}>{getFullName(u)}</p>
+                        <p style={S.profession}>{u.professionTranslations?.[lang]||translateProfession(u.currentRole??u.profession,lang)||"—"}</p>
+                      </div>
+                    </div>
+                    {u.region&&<span style={S.regionTag}>{translateLocation(u.region,lang)}</span>}
+                    {u.helpAreas?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{u.helpAreas.slice(0,3).map(a=><span key={a} style={{fontSize:10,background:dark?"rgba(68,114,184,0.14)":"#f0f6fb",color:dark?"#7aaecc":"#4472b8",borderRadius:99,padding:"2px 8px",border:`1px solid ${dark?"rgba(68,114,184,0.28)":"#daeaf8"}`}}>{a}</span>)}</div>}
+                    <div style={S.cardActions}>
+                      <button className="view-btn" style={S.viewBtn} onClick={()=>onViewProfile?onViewProfile(u.id):setSelectedUser(u)}>{Tr.viewProfile}</button>
+                      {!cantSendHelp(u)&&<button className={requested[u.id]?"":"req-btn"} style={requested[u.id]?S.reqDoneBtn:S.reqBtn} onClick={()=>initiateRequest(u)}>{requested[u.id]?Tr.sent:Tr.sendReq}</button>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {/* Recommended after results */}
+          {searched && sortedResults.length > 0 && recommended.length > 0 && (
+            <div style={{ borderTop:"1.5px solid var(--border)", paddingTop:"1.5rem", marginTop:"0.5rem", direction:dir }}>
+              <p style={S.sectionLabel}>{Tr.recommended}</p>
+              <div style={S.recGrid}>
+                {recommended.map((u) => (
+                  <div key={u.id} style={{ ...S.recCard, cursor:"pointer" }}
+                    onClick={()=>onViewProfile?onViewProfile(u.id):setSelectedUser(u)}
+                    onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(29,72,150,0.12)";}}
+                    onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 2px 8px rgba(29,72,150,0.05)";}}
+                  >
+                    <div style={{position:"relative"}}><MemberAvatar user={u} size={48}/>{isOnline(u)&&<span style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#7ba87a",border:"2px solid var(--bg-primary)"}}/>}</div>
+                    <p style={{fontSize:"13px",fontWeight:"700",color:"var(--text-primary)",margin:0}}>{getFullName(u)}</p>
+                    {(u.currentRole||u.profession)&&<p style={{fontSize:"11px",color:"var(--text-muted)",margin:0}}>{u.professionTranslations?.[lang]||translateProfession(u.currentRole||u.profession,lang)}</p>}
+                    {u.region&&<span style={{fontSize:"11px",color:dark?"#7aaecc":"#1d4896",background:dark?"rgba(68,114,184,0.16)":"#daeaf8",borderRadius:"99px",padding:"2px 9px"}}>{translateLocation(u.region,lang)}</span>}
+                    {!cantSendHelp(u)&&<button style={requested[u.id]?{...S.reqDoneBtn,width:"100%",padding:"6px 0",fontSize:"12px"}:{...S.reqBtn,width:"100%",padding:"6px 0",fontSize:"12px"}} onClick={(e)=>{e.stopPropagation();initiateRequest(u);}}>{requested[u.id]?Tr.sent:Tr.sendReq}</button>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>{/* end main column */}
+
+        {/* ── FILTER PANEL (right side on desktop) ── */}
+        {!isMobile && (
+          <div style={{ width:260, flexShrink:0, direction:dir, background:"var(--bg-primary)", borderRadius:18, border:"1.5px solid var(--border)", padding:"1.25rem 1rem", position:"sticky", top:16, alignSelf:"flex-start" }}>
+            <p style={{ ...S.sectionLabel, marginBottom:"1rem" }}>{lang==="he"?"פילטרים":lang==="ar"?"الفلاتر":"Filters"}</p>
+
+            <div style={S.group}>
+              <label style={S.label}>{Tr.helpAreaLbl}</label>
+              <AreaDropdown
+                value={selectedArea}
+                onChange={(k)=>{setSelectedArea(k);setOtherArea("");}}
+                areas={[...([...(Tr.helpAreas||[]).map((label,i)=>({label,key:AREAS_KEYS[i]}))].sort((a,b)=>a.label.localeCompare(b.label,"he"))),{label:Tr.otherLbl,key:"OTHER"}]}
+                placeholder={lang==="he"?"כל התחומים...":lang==="ar"?"جميع المجالات...":"All areas..."}
+                isRTL={isRTL}
+              />
+              {selectedArea === "OTHER" && (
+                <div style={{ position:"relative", marginTop:8 }}>
+                  <input className="support-input" style={S.input} type="text" placeholder={Tr.otherPh}
+                    value={otherArea}
+                    onChange={(e)=>{setOtherArea(e.target.value);setShowAreaSuggests(true);}}
+                    onBlur={()=>setTimeout(()=>setShowAreaSuggests(false),160)}
+                    autoComplete="off"
+                  />
+                  {showAreaSuggests && otherArea.trim().length>=1 && (() => {
+                    const q = otherArea.trim().toLowerCase();
+                    const opts = [...new Set(allUsers.flatMap(u=>[u.profession,u.currentRole,...(u.helpAreas||[])]).filter(v=>v&&v.toLowerCase().includes(q)))].slice(0,8);
+                    return opts.length>0 ? (
+                      <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--bg-primary)",border:"1.5px solid var(--border)",borderRadius:12,boxShadow:"0 6px 20px rgba(29,72,150,0.12)",maxHeight:180,overflowY:"auto",zIndex:300,animation:"dropIn 0.14s ease"}}>
+                        {opts.map((s,i)=><button key={s} type="button" onMouseDown={()=>{setOtherArea(s);setShowAreaSuggests(false);}} style={{width:"100%",textAlign:isRTL?"right":"left",padding:"9px 14px",background:"transparent",border:"none",borderBottom:i<opts.length-1?"1px solid var(--border)":"none",fontSize:13,color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",direction:isRTL?"rtl":"ltr"}}>{s}</button>)}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              )}
+            </div>
+
+            <div style={S.group}>
+              <label style={S.label}>{Tr.regionLbl}</label>
+              <AreaDropdown
+                value={selectedRegion}
+                onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}}
+                areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]}
+                placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع המناطق...":"All regions..."}
+                isRTL={isRTL}
+              />
+              {selectedRegion === "OTHER" && (
+                <div style={{ position:"relative", marginTop:8 }}>
+                  <input className="support-input" style={S.input} type="text" placeholder={Tr.otherPh}
+                    value={otherRegion}
+                    onChange={(e)=>{setOtherRegion(e.target.value);setShowRegionSuggests(true);}}
+                    onBlur={()=>setTimeout(()=>setShowRegionSuggests(false),160)}
+                    autoComplete="off"
+                  />
+                  {showRegionSuggests && otherRegion.trim().length>=1 && (() => {
+                    const q = otherRegion.trim().toLowerCase();
+                    const opts = [...new Set(allUsers.flatMap(u=>[u.region].filter(Boolean)).filter(v=>v.toLowerCase().includes(q)&&!REGIONS_KEYS.includes(v)))].slice(0,8);
+                    return opts.length>0 ? (
+                      <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--bg-primary)",border:"1.5px solid var(--border)",borderRadius:12,boxShadow:"0 6px 20px rgba(29,72,150,0.12)",maxHeight:180,overflowY:"auto",zIndex:300,animation:"dropIn 0.14s ease"}}>
+                        {opts.map((s,i)=><button key={s} type="button" onMouseDown={()=>{setOtherRegion(s);setShowRegionSuggests(false);}} style={{width:"100%",textAlign:isRTL?"right":"left",padding:"9px 14px",background:"transparent",border:"none",borderBottom:i<opts.length-1?"1px solid var(--border)":"none",fontSize:13,color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",direction:isRTL?"rtl":"ltr"}}>{s}</button>)}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {hasFilters && (
+              <button onClick={()=>{setSelectedArea("");setSelectedRegion("");setOtherArea("");setOtherRegion("");}}
+                style={{ background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"4px 0", display:"block", fontFamily:"inherit" }}>
+                {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
+              </button>
+            )}
+          </div>
+        )}
+
+      </div>
+      )}
 
       {/* ── My Requests Tab ── */}
       {activeTab === "myReqs" && <>
