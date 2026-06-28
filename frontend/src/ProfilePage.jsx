@@ -355,8 +355,39 @@ function SelectInput({ value, onChange, options, disabled, placeholder }) {
   );
 }
 
-function MultiChips({ selectedValues, options, onChange, disabled }) {
+function MultiSelectDropdown({ selectedValues, options, onChange, disabled, placeholder }) {
   const { T } = useTheme();
+  const { isRTL } = useLang();
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = e => {
+      if (!e.target.closest("[data-portal-multiselect]") && !triggerRef.current?.contains(e.target))
+        setOpen(false);
+    };
+    const esc = e => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [open]);
+
+  const handleOpen = () => {
+    if (disabled) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openAbove = spaceBelow < 240 && spaceAbove > spaceBelow;
+    const maxH = Math.min(280, (openAbove ? spaceAbove : spaceBelow) - 8);
+    setDropPos({
+      left: rect.left, width: rect.width, maxH,
+      ...(openAbove ? { bottom: window.innerHeight - rect.top + 2 } : { top: rect.bottom + 2 }),
+    });
+    setOpen(true);
+  };
+
   const toggle = (opt) => {
     if (disabled) return;
     const next = selectedValues.includes(opt)
@@ -364,22 +395,94 @@ function MultiChips({ selectedValues, options, onChange, disabled }) {
       : [...selectedValues, opt];
     onChange(next);
   };
+
+  const displayText = selectedValues.length === 0
+    ? (placeholder || "—")
+    : selectedValues.join(", ");
+
   return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:"6px", marginTop:2 }}>
-      {options.map((opt,i) => {
-        const active = selectedValues.includes(opt);
-        return (
-          <button key={i} type="button" onClick={() => toggle(opt)} disabled={disabled} style={{
-            padding:"5px 12px", borderRadius:99, fontSize:12, fontWeight:600, cursor: disabled?"default":"pointer",
-            background: active ? "#4472b8" : T.tagBg,
-            color: active ? "#fff" : "#4472b8",
-            border: `1.5px solid ${active ? "#4472b8" : T.inputBorder}`,
-            transition:"all 0.15s ease",
-          }}>
-            {opt}
-          </button>
-        );
-      })}
+    <div ref={triggerRef}>
+      <button
+        type="button"
+        className="profile-input"
+        disabled={disabled}
+        onClick={() => open ? setOpen(false) : handleOpen()}
+        style={{
+          width:"100%", boxSizing:"border-box",
+          padding:"12px 14px", fontSize:"14px",
+          border:`1.5px solid ${open ? "#4472b8" : T.inputBorder}`, borderRadius:"13px",
+          color: selectedValues.length ? T.text : T.sub,
+          background: T.inputBg, fontFamily:"inherit",
+          direction: isRTL ? "rtl" : "ltr",
+          textAlign: isRTL ? "right" : "left",
+          cursor: disabled ? "not-allowed" : "pointer",
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          transition:"border-color 0.2s",
+        }}
+      >
+        <span style={{ flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+          {displayText}
+        </span>
+        <span style={{ opacity:0.4, fontSize:11, flexShrink:0, marginInlineStart:8, display:"inline-block", transition:"transform 0.2s", ...(open ? { transform:"rotate(180deg)" } : {}) }}>▾</span>
+      </button>
+
+      {open && dropPos && createPortal(
+        <div
+          data-portal-multiselect="true"
+          style={{
+            position:"fixed",
+            left: dropPos.left, width: dropPos.width,
+            maxHeight: dropPos.maxH,
+            ...(dropPos.top !== undefined ? { top: dropPos.top } : { bottom: dropPos.bottom }),
+            zIndex: 99999,
+            background: T.inputBg,
+            border:"1.5px solid #4472b8",
+            borderRadius:13,
+            boxShadow:"0 6px 24px rgba(68,114,184,0.18)",
+            overflowY:"auto",
+            direction: isRTL ? "rtl" : "ltr",
+          }}
+        >
+          {options.map((opt, i) => {
+            const checked = selectedValues.includes(opt);
+            return (
+              <button
+                key={i}
+                type="button"
+                onMouseDown={e => { e.preventDefault(); toggle(opt); }}
+                style={{
+                  display:"flex", alignItems:"center", gap:10,
+                  width:"100%", padding:"10px 14px",
+                  background: checked ? "rgba(68,114,184,0.1)" : "none",
+                  border:"none",
+                  borderBottom: i < options.length - 1 ? `1px solid ${T.inputBorder}` : "none",
+                  cursor:"pointer", fontSize:14,
+                  color: checked ? "#4472b8" : T.text,
+                  fontFamily:"inherit", fontWeight: checked ? 700 : 400,
+                  textAlign: isRTL ? "right" : "left",
+                }}
+                onMouseEnter={e => { if (!checked) e.currentTarget.style.background="rgba(68,114,184,0.07)"; }}
+                onMouseLeave={e => { if (!checked) e.currentTarget.style.background="none"; }}
+              >
+                <span style={{
+                  width:16, height:16, borderRadius:4,
+                  border:`1.5px solid ${checked ? "#4472b8" : T.inputBorder}`,
+                  background: checked ? "#4472b8" : "transparent",
+                  flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                }}>
+                  {checked && (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  )}
+                </span>
+                {opt}
+              </button>
+            );
+          })}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -948,7 +1051,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     /* ── Cover photo (standalone, normal flow) ── */
     coverWrap: {
       position:"relative", flexShrink:0,
-      height: isMobile ? 170 : 220,
+      height: isMobile ? 160 : 185,
       background:"linear-gradient(135deg, #0b1f52 0%, #1d4896 60%, #2f5fd4 100%)",
       overflow:"hidden",
     },
@@ -974,8 +1077,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     profileInfoSection: {
       position:"relative", flexShrink:0,
       background: T.bg,
-      paddingTop: isMobile ? 56 : 64,
-      padding: isMobile ? "56px 1rem 12px" : "64px 2rem 10px",
+      paddingTop: isMobile ? 56 : 56,
+      padding: isMobile ? "56px 1rem 10px" : "56px 2rem 6px",
       display:"flex",
       flexDirection: isMobile ? "column" : "row",
       justifyContent:"space-between", alignItems:"flex-start",
@@ -983,7 +1086,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     },
     avatarWrap: {
       position:"absolute",
-      top: isMobile ? -48 : -56,
+      top: isMobile ? -44 : -52,
       ...(isRTL ? { right: isMobile ? "1rem" : "2rem" } : { left: isMobile ? "1rem" : "2rem" }),
       zIndex:2,
     },
@@ -1336,233 +1439,239 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       {/* ── Tab content ── */}
       <div style={S.body}>
 
-        {/* OWNER: Profile tab (personal info + details combined) */}
+        {/* OWNER: Profile tab — two-column on desktop */}
         {isOwner && currentTab === "profile" && (
           <div>
             {error && <div style={S.errorMsg}>{error}</div>}
 
-            <div className="profile-card" style={S.card}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1.25rem" }}>
-                <p style={{ fontSize:"11px", fontWeight:"700", color:T.text, textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
-                  {t.profile.personalInfo}
-                </p>
-                {isOwner && pct < 100 && <CompletenessBadge pct={pct} />}
-              </div>
+            <div style={isMobile ? {} : { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem", alignItems:"stretch" }}>
 
-              <div style={S.row}>
-                <div style={S.group}>
-                  <label style={S.label}>{t.profile.firstName}</label>
-                  <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} />
-                  {isOwner && <RequiredHint show={!form.firstName?.trim()} />}
+              {/* Left: Personal Info */}
+              <div className="profile-card" style={{ ...S.card, marginBottom: isMobile ? "1rem" : 0, boxShadow:"none", borderLeft:`1.5px solid ${T.cardBorder}`, display:"flex", flexDirection:"column" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1rem" }}>
+                  <p style={{ fontSize:"11px", fontWeight:"700", color:T.text, textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
+                    {t.profile.personalInfo}
+                  </p>
+                  {isOwner && pct < 100 && <CompletenessBadge pct={pct} />}
                 </div>
-                <div style={S.group}>
-                  <label style={S.label}>{t.profile.lastName}</label>
-                  <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} />
-                  {isOwner && <RequiredHint show={!form.lastName?.trim()} />}
-                </div>
-              </div>
 
-              <div style={S.row}>
-                <div style={S.group}>
-                  <label style={S.label}>{t.profile.phone}</label>
-                  <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} />
-                  {isOwner && <RequiredHint show={!form.phone?.trim()} />}
+                <div style={S.row}>
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.firstName}</label>
+                    <PlainInput name="firstName" value={form.firstName} onChange={handleChange} placeholder={t.profile.firstNamePlaceholder} />
+                    {isOwner && <RequiredHint show={!form.firstName?.trim()} />}
+                  </div>
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.lastName}</label>
+                    <PlainInput name="lastName" value={form.lastName} onChange={handleChange} placeholder={t.profile.lastNamePlaceholder} />
+                    {isOwner && <RequiredHint show={!form.lastName?.trim()} />}
+                  </div>
                 </div>
-                <div style={S.group}>
-                  <label style={S.label}>{t.profile.birthDate ?? "Birth Date"}</label>
-                  <PlainInput type="date" name="birthDate" value={form.birthDate} onChange={handleChange} />
-                  {isOwner && <RequiredHint show={!form.birthDate} />}
-                </div>
-              </div>
 
-              <div style={S.row}>
-                <div style={S.group}>
-                  <label style={S.label}>{t.profile.professionJob}</label>
-                  <ProfessionPicker
-                    value={form.profession}
-                    translations={form.professionTranslations}
-                    placeholder={t.profile.professionPlaceholder}
-                    onChange={(val, tr) => setForm(p => ({ ...p, profession: val, professionTranslations: tr }))}
-                  />
-                  {isOwner && <RequiredHint show={!form.profession?.trim()} />}
+                <div style={S.row}>
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.phone}</label>
+                    <PlainInput name="phone" value={form.phone} onChange={handleChange} placeholder={t.profile.phonePlaceholder} />
+                    {isOwner && <RequiredHint show={!form.phone?.trim()} />}
+                  </div>
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.birthDate ?? "Birth Date"}</label>
+                    <PlainInput type="date" name="birthDate" value={form.birthDate} onChange={handleChange} />
+                    {isOwner && <RequiredHint show={!form.birthDate} />}
+                  </div>
                 </div>
-                <div style={S.group}>
-                  <label style={S.label}>{t.profile.region}</label>
-                  <RegionPicker
-                    value={form.region}
-                    translations={form.regionTranslations}
-                    placeholder="—"
-                    onChange={(val, tr) => setForm(p => ({ ...p, region: val, regionTranslations: tr }))}
-                  />
-                  {isOwner && <RequiredHint show={!form.region} />}
-                </div>
-              </div>
 
-              <div style={S.row}>
-                <div style={S.group}>
-                  <label style={S.label}>{t.profile.institution}<OptionalTag /></label>
-                  <InstitutionPicker
-                    value={form.institution}
-                    translations={form.institutionTranslations}
-                    placeholder={t.profile.institutionPlaceholder}
-                    onChange={(val, tr) => setForm(p => ({ ...p, institution: val, institutionTranslations: tr }))}
-                  />
-                </div>
-                <div style={S.group}>
-                  <label style={S.label}>{t.profile.graduationYear}<OptionalTag /></label>
-                  <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
-                    placeholder={t.profile.graduationYearPlaceholder} />
-                </div>
-              </div>
-
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile.linkedIn}<OptionalTag /></label>
-                <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder={t.profile.linkedInPlaceholder} />
-              </div>
-
-              {/* Facebook */}
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile?.facebook || "Facebook"}<OptionalTag /></label>
-                <input
-                  className="profile-input"
-                  name="facebookURL" value={form.facebookURL || ""}
-                  onChange={handleChange}
-                  placeholder="https://facebook.com/..."
-                  style={{
-                    width:"100%", boxSizing:"border-box",
-                    padding:"12px 14px", fontSize:"14px",
-                    border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
-                    color:T.text, background:T.inputBg, fontFamily:"inherit",
-                    transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
-                  }}
-                  disabled={isReadOnly}
-                />
-              </div>
-              {/* Contact email */}
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile?.contactEmail || "Contact Email"}<OptionalTag /></label>
-                <input
-                  className="profile-input"
-                  name="contactEmail" value={form.contactEmail || ""}
-                  onChange={handleChange}
-                  placeholder="email@example.com"
-                  style={{
-                    width:"100%", boxSizing:"border-box",
-                    padding:"12px 14px", fontSize:"14px",
-                    border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
-                    color:T.text, background:T.inputBg, fontFamily:"inherit",
-                    transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
-                  }}
-                  disabled={isReadOnly}
-                  type="email"
-                />
-              </div>
-
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <label style={S.label}>{t.profile.bio}</label>
-                {isOwner && <RequiredHint show={!form.bio?.trim()} />}
-                <div style={S.bioWrap}>
-                  <textarea
-                    className="profile-textarea"
-                    style={{ ...S.textarea, minHeight:"110px" }}
-                    name="bio"
-                    value={form.bio}
-                    onChange={(e) => { if (e.target.value.length <= BIO_LIMIT) handleChange(e); }}
-                    placeholder={t.profile.bioPlaceholder}
-                  />
-                  <span style={{ ...S.charCount, color: form.bio.length > BIO_LIMIT * 0.9 ? "#d4a574" : "#d9c8ce" }}>
-                    {form.bio.length}/{BIO_LIMIT}
-                  </span>
-                </div>
-              </div>
-
-              <div style={S.row}>
-                <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <label style={S.label}>{t.profile.experience}<OptionalTag /></label>
-                  <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
-                    name="experience" value={form.experience} onChange={handleChange}
-                    placeholder={t.profile.experiencePlaceholder} />
-                </div>
-                <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <label style={S.label}>{t.profile.goals}<OptionalTag /></label>
-                  <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
-                    name="goals" value={form.goals} onChange={handleChange}
-                    placeholder={t.profile.goalsPlaceholder} />
-                </div>
-              </div>
-
-              {/* Ethnicity — privacy toggle */}
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
-                  <label style={S.label}>{t.profile.ethnicity}<OptionalTag /></label>
-                  <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:T.sub, cursor:"pointer", userSelect:"none" }}>
-                    <input
-                      type="checkbox"
-                      checked={!!form.ethnicityPrivate}
-                      onChange={e => setForm(p => ({ ...p, ethnicityPrivate: e.target.checked }))}
-                      style={{ cursor:"pointer" }}
+                <div style={S.row}>
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.professionJob}</label>
+                    <ProfessionPicker
+                      value={form.profession}
+                      translations={form.professionTranslations}
+                      placeholder={t.profile.professionPlaceholder}
+                      onChange={(val, tr) => setForm(p => ({ ...p, profession: val, professionTranslations: tr }))}
                     />
-                    {t.profile.ethnicityPrivateToggle}
-                  </label>
-                </div>
-                <SelectInput value={translateEthnicity(form.ethnicity, lang) || form.ethnicity} placeholder="—" options={t.profile.ethnicityOptions}
-                  onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
-              </div>
-
-              {/* Religion — privacy toggle */}
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
-                  <label style={S.label}>{t.profile.religion}<OptionalTag /></label>
-                  <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, color:T.sub, cursor:"pointer", userSelect:"none" }}>
-                    <input
-                      type="checkbox"
-                      checked={!!form.religionPrivate}
-                      onChange={e => setForm(p => ({ ...p, religionPrivate: e.target.checked }))}
-                      style={{ cursor:"pointer" }}
+                    {isOwner && <RequiredHint show={!form.profession?.trim()} />}
+                  </div>
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.region}</label>
+                    <RegionPicker
+                      value={form.region}
+                      translations={form.regionTranslations}
+                      placeholder="—"
+                      onChange={(val, tr) => setForm(p => ({ ...p, region: val, regionTranslations: tr }))}
                     />
-                    {t.profile.religionPrivateToggle}
-                  </label>
+                    {isOwner && <RequiredHint show={!form.region} />}
+                  </div>
                 </div>
-                <SelectInput value={translateReligion(form.religion, lang) || form.religion} placeholder="—" options={t.profile.religionOptions}
-                  onChange={e => handleChange({ target:{ name:"religion", value:e.target.value } })} />
+
+                <div style={S.row}>
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.institution}<OptionalTag /></label>
+                    <InstitutionPicker
+                      value={form.institution}
+                      translations={form.institutionTranslations}
+                      placeholder={t.profile.institutionPlaceholder}
+                      onChange={(val, tr) => setForm(p => ({ ...p, institution: val, institutionTranslations: tr }))}
+                    />
+                  </div>
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.graduationYear}<OptionalTag /></label>
+                    <PlainInput name="graduationYear" value={form.graduationYear} onChange={handleChange}
+                      placeholder={t.profile.graduationYearPlaceholder} />
+                  </div>
+                </div>
+
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.bio}</label>
+                  {isOwner && <RequiredHint show={!form.bio?.trim()} />}
+                  <div style={S.bioWrap}>
+                    <textarea
+                      className="profile-textarea"
+                      style={{ ...S.textarea, minHeight:"110px" }}
+                      name="bio"
+                      value={form.bio}
+                      onChange={(e) => { if (e.target.value.length <= BIO_LIMIT) handleChange(e); }}
+                      placeholder={t.profile.bioPlaceholder}
+                    />
+                    <span style={{ ...S.charCount, color: form.bio.length > BIO_LIMIT * 0.9 ? "#d4a574" : "#d9c8ce" }}>
+                      {form.bio.length}/{BIO_LIMIT}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Help Areas */}
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.4rem" }}>
+              {/* Right: Additional Details */}
+              <div className="profile-card" style={{ ...S.card, marginBottom: isMobile ? "1rem" : 0, boxShadow:"none", borderLeft:`1.5px solid ${T.cardBorder}`, display:"flex", flexDirection:"column" }}>
+                <div style={S.row}>
+                  <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                    <label style={S.label}>{t.profile.experience}<OptionalTag /></label>
+                    <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
+                      name="experience" value={form.experience} onChange={handleChange}
+                      placeholder={t.profile.experiencePlaceholder} />
+                  </div>
+                  <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                    <label style={S.label}>{t.profile.goals}<OptionalTag /></label>
+                    <textarea className="profile-textarea" style={{ ...S.textarea, minHeight:"80px" }}
+                      name="goals" value={form.goals} onChange={handleChange}
+                      placeholder={t.profile.goalsPlaceholder} />
+                  </div>
+                </div>
+
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                  <label style={S.label}>{t.profile.linkedIn}<OptionalTag /></label>
+                  <PlainInput name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder={t.profile.linkedInPlaceholder} />
+                </div>
+
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                  <label style={S.label}>{t.profile?.facebook || "Facebook"}<OptionalTag /></label>
+                  <input
+                    className="profile-input"
+                    name="facebookURL" value={form.facebookURL || ""}
+                    onChange={handleChange}
+                    placeholder="https://facebook.com/..."
+                    style={{
+                      width:"100%", boxSizing:"border-box",
+                      padding:"12px 14px", fontSize:"14px",
+                      border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+                      color:T.text, background:T.inputBg, fontFamily:"inherit",
+                      transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
+                    }}
+                    disabled={isReadOnly}
+                  />
+                </div>
+
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                  <label style={S.label}>{t.profile?.contactEmail || "Contact Email"}<OptionalTag /></label>
+                  <input
+                    className="profile-input"
+                    name="contactEmail" value={form.contactEmail || ""}
+                    onChange={handleChange}
+                    placeholder="email@example.com"
+                    style={{
+                      width:"100%", boxSizing:"border-box",
+                      padding:"12px 14px", fontSize:"14px",
+                      border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px",
+                      color:T.text, background:T.inputBg, fontFamily:"inherit",
+                      transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
+                    }}
+                    disabled={isReadOnly}
+                    type="email"
+                  />
+                </div>
+
+                {/* Ethnicity + Religion side by side */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.75rem", marginBottom:"0.75rem", alignItems:"end" }}>
+                  <div style={S.group}>
+                    <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"0.4rem", minHeight:"32px" }}>
+                      <label style={S.label}>{t.profile.ethnicity}<OptionalTag /></label>
+                      <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:T.sub, cursor:"pointer", userSelect:"none", flexShrink:0, marginInlineStart:6 }}>
+                        <input
+                          type="checkbox"
+                          checked={!!form.ethnicityPrivate}
+                          onChange={e => setForm(p => ({ ...p, ethnicityPrivate: e.target.checked }))}
+                          style={{ cursor:"pointer" }}
+                        />
+                        {t.profile.ethnicityPrivateToggle}
+                      </label>
+                    </div>
+                    <SelectInput value={translateEthnicity(form.ethnicity, lang) || form.ethnicity} placeholder="—" options={t.profile.ethnicityOptions}
+                      onChange={e => handleChange({ target:{ name:"ethnicity", value:e.target.value } })} />
+                  </div>
+                  <div style={S.group}>
+                    <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"0.4rem", minHeight:"32px" }}>
+                      <label style={S.label}>{t.profile.religion}<OptionalTag /></label>
+                      <label style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:T.sub, cursor:"pointer", userSelect:"none", flexShrink:0, marginInlineStart:6 }}>
+                        <input
+                          type="checkbox"
+                          checked={!!form.religionPrivate}
+                          onChange={e => setForm(p => ({ ...p, religionPrivate: e.target.checked }))}
+                          style={{ cursor:"pointer" }}
+                        />
+                        {t.profile.religionPrivateToggle}
+                      </label>
+                    </div>
+                    <SelectInput value={translateReligion(form.religion, lang) || form.religion} placeholder="—" options={t.profile.religionOptions}
+                      onChange={e => handleChange({ target:{ name:"religion", value:e.target.value } })} />
+                  </div>
+                </div>
+
+                {/* Help Areas */}
+                <div style={{ ...S.group, marginBottom:"0.75rem", flex:1 }}>
                   <label style={S.label}>{t.profile.helpAreas}</label>
+                  <MultiSelectDropdown
+                    selectedValues={form.helpAreas || []}
+                    options={t.profile.helpAreaOptions || []}
+                    onChange={vals => setForm(p => ({ ...p, helpAreas: vals }))}
+                    disabled={isReadOnly}
+                    placeholder="—"
+                  />
+                  {isOwner && <RequiredHint show={!(form.helpAreas?.length > 0)} />}
                 </div>
-                <MultiChips
-                  selectedValues={form.helpAreas || []}
-                  options={t.profile.helpAreaOptions || []}
-                  onChange={vals => setForm(p => ({ ...p, helpAreas: vals }))}
-                  disabled={isReadOnly}
-                />
-                {isOwner && <RequiredHint show={!(form.helpAreas?.length > 0)} />}
-              </div>
 
-              <div style={S.actionRow}>
-                <button
-                  style={getSaveBtnStyle("profile")}
-                  className={savingKey === "profile" ? "save-btn-shimmer" : ""}
-                  onClick={() => handleSaveSection("profile", {
-                    firstName:form.firstName, lastName:form.lastName, phone:form.phone,
-                    profession:form.profession, professionTranslations:form.professionTranslations ?? null, birthDate:form.birthDate, bio:form.bio,
-                    region:form.region, regionTranslations:form.regionTranslations ?? null, institution:form.institution, institutionTranslations:form.institutionTranslations ?? null, graduationYear:form.graduationYear,
-                    linkedIn: safeUrl(form.linkedIn),
-                    facebookURL: safeUrl(form.facebookURL),
-                    contactEmail: form.contactEmail || "",
-                    experience:form.experience, goals:form.goals,
-                    ethnicity:form.ethnicity, ethnicityPrivate:form.ethnicityPrivate,
-                    religion:form.religion,   religionPrivate:form.religionPrivate,
-                    helpAreas: form.helpAreas || [],
-                  })}
-                  disabled={!!savingKey}
-                  onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
-                >
-                  {saveBtnLabel("profile")}
-                </button>
+                {/* Save button anchored to bottom of right card */}
+                <div style={{ borderTop:`1px solid ${T.cardBorder}`, paddingTop:"1rem", marginTop:"auto" }}>
+                  <button
+                    style={{ ...getSaveBtnStyle("profile"), width:"100%", justifyContent:"center" }}
+                    className={savingKey === "profile" ? "save-btn-shimmer" : ""}
+                    onClick={() => handleSaveSection("profile", {
+                      firstName:form.firstName, lastName:form.lastName, phone:form.phone,
+                      profession:form.profession, professionTranslations:form.professionTranslations ?? null, birthDate:form.birthDate, bio:form.bio,
+                      region:form.region, regionTranslations:form.regionTranslations ?? null, institution:form.institution, institutionTranslations:form.institutionTranslations ?? null, graduationYear:form.graduationYear,
+                      linkedIn: safeUrl(form.linkedIn),
+                      facebookURL: safeUrl(form.facebookURL),
+                      contactEmail: form.contactEmail || "",
+                      experience:form.experience, goals:form.goals,
+                      ethnicity:form.ethnicity, ethnicityPrivate:form.ethnicityPrivate,
+                      religion:form.religion,   religionPrivate:form.religionPrivate,
+                      helpAreas: form.helpAreas || [],
+                    })}
+                    disabled={!!savingKey}
+                    onMouseOver={(e) => { if (!savingKey) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                    onMouseOut={(e)  => { e.currentTarget.style.transform = "translateY(0)"; }}
+                  >
+                    {saveBtnLabel("profile")}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1584,6 +1693,28 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               </button>
               <button className="change-btn" style={S.changeBtn} onClick={handleResetPassword}>
                 {t.profile.resetPassword}
+              </button>
+            </div>
+            <div style={{ borderTop:`1px solid ${T.cardBorder}`, marginTop:"1.25rem", paddingTop:"1.25rem" }}>
+              <button
+                onClick={logout}
+                style={{
+                  display:"flex", alignItems:"center", gap:8,
+                  padding:"10px 22px", borderRadius:99,
+                  background: dark ? "#3b1f1f" : "#fff0f0", color:"#c25c5c",
+                  border:"1.5px solid #e8b8b8",
+                  fontSize:14, fontWeight:700, cursor:"pointer",
+                  transition:"all 0.15s", fontFamily:"var(--font)",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#c25c5c"; e.currentTarget.style.color = "#fff"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = dark ? "#3b1f1f" : "#fff0f0"; e.currentTarget.style.color = "#c25c5c"; }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16,17 21,12 16,7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                {t.nav?.logout || "Logout"}
               </button>
             </div>
           </div>
@@ -1728,31 +1859,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
       </div>
 
-      {/* ── Logout button ── */}
-      {isOwner && (
-        <div style={{ padding: isMobile ? "1.5rem 1rem 2rem" : "1.5rem 2rem 2rem", display:"flex", justifyContent:"center" }}>
-          <button
-            onClick={logout}
-            style={{
-              display:"flex", alignItems:"center", gap:8,
-              padding:"11px 28px", borderRadius:99,
-              background: dark ? "#3b1f1f" : "#fff0f0", color:"#c25c5c",
-              border:"1.5px solid #e8b8b8",
-              fontSize:14, fontWeight:700, cursor:"pointer",
-              transition:"all 0.15s", fontFamily:"var(--font)",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#c25c5c"; e.currentTarget.style.color = "#fff"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = dark ? "#3b1f1f" : "#fff0f0"; e.currentTarget.style.color = "#c25c5c"; }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16,17 21,12 16,7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            {t.nav?.logout || "Logout"}
-          </button>
-        </div>
-      )}
 
       {/* ── Email Change Modal ── */}
       {showEmailModal && isOwner && (
