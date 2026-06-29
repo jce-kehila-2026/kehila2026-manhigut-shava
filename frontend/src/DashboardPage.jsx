@@ -272,6 +272,12 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
     }, 220);
   };
 
+  useEffect(() => {
+    if (members.length < 2) return;
+    const timer = setInterval(() => stepFeatured(1), 60000);
+    return () => clearInterval(timer);
+  }, [members.length]);
+
   const scrollStrip = (dir) => {
     stripRef.current?.scrollBy({ left: dir * 180, behavior: "smooth" });
   };
@@ -295,48 +301,29 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   const featured = members[featuredIdx] ?? null;
 
-  /* Circular nav arrow — LP-style */
-  const navArrow = (onClick, pts) => (
+  /* Pill-shaped nav button — matches mockup oval arrows */
+  const pillBtn = (onClick, pts) => (
     <button onClick={onClick} style={{
-      width:40, height:40, borderRadius:"50%", flexShrink:0,
-      border:"2px solid #daeaf8", background:"var(--bg-primary)",
-      color:"#4472b8", cursor:"pointer",
       display:"flex", alignItems:"center", justifyContent:"center",
-      boxShadow:"0 5px 22px rgba(68,114,184,0.10)",
+      width:52, height:34, borderRadius:99, flexShrink:0,
+      border:"1.5px solid #daeaf8", background:"var(--bg-primary)",
+      color:"#4472b8", cursor:"pointer",
+      boxShadow:"0 3px 14px rgba(68,114,184,0.10)",
       transition:"all 0.22s cubic-bezier(0.2,0.8,0.2,1)",
     }}
-    onMouseEnter={e => Object.assign(e.currentTarget.style, { background:"#4472b8", borderColor:"#4472b8", color:"#fff", transform:"scale(1.1)", boxShadow:"0 10px 32px rgba(68,114,184,0.28)" })}
-    onMouseLeave={e => Object.assign(e.currentTarget.style, { background:"var(--bg-primary)", borderColor:"#daeaf8", color:"#4472b8", transform:"scale(1)", boxShadow:"0 5px 22px rgba(68,114,184,0.10)" })}>
+    onMouseEnter={e => Object.assign(e.currentTarget.style, { background:"#4472b8", borderColor:"#4472b8", color:"#fff", transform:"scale(1.06)", boxShadow:"0 8px 24px rgba(68,114,184,0.28)" })}
+    onMouseLeave={e => Object.assign(e.currentTarget.style, { background:"var(--bg-primary)", borderColor:"#daeaf8", color:"#4472b8", transform:"scale(1)", boxShadow:"0 3px 14px rgba(68,114,184,0.10)" })}>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points={pts}/>
       </svg>
     </button>
   );
 
-  /* LP-style section eyebrow */
   const sectionEyebrow = (label) => (
-    <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase", color:"#4472b8", margin:"0 0 0.6rem", fontFamily:"'Figtree',system-ui,sans-serif" }}>
+    <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase", color:"#4472b8", margin:"0 0 0.75rem", fontFamily:"'Figtree',system-ui,sans-serif" }}>
       {label}
     </p>
   );
-
-  /* LP-style member avatar circle */
-  const memberAvatar = (m, size, borderPx = 3) => {
-    const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
-    const av = avatarUrl(m);
-    const initials = name.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0,2).toUpperCase();
-    return (
-      <div style={{ width:size, height:size, borderRadius:"50%", overflow:"hidden", flexShrink:0,
-        background:"linear-gradient(135deg,#4472b8,#6da3d4)",
-        border:`${borderPx}px solid #daeaf8`,
-        boxShadow:"0 4px 16px rgba(68,114,184,0.22)",
-        display:"flex", alignItems:"center", justifyContent:"center" }}>
-        {av
-          ? <img src={av} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt="" />
-          : <span style={{ color:"#fff", fontSize:size*0.34, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{initials}</span>}
-      </div>
-    );
-  };
 
   return (
     <div style={{ flex:1, minHeight:0, overflowY:"auto", overflowX:"hidden", maxWidth:"100%",
@@ -353,21 +340,37 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
         .hp-col:nth-child(1){animation-delay:0.05s}
         .hp-col:nth-child(2){animation-delay:0.17s}
         .hp-col:nth-child(3){animation-delay:0.29s}
-        .strip-scroll::-webkit-scrollbar{display:none}
-        .strip-scroll{-ms-overflow-style:none;scrollbar-width:none}
-        .strip-pip{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform 0.25s cubic-bezier(0.2,0.8,0.2,1)}
-        .strip-pip:hover{transform:translateY(-6px)}
-        .hp-member-card{
-          background:var(--bg-primary);border-radius:20px;
-          border:1px solid #daeaf8;
-          box-shadow:0 4px 20px rgba(0,0,0,0.04);
-          transition:box-shadow 0.25s ease,transform 0.25s ease,border-color 0.25s ease;
+        .gallery-scroll::-webkit-scrollbar{display:none}
+        .gallery-scroll{-ms-overflow-style:none;scrollbar-width:none}
+        .gallery-photo{
+          flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;
+          transition:transform 0.26s cubic-bezier(0.2,0.8,0.2,1),z-index 0s;
         }
-        .hp-member-card:hover{
-          box-shadow:0 16px 48px rgba(68,114,184,0.13);
-          transform:translateY(-4px);
-          border-color:#4472b8;
+        .gallery-photo:hover{transform:scale(1.06);z-index:2;}
+        .gallery-photo .name-overlay{
+          position:absolute;bottom:0;left:0;right:0;
+          padding:18px 6px 6px;
+          background:linear-gradient(transparent,rgba(17,24,39,0.72));
+          color:#fff;font-size:9px;font-weight:700;text-align:center;
+          letter-spacing:0.04em;
+          opacity:0;transition:opacity 0.22s ease;
+          font-family:'Figtree',system-ui,sans-serif;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
         }
+        .gallery-photo:hover .name-overlay{opacity:1;}
+        .hp-polaroid{
+          background:#fff;
+          padding:7px 7px 28px;
+          box-shadow:0 8px 36px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06);
+          cursor:pointer;flex-shrink:0;
+          transition:transform 0.3s cubic-bezier(0.2,0.8,0.2,1),box-shadow 0.3s ease;
+        }
+        .hp-polaroid:hover{
+          transform:rotate(-2deg) scale(1.04);
+          box-shadow:0 18px 56px rgba(0,0,0,0.18),0 4px 14px rgba(0,0,0,0.08);
+        }
+        .mobile-strip::-webkit-scrollbar{display:none}
+        .mobile-strip{-ms-overflow-style:none;scrollbar-width:none}
       `}</style>
 
       {isMobile ? (
@@ -405,15 +408,19 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           {members.length > 0 && (
             <div style={{ marginTop:"1.5rem" }}>
               {sectionEyebrow(t.dash?.us || "Us")}
-              <div className="strip-scroll" style={{ display:"flex", gap:14, overflowX:"auto", paddingBottom:8, paddingTop:4 }}>
+              {/* Mobile: photo gallery strip */}
+              <div className="mobile-strip" style={{ display:"flex", gap:3, overflowX:"auto", borderRadius:10, overflow:"hidden" }}>
                 {members.map(m => {
                   const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
+                  const av = avatarUrl(m);
                   return (
-                    <div key={m.id} className="strip-pip" onClick={() => onViewProfile(m.id)}>
-                      {memberAvatar(m, 54, 2)}
-                      <p style={{ fontSize:9, color:"var(--text-muted)", margin:0, textAlign:"center", maxWidth:58, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        {name.split(" ")[0]}
-                      </p>
+                    <div key={m.id} className="gallery-photo" style={{ width:80, height:110 }} onClick={() => onViewProfile(m.id)}>
+                      {av
+                        ? <img src={av} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} alt="" />
+                        : <div style={{ width:"100%", height:"100%", background:"linear-gradient(135deg,#4472b8,#6da3d4)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <span style={{ color:"#fff", fontSize:26, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>
+                          </div>}
+                      <div className="name-overlay">{name.split(" ")[0]}</div>
                     </div>
                   );
                 })}
@@ -451,12 +458,19 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             </div>
           )}
 
-          <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1.15fr) auto minmax(0,1fr)", gap:"2.25rem", alignItems:"start" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1.1fr) auto minmax(0,1fr)", gap:"2.25rem", alignItems:"start" }}>
 
             {/* ── COL 1: Moments ── */}
             <div className="hp-col">
               {sectionEyebrow(t.dash?.moments || "Moments")}
-              <SlideshowBanner maxHeight={480} />
+              <div style={{
+                background: "#fff",
+                padding: 8,
+                boxShadow: "0 8px 36px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+                borderRadius: 4,
+              }}>
+                <SlideshowBanner maxHeight={480} />
+              </div>
             </div>
 
             {/* ── COL 2: Shortcuts ── */}
@@ -470,107 +484,95 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             <div className="hp-col">
               {sectionEyebrow(t.dash?.us || "Us")}
 
-              {/* Featured member card — LP LeaderCard style */}
+              {/* Featured member — polaroid photo + floating text, no card wrapping */}
               {featured && (
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:"1.5rem" }}>
-                  {members.length > 1 && navArrow(() => stepFeatured(-1), "15 18 9 12 15 6")}
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:"1.75rem" }}>
+                  <div style={{
+                    flex:1, display:"flex", gap:"1.25rem", alignItems:"flex-start",
+                    opacity: featuredFade ? 1 : 0,
+                    transform: featuredFade ? "translateY(0)" : "translateY(8px)",
+                    transition: "opacity 0.22s ease, transform 0.22s ease",
+                  }}>
+                    {/* Polaroid frame */}
+                    <div className="hp-polaroid" onClick={() => onViewProfile(featured.id)}>
+                      <div style={{ width:220, height:250, overflow:"hidden", background:"linear-gradient(135deg,#daeaf8,#f0f6fb)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        {avatarUrl(featured)
+                          ? <img src={avatarUrl(featured)} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} alt="" />
+                          : <span style={{ color:"#4472b8", fontSize:42, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>
+                              {(`${featured.firstName || ""}${featured.lastName || ""}`)[0]?.toUpperCase() || "?"}
+                            </span>}
 
-                  <div
-                    className="hp-member-card"
-                    style={{
-                      flex:1, padding:"1.5rem",
-                      display:"flex", flexDirection:"column", gap:"1rem",
-                      opacity: featuredFade ? 1 : 0,
-                      transform: featuredFade ? "translateY(0)" : "translateY(8px)",
-                      transition: "opacity 0.22s ease, transform 0.22s ease, box-shadow 0.25s ease, border-color 0.25s ease",
-                    }}
-                  >
-                    {/* Avatar row */}
-                    <div style={{ display:"flex", alignItems:"center", gap:"1rem" }}>
-                      <div onClick={() => onViewProfile(featured.id)} style={{ cursor:"pointer" }}>
-                        {memberAvatar(featured, 72, 3)}
-                      </div>
-                      <div style={{ minWidth:0 }}>
-                        <h3 style={{ fontSize:17, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif", margin:"0 0 3px", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          {`${featured.firstName || ""} ${featured.lastName || ""}`.trim() || featured.email}
-                        </h3>
-                        {featured.profession && (
-                          <p style={{ fontSize:11, fontWeight:700, color:"#4472b8", margin:0, letterSpacing:"0.06em", textTransform:"uppercase" }}>
-                            {featured.professionTranslations?.[lang] || translateProfession(featured.profession, lang)}
-                          </p>
-                        )}
                       </div>
                     </div>
 
-                    {/* Bio quote block */}
-                    {(featured.bio || featured.region) && (
-                      <div style={{ background:"#f0f6fb", borderRadius:12, padding:"0.85rem 1rem", borderLeft:"3.5px solid #e8735a" }}>
-                        <p style={{ fontSize:13, color:"#374151", lineHeight:1.75, margin:0, fontStyle:"italic",
-                          display:"-webkit-box", WebkitLineClamp:4, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
-                          "{featured.bio || featured.region}"
+                    {/* Floating name + bio — no background */}
+                    <div style={{ flex:1, paddingTop:6, minWidth:0 }}>
+                      <h3 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif", margin:"0 0 4px", lineHeight:1.2 }}>
+                        {`${featured.firstName || ""} ${featured.lastName || ""}`.trim() || featured.email}
+                      </h3>
+                      {featured.profession && (
+                        <p style={{ fontSize:11, fontWeight:700, color:"#4472b8", margin:"0 0 10px", letterSpacing:"0.08em", textTransform:"uppercase" }}>
+                          {featured.professionTranslations?.[lang] || translateProfession(featured.profession, lang)}
                         </p>
-                      </div>
-                    )}
-
-                    <button
-                      onClick={() => onViewProfile(featured.id)}
-                      style={{
-                        alignSelf:"flex-start", padding:"7px 18px", borderRadius:99,
-                        background:"transparent", border:"2px solid #daeaf8",
-                        color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer",
-                        transition:"all 0.22s cubic-bezier(0.2,0.8,0.2,1)",
-                        fontFamily:"'Figtree',system-ui,sans-serif",
-                      }}
-                      onMouseEnter={e => Object.assign(e.currentTarget.style, { background:"#4472b8", borderColor:"#4472b8", color:"#fff", boxShadow:"0 8px 22px rgba(68,114,184,0.28)", transform:"translateY(-1px)" })}
-                      onMouseLeave={e => Object.assign(e.currentTarget.style, { background:"transparent", borderColor:"#daeaf8", color:"#4472b8", boxShadow:"none", transform:"none" })}
-                    >
-                      {t.dash?.viewProfile || "View profile"}
-                    </button>
+                      )}
+                      {(featured.bio || featured.region) && (
+                        <p style={{ fontSize:13, color:"var(--text-secondary)", lineHeight:1.8, margin:"0 0 12px",
+                          display:"-webkit-box", WebkitLineClamp:5, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                          {featured.bio || featured.region}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => onViewProfile(featured.id)}
+                        style={{ padding:"6px 16px", borderRadius:99, background:"transparent", border:"1.5px solid #daeaf8", color:"#4472b8", fontSize:11, fontWeight:700, cursor:"pointer", transition:"all 0.22s", fontFamily:"'Figtree',system-ui,sans-serif" }}
+                        onMouseEnter={e => Object.assign(e.currentTarget.style, { background:"#4472b8", borderColor:"#4472b8", color:"#fff", boxShadow:"0 6px 20px rgba(68,114,184,0.28)" })}
+                        onMouseLeave={e => Object.assign(e.currentTarget.style, { background:"transparent", borderColor:"#daeaf8", color:"#4472b8", boxShadow:"none" })}
+                      >
+                        {t.dash?.viewProfile || "View profile"}
+                      </button>
+                    </div>
                   </div>
 
-                  {members.length > 1 && navArrow(() => stepFeatured(1), "9 18 15 12 9 6")}
                 </div>
               )}
 
-              {/* Horizontal member strip */}
+              {/* Photo gallery strip — filmstrip of rectangular member photos */}
               {members.length > 0 && (
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  {navArrow(() => scrollStrip(-1), "15 18 9 12 15 6")}
-                  <div ref={stripRef} className="strip-scroll" style={{ flex:1, display:"flex", gap:12, overflowX:"auto", padding:"6px 2px 10px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  {pillBtn(() => scrollStrip(-1), "15 18 9 12 15 6")}
+                  <div ref={stripRef} className="gallery-scroll" style={{
+                    flex:1, display:"flex", gap:3, overflowX:"auto",
+                    borderRadius:10, overflow:"hidden",
+                    boxShadow:"0 4px 20px rgba(68,114,184,0.10)",
+                  }}>
                     {members.map((m, i) => {
                       const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
+                      const av = avatarUrl(m);
                       const active = i === featuredIdx;
                       return (
-                        <div key={m.id} className="strip-pip" onClick={() => {
-                          setFeaturedFade(false);
-                          setTimeout(() => { setFeaturedIdx(i); setFeaturedFade(true); }, 220);
-                          onViewProfile(m.id);
-                        }}>
-                          <div style={{
-                            width:52, height:52, borderRadius:"50%", overflow:"hidden", flexShrink:0,
-                            background:"linear-gradient(135deg,#4472b8,#6da3d4)",
-                            border: active ? "3px solid #4472b8" : "3px solid #daeaf8",
-                            boxShadow: active ? "0 0 0 3px rgba(68,114,184,0.18), 0 4px 16px rgba(68,114,184,0.22)" : "0 4px 16px rgba(68,114,184,0.12)",
-                            display:"flex", alignItems:"center", justifyContent:"center",
-                            transition:"border-color 0.2s, box-shadow 0.2s",
-                          }}>
-                            {avatarUrl(m)
-                              ? <img src={avatarUrl(m)} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt="" />
-                              : <span style={{ color:"#fff", fontSize:18, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>}
-                          </div>
-                          <p style={{
-                            fontSize:9, margin:0, textAlign:"center", maxWidth:58,
-                            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                            color: active ? "#4472b8" : "var(--text-muted)",
-                            fontWeight: active ? 700 : 400, transition:"color 0.18s",
-                          }}>
-                            {name.split(" ")[0]}
-                          </p>
+                        <div
+                          key={m.id}
+                          className="gallery-photo"
+                          style={{
+                            width: 90, height: 120,
+                            outline: active ? "3px solid #4472b8" : "none",
+                            outlineOffset: active ? -3 : 0,
+                          }}
+                          onClick={() => {
+                            setFeaturedFade(false);
+                            setTimeout(() => { setFeaturedIdx(i); setFeaturedFade(true); }, 220);
+                          }}
+                        >
+                          {av
+                            ? <img src={av} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} alt="" />
+                            : <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg,${i%2===0?"#4472b8,#6da3d4":"#6da3d4,#4472b8"})`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                <span style={{ color:"#fff", fontSize:28, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>
+                              </div>}
+                          <div className="name-overlay">{name.split(" ")[0]}</div>
                         </div>
                       );
                     })}
                   </div>
-                  {navArrow(() => scrollStrip(1), "9 18 15 12 9 6")}
+                  {pillBtn(() => scrollStrip(1), "9 18 15 12 9 6")}
                 </div>
               )}
             </div>
