@@ -134,11 +134,18 @@ exports.sendEmailChangeOtp = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("invalid-argument", "Missing newEmail.");
   }
 
+  let emailTaken = false;
   try {
     await admin.auth().getUserByEmail(newEmail);
-    throw new functions.https.HttpsError("already-exists", "That email is already in use.");
+    emailTaken = true;
   } catch (e) {
-    if (e.code !== "auth/user-not-found") throw e;
+    if (e.code !== "auth/user-not-found") {
+      console.error("sendEmailChangeOtp: getUserByEmail error:", e);
+      throw new functions.https.HttpsError("internal", "Failed to check email availability.");
+    }
+  }
+  if (emailTaken) {
+    throw new functions.https.HttpsError("already-exists", "That email is already in use.");
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
