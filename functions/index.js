@@ -125,102 +125,114 @@ exports.verifyOtp = functions.https.onCall(async (data, context) => {
 
 /* ── Send OTP to a new email address to verify ownership before changing ── */
 exports.sendEmailChangeOtp = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Must be signed in.");
-  }
-  const uid = context.auth.uid;
-  const { newEmail } = data;
-  if (!newEmail) {
-    throw new functions.https.HttpsError("invalid-argument", "Missing newEmail.");
-  }
-
-  let emailTaken = false;
   try {
-    await admin.auth().getUserByEmail(newEmail);
-    emailTaken = true;
-  } catch (e) {
-    if (e.code !== "auth/user-not-found") {
-      console.error("sendEmailChangeOtp: getUserByEmail error:", e);
-      throw new functions.https.HttpsError("internal", "Failed to check email availability.");
+    if (!context.auth) {
+      throw new functions.https.HttpsError("unauthenticated", "Must be signed in.");
     }
-  }
-  if (emailTaken) {
-    throw new functions.https.HttpsError("already-exists", "That email is already in use.");
-  }
+    const uid = context.auth.uid;
+    const { newEmail } = data;
+    if (!newEmail) {
+      throw new functions.https.HttpsError("invalid-argument", "Missing newEmail.");
+    }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = Date.now() + 10 * 60 * 1000;
+    let emailTaken = false;
+    try {
+      await admin.auth().getUserByEmail(newEmail);
+      emailTaken = true;
+    } catch (e) {
+      if (e.code !== "auth/user-not-found") {
+        console.error("sendEmailChangeOtp: getUserByEmail error:", e);
+        throw new functions.https.HttpsError("internal", "Failed to check email availability.");
+      }
+    }
+    if (emailTaken) {
+      throw new functions.https.HttpsError("already-exists", "That email is already in use.");
+    }
 
-  await db.collection("emailChangeOtps").doc(uid).set({ otp, expiresAt, newEmail, attempts: 0 });
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
 
-  sgMail.setApiKey(process.env.SENDGRID_KEY);
-  await sgMail.send({
-    to: newEmail,
-    from: {
-      email: process.env.SENDGRID_FROM || "noreply@manhigut-shava.com",
-      name: "מנהיגות שווה",
-    },
-    subject: "אישור שינוי דוא״ל — מנהיגות שווה",
-    html: `
-      <div dir="rtl" style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f8faff;border-radius:12px;">
-        <div style="background:#1a3a8f;border-radius:10px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
-          <span style="font-size:1.1rem;font-weight:800;color:#fff;">מנהיגות שווה — רשת בוגרות</span>
+    await db.collection("emailChangeOtps").doc(uid).set({ otp, expiresAt, newEmail, attempts: 0 });
+
+    sgMail.setApiKey(process.env.SENDGRID_KEY);
+    await sgMail.send({
+      to: newEmail,
+      from: {
+        email: process.env.SENDGRID_FROM || "noreply@manhigut-shava.com",
+        name: "מנהיגות שווה",
+      },
+      subject: "אישור שינוי דוא״ל — מנהיגות שווה",
+      html: `
+        <div dir="rtl" style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f8faff;border-radius:12px;">
+          <div style="background:#1a3a8f;border-radius:10px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
+            <span style="font-size:1.1rem;font-weight:800;color:#fff;">מנהיגות שווה — רשת בוגרות</span>
+          </div>
+          <h2 style="color:#1a3a8f;margin-bottom:0.5rem;">אישור שינוי כתובת הדוא״ל</h2>
+          <p style="color:#5a6a8a;margin-bottom:1.5rem;">הכניסי את הקוד הבא כדי לאשר את כתובת הדוא״ל החדשה שלך:</p>
+          <div style="background:#fff;border:2px solid #c8ddfb;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
+            <div style="font-size:3rem;font-weight:900;letter-spacing:16px;color:#1a3a8f;">${otp}</div>
+          </div>
+          <p style="color:#94a3b8;font-size:0.85rem;">הקוד תקף ל-10 דקות בלבד.</p>
+          <p style="color:#94a3b8;font-size:0.85rem;">אם לא ביקשת שינוי זה, התעלמי מהודעה זו.</p>
         </div>
-        <h2 style="color:#1a3a8f;margin-bottom:0.5rem;">אישור שינוי כתובת הדוא״ל</h2>
-        <p style="color:#5a6a8a;margin-bottom:1.5rem;">הכניסי את הקוד הבא כדי לאשר את כתובת הדוא״ל החדשה שלך:</p>
-        <div style="background:#fff;border:2px solid #c8ddfb;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
-          <div style="font-size:3rem;font-weight:900;letter-spacing:16px;color:#1a3a8f;">${otp}</div>
-        </div>
-        <p style="color:#94a3b8;font-size:0.85rem;">הקוד תקף ל-10 דקות בלבד.</p>
-        <p style="color:#94a3b8;font-size:0.85rem;">אם לא ביקשת שינוי זה, התעלמי מהודעה זו.</p>
-      </div>
-    `,
-  });
+      `,
+    });
 
-  return { success: true };
+    return { success: true };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("sendEmailChangeOtp crash:", e);
+    throw new functions.https.HttpsError("internal", e.message || "Unexpected error.");
+  }
 });
 
 /* ── Verify OTP and update email via Admin SDK ── */
 exports.verifyEmailChangeOtp = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Must be signed in.");
-  }
-  const uid = context.auth.uid;
-  const { otp } = data;
-  if (!otp) {
-    throw new functions.https.HttpsError("invalid-argument", "Missing otp.");
-  }
+  try {
+    if (!context.auth) {
+      throw new functions.https.HttpsError("unauthenticated", "Must be signed in.");
+    }
+    const uid = context.auth.uid;
+    const { otp } = data;
+    if (!otp) {
+      throw new functions.https.HttpsError("invalid-argument", "Missing otp.");
+    }
 
-  const docRef = db.collection("emailChangeOtps").doc(uid);
-  const snap = await docRef.get();
+    const docRef = db.collection("emailChangeOtps").doc(uid);
+    const snap = await docRef.get();
 
-  if (!snap.exists) {
-    throw new functions.https.HttpsError("not-found", "Code not found. Request a new one.");
-  }
+    if (!snap.exists) {
+      throw new functions.https.HttpsError("not-found", "Code not found. Request a new one.");
+    }
 
-  const { otp: stored, expiresAt, newEmail, attempts } = snap.data();
+    const { otp: stored, expiresAt, newEmail, attempts } = snap.data();
 
-  if (attempts >= 5) {
+    if (attempts >= 5) {
+      await docRef.delete();
+      throw new functions.https.HttpsError("resource-exhausted", "Too many attempts. Request a new code.");
+    }
+
+    if (Date.now() > expiresAt) {
+      await docRef.delete();
+      throw new functions.https.HttpsError("deadline-exceeded", "Code expired. Request a new one.");
+    }
+
+    if (otp !== stored) {
+      await docRef.update({ attempts: admin.firestore.FieldValue.increment(1) });
+      const left = 4 - attempts;
+      throw new functions.https.HttpsError("invalid-argument", `Incorrect code. ${left} attempt${left === 1 ? "" : "s"} left.`);
+    }
+
+    await admin.auth().updateUser(uid, { email: newEmail });
+    await db.collection("users").doc(uid).update({ email: newEmail });
     await docRef.delete();
-    throw new functions.https.HttpsError("resource-exhausted", "Too many attempts. Request a new code.");
+
+    return { success: true };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("verifyEmailChangeOtp crash:", e);
+    throw new functions.https.HttpsError("internal", e.message || "Unexpected error.");
   }
-
-  if (Date.now() > expiresAt) {
-    await docRef.delete();
-    throw new functions.https.HttpsError("deadline-exceeded", "Code expired. Request a new one.");
-  }
-
-  if (otp !== stored) {
-    await docRef.update({ attempts: admin.firestore.FieldValue.increment(1) });
-    const left = 4 - attempts;
-    throw new functions.https.HttpsError("invalid-argument", `Incorrect code. ${left} attempt${left === 1 ? "" : "s"} left.`);
-  }
-
-  await admin.auth().updateUser(uid, { email: newEmail });
-  await db.collection("users").doc(uid).update({ email: newEmail });
-  await docRef.delete();
-
-  return { success: true };
 });
 
 /* ── Scheduled: delete accounts that haven't verified email after 7 days ── */
