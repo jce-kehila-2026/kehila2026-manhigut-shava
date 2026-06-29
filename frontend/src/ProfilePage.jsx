@@ -1272,7 +1272,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       {!postsLoading && myPosts.length > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:"1.25rem" }}>
           {myPosts.map((post) => (
-            <div key={post.id} className="profile-card" onClick={() => onNavigateToCommunity?.()}
+            <div key={post.id} className="profile-card" onClick={() => onNavigateToCommunity?.(post.id)}
               style={{
                 background: T.card, borderRadius: "18px",
                 border: `1.5px solid ${T.cardBorder}`, borderLeft: "4px solid #4472b8",

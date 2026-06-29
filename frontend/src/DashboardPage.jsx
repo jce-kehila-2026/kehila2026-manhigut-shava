@@ -676,6 +676,7 @@ export default function DashboardPage() {
   const notifBellRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
+  const [communityPostTarget, setCommunityPostTarget] = useState(null);
   const [langChangeCode, setLangChangeCode] = useState(null); // pending lang change confirmation
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   useEffect(() => {
@@ -1435,10 +1436,10 @@ export default function DashboardPage() {
           {/* Page content */}
           <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
             {section === "home"      && <HomePage user={user} profile={profile} onNavigate={switchTab} onViewProfile={(userId) => navigate("profile", { userId })} />}
-            {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
+            {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} initialPostId={communityPostTarget} onPostConsumed={() => setCommunityPostTarget(null)} />}
             {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
             {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
-            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} onNavigateToCommunity={() => switchTab("community")} />}
+            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} onNavigateToCommunity={(postId) => { setCommunityPostTarget(postId || null); switchTab("community"); }} />}
             {section === "admin"     && <AdminPage />}
           </div>
         </div>
