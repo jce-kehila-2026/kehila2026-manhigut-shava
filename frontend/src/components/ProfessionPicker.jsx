@@ -57,7 +57,7 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  /* Build option list: known + custom, excluding "Other" entry */
+  /* Build option list: known + custom */
   const knownOptions = (PROFESSIONS_BY_LANG[lang] || PROFESSIONS_BY_LANG.he)
     .map((label, i) => ({
       label,
@@ -67,8 +67,7 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
         en: PROFESSIONS_BY_LANG.en[i],
         ar: PROFESSIONS_BY_LANG.ar[i],
       },
-    }))
-    .filter(o => !["אחר", "Other", "أخرى"].includes(o.label));
+    }));
 
   const customOptions = custom.map(c => ({
     label:        c[lang] || c.en || c.he || "",
@@ -97,6 +96,13 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
   };
 
   const handleSelect = opt => {
+    // "Other" → stay open and clear query so user can type their custom profession
+    const isOther = ["אחר", "Other", "أخرى"].includes(opt.label);
+    if (isOther) {
+      setQuery("");
+      setTimeout(() => inputRef.current?.focus(), 0);
+      return;
+    }
     setOpen(false);
     setQuery("");
     onChange(opt.enValue, opt.translations);

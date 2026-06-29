@@ -14,6 +14,7 @@ import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 import { SlideshowBanner } from "./components/SlideshowBanner";
 import { TutorialPopup } from "./components/TutorialPopup";
 import { translateProfession } from "./utils/translateProfile";
+import { HelpPostsWidget } from "./HelpPostFeed";
 
 /* ── SVG icon set (unchanged) ── */
 const Icon = {
@@ -647,6 +648,11 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               )}
             </div>
           </div>
+
+          {/* Recent Help Posts — below the grid */}
+          <div style={{ marginTop:"1.5rem" }}>
+            <HelpPostsWidget />
+          </div>
         </>
       )}
     </div>
@@ -971,7 +977,7 @@ export default function DashboardPage() {
             <img src="/NewLogoNGO.png"
               onError={e => { e.currentTarget.parentElement.style.background = "linear-gradient(135deg,#4472b8,#1d4896)"; e.currentTarget.style.display = "none"; }}
               alt="BogrotNet"
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              style={{ width: "100%", height: "100%", objectFit: "contain", transform: isRTL ? "scaleX(-1)" : "none" }}
             />
           </div>
           {sidebarExpanded && (

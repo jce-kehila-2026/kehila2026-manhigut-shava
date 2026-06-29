@@ -15,6 +15,7 @@ import { daysUntilBirthday, formatBirthday } from "./utils/birthday";
 import ImageEditorModal from "./ImageEditorModal";
 import { SlideshowBanner } from "./components/SlideshowBanner";
 import { translateProfession } from "./utils/translateProfile";
+import { HelpPostsWidget } from "./HelpPostFeed";
 
 /* ── Helpers ── */
 function timeAgo(ts, t) {
@@ -1654,6 +1655,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
             currentUser={user}
             currentUserProfile={profile}
           />
+          <HelpPostsWidget />
           <SlideshowBanner />
 
         </aside>

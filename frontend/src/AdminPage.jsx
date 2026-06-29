@@ -19,7 +19,8 @@ import { translateProfession, translateAny, translateReligion, translateEthnicit
 const AT = {
   he: {
     pageTitle: "לוח בקרה — מנהל", pageSub: "ניהול הפלטפורמה ואנליטיקה",
-    tabs: { overview:"סקירה", users:"משתמשות", editUsers:"עריכת משתמשות", posts:"פוסטים", logs:"יומן פעילות" },
+    tabs: { overview:"סקירה", users:"משתמשות", editUsers:"עריכת משתמשות", posts:"פוסטים", logs:"יומן פעילות", support:"תמיכה" },
+    supportTitle:"מודול תמיכה", supportPostsLabel:"פוסטים לעזרה", supportReqsLabel:"בקשות עזרה", supportReqFrom:"מאת", supportReqTo:"אל", supportReqStatus:"סטטוס", supportReqMsg:"הודעה", supportReqDate:"תאריך", supportPending:"ממתין", supportAccepted:"אושר", supportDeclined:"נדחה", supportNoPosts:"אין פוסטים עדיין", supportNoReqs:"אין בקשות עדיין", supportUnanswered:"ללא מענה", supportColPost:"פוסט", supportColAuthor:"מחברת", supportColTags:"תחומים", supportColDate:"תאריך", supportColComments:"תגובות", supportDeletePost:"מחקי פוסט",
     totalMembers:"סה\"כ חברות", onlineNow:"מחוברות עכשיו", verified:"מאומתות",
     totalPosts:"סה\"כ פוסטים", conversations:"שיחות", admins:"מנהלות",
     activeMembers:"חברות פעילות", thisWeek:(n)=>`+${n} השבוע`,
@@ -144,7 +145,8 @@ const AT = {
   },
   en: {
     pageTitle: "Admin Dashboard", pageSub: "Platform management and analytics",
-    tabs: { overview:"Overview", users:"Users", editUsers:"Edit Users", posts:"Posts", logs:"Activity Logs" },
+    tabs: { overview:"Overview", users:"Users", editUsers:"Edit Users", posts:"Posts", logs:"Activity Logs", support:"Support" },
+    supportTitle:"Support Module", supportPostsLabel:"Help Posts", supportReqsLabel:"Help Requests", supportReqFrom:"From", supportReqTo:"To", supportReqStatus:"Status", supportReqMsg:"Message", supportReqDate:"Date", supportPending:"Pending", supportAccepted:"Accepted", supportDeclined:"Declined", supportNoPosts:"No posts yet", supportNoReqs:"No requests yet", supportUnanswered:"Unanswered", supportColPost:"Post", supportColAuthor:"Author", supportColTags:"Topics", supportColDate:"Date", supportColComments:"Comments", supportDeletePost:"Delete Post",
     totalMembers:"Total Members", onlineNow:"Online Now", verified:"Verified",
     totalPosts:"Total Posts", conversations:"Conversations", admins:"Admins",
     activeMembers:"Active members", thisWeek:(n)=>`+${n} this week`,
@@ -269,7 +271,8 @@ const AT = {
   },
   ar: {
     pageTitle: "لوحة تحكم المشرف", pageSub: "إدارة المنصة والتحليلات",
-    tabs: { overview:"نظرة عامة", users:"المستخدمات", editUsers:"تعديل المستخدمات", posts:"المنشورات", logs:"سجل النشاط" },
+    tabs: { overview:"نظرة عامة", users:"المستخدمات", editUsers:"تعديل المستخدمات", posts:"المنشورات", logs:"سجل النشاط", support:"الدعم" },
+    supportTitle:"وحدة الدعم", supportPostsLabel:"منشورات المساعدة", supportReqsLabel:"طلبات المساعدة", supportReqFrom:"من", supportReqTo:"إلى", supportReqStatus:"الحالة", supportReqMsg:"الرسالة", supportReqDate:"التاريخ", supportPending:"قيد الانتظار", supportAccepted:"مقبول", supportDeclined:"مرفوض", supportNoPosts:"لا توجد منشورات بعد", supportNoReqs:"لا توجد طلبات بعد", supportUnanswered:"بلا رد", supportColPost:"المنشور", supportColAuthor:"المؤلفة", supportColTags:"المواضيع", supportColDate:"التاريخ", supportColComments:"التعليقات", supportDeletePost:"حذف المنشور",
     totalMembers:"إجمالي الأعضاء", onlineNow:"متصلات الآن", verified:"موثّقات",
     totalPosts:"إجمالي المنشورات", conversations:"المحادثات", admins:"المشرفات",
     activeMembers:"أعضاء نشطات", thisWeek:(n)=>`+${n} هذا الأسبوع`,
@@ -1516,6 +1519,11 @@ export default function AdminPage() {
   const [reportStatusFilter, setReportStatusFilter] = useState("all"); // "all"|"pending"|"resolved"|"dismissed"
   const [reportSearch,       setReportSearch]       = useState("");
 
+  /* ── Support (help posts + requests) ── */
+  const [helpPosts,        setHelpPosts]        = useState([]);
+  const [helpRequests,     setHelpRequests]     = useState([]);
+  const [supportLoading,   setSupportLoading]   = useState(false);
+
   /* ── Blacklist ── */
   const [blacklist,        setBlacklist]        = useState([]);
   const [blacklistLoading, setBlacklistLoading] = useState(false);
@@ -1579,10 +1587,24 @@ export default function AdminPage() {
     }
   }, []);
 
+  const fetchSupport = useCallback(async () => {
+    setSupportLoading(true);
+    try {
+      const [postsSnap, reqsSnap] = await Promise.all([
+        getDocs(query(collection(db, "helpPosts"), orderBy("createdAt", "desc"))),
+        getDocs(query(collection(db, "helpRequests"), orderBy("createdAt", "desc"))),
+      ]);
+      setHelpPosts(postsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setHelpRequests(reqsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) { console.error(err); }
+    setSupportLoading(false);
+  }, []);
+
   useEffect(() => {
     if (tab === "logs"       && logs.length === 0)      fetchLogs();
     if (tab === "reports"    && reports.length === 0)   fetchReports();
     if (tab === "blacklist"  && blacklist.length === 0)  fetchBlacklist();
+    if (tab === "support"    && helpPosts.length === 0)  fetchSupport();
   }, [tab]);
 
   const fetchReports = useCallback(async () => {
@@ -1941,6 +1963,7 @@ export default function AdminPage() {
     { id: "overview",  label: Tr.tabs.overview, show: true },
     { id: "users",     label: `${Tr.tabs.users} (${users.length})`, show: canManageUsers },
     { id: "posts",     label: `${Tr.tabs.posts} (${posts.length})`, show: canManageContent },
+    { id: "support",   label: Tr.tabs.support, show: canManageContent },
     { id: "data",      label: Tr.showDataTab, show: canViewStats },
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}`, show: canManageContent },
     { id: "logs",      label: Tr.tabs.logs, show: canViewLogs },
@@ -3169,6 +3192,102 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ══ SUPPORT TAB ══ */}
+      {tab === "support" && (
+        <div>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", marginBottom:"1.5rem" }}>{Tr.supportTitle}</h2>
+          {supportLoading ? (
+            <div style={{ textAlign:"center", padding:"3rem", color:"var(--text-muted)" }}>...</div>
+          ) : (
+            <>
+              {/* ── Help Posts ── */}
+              <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", marginBottom:"0.75rem" }}>
+                {Tr.supportPostsLabel} ({helpPosts.length})
+              </h3>
+              {helpPosts.length === 0 ? (
+                <p style={{ color:"var(--text-muted)", fontSize:13 }}>{Tr.supportNoPosts}</p>
+              ) : (
+                <div className="card admin-table-card" style={{ overflowX:"auto", marginBottom:"2rem" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
+                    <thead>
+                      <tr style={{ background:"var(--bg-secondary)" }}>
+                        {[Tr.supportColAuthor, Tr.supportColPost, Tr.supportColTags, Tr.supportColComments, Tr.supportColDate, ""].map((h,i)=>(
+                          <th key={i} style={{ padding:"10px 14px", textAlign:"left", fontSize:12, fontWeight:700, color:"var(--text-muted)", borderBottom:"1px solid var(--border)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {helpPosts.map(p => (
+                        <tr key={p.id} style={{ borderBottom:"1px solid var(--border)" }}>
+                          <td style={{ padding:"10px 14px", fontSize:13, fontWeight:600 }}>{p.authorDisplayName}</td>
+                          <td style={{ padding:"10px 14px", fontSize:12, maxWidth:240, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content || (p.repostOf ? `[repost] ${p.repostOf.content}` : "")}</td>
+                          <td style={{ padding:"10px 14px", fontSize:11, color:"var(--text-muted)" }}>{(p.tags||[]).slice(0,2).join(", ")}</td>
+                          <td style={{ padding:"10px 14px", fontSize:13, textAlign:"center" }}>{p.commentCount || 0}</td>
+                          <td style={{ padding:"10px 14px", fontSize:11, color:"var(--text-muted)", whiteSpace:"nowrap" }}>
+                            {p.createdAt?.toDate ? p.createdAt.toDate().toLocaleDateString() : "—"}
+                          </td>
+                          <td style={{ padding:"10px 14px" }}>
+                            <button onClick={async()=>{ if(window.confirm("Delete?")){ await deleteDoc(doc(db,"helpPosts",p.id)); setHelpPosts(prev=>prev.filter(x=>x.id!==p.id)); } }}
+                              style={{ fontSize:11, color:"#e8735a", background:"none", border:"none", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>
+                              {Tr.supportDeletePost}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* ── Help Requests ── */}
+              <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", marginBottom:"0.75rem" }}>
+                {Tr.supportReqsLabel} ({helpRequests.length})
+                {helpRequests.filter(r=>!r.status||r.status==="pending").length > 0 && (
+                  <span style={{ marginInlineStart:8, background:"#e8735a", color:"#fff", fontSize:10, fontWeight:700, borderRadius:99, padding:"2px 8px" }}>
+                    {helpRequests.filter(r=>!r.status||r.status==="pending").length} {Tr.supportUnanswered}
+                  </span>
+                )}
+              </h3>
+              {helpRequests.length === 0 ? (
+                <p style={{ color:"var(--text-muted)", fontSize:13 }}>{Tr.supportNoReqs}</p>
+              ) : (
+                <div className="card admin-table-card" style={{ overflowX:"auto" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
+                    <thead>
+                      <tr style={{ background:"var(--bg-secondary)" }}>
+                        {[Tr.supportReqFrom, Tr.supportReqTo, Tr.supportReqMsg, Tr.supportReqStatus, Tr.supportReqDate].map((h,i)=>(
+                          <th key={i} style={{ padding:"10px 14px", textAlign:"left", fontSize:12, fontWeight:700, color:"var(--text-muted)", borderBottom:"1px solid var(--border)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {helpRequests.map(r => {
+                        const st = r.status || "pending";
+                        const stColor = st==="accepted" ? "#4ade80" : st==="declined" ? "#e8735a" : "#f59e0b";
+                        const stLabel = st==="accepted" ? Tr.supportAccepted : st==="declined" ? Tr.supportDeclined : Tr.supportPending;
+                        return (
+                          <tr key={r.id} style={{ borderBottom:"1px solid var(--border)", background: st==="pending" ? (lang==="ar"||lang==="he" ? "rgba(232,115,90,0.04)" : "rgba(232,115,90,0.04)") : "none" }}>
+                            <td style={{ padding:"10px 14px", fontSize:13, fontWeight:600 }}>{r.fromUserName}</td>
+                            <td style={{ padding:"10px 14px", fontSize:13 }}>{r.toUserName}</td>
+                            <td style={{ padding:"10px 14px", fontSize:12, color:"var(--text-muted)", maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.message || "—"}</td>
+                            <td style={{ padding:"10px 14px" }}>
+                              <span style={{ background:stColor+"22", color:stColor, fontSize:11, fontWeight:700, borderRadius:99, padding:"2px 8px" }}>{stLabel}</span>
+                            </td>
+                            <td style={{ padding:"10px 14px", fontSize:11, color:"var(--text-muted)", whiteSpace:"nowrap" }}>
+                              {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : r.createdAt?.seconds ? new Date(r.createdAt.seconds*1000).toLocaleDateString() : "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
