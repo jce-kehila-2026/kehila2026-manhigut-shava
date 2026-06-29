@@ -248,18 +248,12 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([
-      getDocs(query(collection(db, "users"), limit(40))),
-      getDocs(query(collection(db, "conversations"), where("participants", "array-contains", user.uid))),
-    ]).then(([usersSnap, convsSnap]) => {
-      const alreadyTalkedTo = new Set(
-        convsSnap.docs.flatMap(d => (d.data().participants || []).filter(id => id !== user.uid))
-      );
-      const others = usersSnap.docs
+    getDocs(query(collection(db, "users"), limit(200))).then(snap => {
+      const others = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.id !== user.uid && !alreadyTalkedTo.has(u.id));
+        .filter(u => u.id !== user.uid);
       others.sort((a, b) => ((b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1));
-      setMembers(others.slice(0, 16));
+      setMembers(others);
     });
   }, [user]);
 
@@ -280,6 +274,23 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   const scrollStrip = (dir) => {
     stripRef.current?.scrollBy({ left: dir * 180, behavior: "smooth" });
+  };
+
+  /* Initialise at the middle copy so both directions can loop */
+  useEffect(() => {
+    if (!members.length) return;
+    requestAnimationFrame(() => {
+      if (stripRef.current) stripRef.current.scrollLeft = stripRef.current.scrollWidth / 3;
+    });
+  }, [members]);
+
+  /* Silently reposition when entering the edge copies */
+  const handleStripScroll = () => {
+    const el = stripRef.current;
+    if (!el) return;
+    const third = el.scrollWidth / 3;
+    if (el.scrollLeft < third)          el.scrollLeft += third;
+    else if (el.scrollLeft >= third * 2) el.scrollLeft -= third;
   };
 
   const quickCircles = [
@@ -539,18 +550,18 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               {members.length > 0 && (
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   {pillBtn(() => scrollStrip(-1), "15 18 9 12 15 6")}
-                  <div ref={stripRef} className="gallery-scroll" style={{
+                  <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll" style={{
                     flex:1, display:"flex", gap:3, overflowX:"auto",
                     borderRadius:10, overflow:"hidden",
                     boxShadow:"0 4px 20px rgba(68,114,184,0.10)",
                   }}>
-                    {members.map((m, i) => {
+                    {[...members, ...members, ...members].map((m, i) => {
                       const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
                       const av = avatarUrl(m);
-                      const active = i === featuredIdx;
+                      const active = (i % members.length) === featuredIdx;
                       return (
                         <div
-                          key={m.id}
+                          key={i}
                           className="gallery-photo"
                           style={{
                             width: 90, height: 120,
@@ -558,8 +569,9 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                             outlineOffset: active ? -3 : 0,
                           }}
                           onClick={() => {
+                            const realIdx = i % members.length;
                             setFeaturedFade(false);
-                            setTimeout(() => { setFeaturedIdx(i); setFeaturedFade(true); }, 220);
+                            setTimeout(() => { setFeaturedIdx(realIdx); setFeaturedFade(true); }, 220);
                           }}
                         >
                           {av
