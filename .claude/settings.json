@@ -17,7 +17,8 @@
       "Bash(git show *)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\HP\\.claude\\projects\\c--Users-HP-Desktop-kehila2026-manhigut-shava\\memory"
+      "c:\\Users\\HP\\.claude\\projects\\c--Users-HP-Desktop-kehila2026-manhigut-shava\\memory",
+      "C:\\Users\\HP\\AppData\\Local\\Temp\\claude"
     ]
   }
 }
