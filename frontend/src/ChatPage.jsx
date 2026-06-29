@@ -690,6 +690,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
   const sidebarResizing = useRef(false);
   const sidebarStartX = useRef(0);
   const sidebarStartW = useRef(0);
+  const scrollTracker = useRef({ convId: null, count: 0 });
 
   useEffect(() => {
     getDocs(collection(db, "users")).then((snap) =>
@@ -698,8 +699,11 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (messages.length === 0) return;
+    const isInitialLoad = scrollTracker.current.convId !== activeConvId || scrollTracker.current.count === 0;
+    scrollTracker.current = { convId: activeConvId, count: messages.length };
+    messagesEndRef.current?.scrollIntoView({ behavior: isInitialLoad ? "instant" : "smooth" });
+  }, [messages, activeConvId]);
 
   useEffect(() => {
     if (activeConvId && user) markRead(activeConvId, user.uid);
