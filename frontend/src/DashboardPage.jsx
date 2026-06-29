@@ -486,12 +486,10 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             </div>
           )}
 
-          {/* Moments — same framed slideshow as desktop */}
+          {/* Moments — frameless slideshow on mobile */}
           <div>
             {sectionEyebrow(t.dash?.moments || "Moments")}
-            <div style={{ background:"#fff", padding:6, boxShadow:"0 8px 36px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06)", borderRadius:4 }}>
-              <SlideshowBanner maxHeight={240} />
-            </div>
+            <SlideshowBanner maxHeight={240} />
           </div>
 
           {/* Shortcuts — horizontal scrollable row of circles */}
