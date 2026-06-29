@@ -380,18 +380,18 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           transform:rotate(-2deg) scale(1.04);
           box-shadow:0 18px 56px rgba(0,0,0,0.18),0 4px 14px rgba(0,0,0,0.08);
         }
-        .mobile-strip::-webkit-scrollbar{display:none}
-        .mobile-strip{-ms-overflow-style:none;scrollbar-width:none}
       `}</style>
 
       {isMobile ? (
-        /* ── MOBILE layout ── */
-        <div>
+        /* ── MOBILE: stacked version of the desktop layout ── */
+        <div style={{ display:"flex", flexDirection:"column", gap:"1.5rem" }}>
+
+          {/* Profile nudge */}
           {profilePct < 100 && (
             <div onClick={() => onNavigate("profile")} style={{
               display:"flex", alignItems:"center", gap:10,
               background:"var(--bg-primary)", border:"1px solid rgba(232,115,90,0.2)",
-              borderRadius:14, padding:"10px 14px", cursor:"pointer", marginBottom:"1rem",
+              borderRadius:14, padding:"10px 14px", cursor:"pointer",
               boxShadow:"0 2px 8px rgba(232,115,90,0.06)",
             }}>
               <div style={{ flex:1 }}>
@@ -408,36 +408,94 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             </div>
           )}
 
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"0.4rem", marginBottom:"1rem", placeItems:"center" }}>
-            {quickCircles.map((item, i) => (
-              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} onClick={() => onNavigate(item.action)} />
-            ))}
-          </div>
-
-          <SlideshowBanner maxHeight={220} />
-
-          {members.length > 0 && (
-            <div style={{ marginTop:"1.5rem" }}>
+          {/* Us — same polaroid + floating text + strip as desktop */}
+          {members.length > 0 && featured && (
+            <div>
               {sectionEyebrow(t.dash?.us || "Us")}
-              {/* Mobile: photo gallery strip */}
-              <div className="mobile-strip" style={{ display:"flex", gap:3, overflowX:"auto", borderRadius:10, overflow:"hidden" }}>
-                {members.map(m => {
-                  const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
+
+              {/* Polaroid + floating text — mirrors desktop exactly, just smaller */}
+              <div style={{
+                display:"flex", gap:"1rem", alignItems:"flex-start", marginBottom:"1rem",
+                opacity: featuredFade ? 1 : 0,
+                transform: featuredFade ? "translateY(0)" : "translateY(8px)",
+                transition:"opacity 0.22s ease, transform 0.22s ease",
+              }}>
+                <div className="hp-polaroid" onClick={() => onViewProfile(featured.id)}>
+                  <div style={{ width:110, height:125, overflow:"hidden", background:"linear-gradient(135deg,#daeaf8,#f0f6fb)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    {avatarUrl(featured)
+                      ? <img src={avatarUrl(featured)} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} alt="" />
+                      : <span style={{ color:"#4472b8", fontSize:36, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>
+                          {(`${featured.firstName||""}${featured.lastName||""}`)[0]?.toUpperCase()||"?"}
+                        </span>}
+                  </div>
+                </div>
+
+                <div style={{ flex:1, paddingTop:4, minWidth:0 }}>
+                  <h3 style={{ fontSize:16, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif", margin:"0 0 3px", lineHeight:1.2 }}>
+                    {`${featured.firstName||""} ${featured.lastName||""}`.trim() || featured.email}
+                  </h3>
+                  {featured.profession && (
+                    <p style={{ fontSize:10, fontWeight:700, color:"#4472b8", margin:"0 0 7px", letterSpacing:"0.08em", textTransform:"uppercase" }}>
+                      {featured.professionTranslations?.[lang] || translateProfession(featured.profession, lang)}
+                    </p>
+                  )}
+                  {(featured.bio || featured.region) && (
+                    <p style={{ fontSize:12, color:"var(--text-secondary)", lineHeight:1.7, margin:"0 0 10px",
+                      display:"-webkit-box", WebkitLineClamp:4, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                      {featured.bio || featured.region}
+                    </p>
+                  )}
+                  <button onClick={() => onViewProfile(featured.id)}
+                    style={{ padding:"6px 14px", borderRadius:99, background:"transparent", border:"1.5px solid #daeaf8", color:"#4472b8", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                    {t.dash?.viewProfile || "View profile"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Infinite gallery strip — swipeable on mobile */}
+              <div style={{ borderRadius:10, overflow:"hidden", boxShadow:"0 4px 16px rgba(68,114,184,0.09)" }}>
+              <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll"
+                style={{ display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x" }}>
+                {[...members, ...members, ...members].map((m, i) => {
+                  const name = `${m.firstName||""} ${m.lastName||""}`.trim() || m.email;
                   const av = avatarUrl(m);
+                  const active = (i % members.length) === featuredIdx;
                   return (
-                    <div key={m.id} className="gallery-photo" style={{ width:80, height:110 }} onClick={() => onViewProfile(m.id)}>
+                    <div key={i} className="gallery-photo"
+                      style={{ width:80, height:110, outline: active ? "3px solid #4472b8" : "none", outlineOffset: active ? -3 : 0 }}
+                      onClick={() => {
+                        const realIdx = i % members.length;
+                        setFeaturedFade(false);
+                        setTimeout(() => { setFeaturedIdx(realIdx); setFeaturedFade(true); }, 220);
+                      }}>
                       {av
                         ? <img src={av} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} alt="" />
-                        : <div style={{ width:"100%", height:"100%", background:"linear-gradient(135deg,#4472b8,#6da3d4)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <span style={{ color:"#fff", fontSize:26, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>
+                        : <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg,${i%2===0?"#4472b8,#6da3d4":"#6da3d4,#4472b8"})`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <span style={{ color:"#fff", fontSize:24, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>
                           </div>}
                       <div className="name-overlay">{name.split(" ")[0]}</div>
                     </div>
                   );
                 })}
               </div>
+              </div>
             </div>
           )}
+
+          {/* Moments — same framed slideshow as desktop */}
+          <div>
+            {sectionEyebrow(t.dash?.moments || "Moments")}
+            <div style={{ background:"#fff", padding:6, boxShadow:"0 8px 36px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06)", borderRadius:4 }}>
+              <SlideshowBanner maxHeight={240} />
+            </div>
+          </div>
+
+          {/* Shortcuts — horizontal scrollable row of circles */}
+          <div style={{ display:"flex", gap:"0.75rem", overflowX:"auto", paddingBottom:4 }}>
+            {quickCircles.map((item, i) => (
+              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} onClick={() => onNavigate(item.action)} />
+            ))}
+          </div>
         </div>
       ) : (
         /* ── DESKTOP 3-column layout ── */
@@ -550,10 +608,9 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               {members.length > 0 && (
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   {pillBtn(() => scrollStrip(-1), "15 18 9 12 15 6")}
+                  <div style={{ flex:1, borderRadius:10, overflow:"hidden", boxShadow:"0 4px 20px rgba(68,114,184,0.10)" }}>
                   <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll" style={{
-                    flex:1, display:"flex", gap:3, overflowX:"auto",
-                    borderRadius:10, overflow:"hidden",
-                    boxShadow:"0 4px 20px rgba(68,114,184,0.10)",
+                    display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x",
                   }}>
                     {[...members, ...members, ...members].map((m, i) => {
                       const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
@@ -583,6 +640,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                         </div>
                       );
                     })}
+                  </div>
                   </div>
                   {pillBtn(() => scrollStrip(1), "9 18 15 12 9 6")}
                 </div>
