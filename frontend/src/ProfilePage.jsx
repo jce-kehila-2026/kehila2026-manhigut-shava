@@ -1084,12 +1084,13 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       direction: isRTL ? "rtl" : "ltr",
       background: "var(--bg-primary)",
     },
-    /* ── Cover photo (standalone, normal flow) ── */
+    /* ── Cover photo: tall enough to contain the large avatar ── */
     coverWrap: {
-      position:"relative", flexShrink:0,
-      height: isMobile ? 160 : 185,
-      background:"linear-gradient(135deg, #0b1f52 0%, #1d4896 60%, #2f5fd4 100%)",
+      height: 220,
       overflow:"hidden",
+      position:"relative",
+      flexShrink:0,
+      background:"linear-gradient(135deg, #0b1f52 0%, #1d4896 60%, #2f5fd4 100%)",
     },
     coverImg: {
       position:"absolute", inset:0,
@@ -1097,42 +1098,32 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     },
     coverOverlay: {
       position:"absolute", inset:0,
-      background:"linear-gradient(to top, rgba(11,31,82,0.45) 0%, transparent 55%)",
+      background:"linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.18) 55%, transparent 82%)",
       zIndex:1,
     },
     coverEditBtn: {
-      position:"absolute", top:12, ...(isRTL ? { left:12 } : { right:12 }), zIndex:2,
+      position:"absolute", top:12, ...(isRTL ? { left:12 } : { right:12 }), zIndex:4,
       display:"flex", alignItems:"center", gap:5,
-      padding:"6px 13px",
-      background:"rgba(0,0,0,0.45)", color:"#fff",
-      border:"1px solid rgba(255,255,255,0.3)",
+      padding:"7px 14px",
+      background:"rgba(0,0,0,0.50)", color:"#fff",
+      border:"1px solid rgba(255,255,255,0.35)",
       borderRadius:99, fontSize:12, fontWeight:700, cursor:"pointer",
-      backdropFilter:"blur(6px)", transition:"background 0.18s",
+      backdropFilter:"blur(8px)", transition:"background 0.18s",
     },
-    /* ── Profile info section: avatar pokes up into cover, name sits BESIDE avatar ── */
-    profileInfoSection: {
-      position:"relative", flexShrink:0,
-      background: T.bg,
-      paddingTop: "10px",
-      paddingBottom: isMobile ? "12px" : "10px",
-      paddingInlineStart: isMobile ? "calc(96px + 1.5rem)" : "calc(112px + 2.5rem)",
-      paddingInlineEnd: isMobile ? "1rem" : "2rem",
-      display:"flex",
-      flexDirection:"row",
-      justifyContent:"space-between", alignItems:"center",
-      gap:8,
-    },
+    /* ── No spacer needed — avatar lives fully inside the cover ── */
+    profileInfoSection: { display:"none" },
+    /* ── Avatar: inside coverWrap, anchored to bottom-left ── */
     avatarWrap: {
       position:"absolute",
-      top: isMobile ? -30 : -50,
+      bottom: isMobile ? 18 : 22,
       ...(isRTL ? { right: isMobile ? "1rem" : "2rem" } : { left: isMobile ? "1rem" : "2rem" }),
-      zIndex:2,
+      zIndex:5,
     },
     avatarRing: {
-      width: isMobile ? 96 : 112, height: isMobile ? 96 : 112,
+      width: isMobile ? 130 : 170, height: isMobile ? 130 : 170,
       borderRadius:"50%",
-      border:`4px solid ${T.bg}`,
-      boxShadow:"0 4px 20px rgba(0,0,0,0.28)",
+      border:"4px solid rgba(255,255,255,0.9)",
+      boxShadow:"0 4px 28px rgba(0,0,0,0.45)",
       overflow:"hidden",
       background:"linear-gradient(135deg, #4472b8, #0b1f52)",
     },
@@ -1140,21 +1131,41 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       width:"100%", height:"100%",
       background:"#0b1f52", color:"#ffffff",
       display:"flex", alignItems:"center", justifyContent:"center",
-      fontSize: isMobile ? 26 : 30, fontWeight:"700", overflow:"hidden",
+      fontSize: isMobile ? 34 : 44, fontWeight:"700", overflow:"hidden",
     },
     avatarImg: { width:"100%", height:"100%", objectFit:"cover" },
     avatarEditBtn: {
-      position:"absolute", bottom:2, right:2,
-      width:26, height:26, borderRadius:"50%",
-      background:T.bg, border:`1.5px solid ${T.inputBorder}`,
+      position:"absolute", bottom:5, right:5,
+      width:32, height:32, borderRadius:"50%",
+      background:"rgba(255,255,255,0.95)", border:"1.5px solid rgba(180,180,180,0.5)",
       cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-      padding:0, fontSize:12, color:"#1d4896",
-      transition:"background 0.18s, color 0.18s, border-color 0.18s",
+      padding:0, fontSize:13, color:"#1d4896",
+      transition:"background 0.18s, color 0.18s",
+    },
+    /* ── Name/profession: inside coverWrap at the bottom, beside avatar ── */
+    coverProfileRow: {
+      position:"absolute",
+      bottom: isMobile ? 18 : 22,
+      ...(isRTL
+        ? { right: `calc(${isMobile ? 130 : 170}px + ${isMobile ? "1.5rem" : "2.5rem"} + 14px)` }
+        : { left:  `calc(${isMobile ? 130 : 170}px + ${isMobile ? "1.5rem" : "2.5rem"} + 14px)` }),
+      zIndex:3,
+      display:"flex", flexDirection:"column",
+      maxWidth: isMobile ? "calc(100% - 145px - 2.5rem)" : "52%",
     },
     profileMetaText: { flex:1, minWidth:0 },
-    profileName: { fontSize: isMobile ? 18 : 22, fontWeight:800, color:T.text, margin:"0 0 3px", lineHeight:1.2 },
-    profilePro:  { fontSize:13, color:T.sub, margin:"0 0 5px" },
-    profileActions: { display:"flex", gap:8, alignItems:"flex-start", flexShrink:0, paddingTop:2, flexWrap:"wrap" },
+    profileName: {
+      fontSize: isMobile ? 18 : 23, fontWeight:800, color:"#fff",
+      margin:"0 0 3px", lineHeight:1.2, wordBreak:"break-word",
+      textShadow:"0 1px 8px rgba(0,0,0,0.65), 0 2px 24px rgba(0,0,0,0.35)",
+    },
+    profilePro: {
+      fontSize: isMobile ? 12 : 13, color:"rgba(255,255,255,0.88)",
+      margin:"0 0 5px",
+      textShadow:"0 1px 5px rgba(0,0,0,0.55)",
+      overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical",
+    },
+    profileActions: { display:"flex", gap:6, alignItems:"center" },
     /* ── Tab bar ── */
     tabBar: {
       display:"flex", gap:0,
@@ -1342,7 +1353,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   return (
     <div style={S.page}>
 
-      {/* ── Cover photo ── */}
+      {/* ── Cover photo: avatar + name live fully inside ── */}
       <div style={S.coverWrap}>
         {coverURL && <img src={coverURL} alt="cover" style={S.coverImg} />}
         <div style={S.coverOverlay} />
@@ -1359,7 +1370,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             {coverURL && (
               <button
                 className="cover-edit-btn"
-                style={{ ...S.coverEditBtn, ...(isRTL ? { right: 10, left: "auto" } : { right: "auto", left: 10 }), background: "rgba(220,38,38,0.65)" }}
+                style={{ ...S.coverEditBtn, top: 50, background: "rgba(220,38,38,0.65)" }}
                 onClick={handleDeleteCover}
               >
                 × {t.profile.removeCover || "Remove"}
@@ -1367,12 +1378,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             )}
           </>
         )}
-      </div>
 
-      {/* ── Profile info: avatar pokes up into cover, name sits below ── */}
-      <div style={S.profileInfoSection}>
-
-        {/* Avatar: absolutely positioned, top half overlaps cover photo above */}
+        {/* Avatar: inside cover, anchored to bottom */}
         <div style={S.avatarWrap}>
           <div style={S.avatarRing}>
             <div style={S.avatarInner}>
@@ -1391,52 +1398,56 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           )}
         </div>
 
-        {/* Name / profession — in normal flow, appears BELOW the avatar */}
-        <div style={S.profileMetaText}>
-          <h2 style={S.profileName}>
-            {form.firstName || form.lastName
-              ? `${form.firstName} ${form.lastName}`.trim()
-              : (isOwner ? t.profile.myProfile : t.profile.memberProfile)}
-          </h2>
+        {/* Name / profession / actions — on the cover photo at the bottom */}
+        <div style={S.coverProfileRow}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:3 }}>
+            <h2 style={{ ...S.profileName, margin:0 }}>
+              {form.firstName || form.lastName
+                ? `${form.firstName} ${form.lastName}`.trim()
+                : (isOwner ? t.profile.myProfile : t.profile.memberProfile)}
+            </h2>
+            <div style={S.profileActions}>
+              {form.linkedIn && (
+                <a href={safeUrl(form.linkedIn)} target="_blank" rel="noreferrer" title="LinkedIn"
+                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:"50%", background:"rgba(255,255,255,0.18)", color:"#fff", textDecoration:"none", flexShrink:0, backdropFilter:"blur(4px)", border:"1px solid rgba(255,255,255,0.3)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.32)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+                </a>
+              )}
+              {!isOwner && onMessage && (
+                <button onClick={handleMessageClick} title={t.profile.message || "Message"}
+                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:"50%", background:"rgba(255,255,255,0.18)", color:"#fff", border:"1px solid rgba(255,255,255,0.3)", cursor:"pointer", flexShrink:0, padding:0, backdropFilter:"blur(4px)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.32)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </button>
+              )}
+              {!isOwner && viewerCanManageUsers && (
+                <button
+                  title={t.profile?.adminEdit || "Admin: Edit"}
+                  onClick={() => {
+                    setAdminEditFields({
+                      firstName:  form.firstName  || "",
+                      lastName:   form.lastName   || "",
+                      region:     form.region     || "",
+                      profession: form.profession || "",
+                      bio:        form.bio        || "",
+                    });
+                    setAdminEditOpen(true);
+                  }}
+                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:"50%", background:"rgba(255,255,255,0.18)", color:"#fff", border:"1px solid rgba(255,255,255,0.3)", cursor:"pointer", flexShrink:0, padding:0, backdropFilter:"blur(4px)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.32)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              )}
+            </div>
+          </div>
           {form.profession && <p style={S.profilePro}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang)}</p>}
-        </div>
-
-        {/* Actions: completeness circle + LinkedIn / Message */}
-        <div style={S.profileActions}>
-          {form.linkedIn && (
-            <a href={safeUrl(form.linkedIn)}
-              target="_blank" rel="noreferrer"
-              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#1d4896", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", border:"none", whiteSpace:"nowrap" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#0b1f52"}
-              onMouseLeave={e => e.currentTarget.style.background = "#1d4896"}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
-              LinkedIn
-            </a>
-          )}
-          {!isOwner && onMessage && (
-            <button onClick={handleMessageClick} style={{ padding:"10px 20px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:14, fontWeight:700, cursor:"pointer" }}>
-              {t.profile.message || "Message"}
-            </button>
-          )}
-          {!isOwner && viewerCanManageUsers && (
-            <button
-              onClick={() => {
-                setAdminEditFields({
-                  firstName:  form.firstName  || "",
-                  lastName:   form.lastName   || "",
-                  region:     form.region     || "",
-                  profession: form.profession || "",
-                  bio:        form.bio        || "",
-                });
-                setAdminEditOpen(true);
-              }}
-              style={{ padding:"10px 16px", borderRadius:99, background:"rgba(68,114,184,0.1)", color:"var(--brand,#4472b8)", border:"1.5px solid var(--brand,#4472b8)", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              {t.profile?.adminEdit || "Admin: Edit"}
-            </button>
-          )}
         </div>
       </div>
 
@@ -1756,11 +1767,15 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {/* Posts tab (owner + visitor) */}
         {currentTab === "posts" && <PostsGrid />}
 
-        {/* VISITOR: Personal Info tab (read-only, mirrors owner's profile tab) */}
+        {/* VISITOR: About tab — two-column layout matching owner's profile tab */}
         {!isOwner && currentTab === "about" && (
-          <div style={{ display:"grid", gap:"1rem" }}>
-            <div className="profile-card" style={S.card}>
-              <SectionTitle label={t.profile.about || "About"} />
+          <div style={isMobile ? {} : { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem", alignItems:"stretch" }}>
+
+            {/* Left: Personal Info */}
+            <div className="profile-card" style={{ ...S.card, marginBottom: isMobile ? "1rem" : 0, boxShadow:"none", borderLeft:`1.5px solid ${T.cardBorder}`, display:"flex", flexDirection:"column" }}>
+              <p style={{ fontSize:"11px", fontWeight:"700", color:T.text, textTransform:"uppercase", letterSpacing:"0.12em", margin:"0 0 1rem" }}>
+                {t.profile.personalInfo}
+              </p>
 
               <div style={S.row}>
                 <div style={S.group}>
@@ -1808,59 +1823,33 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
               </div>
 
-              {form.linkedIn && (
-                <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <p style={S.label}>{t.profile.linkedIn}</p>
-                  <a href={safeUrl(form.linkedIn)}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
-                    {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
-                  </a>
-                </div>
-              )}
-              {form.facebookURL && (
-                <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <p style={S.label}>{t.profile?.facebook || "Facebook"}</p>
-                  <a href={safeUrl(form.facebookURL)} target="_blank" rel="noopener noreferrer" style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-                    Facebook
-                  </a>
-                </div>
-              )}
-              {form.contactEmail && (
-                <div style={{ ...S.group, marginBottom:"1rem" }}>
-                  <p style={S.label}>{t.profile?.contactEmail || "Contact Email"}</p>
-                  <a href={`mailto:${form.contactEmail}`} style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
-                    {form.contactEmail}
-                  </a>
-                </div>
-              )}
-
-              <div style={{ ...S.group, marginBottom:"1rem" }}>
+              <div style={{ ...S.group, flex:1, display:"flex", flexDirection:"column" }}>
                 <p style={S.label}>{t.profile.bio}</p>
-                <div style={{ ...S.inputDisabled, minHeight:"80px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
+                <div style={{ ...S.inputDisabled, flex:1, minHeight:"110px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
                   {form.bio || "—"}
                 </div>
               </div>
+            </div>
 
+            {/* Right: Additional Details */}
+            <div className="profile-card" style={{ ...S.card, marginBottom: isMobile ? "1rem" : 0, boxShadow:"none", borderLeft:`1.5px solid ${T.cardBorder}`, display:"flex", flexDirection:"column" }}>
               <div style={S.row}>
-                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
                   <p style={S.label}>{t.profile.experience}</p>
-                  <div style={{ ...S.inputDisabled, minHeight:"60px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
+                  <div style={{ ...S.inputDisabled, minHeight:"80px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
                     {form.experience || "—"}
                   </div>
                 </div>
-                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
                   <p style={S.label}>{t.profile.goals}</p>
-                  <div style={{ ...S.inputDisabled, minHeight:"60px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
+                  <div style={{ ...S.inputDisabled, minHeight:"80px", whiteSpace:"pre-wrap", lineHeight:1.7 }}>
                     {form.goals || "—"}
                   </div>
                 </div>
               </div>
 
               {(!form.ethnicityPrivate || authProfile?.isAdmin) && form.ethnicity && (
-                <div style={S.group}>
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
                   <p style={S.label}>
                     {t.profile.ethnicity}
                     {form.ethnicityPrivate && authProfile?.isAdmin && (
@@ -1873,7 +1862,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
               )}
               {(!form.religionPrivate || authProfile?.isAdmin) && form.religion && (
-                <div style={S.group}>
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
                   <p style={S.label}>
                     {t.profile.religion}
                     {form.religionPrivate && authProfile?.isAdmin && (
@@ -1883,6 +1872,43 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     )}
                   </p>
                   <div style={S.inputDisabled}>{translateReligion(form.religion, lang) || form.religion}</div>
+                </div>
+              )}
+              {form.helpAreas?.length > 0 && (
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                  <p style={S.label}>{t.profile.helpAreas}</p>
+                  <div style={S.inputDisabled}>{form.helpAreas.join(", ")}</div>
+                </div>
+              )}
+
+              {/* Social / contact links */}
+              {form.linkedIn && (
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                  <p style={S.label}>{t.profile.linkedIn}</p>
+                  <a href={safeUrl(form.linkedIn)} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
+                    {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
+                  </a>
+                </div>
+              )}
+              {form.facebookURL && (
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                  <p style={S.label}>{t.profile?.facebook || "Facebook"}</p>
+                  <a href={safeUrl(form.facebookURL)} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    Facebook
+                  </a>
+                </div>
+              )}
+              {form.contactEmail && (
+                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
+                  <p style={S.label}>{t.profile?.contactEmail || "Contact Email"}</p>
+                  <a href={`mailto:${form.contactEmail}`}
+                    style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+                    {form.contactEmail}
+                  </a>
                 </div>
               )}
             </div>

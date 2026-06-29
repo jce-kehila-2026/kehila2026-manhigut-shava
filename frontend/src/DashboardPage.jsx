@@ -250,11 +250,14 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   useEffect(() => {
     if (!user) return;
     getDocs(query(collection(db, "users"), limit(200))).then(snap => {
-      const others = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.id !== user.uid);
-      others.sort((a, b) => ((b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1));
-      setMembers(others);
+      const all = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }));
+      all.sort((a, b) => {
+        if (a.id === user.uid) return -1;
+        if (b.id === user.uid) return 1;
+        return (b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1;
+      });
+      setMembers(all);
     });
   }, [user]);
 
@@ -295,10 +298,10 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   };
 
   const quickCircles = [
-    { imgSrc: "/FindHelpSymbol.png",  title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
     { imgSrc: "/CommunitySymbol.png", title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
     { imgSrc: "/ChatSymbol.png",      title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: true  },
-    { imgSrc: "/ProfileSymbol.png",   title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
+    { imgSrc: "/FindHelpSymbol.png",  title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: false },
+    { imgSrc: "/ProfileSymbol.png",   title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: true  },
   ];
 
   const profilePct = (() => {
@@ -607,7 +610,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
               {/* Photo gallery strip — filmstrip of rectangular member photos */}
               {members.length > 0 && (
-                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:"4rem" }}>
                   {pillBtn(() => scrollStrip(-1), "15 18 9 12 15 6")}
                   <div style={{ flex:1, borderRadius:10, overflow:"hidden", boxShadow:"0 4px 20px rgba(68,114,184,0.10)" }}>
                   <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll" style={{
@@ -1060,7 +1063,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Main ── */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative", paddingBottom: isMobile ? 56 : 0 }}>
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative" }}>
         {/* Floating water blob background — desktop only */}
         {!isMobile && (
         <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
