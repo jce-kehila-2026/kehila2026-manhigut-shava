@@ -174,8 +174,9 @@ function timeAgo(ts, Tr) {
 }
 
 function Avatar({ photoURL, name, size = 36 }) {
-  if (photoURL) return (
-    <img src={photoURL} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+  const [imgErr, setImgErr] = useState(false);
+  if (photoURL && !imgErr) return (
+    <img src={photoURL} alt="" onError={() => setImgErr(true)} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
   );
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg,#4472b8,#e8735a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -308,14 +309,38 @@ function CreatePostModal({ onClose, onPublished, Tr, lang, isRTL }) {
   );
 }
 
+/* ── Standalone comment/reply input — has its own state so typing doesn't re-render parent ── */
+function CommentInput({ placeholder, onSend, isRTL, Tr, autoFocus }) {
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const send = async () => {
+    if (!text.trim() || sending) return;
+    setSending(true);
+    try { await onSend(text.trim()); setText(""); }
+    finally { setSending(false); }
+  };
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      <input
+        value={text} onChange={e => setText(e.target.value)}
+        onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
+        placeholder={placeholder} autoFocus={autoFocus}
+        style={{ flex: 1, padding: "7px 12px", borderRadius: 10, border: "1.5px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", direction: isRTL ? "rtl" : "ltr" }}
+      />
+      <button onClick={send} disabled={!text.trim() || sending}
+        style={{ padding: "7px 14px", borderRadius: 10, background: "#4472b8", border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+        {Tr.sendComment}
+      </button>
+    </div>
+  );
+}
+
 /* ── Comments Section ── */
 function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
   const { user, profile } = useAuth();
   const { dark } = useTheme();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
   const [replyTo, setReplyTo] = useState(null); // {id, authorDisplayName}
   const [showReplies, setShowReplies] = useState({});
 
@@ -328,24 +353,18 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
     return unsub;
   }, [postId]);
 
-  const sendComment = async () => {
-    if (!text.trim() || sending || !user) return;
-    setSending(true);
-    try {
-      await addDoc(collection(db, "helpPosts", postId, "comments"), {
-        authorUid: user.uid,
-        authorDisplayName: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() || user.email,
-        authorPhotoURL: profile?.photoURL || null,
-        content: text.trim(),
-        parentId: replyTo?.id || null,
-        createdAt: serverTimestamp(),
-      });
-      await updateDoc(doc(db, "helpPosts", postId), { commentCount: increment(1) });
-      setText("");
-      setReplyTo(null);
-    } finally {
-      setSending(false);
-    }
+  const sendComment = async (content, parentId = null) => {
+    if (!user) return;
+    await addDoc(collection(db, "helpPosts", postId, "comments"), {
+      authorUid: user.uid,
+      authorDisplayName: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() || user.email,
+      authorPhotoURL: profile?.photoURL || null,
+      content,
+      parentId,
+      createdAt: serverTimestamp(),
+    });
+    await updateDoc(doc(db, "helpPosts", postId), { commentCount: increment(1) });
+    if (parentId) setReplyTo(null);
   };
 
   const topLevel = comments.filter(c => !c.parentId);
@@ -391,16 +410,11 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
         )}
         {replyTo?.id === c.id && (
           <div style={{ paddingInlineStart: 38, marginTop: 6 }}>
-            <div style={{ display: "flex", gap: 6 }}>
-              <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendComment()}
-                placeholder={`${Tr.replyTo} ${c.authorDisplayName}...`}
-                style={{ flex: 1, padding: "7px 12px", borderRadius: 10, border: "1.5px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", direction: isRTL ? "rtl" : "ltr" }}
-              />
-              <button onClick={sendComment} disabled={!text.trim() || sending}
-                style={{ padding: "7px 14px", borderRadius: 10, background: "#4472b8", border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                {Tr.sendComment}
-              </button>
-            </div>
+            <CommentInput
+              placeholder={`${Tr.replyTo} ${c.authorDisplayName}...`}
+              onSend={(content) => sendComment(content, c.id)}
+              isRTL={isRTL} Tr={Tr} autoFocus
+            />
           </div>
         )}
       </div>
@@ -416,15 +430,12 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
       {user && !replyTo && (
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <Avatar photoURL={profile?.photoURL} name={profile?.firstName || user.email} size={30} />
-          <div style={{ flex: 1, display: "flex", gap: 6 }}>
-            <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendComment()}
+          <div style={{ flex: 1 }}>
+            <CommentInput
               placeholder={Tr.addComment}
-              style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "1.5px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", direction: isRTL ? "rtl" : "ltr" }}
+              onSend={(content) => sendComment(content, null)}
+              isRTL={isRTL} Tr={Tr}
             />
-            <button onClick={sendComment} disabled={!text.trim() || sending}
-              style={{ padding: "8px 14px", borderRadius: 10, background: "#4472b8", border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-              {Tr.sendComment}
-            </button>
           </div>
         </div>
       )}

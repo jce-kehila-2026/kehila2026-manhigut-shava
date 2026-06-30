@@ -1011,6 +1011,7 @@ function SlideshowAdmin({ Tr }) {
   const [images, setImages]         = useState([]);
   const [uploading, setUploading]   = useState(false);
   const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [localCaptions, setLocalCaptions] = useState({});
   const dragIndexRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -1101,8 +1102,9 @@ function SlideshowAdmin({ Tr }) {
             <img src={img.url} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block", pointerEvents: "none" }} />
             <div style={{ padding: "0.5rem" }}>
               <input
-                value={img.caption || ""}
-                onChange={e => updateCaption(i, e.target.value)}
+                value={localCaptions[i] ?? img.caption ?? ""}
+                onChange={e => setLocalCaptions(prev => ({ ...prev, [i]: e.target.value }))}
+                onBlur={() => { const cap = localCaptions[i] ?? img.caption ?? ""; if (cap !== img.caption) updateCaption(i, cap); }}
                 placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
                 style={{ width: "100%", fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", cursor: "text" }}
                 onMouseDown={e => e.stopPropagation()}

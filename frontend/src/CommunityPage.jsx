@@ -51,6 +51,7 @@ function renderTextWithLinks(text) {
 
 /* ── Avatar ── */
 function Avatar({ url, name, size = 40, ring, style: extraStyle }) {
+  const [imgErr, setImgErr] = useState(false);
   const bg = avatarColor(name);
   const base = {
     width: size, height: size, borderRadius: "50%",
@@ -58,8 +59,8 @@ function Avatar({ url, name, size = 40, ring, style: extraStyle }) {
     ...(ring ? { boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${ring}` } : {}),
     ...extraStyle,
   };
-  return url ? (
-    <img src={url} alt="" style={base} />
+  return (url && !imgErr) ? (
+    <img src={url} alt="" style={base} onError={() => setImgErr(true)} />
   ) : (
     <div style={{
       ...base,

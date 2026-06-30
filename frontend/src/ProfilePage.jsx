@@ -1515,7 +1515,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           <div style={S.avatarRing}>
             <div style={S.avatarInner}>
               {photoURL
-                ? <img src={photoURL} style={S.avatarImg} alt="avatar" />
+                ? <img src={photoURL} style={S.avatarImg} alt="avatar" onError={e => { e.currentTarget.style.display="none"; }} />
                 : getInitials()}
             </div>
           </div>

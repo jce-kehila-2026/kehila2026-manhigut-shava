@@ -1155,15 +1155,15 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               {panelState !== "closed" && (
                 <button
                   onClick={() => setPanelState(s => s === "wide" ? "normal" : "wide")}
-                  style={{ width:"auto", height:28, padding:"0 8px", borderRadius:8, border:"1.5px solid rgba(68,114,184,0.35)", background:"rgba(68,114,184,0.08)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:700, fontFamily:"inherit", transition:"all 0.15s", whiteSpace:"nowrap" }}
+                  title={panelState === "wide" ? (lang==="he"?"צמצם":lang==="ar"?"تضييق":"Narrow") : (lang==="he"?"הרחב":lang==="ar"?"توسيع":"Widen")}
+                  style={{ width:36, height:36, borderRadius:10, border:"1.5px solid rgba(68,114,184,0.35)", background:"rgba(68,114,184,0.08)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}
                   onMouseEnter={e => { e.currentTarget.style.background="#4472b8"; e.currentTarget.style.color="#fff"; }}
                   onMouseLeave={e => { e.currentTarget.style.background="rgba(68,114,184,0.08)"; e.currentTarget.style.color="#4472b8"; }}
                 >
-                  {panelState === "wide" ? (
-                    <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 9 3 9 9"/><polyline points="15 21 9 21 9 15"/></svg>{lang==="he"?"צמצם":lang==="ar"?"تضييق":"Narrow"}</>
-                  ) : (
-                    <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 3 15 3 15 9"/><polyline points="21 21 15 21 15 15"/></svg>{lang==="he"?"הרחב":lang==="ar"?"توسيع":"Widen"}</>
-                  )}
+                  {panelState === "wide"
+                    ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 9 3 9 9"/><polyline points="15 21 9 21 9 15"/></svg>
+                    : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 3 15 3 15 9"/><polyline points="21 21 15 21 15 15"/></svg>
+                  }
                 </button>
               )}
               {panelState === "closed" && (
@@ -1173,7 +1173,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
 
             {/* Panel body — hidden when collapsed */}
             {panelState !== "closed" && (
-              <div style={{ width: panelState === "wide" ? 460 : 288, direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto", overscrollBehavior:"contain", transition:"width 0.2s ease" }}>
+              <div style={{ width: panelState === "wide" ? "calc(50vw - 80px)" : 288, direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto", overscrollBehavior:"contain", transition:"width 0.2s ease" }}>
 
                 {/* Search input box */}
                 <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"0.85rem", marginBottom:"0.6rem" }}>

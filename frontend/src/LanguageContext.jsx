@@ -77,7 +77,7 @@ const translations = {
         "נהל מידע אישי, הגדרות פרטיות, וכיצד הפרופיל שלך מופיע לחברים אחרים.",
       active: "פעיל",
       viewDetails: "הצג פרטים →",
-      welcomeBack: "ברוך/ה הבא/ה,",
+      welcomeBack: "ברוכה הבאה,",
       goodMorning: "בוקר טוב,", goodAfternoon: "צהריים טובים,", goodEvening: "ערב טוב,",
       moments: "רגעים", us: "אנחנו", welcomeSubtitle: "שמחים שהצטרפת ל-YWP.",
       latestPost: "פוסט אחרון", helpPeopleOut: "עזרי לחברות ←",

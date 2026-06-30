@@ -51,6 +51,7 @@ const isActuallyOnline = (u) => {
 
 /* ── Avatar ── */
 function Avatar({ url, name, size = 40, online = false, ring = false, onClick }) {
+  const [imgErr, setImgErr] = useState(false);
   const colors = ["#4472b8", "#1d4896", "#1d4896", "#7ba87a", "#e8735a", "#6da3d4", "#4472b8"];
   const bg = colors[(name?.charCodeAt(0) || 0) % colors.length];
   return (
@@ -62,8 +63,8 @@ function Avatar({ url, name, size = 40, online = false, ring = false, onClick })
         flexShrink: 0,
       }}>
         <div style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", background: bg }}>
-          {url ? (
-            <img src={url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+          {(url && !imgErr) ? (
+            <img src={url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" onError={() => setImgErr(true)} />
           ) : (
             <div style={{
               width: "100%", height: "100%",
