@@ -749,7 +749,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   const [form, setForm] = useState({
     firstName:"", lastName:"", phone:"", profession:"", professionTranslations:null, bio:"", birthDate:"",
-    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", regionTranslations:null, institution:"", institutionTranslations:null, graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"",
+    ethnicity:"", ethnicityPrivate:false, religion:"", religionPrivate:false, region:"", regionTranslations:null, institution:"", institutionTranslations:null, graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", instagram:"", discord:"",
     helpAreas:[], languages:[], experience:"", goals:"",
   });
   const [photoURL, setPhotoURL] = useState(null);
@@ -762,8 +762,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [networksCount, setNetworksCount] = useState(0);
 
   /* ── My Posts ── */
-  const [myPosts,      setMyPosts]      = useState([]);
-  const [postsLoading, setPostsLoading] = useState(false);
+  const [myPosts,         setMyPosts]         = useState([]);
+  const [postsLoading,    setPostsLoading]    = useState(false);
+  const [myHelpPosts,     setMyHelpPosts]     = useState([]);
+  const [helpPostsLoading,setHelpPostsLoading]= useState(false);
 
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail,       setNewEmail]       = useState("");
@@ -806,6 +808,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           linkedIn:       d.linkedIn       ?? "",
           facebookURL:    d.facebookURL    ?? "",
           contactEmail:   d.contactEmail   ?? "",
+          instagram:      d.instagram      ?? "",
+          discord:        d.discord        ?? "",
           helpAreas:      d.helpAreas      ?? [],
           languages:      d.languages      ?? [],
           experience:     d.experience     ?? "",
@@ -817,7 +821,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setProfileEmail(contact.email ?? "");
         setBirthdayValue(d.birthDate ?? d.birthdate ?? "");
       } else {
-        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
+        setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", instagram:"", discord:"", helpAreas:[], languages:[], experience:"", goals:"" });
         setPhotoURL(null);
         setCoverURL(null);
         setNetworksCount(0);
@@ -825,7 +829,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         setBirthdayValue("");
       }
     }).catch(() => {
-      setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", helpAreas:[], languages:[], experience:"", goals:"" });
+      setForm({ firstName:"", lastName:"", phone:"", profession:"", bio:"", birthDate:"", ethnicity:"", ethnicityPrivate:false, region:"", institution:"", graduationYear:"", linkedIn:"", facebookURL:"", contactEmail:"", instagram:"", discord:"", helpAreas:[], languages:[], experience:"", goals:"" });
       setPhotoURL(null);
       setCoverURL(null);
       setNetworksCount(0);
@@ -848,6 +852,17 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       })
       .catch((err) => console.error("Failed to load profile posts:", err))
       .finally(() => setPostsLoading(false));
+  }, [user, viewUserId]);
+
+  /* ── Load help posts ── */
+  useEffect(() => {
+    const targetId = viewUserId || user?.uid;
+    if (!targetId) return;
+    setHelpPostsLoading(true);
+    getDocs(query(collection(db, "helpPosts"), where("authorUid", "==", targetId), orderBy("createdAt", "desc")))
+      .then((snap) => setMyHelpPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      .catch(() => {})
+      .finally(() => setHelpPostsLoading(false));
   }, [user, viewUserId]);
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -879,9 +894,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
   /* Tab definitions */
   const ownerTabs = [
-    { id: "profile", label: t.profile.about || "About" },
-    { id: "account", label: t.profile.emailAddress || "Account" },
-    { id: "posts",   label: postsTitle             || "Posts" },
+    { id: "profile",   label: t.profile.about || "About" },
+    { id: "account",   label: lang==="he"?"חשבון":lang==="ar"?"الحساب":"Account" },
+    { id: "posts",     label: postsTitle || "Posts" },
+    { id: "helpPosts", label: lang==="he"?"פוסטי עזרה":lang==="ar"?"منشورات المساعدة":"Help Posts" },
   ];
   const visitorTabs = [
     { id: "about", label: t.profile.about || "About" },
@@ -1339,6 +1355,47 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     </div>
   );
 
+  /* ── Help Posts grid ── */
+  const HelpPostsGrid = () => (
+    <div style={{ marginTop:"0.25rem" }}>
+      {helpPostsLoading && <p style={{ color: T.sub, fontSize: "14px" }}>…</p>}
+      {!helpPostsLoading && myHelpPosts.length === 0 && (
+        <div style={{ textAlign:"center", padding:"2.5rem", background:T.inputBg, borderRadius:"16px", border:`1.5px dashed ${T.inputBorder}`, color:T.sub, fontSize:"14px" }}>
+          {lang==="he"?"אין פוסטים לעזרה עדיין":lang==="ar"?"لا توجد منشورات مساعدة بعد":"No help posts yet"}
+        </div>
+      )}
+      {!helpPostsLoading && myHelpPosts.length > 0 && (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:"1.25rem" }}>
+          {myHelpPosts.map((post) => (
+            <div key={post.id} className="profile-card"
+              style={{ background:T.card, borderRadius:"18px", border:`1.5px solid ${T.cardBorder}`, borderLeft:"4px solid #e8735a", boxShadow:"0 2px 8px rgba(232,115,90,0.08)", padding:"1.25rem", display:"flex", flexDirection:"column", gap:"0.75rem" }}
+            >
+              {post.content && (
+                <p style={{ fontSize:"14px", color:T.text, margin:0, lineHeight:"1.6", whiteSpace:"pre-wrap", wordBreak:"break-word", display:"-webkit-box", WebkitLineClamp:4, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                  {post.content}
+                </p>
+              )}
+              {post.attachmentType === "image" && post.attachmentUrl && (
+                <img src={post.attachmentUrl} alt="" style={{ width:"100%", height:120, objectFit:"contain", borderRadius:"12px", background:"var(--bg-secondary)" }} onClick={() => window.open(post.attachmentUrl, "_blank")} />
+              )}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:"auto" }}>
+                <div style={{ display:"flex", gap:"12px" }}>
+                  {(post.commentCount ?? 0) > 0 && (
+                    <span style={{ fontSize:"12px", color:T.sub, display:"flex", alignItems:"center", gap:3 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      {post.commentCount}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize:"11px", color:T.muted }}>{relativeTime(post.createdAt)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div style={S.page}>
 
@@ -1418,6 +1475,16 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             <button onClick={handleMessageClick} style={{ padding:"10px 20px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:14, fontWeight:700, cursor:"pointer" }}>
               {t.profile.message || "Message"}
             </button>
+          )}
+          {!isOwner && form.contactEmail && (
+            <a href={`mailto:${form.contactEmail}`}
+              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#4472b8", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#1d4896"}
+              onMouseLeave={e => e.currentTarget.style.background = "#4472b8"}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+              {lang==="he"?"אימייל":lang==="ar"?"بريد":"Email"}
+            </a>
           )}
           {!isOwner && viewerCanManageUsers && (
             <button
@@ -1673,7 +1740,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {/* OWNER: Account tab */}
         {isOwner && currentTab === "account" && (
           <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa" }}>
-            <SectionTitle label={t.profile.emailAddress} />
+            <SectionTitle label={lang==="he"?"חשבון":lang==="ar"?"الحساب":"Account"} />
             {emailSuccess && <div style={S.emailSuccessMsg}>{emailSuccess}</div>}
             {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
             <div style={S.emailRow}>
@@ -1691,7 +1758,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             {/* Social links + contact email */}
             <div style={{ borderTop:`1px solid ${T.cardBorder}`, marginTop:"1.25rem", paddingTop:"1.25rem" }}>
               <p style={{ fontSize:"11px", fontWeight:"700", color:T.sub, textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 0.9rem" }}>
-                {lang==="he"?"קישורים ויצירת קשר":lang==="ar"?"الروابط والتواصل":"Links & Contact"}
+                {lang==="he"?"קישורים חברתיים":lang==="ar"?"الروابط الاجتماعية":"Social Links"}
               </p>
               <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", gap:"0.75rem", marginBottom:"0.75rem" }}>
                 <div style={S.group}>
@@ -1701,6 +1768,14 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 <div style={S.group}>
                   <label style={S.label}>{t.profile?.facebook || "Facebook"}<OptionalTag /></label>
                   <PlainInput name="facebookURL" value={form.facebookURL || ""} onChange={handleChange} placeholder="https://facebook.com/..." />
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>Instagram<OptionalTag /></label>
+                  <PlainInput name="instagram" value={form.instagram || ""} onChange={handleChange} placeholder="https://instagram.com/..." />
+                </div>
+                <div style={S.group}>
+                  <label style={S.label}>Discord<OptionalTag /></label>
+                  <PlainInput name="discord" value={form.discord || ""} onChange={handleChange} placeholder={lang==="he"?"שם משתמש ב-Discord":lang==="ar"?"اسم المستخدم في Discord":"Discord username"} />
                 </div>
               </div>
               <div style={{ ...S.group, marginBottom:"0.75rem" }}>
@@ -1721,6 +1796,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                   linkedIn: safeUrl(form.linkedIn),
                   facebookURL: safeUrl(form.facebookURL),
                   contactEmail: form.contactEmail || "",
+                  instagram: safeUrl(form.instagram),
+                  discord: form.discord || "",
                 })}
                 disabled={!!savingKey}
               >
@@ -1755,6 +1832,9 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
         {/* Posts tab (owner + visitor) */}
         {currentTab === "posts" && <PostsGrid />}
+
+        {/* Help Posts tab (owner only) */}
+        {isOwner && currentTab === "helpPosts" && <HelpPostsGrid />}
 
         {/* VISITOR: Personal Info tab (read-only, mirrors owner's profile tab) */}
         {!isOwner && currentTab === "about" && (
@@ -1825,6 +1905,23 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                     Facebook
                   </a>
+                </div>
+              )}
+              {form.instagram && (
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>Instagram</p>
+                  <a href={safeUrl(form.instagram)} target="_blank" rel="noopener noreferrer" style={{ fontSize:13, color:"#e1306c", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                    Instagram
+                  </a>
+                </div>
+              )}
+              {form.discord && (
+                <div style={{ ...S.group, marginBottom:"1rem" }}>
+                  <p style={S.label}>Discord</p>
+                  <span style={{ fontSize:13, color:"#5865F2", fontWeight:600 }}>
+                    {form.discord}
+                  </span>
                 </div>
               )}
               {form.contactEmail && (

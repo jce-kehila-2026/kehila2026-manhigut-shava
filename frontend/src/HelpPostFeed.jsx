@@ -52,6 +52,8 @@ const FT = {
     showReplies: (n) => `הצגת ${n} תגובות`,
     hideReplies: "הסתרי תגובות",
     editPost: "ערכי",
+    translate: "תרגמי",
+    showOriginal: "מקור",
     justNow: "עכשיו",
     ago: "לפני",
     minutes: "דקות",
@@ -97,6 +99,8 @@ const FT = {
     showReplies: (n) => `Show ${n} repl${n !== 1 ? "ies" : "y"}`,
     hideReplies: "Hide replies",
     editPost: "Edit",
+    translate: "Translate",
+    showOriginal: "Original",
     justNow: "Just now",
     ago: "ago",
     minutes: "min",
@@ -142,6 +146,8 @@ const FT = {
     showReplies: (n) => `عرض ${n} ردود`,
     hideReplies: "إخفاء الردود",
     editPost: "تعديل",
+    translate: "ترجمة",
+    showOriginal: "الأصلي",
     justNow: "الآن",
     ago: "منذ",
     minutes: "دقيقة",
@@ -208,7 +214,7 @@ function CreatePostModal({ onClose, onPublished, Tr, lang, isRTL }) {
     try {
       let attachmentType = "none", attachmentUrl = null, attachmentName = null;
       if (imgFile) {
-        const path = `helpPostAttachments/${user.uid}/${Date.now()}_${imgFile.name}`;
+        const path = `posts/${Date.now()}_${imgFile.name}`;
         const snap = await uploadBytes(storageRef(storage, path), imgFile);
         attachmentUrl = await getDownloadURL(snap.ref);
         attachmentType = "image";
@@ -289,27 +295,6 @@ function CreatePostModal({ onClose, onPublished, Tr, lang, isRTL }) {
           </div>
         )}
 
-        {/* Tags */}
-        <div style={{ marginTop: "1rem" }}>
-          <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{Tr.tagsLbl}</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-            {AREAS_KEYS.map((key, i) => {
-              const active = tags.includes(key);
-              return (
-                <button key={key} onClick={() => toggleTag(key)} style={{
-                  padding: "4px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600,
-                  border: `1.5px solid ${active ? "#4472b8" : "var(--border)"}`,
-                  background: active ? (dark ? "rgba(68,114,184,0.2)" : "#eef4ff") : "var(--bg-secondary)",
-                  color: active ? "#1d4896" : "var(--text-secondary)",
-                  cursor: "pointer", fontFamily: "inherit",
-                }}>
-                  {active && "✓ "}{Tr.areaLabels[i]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Actions */}
         <div style={{ display: "flex", gap: 8, marginTop: "1.25rem", justifyContent: isRTL ? "flex-start" : "flex-end" }}>
           <button onClick={onClose} style={{ padding: "9px 20px", borderRadius: 12, border: "1.5px solid var(--border)", background: "none", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{Tr.cancel}</button>
@@ -382,7 +367,7 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 12, paddingInlineStart: 38, marginTop: 3 }}>
-          {depth === 0 && user && (
+          {depth < 2 && user && (
             <button onClick={() => setReplyTo(replyTo?.id === c.id ? null : { id: c.id, authorDisplayName: c.authorDisplayName })}
               style={{ fontSize: 11, fontWeight: 600, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, fontFamily: "inherit" }}>
               {Tr.reply}
@@ -395,7 +380,7 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
             </button>
           )}
         </div>
-        {depth === 0 && reps.length > 0 && (
+        {depth < 2 && reps.length > 0 && (
           <div style={{ paddingInlineStart: 38, marginTop: 4 }}>
             <button onClick={() => setShowReplies(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
               style={{ fontSize: 11, fontWeight: 600, background: "none", border: "none", cursor: "pointer", color: "#4472b8", padding: 0, fontFamily: "inherit" }}>
@@ -511,6 +496,29 @@ function HelpRequestModal({ toUid: toUserId, toName, fromProfile, user, onClose,
   );
 }
 
+/* ── Translate Button ── */
+function TranslateButton({ text, lang, Tr, onTranslated, onReverted, isTranslated }) {
+  const [busy, setBusy] = useState(false);
+  const handleClick = async () => {
+    if (isTranslated) { onReverted(); return; }
+    if (!text?.trim()) return;
+    setBusy(true);
+    try {
+      const tl = lang === "ar" ? "ar" : lang === "he" ? "iw" : "en";
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const translated = data[0]?.map(s => s[0]).join("") || text;
+      onTranslated(translated);
+    } catch { /* silently fail */ } finally { setBusy(false); }
+  };
+  return (
+    <button onClick={handleClick} disabled={busy} style={{ background:"none", border:"none", cursor:"pointer", color:"#4472b8", fontSize:11, fontWeight:600, padding:"0 0 4px", fontFamily:"inherit", opacity: busy ? 0.6 : 1 }}>
+      {busy ? "…" : isTranslated ? (Tr.showOriginal || "Original") : (Tr.translate || "Translate")}
+    </button>
+  );
+}
+
 /* ── Single Post Card ── */
 function PostCard({ post, onDeleted, onReposted, Tr, lang, isRTL, onViewProfile }) {
   const { user, profile } = useAuth();
@@ -520,14 +528,31 @@ function PostCard({ post, onDeleted, onReposted, Tr, lang, isRTL, onViewProfile 
   const [reposting, setReposting] = useState(false);
   const [helpReqModal, setHelpReqModal] = useState(null); // {uid, name}
   const [helpReqSent, setHelpReqSent] = useState(false);
+  const [translatedContent, setTranslatedContent] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editContent, setEditContent] = useState(post.content || "");
+  const [saving, setSaving] = useState(false);
 
   const isOwn = user?.uid === post.authorUid;
+  const isAdmin = !!profile?.isAdmin;
   const dir = isRTL ? "rtl" : "ltr";
+  const displayContent = translatedContent ?? post.content;
 
   const handleDelete = async () => {
     if (!window.confirm(lang === "he" ? "למחוק את הפוסט?" : lang === "ar" ? "حذف المنشور؟" : "Delete this post?")) return;
     await deleteDoc(doc(db, "helpPosts", post.id));
     onDeleted(post.id);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim() || saving) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "helpPosts", post.id), { content: editContent.trim() });
+      post.content = editContent.trim();
+      setTranslatedContent(null);
+      setEditMode(false);
+    } catch (err) { console.error(err); } finally { setSaving(false); }
   };
 
   const handleRepost = async () => {
@@ -588,7 +613,12 @@ function PostCard({ post, onDeleted, onReposted, Tr, lang, isRTL, onViewProfile 
               </span>
             ) : null;
           })}
-          {isOwn && (
+          {(isOwn || isAdmin) && (
+            <button onClick={() => { setEditMode(true); setEditContent(post.content || ""); }} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:4, lineHeight:1 }} title={Tr.editPost}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          )}
+          {(isOwn || isAdmin) && (
             <button onClick={handleDelete} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4, lineHeight: 1 }} title={Tr.deletePost}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
             </button>
@@ -597,11 +627,30 @@ function PostCard({ post, onDeleted, onReposted, Tr, lang, isRTL, onViewProfile 
       </div>
 
       {/* Content */}
-      {post.content && <p style={{ margin: "0 0 0.75rem", fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{post.content}</p>}
+      {editMode ? (
+        <div style={{ marginBottom:"0.75rem" }}>
+          <textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={4}
+            style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px", borderRadius:12, border:"1.5px solid var(--border)", background:"var(--bg-secondary)", color:"var(--text-primary)", fontSize:14, fontFamily:"inherit", resize:"vertical", outline:"none", direction:isRTL?"rtl":"ltr" }} />
+          <div style={{ display:"flex", gap:6, marginTop:6 }}>
+            <button onClick={() => setEditMode(false)} style={{ flex:1, padding:"7px 0", borderRadius:9, border:"1.5px solid var(--border)", background:"none", color:"var(--text-secondary)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{Tr.cancel}</button>
+            <button onClick={handleSaveEdit} disabled={saving} style={{ flex:2, padding:"7px 0", borderRadius:9, background:"#4472b8", border:"none", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>{saving ? "…" : (lang==="he"?"שמרי":lang==="ar"?"حفظ":"Save")}</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {post.content && (
+            <TranslateButton text={post.content} lang={lang} Tr={Tr}
+              isTranslated={!!translatedContent}
+              onTranslated={t => setTranslatedContent(t)}
+              onReverted={() => setTranslatedContent(null)} />
+          )}
+          {post.content && <p style={{ margin: "0 0 0.75rem", fontSize: 14, color: "var(--text-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{displayContent}</p>}
+        </>
+      )}
 
       {/* Attachment */}
       {post.attachmentType === "image" && post.attachmentUrl && (
-        <img src={post.attachmentUrl} alt="" style={{ width: "100%", borderRadius: 10, maxHeight: 320, objectFit: "cover", marginBottom: "0.75rem", display: "block" }} />
+        <img src={post.attachmentUrl} alt="" style={{ width: "100%", borderRadius: 10, maxHeight: 400, objectFit: "contain", background: "var(--bg-secondary)", marginBottom: "0.75rem", display: "block" }} />
       )}
       {post.attachmentType === "link" && post.attachmentUrl && (
         <a href={post.attachmentUrl} target="_blank" rel="noopener noreferrer"

@@ -1604,7 +1604,7 @@ export default function AdminPage() {
     if (tab === "logs"       && logs.length === 0)      fetchLogs();
     if (tab === "reports"    && reports.length === 0)   fetchReports();
     if (tab === "blacklist"  && blacklist.length === 0)  fetchBlacklist();
-    if (tab === "support"    && helpPosts.length === 0)  fetchSupport();
+    if ((tab === "support" || tab === "overview") && helpPosts.length === 0) fetchSupport();
   }, [tab]);
 
   const fetchReports = useCallback(async () => {
@@ -2172,6 +2172,26 @@ export default function AdminPage() {
                       </span>
                       <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)" }}>{Tr.postBy(top.authorName)}</span>
                     </div>
+                  </div>
+                );
+              })()}
+
+              {/* Most recent help post */}
+              {helpPosts.length > 0 && (() => {
+                const latest = helpPosts[0];
+                return (
+                  <div className="card" style={{ padding: "1.25rem", cursor: "pointer", border: "1.5px solid rgba(232,115,90,0.28)" }}
+                    onClick={() => setTab("support")}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = "#e8735a"}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(232,115,90,0.28)"}
+                  >
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "#e8735a", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.75rem" }}>
+                      {lang==="he"?"פוסט עזרה אחרון":lang==="ar"?"آخر منشور مساعدة":"Latest Help Post"}
+                    </p>
+                    <p style={{ fontSize: 13, color: "var(--text-primary,#111827)", fontWeight: 500, margin: "0 0 8px", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {latest.content || "—"}
+                    </p>
+                    <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)" }}>{Tr.postBy(latest.authorDisplayName)}</span>
                   </div>
                 );
               })()}
@@ -2945,6 +2965,10 @@ export default function AdminPage() {
                             {Tr.dismiss}
                           </button>
                         </>)}
+                        <button onClick={async()=>{ if(window.confirm(lang==="he"?"למחוק דיווח זה?":lang==="ar"?"حذف هذا البلاغ؟":"Delete this report?")){ await deleteDoc(doc(db,"reports",r.id)); setReports(prev=>prev.filter(x=>x.id!==r.id)); }}}
+                          style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid rgba(232,115,90,0.4)",background:"rgba(232,115,90,0.06)",color:"#e8735a",cursor:"pointer" }}>
+                          {Tr.deleteLbl}
+                        </button>
                         <button onClick={() => setExpandedReportId(isExpandedR ? null : r.id)}
                           style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer" }}>
                           {isExpandedR ? "▲" : `▼ ${Tr.convoBtn}`}
@@ -3005,6 +3029,10 @@ export default function AdminPage() {
                                 {Tr.dismiss}
                               </button>
                             </>)}
+                            <button onClick={async()=>{ if(window.confirm(lang==="he"?"למחוק דיווח זה?":lang==="ar"?"حذف هذا البلاغ؟":"Delete this report?")){ await deleteDoc(doc(db,"reports",r.id)); setReports(prev=>prev.filter(x=>x.id!==r.id)); }}}
+                              style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid rgba(232,115,90,0.4)", background:"rgba(232,115,90,0.06)", color:"#e8735a", cursor:"pointer" }}>
+                              {Tr.deleteLbl}
+                            </button>
                             <button onClick={() => setExpandedReportId(expandedReportId === r.id ? null : r.id)}
                               style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #93c5fd", background:"#eff6ff", color:"#1d4896", cursor:"pointer" }}>
                               {expandedReportId === r.id ? "▲" : `▼ ${Tr.convoBtn}`}
@@ -3258,7 +3286,7 @@ export default function AdminPage() {
                   <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
                     <thead>
                       <tr style={{ background:"var(--bg-secondary)" }}>
-                        {[Tr.supportReqFrom, Tr.supportReqTo, Tr.supportReqMsg, Tr.supportReqStatus, Tr.supportReqDate].map((h,i)=>(
+                        {[Tr.supportReqFrom, Tr.supportReqTo, Tr.supportReqMsg, Tr.supportReqStatus, Tr.supportReqDate, ""].map((h,i)=>(
                           <th key={i} style={{ padding:"10px 14px", textAlign:"left", fontSize:12, fontWeight:700, color:"var(--text-muted)", borderBottom:"1px solid var(--border)" }}>{h}</th>
                         ))}
                       </tr>
@@ -3278,6 +3306,12 @@ export default function AdminPage() {
                             </td>
                             <td style={{ padding:"10px 14px", fontSize:11, color:"var(--text-muted)", whiteSpace:"nowrap" }}>
                               {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : r.createdAt?.seconds ? new Date(r.createdAt.seconds*1000).toLocaleDateString() : "—"}
+                            </td>
+                            <td style={{ padding:"10px 14px" }}>
+                              <button onClick={async()=>{ if(window.confirm(lang==="he"?"למחוק בקשה זו?":lang==="ar"?"حذف هذا الطلب؟":"Delete this request?")){ await deleteDoc(doc(db,"helpRequests",r.id)); setHelpRequests(prev=>prev.filter(x=>x.id!==r.id)); }}}
+                                style={{ fontSize:11, color:"#e8735a", background:"none", border:"none", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>
+                                {Tr.deleteLbl}
+                              </button>
                             </td>
                           </tr>
                         );

@@ -55,9 +55,9 @@ const translations = {
     },
     tutorial: {
       steps: [
-        { title: "מצאי עזרה",         text: "לחצי כאן לחיפוש חברות שיכולות לעזור — לפי מקצוע, אזור או תחום." },
         { title: "קהילה",              text: "שתפי עדכונים, חגגי ימי הולדת והתחברי עם כל הרשת כאן." },
         { title: "הודעות ישירות",     text: "שלחי הודעה פרטית לכל חברה ברשת — ישירות ובנוחות." },
+        { title: "מצאי עזרה",         text: "לחצי כאן לחיפוש חברות שיכולות לעזור — לפי מקצוע, אזור או תחום." },
         { title: "הפרופיל שלי",       text: "מלאי את הפרופיל שלך כדי שאחרות יוכלו למצוא ולהתחבר איתך." },
       ],
       next:  "הבא →",
@@ -79,6 +79,8 @@ const translations = {
       viewDetails: "הצג פרטים →",
       welcomeBack: "ברוך/ה הבא/ה,",
       goodMorning: "בוקר טוב,", goodAfternoon: "צהריים טובים,", goodEvening: "ערב טוב,",
+      moments: "רגעים", us: "אנחנו", welcomeSubtitle: "שמחים שהצטרפת ל-YWP.",
+      latestPost: "פוסט אחרון", helpPeopleOut: "עזרי לחברות ←",
       suggestedMembers: "חברות שיכולות לעזור",
       suggestedMembersSub: "חברות קהילה עם ניסיון שאולי יוכלו לסייע לך.",
       viewAll: "הצג הכל",
@@ -472,9 +474,9 @@ const translations = {
     },
     tutorial: {
       steps: [
-        { title: "Find Help",        text: "Tap here to search members who can help you — by profession, region, or skill." },
         { title: "Community",        text: "Share updates, celebrate birthdays and connect with the whole network here." },
         { title: "Direct Messages",  text: "Send a private message to any member in the network directly." },
+        { title: "Find Help",        text: "Tap here to search members who can help you — by profession, region, or skill." },
         { title: "My Profile",       text: "Complete your profile so others can find and connect with you easily." },
       ],
       next:  "Next →",
@@ -496,6 +498,8 @@ const translations = {
       viewDetails: "View details →",
       welcomeBack: "Welcome back,",
       goodMorning: "Good morning,", goodAfternoon: "Good afternoon,", goodEvening: "Good evening,",
+      moments: "Moments", us: "Us", welcomeSubtitle: "Have a great time at YWP.",
+      latestPost: "Latest post", helpPeopleOut: "Help people out →",
       suggestedMembers: "Members Who Can Help",
       suggestedMembersSub: "Community members with relevant expertise who may be able to assist you.",
       viewAll: "View All",
@@ -889,9 +893,9 @@ const translations = {
     },
     tutorial: {
       steps: [
-        { title: "اطلبي المساعدة",     text: "اضغطي هنا للبحث عن أعضاء يمكنهم المساعدة — حسب المهنة أو المنطقة." },
         { title: "المجتمع",             text: "شاركي التحديثات واحتفلي بأعياد الميلاد وتواصلي مع الشبكة بأكملها." },
         { title: "الرسائل المباشرة",   text: "أرسلي رسالة خاصة لأي عضو في الشبكة مباشرةً وبكل سهولة." },
+        { title: "اطلبي المساعدة",     text: "اضغطي هنا للبحث عن أعضاء يمكنهم المساعدة — حسب المهنة أو المنطقة." },
         { title: "ملفي الشخصي",        text: "أكملي ملفك الشخصي حتى يتمكن الآخرون من العثور عليك والتواصل معك." },
       ],
       next:  "التالي →",
@@ -913,6 +917,8 @@ const translations = {
       viewDetails: "عرض التفاصيل →",
       welcomeBack: "مرحباً بعودتك،",
       goodMorning: "صباح الخير،", goodAfternoon: "مساء النور،", goodEvening: "مساء الخير،",
+      moments: "لحظات", us: "نحن", welcomeSubtitle: "نتمنى لك وقتاً رائعاً في YWP.",
+      latestPost: "أحدث منشور", helpPeopleOut: "ساعدي الآن ←",
       suggestedMembers: "أعضاء يمكنهم المساعدة",
       suggestedMembersSub: "أعضاء المجتمع ذوو الخبرة الذين قد يتمكنون من مساعدتك.",
       viewAll: "عرض الكل",

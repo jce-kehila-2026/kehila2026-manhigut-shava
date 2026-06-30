@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { doc, updateDoc, writeBatch, collection, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, writeBatch, collection, getDocs, query, where, limit, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -190,11 +190,13 @@ const eyebrow = {
 };
 
 /* ── Quick-access circle with sonar rings ── */
-function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, vertical, tutId }) {
+function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, vertical, tutId, imgScale = 1 }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
   const size = isMobile ? "min(90px, calc(25vw - 14px))" : vertical ? "110px" : "120px";
-  const imgSize = isMobile ? "min(58px, calc(17vw))" : vertical ? "64px" : "72px";
+  const basePx = isMobile ? 58 : vertical ? 64 : 72;
+  const scaledPx = Math.round(basePx * imgScale);
+  const imgSize = isMobile ? `min(${scaledPx}px, calc(17vw))` : `${scaledPx}px`;
   const ringInset = vertical ? 18 : 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
@@ -216,12 +218,14 @@ function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, 
         ))}
         <div style={{
           width:size, height:size, borderRadius:"50%",
-          background: coral ? "rgba(232,115,90,0.07)" : "rgba(68,114,184,0.06)",
-          border:`2px solid ${hov ? color : (coral ? "rgba(232,115,90,0.32)" : "rgba(68,114,184,0.22)")}`,
+          background: coral ? "rgba(232,115,90,0.16)" : "rgba(68,114,184,0.13)",
+          border:`2px solid ${coral ? (hov ? "rgba(232,115,90,0.9)" : "rgba(232,115,90,0.55)") : (hov ? "rgba(68,114,184,0.9)" : "rgba(68,114,184,0.45)")}`,
           display:"flex", alignItems:"center", justifyContent:"center",
           transition:"border-color 0.26s, box-shadow 0.26s, transform 0.26s",
           transform: hov ? "scale(1.08)" : "scale(1)",
-          boxShadow: hov ? `0 12px 30px ${coral ? "rgba(232,115,90,0.28)" : "rgba(68,114,184,0.22)"}` : "0 2px 10px rgba(0,0,0,0.05)",
+          boxShadow: hov
+            ? `0 12px 30px ${coral ? "rgba(232,115,90,0.35)" : "rgba(68,114,184,0.28)"}`
+            : `0 4px 16px ${coral ? "rgba(232,115,90,0.18)" : "rgba(68,114,184,0.14)"}`,
           position:"relative", zIndex:1,
         }}>
           <img src={imgSrc} alt={title} style={{ width:imgSize, height:imgSize, objectFit:"contain",
@@ -243,9 +247,16 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [members, setMembers]           = useState([]);
   const [featuredIdx, setFeaturedIdx]   = useState(0);
   const [featuredFade, setFeaturedFade] = useState(true);
+  const [latestPost, setLatestPost]     = useState(null);
   const { t, lang } = useLang();
   const isMobile = useIsMobile(1024);
   const stripRef = useRef(null);
+
+  useEffect(() => {
+    getDocs(query(collection(db, "helpPosts"), orderBy("createdAt", "desc"), limit(1)))
+      .then(snap => { if (!snap.empty) setLatestPost({ id: snap.docs[0].id, ...snap.docs[0].data() }); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -295,9 +306,9 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   };
 
   const quickCircles = [
+    { imgSrc: "/CommunitySymbol.png", title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: true,  imgScale: 1.3 },
+    { imgSrc: "/ChatSymbol.png",      title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: false },
     { imgSrc: "/FindHelpSymbol.png",  title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
-    { imgSrc: "/CommunitySymbol.png", title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: false },
-    { imgSrc: "/ChatSymbol.png",      title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: true  },
     { imgSrc: "/ProfileSymbol.png",   title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
   ];
 
@@ -359,6 +370,10 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           transition:transform 0.26s cubic-bezier(0.2,0.8,0.2,1),z-index 0s;
         }
         .gallery-photo:hover{transform:scale(1.06);z-index:2;}
+        @keyframes helpShortcut-glow{
+          0%,100%{box-shadow:0 3px 14px rgba(68,114,184,0.1),0 0 0 0 rgba(68,114,184,0.08);border-color:rgba(68,114,184,0.28);}
+          50%{box-shadow:0 6px 22px rgba(68,114,184,0.22),0 0 0 4px rgba(68,114,184,0.08);border-color:rgba(68,114,184,0.55);}
+        }
         .gallery-photo .name-overlay{
           position:absolute;bottom:0;left:0;right:0;
           padding:18px 6px 6px;
@@ -412,7 +427,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           {/* Us — same polaroid + floating text + strip as desktop */}
           {members.length > 0 && featured && (
             <div>
-              {sectionEyebrow(t.dash?.us || "Us")}
 
               {/* Polaroid + floating text — mirrors desktop exactly, just smaller */}
               <div style={{
@@ -485,7 +499,12 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
           {/* Moments — same framed slideshow as desktop */}
           <div>
-            {sectionEyebrow(t.dash?.moments || "Moments")}
+            <p style={{ fontSize:17, color:"var(--text-primary)", margin:"0 0 0.65rem", lineHeight:1.65, fontWeight:700 }}>
+              {profile?.firstName
+                ? `${t.dash?.welcomeBack || "Welcome back,"} ${profile.firstName}!`
+                : (t.dash?.welcomeBack || "Welcome back!")}
+              {" "}{t.dash?.welcomeSubtitle || "Have a great time at YWP."}
+            </p>
             <div style={{ background:"#fff", padding:6, boxShadow:"0 8px 36px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06)", borderRadius:4 }}>
               <SlideshowBanner maxHeight={240} />
             </div>
@@ -494,7 +513,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
           {/* Shortcuts — horizontal scrollable row of circles */}
           <div style={{ display:"flex", gap:"0.75rem", overflowX:"auto", paddingBottom:4 }}>
             {quickCircles.map((item, i) => (
-              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} onClick={() => onNavigate(item.action)} />
+              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} imgScale={item.imgScale || 1} onClick={() => onNavigate(item.action)} />
             ))}
           </div>
         </div>
@@ -532,7 +551,12 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
             {/* ── COL 1: Moments ── */}
             <div className="hp-col">
-              {sectionEyebrow(t.dash?.moments || "Moments")}
+              <p style={{ fontSize:20, color:"var(--text-primary)", margin:"0 0 0.85rem", lineHeight:1.65, fontWeight:700 }}>
+                {profile?.firstName
+                  ? `${t.dash?.welcomeBack || "Welcome back,"} ${profile.firstName}!`
+                  : (t.dash?.welcomeBack || "Welcome back!")}
+                {" "}{t.dash?.welcomeSubtitle || "Have a great time at YWP."}
+              </p>
               <div style={{
                 background: "#fff",
                 padding: 8,
@@ -546,13 +570,12 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             {/* ── COL 2: Shortcuts ── */}
             <div className="hp-col" style={{ display:"flex", flexDirection:"column", gap:"0.6rem", paddingTop:"1.9rem" }}>
               {quickCircles.map((item, i) => (
-                <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={false} vertical onClick={() => onNavigate(item.action)} />
+                <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={false} vertical imgScale={item.imgScale || 1} onClick={() => onNavigate(item.action)} />
               ))}
             </div>
 
             {/* ── COL 3: Us ── */}
             <div className="hp-col">
-              {sectionEyebrow(t.dash?.us || "Us")}
 
               {/* Featured member — polaroid photo + floating text, no card wrapping */}
               {featured && (
@@ -607,8 +630,18 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
               {/* Photo gallery strip — filmstrip of rectangular member photos */}
               {members.length > 0 && (
-                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                  {pillBtn(() => scrollStrip(-1), "15 18 9 12 15 6")}
+                <div style={{ display:"flex", alignItems:"stretch", gap:6 }}>
+                  <button onClick={() => scrollStrip(-1)} style={{
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    width:20, height:120, borderRadius:7, flexShrink:0,
+                    border:"1.5px solid rgba(68,114,184,0.2)", background:"var(--bg-primary)",
+                    color:"#4472b8", cursor:"pointer", padding:0,
+                    transition:"all 0.22s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background="#4472b8"; e.currentTarget.style.color="#fff"; e.currentTarget.style.borderColor="#4472b8"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background="var(--bg-primary)"; e.currentTarget.style.color="#4472b8"; e.currentTarget.style.borderColor="rgba(68,114,184,0.2)"; }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
                   <div style={{ flex:1, borderRadius:10, overflow:"hidden", boxShadow:"0 4px 20px rgba(68,114,184,0.10)" }}>
                   <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll" style={{
                     display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x",
@@ -643,16 +676,67 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                     })}
                   </div>
                   </div>
-                  {pillBtn(() => scrollStrip(1), "9 18 15 12 9 6")}
+                  <button onClick={() => scrollStrip(1)} style={{
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    width:20, height:120, borderRadius:7, flexShrink:0,
+                    border:"1.5px solid rgba(68,114,184,0.2)", background:"var(--bg-primary)",
+                    color:"#4472b8", cursor:"pointer", padding:0,
+                    transition:"all 0.22s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background="#4472b8"; e.currentTarget.style.color="#fff"; e.currentTarget.style.borderColor="#4472b8"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background="var(--bg-primary)"; e.currentTarget.style.color="#4472b8"; e.currentTarget.style.borderColor="rgba(68,114,184,0.2)"; }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
                 </div>
               )}
+
+              {/* Help posts shortcut — two-column pop card */}
+              <div
+                onClick={() => onNavigate("members")}
+                style={{
+                  marginTop:"1rem", display:"grid", gridTemplateColumns:"1fr 1.5fr",
+                  borderRadius:13, border:"1.5px solid rgba(68,114,184,0.28)",
+                  overflow:"hidden", cursor:"pointer",
+                  animation:"helpShortcut-glow 2.8s ease-in-out infinite",
+                  transition:"transform 0.22s, box-shadow 0.22s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 10px 28px rgba(68,114,184,0.22)"; e.currentTarget.style.animation="none"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow=""; e.currentTarget.style.animation="helpShortcut-glow 2.8s ease-in-out infinite"; }}
+              >
+                {/* Left: CTA */}
+                <div style={{
+                  background:"linear-gradient(135deg,rgba(232,115,90,0.14),rgba(68,114,184,0.1))",
+                  padding:"0.75rem 0.8rem",
+                  display:"flex", flexDirection:"column", justifyContent:"center", gap:5,
+                  borderInlineEnd:"1px solid rgba(68,114,184,0.12)",
+                }}>
+                  <p style={{ fontSize:9, fontWeight:700, color:"#e8735a", margin:0, letterSpacing:"0.1em", textTransform:"uppercase" }}>
+                    {t.dash?.helpPeopleOut || "Help out →"}
+                  </p>
+                  <p style={{ fontSize:12, fontWeight:800, color:"var(--text-primary)", margin:0, lineHeight:1.3, fontFamily:"'Outfit',sans-serif" }}>
+                    {lang==="he"?"מצאי מישהי שתוכל לעזור לך":lang==="ar"?"جدي من يمكنه مساعدتك":"Find someone to help"}
+                  </p>
+                </div>
+                {/* Right: Latest post preview */}
+                <div style={{ padding:"0.75rem 0.8rem", background:"var(--bg-primary)" }}>
+                  <p style={{ fontSize:9, fontWeight:700, color:"#4472b8", margin:"0 0 3px", letterSpacing:"0.1em", textTransform:"uppercase" }}>
+                    {t.dash?.latestPost || "Latest post"}
+                  </p>
+                  {latestPost ? (
+                    <p style={{ fontSize:11, color:"var(--text-secondary)", margin:0, lineHeight:1.4,
+                      overflow:"hidden", display:"-webkit-box", WebkitLineClamp:3, WebkitBoxOrient:"vertical" }}>
+                      {latestPost.content}
+                    </p>
+                  ) : (
+                    <p style={{ fontSize:11, color:"var(--text-muted)", margin:0, fontStyle:"italic" }}>
+                      {lang==="he"?"אין פוסטים עדיין":lang==="ar"?"لا منشورات بعد":"No posts yet"}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Recent Help Posts — below the grid */}
-          <div style={{ marginTop:"1.5rem" }}>
-            <HelpPostsWidget />
-          </div>
         </>
       )}
     </div>

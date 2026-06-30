@@ -594,7 +594,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const unifiedInputRef = useRef(null);
 
   const effectiveRegion = selectedRegion === "OTHER" ? otherRegion : selectedRegion;
-  const hasFilters = selectedAreas.length > 0 || !!selectedRegion || !!professionFilter.trim();
+  const hasFilters = selectedAreas.length > 0 || !!selectedRegion;
   const toggleArea = (key) => setSelectedAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
 
   useEffect(() => {
@@ -1041,13 +1041,9 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   return (
     <div style={S.page}>
 
-      {/* ── Page header: title + request badges ── */}
+      {/* ── Page header: request badges ── */}
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:"1.25rem", flexWrap:"wrap", direction:dir }}>
-        <div style={{ flex:1, minWidth:0 }}>
-          <h1 style={{ margin:0, fontSize:isMobile?17:21, fontWeight:800, color:"var(--text-primary)", letterSpacing:"-0.01em" }}>
-            {lang==="he"?"תמיכה ועזרה":lang==="ar"?"الدعم والمساعدة":"Support & Help"}
-          </h1>
-        </div>
+        <div style={{ flex:1, minWidth:0 }} />
         {sentRequests.length > 0 && (
           <button onClick={()=>setReqsExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c7d9f5"}`, background:dark?"rgba(68,114,184,0.13)":"#eef4ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
             {lang==="he"?`הבקשות שלי`:lang==="ar"?"طلباتي":"My Requests"}
@@ -1055,73 +1051,78 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           </button>
         )}
         {receivedRequests.length > 0 && (
-          <button onClick={()=>setRecvExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(232,115,90,0.35)":"#f5cdc3"}`, background:dark?"rgba(232,115,90,0.1)":"#fff5f2", color:"#e8735a", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+          <button onClick={()=>setRecvExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c3d4f5"}`, background:dark?"rgba(68,114,184,0.1)":"#f0f5ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
             {lang==="he"?"קיבלתי":lang==="ar"?"الواردة":"Received"}
             {receivedRequests.filter(r=>!r.status).length > 0 && (
-              <span style={{ background:"#e8735a", color:"#fff", borderRadius:99, fontSize:10, padding:"1px 6px", minWidth:16, textAlign:"center" }}>{receivedRequests.filter(r=>!r.status).length}</span>
+              <span style={{ background:"#4472b8", color:"#fff", borderRadius:99, fontSize:10, padding:"1px 6px", minWidth:16, textAlign:"center" }}>{receivedRequests.filter(r=>!r.status).length}</span>
             )}
           </button>
         )}
       </div>
 
-      {/* ── Expandable: My Requests ── */}
-      {reqsExpanded && (
-        <div style={{ marginBottom:"1rem", background:"var(--bg-primary)", borderRadius:16, border:"1.5px solid var(--border)", borderInlineStart:"3px solid #4472b8", padding:"1rem", direction:dir }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" }}>
-            <p style={{ ...S.sectionLabel, margin:0 }}>{Tr.myReqs}</p>
-            <button onClick={()=>setReqsExpanded(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:20, lineHeight:1 }}>×</button>
-          </div>
-          {sentRequests.length === 0 ? <div style={S.emptyBox}>{Tr.noSentRequests}</div> : (
-            <div style={S.myReqGrid}>
-              {sentRequests.map((r) => (
-                <div key={r.id} style={S.myReqCard}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                    <p style={S.myReqName}>{r.toUserName||"—"}</p>
-                    <button title={Tr.delete} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex" }} onClick={()=>handleDeleteSentRequest(r.id)} onMouseEnter={e=>e.currentTarget.style.color="#e8735a"} onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}>{deleteIconSvg}</button>
-                  </div>
-                  {r.requestMessage && <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0", background:"var(--bg-secondary)", borderRadius:"9px", padding:"7px 10px", border:"1px solid var(--border)", lineHeight:"1.5", fontStyle:"italic" }}>{r.requestMessage}</p>}
-                  <StatusPill status={r.status} Tr={Tr} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ── Expandable: My Requests + Received (side by side) ── */}
+      {(reqsExpanded || recvExpanded) && (
+        <div style={{ display:"flex", gap:"1rem", marginBottom:"1rem", direction:dir, alignItems:"flex-start", flexWrap: isMobile ? "wrap" : "nowrap" }}>
 
-      {/* ── Expandable: Received Requests ── */}
-      {recvExpanded && (
-        <div style={{ marginBottom:"1rem", background:"var(--bg-primary)", borderRadius:16, border:"1.5px solid var(--border)", borderInlineStart:"3px solid #e8735a", padding:"1rem", direction:dir }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" }}>
-            <p style={{ ...S.sectionLabel, margin:0 }}>{Tr.recvReqs}</p>
-            <button onClick={()=>setRecvExpanded(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:20, lineHeight:1 }}>×</button>
-          </div>
-          {receivedRequests.length === 0 ? <div style={S.emptyBox}>{Tr.noReceivedRequests}</div> : (
-            <div style={S.myReqGrid}>
-              {receivedRequests.map((r) => (
-                <div key={r.id} style={S.receivedReqCard}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                    <div>
-                      <p style={S.myReqName}>{r.fromUserName||"—"}</p>
-                      {r.fromUserProfession && <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0" }}>{r.fromUserProfession}</p>}
+          {reqsExpanded && (
+            <div style={{ flex:1, minWidth:0, background:"var(--bg-primary)", borderRadius:16, border:"1.5px solid var(--border)", borderInlineStart:"3px solid #e8735a", padding:"1rem", direction:dir }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" }}>
+                <p style={{ ...S.sectionLabel, margin:0 }}>{Tr.myReqs}</p>
+                <button onClick={()=>setReqsExpanded(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:20, lineHeight:1 }}>×</button>
+              </div>
+              {sentRequests.length === 0 ? <div style={S.emptyBox}>{Tr.noSentRequests}</div> : (
+                <div style={{ display:"flex", overflowX:"auto", gap:"0.75rem", paddingBottom:4, scrollbarWidth:"thin" }}>
+                  {sentRequests.map((r) => (
+                    <div key={r.id} style={{ ...S.myReqCard, minWidth:200, flexShrink:0 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                        <p style={S.myReqName}>{r.toUserName||"—"}</p>
+                        <button title={Tr.delete} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex" }} onClick={()=>handleDeleteSentRequest(r.id)} onMouseEnter={e=>e.currentTarget.style.color="#e8735a"} onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}>{deleteIconSvg}</button>
+                      </div>
+                      {r.requestMessage && <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0", background:"var(--bg-secondary)", borderRadius:"9px", padding:"7px 10px", border:"1px solid var(--border)", lineHeight:"1.5", fontStyle:"italic" }}>{r.requestMessage}</p>}
+                      <StatusPill status={r.status} Tr={Tr} />
                     </div>
-                    <button title={Tr.delete} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex" }} onClick={()=>handleDeleteReceivedRequest(r.id)} onMouseEnter={e=>e.currentTarget.style.color="#e8735a"} onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}>{deleteIconSvg}</button>
-                  </div>
-                  {r.requestMessage && (
-                    <div style={{ background:dark?"rgba(68,114,184,0.1)":"#f5f8ff", border:`1.5px solid ${dark?"rgba(68,114,184,0.25)":"#daeaf8"}`, borderInlineStart:"3px solid #4472b8", borderRadius:"10px", padding:"8px 12px", margin:"4px 0" }}>
-                      <p style={{ fontSize:"10px", fontWeight:"700", color:dark?"#7aaecc":"#4472b8", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 4px" }}>{Tr.reqMsgReceived}</p>
-                      <p style={{ fontSize:"13px", color:"var(--text-primary)", margin:0, lineHeight:"1.55" }}>{r.requestMessage}</p>
-                    </div>
-                  )}
-                  {!r.status ? (
-                    <div style={S.receivedReqActions}>
-                      <button style={S.acceptBtn} onClick={()=>handleRespondRequest(r.id,"accepted")}>{Tr.accept}</button>
-                      <button style={S.declineBtn} onClick={()=>handleRespondRequest(r.id,"declined")}>{Tr.decline}</button>
-                    </div>
-                  ) : <StatusPill status={r.status} Tr={Tr} />}
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
+
+          {recvExpanded && (
+            <div style={{ flex:1, minWidth:0, background:"var(--bg-primary)", borderRadius:16, border:"1.5px solid var(--border)", borderInlineStart:"3px solid #4472b8", padding:"1rem", direction:dir }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" }}>
+                <p style={{ ...S.sectionLabel, margin:0 }}>{Tr.recvReqs}</p>
+                <button onClick={()=>setRecvExpanded(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:20, lineHeight:1 }}>×</button>
+              </div>
+              {receivedRequests.length === 0 ? <div style={S.emptyBox}>{Tr.noReceivedRequests}</div> : (
+                <div style={{ display:"flex", overflowX:"auto", gap:"0.75rem", paddingBottom:4, scrollbarWidth:"thin" }}>
+                  {receivedRequests.map((r) => (
+                    <div key={r.id} style={{ ...S.receivedReqCard, minWidth:200, flexShrink:0 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                        <div>
+                          <p style={S.myReqName}>{r.fromUserName||"—"}</p>
+                          {r.fromUserProfession && <p style={{ fontSize:"12px", color:"var(--text-secondary)", margin:"2px 0 0" }}>{r.fromUserProfession}</p>}
+                        </div>
+                        <button title={Tr.delete} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", padding:2, display:"flex" }} onClick={()=>handleDeleteReceivedRequest(r.id)} onMouseEnter={e=>e.currentTarget.style.color="#e8735a"} onMouseLeave={e=>e.currentTarget.style.color="var(--text-muted)"}>{deleteIconSvg}</button>
+                      </div>
+                      {r.requestMessage && (
+                        <div style={{ background:dark?"rgba(68,114,184,0.1)":"#f5f8ff", border:`1.5px solid ${dark?"rgba(68,114,184,0.25)":"#daeaf8"}`, borderInlineStart:"3px solid #4472b8", borderRadius:"10px", padding:"8px 12px", margin:"4px 0" }}>
+                          <p style={{ fontSize:"10px", fontWeight:"700", color:dark?"#7aaecc":"#4472b8", textTransform:"uppercase", letterSpacing:"0.08em", margin:"0 0 4px" }}>{Tr.reqMsgReceived}</p>
+                          <p style={{ fontSize:"13px", color:"var(--text-primary)", margin:0, lineHeight:"1.55" }}>{r.requestMessage}</p>
+                        </div>
+                      )}
+                      {!r.status ? (
+                        <div style={S.receivedReqActions}>
+                          <button style={S.acceptBtn} onClick={()=>handleRespondRequest(r.id,"accepted")}>{Tr.accept}</button>
+                          <button style={S.declineBtn} onClick={()=>handleRespondRequest(r.id,"declined")}>{Tr.decline}</button>
+                        </div>
+                      ) : <StatusPill status={r.status} Tr={Tr} />}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       )}
 
@@ -1142,13 +1143,13 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               <button
                 onClick={() => setSearchPanelOpen(v => !v)}
                 title={searchPanelOpen ? (lang==="he"?"סגור":lang==="ar"?"إغلاق":"Collapse") : (lang==="he"?"חיפוש ישיר":lang==="ar"?"بحث مباشر":"Find a Member")}
-                style={{ width:32, height:32, borderRadius:10, border:"1.5px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-muted)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"background 0.15s" }}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
-                onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary)"}
+                style={{ width:32, height:32, borderRadius:10, border:"1.5px solid rgba(68,114,184,0.4)", background:"rgba(68,114,184,0.08)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s", boxShadow:"0 2px 8px rgba(68,114,184,0.12)" }}
+                onMouseEnter={e => { e.currentTarget.style.background="#4472b8"; e.currentTarget.style.color="#fff"; }}
+                onMouseLeave={e => { e.currentTarget.style.background="rgba(68,114,184,0.08)"; e.currentTarget.style.color="#4472b8"; }}
               >
                 {/* Arrow points left to open (since panel is on the right), right to collapse */}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ transform: searchPanelOpen ? "rotate(0deg)" : "rotate(180deg)", transition:"transform 0.2s" }}>
+                  style={{ transform: searchPanelOpen ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s" }}>
                   <polyline points="15 18 9 12 15 6"/>
                 </svg>
               </button>
@@ -1159,7 +1160,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
 
             {/* Panel body — hidden when collapsed */}
             {searchPanelOpen && (
-              <div style={{ width:288, direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto" }}>
+              <div style={{ width:288, direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto", overscrollBehavior:"contain" }}>
 
                 {/* Search input box */}
                 <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"0.85rem", marginBottom:"0.6rem" }}>
@@ -1229,7 +1230,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                     </div>
                   </div>
                   {hasFilters && (
-                    <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}}
+                    <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");}}
                       style={{ background:"none", border:"none", color:"#e8735a", fontSize:11, fontWeight:600, cursor:"pointer", padding:"2px 0", display:"block", fontFamily:"inherit" }}>
                       {lang==="he"?"נקי פילטרים":lang==="ar"?"مسح الفلاتر":"Clear filters"}
                     </button>
@@ -1357,7 +1358,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
             <span style={{ opacity:0.5, fontSize:11 }}>{filtersOpen?"▲":"▼"}</span>
           </button>
           {filtersOpen && (
-            <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem" }}>
+            <div style={{ background:"rgba(68,114,184,0.04)", borderRadius:14, border:"1.5px solid rgba(68,114,184,0.22)", padding:"1rem" }}>
               <div style={{ position:"relative", marginBottom:"0.5rem" }}>
                 <input ref={unifiedInputRef} className="support-input" style={{ ...S.input, paddingInlineStart:36, fontSize:13 }}
                   type="text" placeholder={lang==="he"?"שם, תחום, אזור...":lang==="ar"?"الاسم، المجال...":"Name, profession, area..."} value={unifiedQuery}
@@ -1366,10 +1367,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                 <span style={{ position:"absolute", top:"50%", transform:"translateY(-50%)", [isRTL?"right":"left"]:10, color:"var(--text-muted)", pointerEvents:"none", display:"flex" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 </span>
-              </div>
-              <div style={{ marginBottom:"0.4rem" }}>
-                <label style={S.label}>{lang==="he"?"מקצוע":lang==="ar"?"المهنة":"Profession"}</label>
-                <input className="support-input" style={{ ...S.input, fontSize:12, marginTop:3 }} type="text" placeholder={lang==="he"?"חפשי...":lang==="ar"?"ابحثي...":"Search..."} value={professionFilter} onChange={(e)=>setProfessionFilter(e.target.value)} autoComplete="off"/>
               </div>
               <div style={{ marginBottom:"0.4rem" }}>
                 <label style={S.label}>{Tr.helpAreaLbl}</label>
@@ -1383,7 +1380,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
                   <AreaDropdown value={selectedRegion} onChange={(k)=>{setSelectedRegion(k);setOtherRegion("");}} areas={[...(Tr.regions||[]).map((label,i)=>({label,key:REGIONS_KEYS[i]})),{label:Tr.otherLbl,key:"OTHER"}]} placeholder={lang==="he"?"כל האזורים...":lang==="ar"?"جميع المناطق...":"All regions..."} isRTL={isRTL}/>
                 </div>
               </div>
-              {hasFilters && <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");setProfessionFilter("");}} style={{ background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"3px 0", fontFamily:"inherit" }}>{lang==="he"?"נקי":lang==="ar"?"مسح":"Clear"}</button>}
+              {hasFilters && <button onClick={()=>{setSelectedAreas([]);setSelectedRegion("");setOtherRegion("");}} style={{ background:"none", border:"none", color:"#e8735a", fontSize:12, fontWeight:600, cursor:"pointer", padding:"3px 0", fontFamily:"inherit" }}>{lang==="he"?"נקי":lang==="ar"?"مسح":"Clear"}</button>}
               {searched && results.length > 0 && (
                 <div style={{ marginTop:"0.75rem" }}>
                   <p style={{ ...S.sectionLabel, marginBottom:"0.4rem", fontSize:11 }}>{results.length} {Tr.resultsFound}</p>
