@@ -649,7 +649,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
     setShowUnifiedSuggest(true);
   };
   const unifiedSuggestions = unifiedQuery.trim().length > 0
-    ? allUsers.filter((u) => getFullName(u).toLowerCase().includes(unifiedQuery.toLowerCase().trim())).slice(0, 6)
+    ? allUsers.filter((u) => getFullName(u).toLowerCase().includes(unifiedQuery.toLowerCase().trim())).slice(0, 6).map(u => getFullName(u))
     : [];
 
   const runSearch = (overrideArea, overrideRegion) => {
