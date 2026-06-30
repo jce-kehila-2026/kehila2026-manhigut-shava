@@ -1042,25 +1042,6 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   return (
     <div style={S.page}>
 
-      {/* ── Page header: request badges ── */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:"1.25rem", flexWrap:"wrap", direction:dir }}>
-        <div style={{ flex:1, minWidth:0 }} />
-        {sentRequests.length > 0 && (
-          <button onClick={()=>setReqsExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c7d9f5"}`, background:dark?"rgba(68,114,184,0.13)":"#eef4ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-            {lang==="he"?`הבקשות שלי`:lang==="ar"?"طلباتي":"My Requests"}
-            <span style={{ background:"#4472b8", color:"#fff", borderRadius:99, fontSize:10, padding:"1px 6px", minWidth:16, textAlign:"center" }}>{sentRequests.length}</span>
-          </button>
-        )}
-        {receivedRequests.length > 0 && (
-          <button onClick={()=>setRecvExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c3d4f5"}`, background:dark?"rgba(68,114,184,0.1)":"#f0f5ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-            {lang==="he"?"קיבלתי":lang==="ar"?"الواردة":"Received"}
-            {receivedRequests.filter(r=>!r.status).length > 0 && (
-              <span style={{ background:"#4472b8", color:"#fff", borderRadius:99, fontSize:10, padding:"1px 6px", minWidth:16, textAlign:"center" }}>{receivedRequests.filter(r=>!r.status).length}</span>
-            )}
-          </button>
-        )}
-      </div>
-
       {/* ── Expandable: My Requests + Received (side by side) ── */}
       {(reqsExpanded || recvExpanded) && (
         <div style={{ display:"flex", gap:"1rem", marginBottom:"1rem", direction:dir, alignItems:"flex-start", flexWrap: isMobile ? "wrap" : "nowrap" }}>
@@ -1132,7 +1113,25 @@ export default function SupportPage({ onViewProfile, onMessage }) {
 
         {/* ── LEFT: Help Posts Feed ── */}
         <div style={{ flex:1.5, minWidth:0 }}>
-          <HelpPostFeed onViewProfile={onViewProfile} />
+          <HelpPostFeed
+            onViewProfile={onViewProfile}
+            headerActions={<>
+              {sentRequests.length > 0 && (
+                <button onClick={()=>setReqsExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c7d9f5"}`, background:dark?"rgba(68,114,184,0.13)":"#eef4ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  {lang==="he"?"הבקשות שלי":lang==="ar"?"طلباتي":"My Requests"}
+                  <span style={{ background:"#4472b8", color:"#fff", borderRadius:99, fontSize:10, padding:"1px 6px", minWidth:16, textAlign:"center" }}>{sentRequests.length}</span>
+                </button>
+              )}
+              {receivedRequests.length > 0 && (
+                <button onClick={()=>setRecvExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c3d4f5"}`, background:dark?"rgba(68,114,184,0.1)":"#f0f5ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  {lang==="he"?"קיבלתי":lang==="ar"?"الواردة":"Received"}
+                  {receivedRequests.filter(r=>!r.status).length > 0 && (
+                    <span style={{ background:"#4472b8", color:"#fff", borderRadius:99, fontSize:10, padding:"1px 6px", minWidth:16, textAlign:"center" }}>{receivedRequests.filter(r=>!r.status).length}</span>
+                  )}
+                </button>
+              )}
+            </>}
+          />
         </div>
 
         {/* ── RIGHT: Find a Member panel (desktop only, collapsible) ── */}
@@ -1156,15 +1155,15 @@ export default function SupportPage({ onViewProfile, onMessage }) {
               {panelState !== "closed" && (
                 <button
                   onClick={() => setPanelState(s => s === "wide" ? "normal" : "wide")}
-                  title={panelState === "wide" ? (lang==="he"?"צמצם":lang==="ar"?"تضييق":"Narrow") : (lang==="he"?"הרחב":lang==="ar"?"توسيع":"Widen")}
-                  style={{ width:28, height:28, borderRadius:8, border:"1.5px solid rgba(68,114,184,0.3)", background:"rgba(68,114,184,0.06)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}
+                  style={{ width:"auto", height:28, padding:"0 8px", borderRadius:8, border:"1.5px solid rgba(68,114,184,0.35)", background:"rgba(68,114,184,0.08)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:700, fontFamily:"inherit", transition:"all 0.15s", whiteSpace:"nowrap" }}
                   onMouseEnter={e => { e.currentTarget.style.background="#4472b8"; e.currentTarget.style.color="#fff"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background="rgba(68,114,184,0.06)"; e.currentTarget.style.color="#4472b8"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background="rgba(68,114,184,0.08)"; e.currentTarget.style.color="#4472b8"; }}
                 >
-                  {panelState === "wide"
-                    ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 9 3 9 9"/><polyline points="15 21 9 21 9 15"/></svg>
-                    : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 3 15 3 15 9"/><polyline points="21 21 15 21 15 15"/></svg>
-                  }
+                  {panelState === "wide" ? (
+                    <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 9 3 9 9"/><polyline points="15 21 9 21 9 15"/></svg>{lang==="he"?"צמצם":lang==="ar"?"تضييق":"Narrow"}</>
+                  ) : (
+                    <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 3 15 3 15 9"/><polyline points="21 21 15 21 15 15"/></svg>{lang==="he"?"הרחב":lang==="ar"?"توسيع":"Widen"}</>
+                  )}
                 </button>
               )}
               {panelState === "closed" && (

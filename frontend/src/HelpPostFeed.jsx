@@ -738,7 +738,7 @@ function PostCard({ post, onDeleted, onReposted, Tr, lang, isRTL, onViewProfile 
 }
 
 /* ── Main Feed ── */
-export default function HelpPostFeed({ onViewProfile, compact = false }) {
+export default function HelpPostFeed({ onViewProfile, compact = false, headerActions = null }) {
   const { user, profile } = useAuth();
   const { lang, isRTL } = useLang();
   const { dark } = useTheme();
@@ -815,12 +815,15 @@ export default function HelpPostFeed({ onViewProfile, compact = false }) {
           <h2 style={{ margin: 0, fontSize: isMobile ? 17 : 20, fontWeight: 800, color: "var(--text-primary)" }}>{Tr.feedTitle}</h2>
           <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--text-muted)" }}>{Tr.feedSub}</p>
         </div>
-        {user && (
-          <button onClick={() => setCreateOpen(true)}
-            style={{ padding: "9px 18px", borderRadius: 12, background: "#4472b8", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-            + {Tr.createBtn}
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {headerActions}
+          {user && (
+            <button onClick={() => setCreateOpen(true)}
+              style={{ padding: "9px 18px", borderRadius: 12, background: "#4472b8", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              + {Tr.createBtn}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Feed */}

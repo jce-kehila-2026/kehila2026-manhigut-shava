@@ -1045,6 +1045,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       alert(t.profile?.nameTooShort || "First name must be at least 2 characters.");
       return;
     }
+    if (sectionKey === "account" && !form.contactEmail?.trim()) {
+      alert(lang==="he"?"אימייל ליצירת קשר הוא שדה חובה":lang==="ar"?"البريد الإلكتروني للتواصل مطلوب":"Contact email is required.");
+      return;
+    }
 
     setSavingKey(sectionKey); setError("");
     try {
@@ -1667,6 +1671,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {isOwner && currentTab === "profile" && (
           <div>
             {error && <div style={S.errorMsg}>{error}</div>}
+            <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", borderRadius:10, background:dark?"rgba(68,114,184,0.1)":"#eef4ff", border:`1px solid ${dark?"rgba(68,114,184,0.25)":"#c7d9f5"}`, marginBottom:"1rem", fontSize:12, color:"#4472b8", fontWeight:600 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              {lang==="he"?"אל תשכחי לשמור את השינויים על ידי לחיצה על כפתור השמירה":lang==="ar"?"لا تنسي حفظ التغييرات بالضغط على زر الحفظ":"Remember to save your changes by pressing the Save button."}
+            </div>
 
             <div style={isMobile ? {} : { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem", alignItems:"stretch" }}>
 
@@ -1860,6 +1868,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {isOwner && currentTab === "account" && (
           <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa" }}>
             <SectionTitle label={lang==="he"?"קישורים חברתיים":lang==="ar"?"روابط التواصل الاجتماعي":"Social Links"} />
+            <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", borderRadius:10, background:dark?"rgba(68,114,184,0.1)":"#eef4ff", border:`1px solid ${dark?"rgba(68,114,184,0.25)":"#c7d9f5"}`, marginBottom:"1rem", fontSize:12, color:"#4472b8", fontWeight:600 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              {lang==="he"?"אל תשכחי לשמור את השינויים על ידי לחיצה על כפתור השמירה":lang==="ar"?"لا تنسي حفظ التغييرات بالضغط على زر الحفظ":"Remember to save your changes by pressing the Save button."}
+            </div>
             {emailSuccess && <div style={S.emailSuccessMsg}>{emailSuccess}</div>}
             {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
             <div style={S.emailRow}>
@@ -1898,15 +1910,16 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
               </div>
               <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                <label style={S.label}>{t.profile?.contactEmail || "Contact Email"}<OptionalTag /></label>
+                <label style={S.label}>{t.profile?.contactEmail || "Contact Email"}<span style={{ color:"#e8735a", marginInlineStart:3 }}>*</span></label>
                 <input
                   className="profile-input"
                   name="contactEmail" value={form.contactEmail || ""}
                   onChange={handleChange}
                   placeholder="email@example.com"
                   type="email"
-                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${T.inputBorder}`, borderRadius:"13px", color:T.text, background:T.inputBg, fontFamily:"inherit", transition:"border-color 0.2s" }}
+                  style={{ width:"100%", boxSizing:"border-box", padding:"12px 14px", fontSize:"14px", border:`1.5px solid ${!form.contactEmail?.trim() ? "#e8735a" : T.inputBorder}`, borderRadius:"13px", color:T.text, background:T.inputBg, fontFamily:"inherit", transition:"border-color 0.2s" }}
                 />
+                {!form.contactEmail?.trim() && <p style={{ margin:"4px 0 0", fontSize:11, color:"#e8735a" }}>{lang==="he"?"שדה חובה":lang==="ar"?"حقل مطلوب":"Required"}</p>}
               </div>
               <button
                 style={{ ...getSaveBtnStyle("account"), marginBottom:"1rem" }}
