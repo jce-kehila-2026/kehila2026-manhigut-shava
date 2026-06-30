@@ -364,6 +364,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
 
   return (
     <article
+      id={`post-${post.id}`}
       className="card slide-up"
       style={{
         marginBottom: "1.25rem",
@@ -1374,7 +1375,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid, currentUser, 
 }
 
 /* ── Main CommunityPage ── */
-export default function CommunityPage({ onViewProfile, onMessage }) {
+export default function CommunityPage({ onViewProfile, onMessage, initialPostId, onPostConsumed }) {
   const { t } = useLang();
   const { user, profile: authProfile } = useAuth();
   const isMobile = useIsMobile();
@@ -1385,6 +1386,7 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
   const [loading, setLoading]       = useState(true);
   const [showMobileBdays, setShowMobileBdays] = useState(false);
   const autoPostedRef = useRef(new Set());
+  const scrolledToPostRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
@@ -1401,6 +1403,19 @@ export default function CommunityPage({ onViewProfile, onMessage }) {
     });
     return unsub;
   }, []);
+
+  useEffect(() => {
+    if (!initialPostId || loading || scrolledToPostRef.current) return;
+    scrolledToPostRef.current = true;
+    const el = document.getElementById(`post-${initialPostId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.style.transition = "box-shadow 0.3s ease";
+      el.style.boxShadow = "0 0 0 3px #4472b8, 0 8px 28px rgba(68,114,184,0.25)";
+      setTimeout(() => { el.style.boxShadow = ""; }, 2000);
+    }
+    onPostConsumed?.();
+  }, [initialPostId, loading]);
 
   useEffect(() => {
     getDocs(collection(db, "users")).then((snap) => {

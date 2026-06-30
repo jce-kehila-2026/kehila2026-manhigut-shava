@@ -122,3 +122,34 @@ exports.verifyOtp = functions.https.onCall(async (data, context) => {
 
   return { success: true };
 });
+
+/* ── Scheduled: delete accounts that haven't verified email after 7 days ── */
+exports.cleanupUnverifiedAccounts = functions.pubsub
+  .schedule("every 24 hours")
+  .onRun(async () => {
+    const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+    const snap = await db.collection("users").where("emailVerified", "==", false).get();
+
+    const stale = snap.docs.filter(d => {
+      const t = new Date(d.data().createdAt).getTime();
+      return !isNaN(t) && t < cutoffMs;
+    });
+
+    await Promise.all(stale.map(async d => {
+      const uid = d.id;
+      try {
+        await admin.auth().deleteUser(uid);
+      } catch (e) {
+        if (e.code !== "auth/user-not-found") {
+          console.error("cleanupUnverifiedAccounts: auth delete failed for", uid, e);
+        }
+      }
+      await db.collection("users").doc(uid).collection("private").doc("contact").delete().catch(() => {});
+      await db.collection("otps").doc(uid).delete().catch(() => {});
+      await d.ref.delete();
+    }));
+
+    console.log(`cleanupUnverifiedAccounts: removed ${stale.length} stale unverified accounts`);
+    return null;
+  });

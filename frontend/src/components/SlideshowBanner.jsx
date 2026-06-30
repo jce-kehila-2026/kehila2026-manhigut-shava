@@ -23,6 +23,8 @@ export function SlideshowBanner({ maxHeight = 220 }) {
 
   if (!images.length) return null;
 
+  const hasCaption = !!images[idx]?.caption;
+
   const go = (n) => {
     clearInterval(timerRef.current);
     setIdx((idx + n + images.length) % images.length);
@@ -30,70 +32,85 @@ export function SlideshowBanner({ maxHeight = 220 }) {
   };
 
   return (
-    <div style={{
-      position: "relative", borderRadius: 16, overflow: "hidden",
-      boxShadow: "0 4px 24px rgba(29,72,150,0.18), inset 0 0 0 1px rgba(255,255,255,0.06)",
-      background: "#1a1a1a",
-      aspectRatio: "4/3",
-      maxHeight,
-      margin: "0 auto",
-    }}>
-      {images.map((img, i) => (
-        <img
-          key={img.url}
-          src={img.url}
-          alt={img.caption || ""}
-          style={{
-            position: "absolute", inset: 0,
-            width: "100%", height: "100%", objectFit: "cover",
-            objectPosition: "center 25%",
-            opacity: i === idx ? 1 : 0,
-            transition: "opacity 0.7s ease",
-          }}
-        />
-      ))}
-      {images[idx]?.caption && (
+    <div>
+      {/* image area */}
+      <div style={{
+        position: "relative",
+        borderRadius: hasCaption ? "16px 16px 0 0" : 16,
+        overflow: "hidden",
+        boxShadow: "0 4px 24px rgba(29,72,150,0.18), inset 0 0 0 1px rgba(255,255,255,0.06)",
+        background: "#1a1a1a",
+        aspectRatio: "4/3",
+        maxHeight,
+        margin: "0 auto",
+      }}>
+        {images.map((img, i) => (
+          <img
+            key={img.url}
+            src={img.url}
+            alt={img.caption || ""}
+            style={{
+              position: "absolute", inset: 0,
+              width: "100%", height: "100%", objectFit: "cover",
+              objectPosition: "center 25%",
+              opacity: i === idx ? 1 : 0,
+              transition: "opacity 0.7s ease",
+            }}
+          />
+        ))}
+
+        {images.length > 1 && (
+          <>
+            <button onClick={() => go(-1)} style={{
+              position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
+              background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
+              width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(4px)",
+            }}>‹</button>
+            <button onClick={() => go(1)} style={{
+              position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+              background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
+              width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(4px)",
+            }}>›</button>
+            <div style={{
+              position: "absolute", bottom: 10, left: 0, right: 0,
+              display: "flex", justifyContent: "center", gap: 6,
+            }}>
+              {images.map((_, i) => (
+                <button key={i} onClick={() => { clearInterval(timerRef.current); setIdx(i); }}
+                  style={{
+                    width: i === idx ? 20 : 8, height: 8, borderRadius: 99,
+                    background: i === idx ? "#fff" : "rgba(255,255,255,0.45)",
+                    border: "none", cursor: "pointer", padding: 0,
+                    transition: "all 0.3s ease",
+                  }} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* caption below */}
+      {hasCaption && (
         <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-          padding: "1.5rem 1rem 0.75rem",
-          color: "#fff", fontSize: 13, fontWeight: 600,
+          background: "var(--bg-secondary, #f5f5f5)",
+          borderRadius: "0 0 16px 16px",
+          padding: "0.6rem 1rem",
           textAlign: "center",
+          fontSize: 13,
+          color: "var(--text-secondary, #555)",
+          fontStyle: "italic",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+          minHeight: 36,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}>
           {images[idx].caption}
         </div>
-      )}
-      {images.length > 1 && (
-        <>
-          <button onClick={() => go(-1)} style={{
-            position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
-            background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
-            width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backdropFilter: "blur(4px)",
-          }}>‹</button>
-          <button onClick={() => go(1)} style={{
-            position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-            background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
-            width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backdropFilter: "blur(4px)",
-          }}>›</button>
-          <div style={{
-            position: "absolute", bottom: 10, left: 0, right: 0,
-            display: "flex", justifyContent: "center", gap: 6,
-          }}>
-            {images.map((_, i) => (
-              <button key={i} onClick={() => { clearInterval(timerRef.current); setIdx(i); }}
-                style={{
-                  width: i === idx ? 20 : 8, height: 8, borderRadius: 99,
-                  background: i === idx ? "#fff" : "rgba(255,255,255,0.45)",
-                  border: "none", cursor: "pointer", padding: 0,
-                  transition: "all 0.3s ease",
-                }} />
-            ))}
-          </div>
-        </>
       )}
     </div>
   );

@@ -1008,8 +1008,10 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
    SLIDESHOW ADMIN COMPONENT
 ═══════════════════════════════════════════════════════ */
 function SlideshowAdmin({ Tr }) {
-  const [images, setImages]       = useState([]);
-  const [uploading, setUploading] = useState(false);
+  const [images, setImages]         = useState([]);
+  const [uploading, setUploading]   = useState(false);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const dragIndexRef = useRef(null);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -1048,47 +1050,77 @@ function SlideshowAdmin({ Tr }) {
     await persist(images.filter((_, idx) => idx !== i));
   };
 
-  const moveUp = async (i) => {
-    if (i === 0) return;
+  const handleDragStart = (i) => { dragIndexRef.current = i; };
+  const handleDragOver  = (e, i) => { e.preventDefault(); setDragOverIdx(i); };
+  const handleDragEnd   = () => { dragIndexRef.current = null; setDragOverIdx(null); };
+  const handleDrop      = async (e, i) => {
+    e.preventDefault();
+    const from = dragIndexRef.current;
+    if (from === null || from === i) { handleDragEnd(); return; }
     const next = [...images];
-    [next[i-1], next[i]] = [next[i], next[i-1]];
+    const [moved] = next.splice(from, 1);
+    next.splice(i, 0, moved);
+    handleDragEnd();
     await persist(next);
   };
 
   return (
-    <div style={{ maxWidth: 700 }}>
+    <div style={{ width: "100%" }}>
       {images.length > 0 && (
-        <div style={{ marginBottom: "1.5rem", borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }}>
+        <div style={{ marginBottom: "1.5rem" }}>
           <SlideshowBanner />
         </div>
       )}
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+      {images.length > 0 && (
+        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+          {Tr?.slideshowDragHint || "Drag photos to reorder"}
+        </p>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "row", overflowX: "auto", gap: "1rem", marginBottom: "1rem", paddingBottom: "0.5rem" }}>
         {images.map((img, i) => (
-          <div key={img.url} style={{ position:"relative", width:180, borderRadius:12, overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,0.1)", background:"var(--bg-secondary)" }}>
-            <img src={img.url} alt="" style={{ width:"100%", height:110, objectFit:"cover", display:"block" }} />
-            <div style={{ padding:"0.5rem", display:"flex", flexDirection:"column", gap:4 }}>
+          <div
+            key={img.url}
+            draggable
+            onDragStart={() => handleDragStart(i)}
+            onDragOver={(e) => handleDragOver(e, i)}
+            onDrop={(e) => handleDrop(e, i)}
+            onDragEnd={handleDragEnd}
+            style={{
+              position: "relative", flexShrink: 0, width: 160, borderRadius: 12, overflow: "hidden",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.1)", background: "var(--bg-secondary)",
+              cursor: "grab",
+              opacity: dragOverIdx === i && dragIndexRef.current !== i ? 0.45 : 1,
+              outline: dragOverIdx === i && dragIndexRef.current !== i ? "2px dashed var(--primary, #6c63ff)" : "none",
+              transition: "opacity 0.15s, outline 0.15s",
+            }}
+          >
+            {/* order badge */}
+            <div style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,0,0,0.65)", color: "#fff", borderRadius: 20, minWidth: 22, height: 22, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", lineHeight: 1, pointerEvents: "none" }}>{i + 1}</div>
+            <img src={img.url} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block", pointerEvents: "none" }} />
+            <div style={{ padding: "0.5rem" }}>
               <input
                 value={img.caption || ""}
                 onChange={e => updateCaption(i, e.target.value)}
                 placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
-                style={{ width:"100%", fontSize:12, padding:"4px 8px", borderRadius:6, border:"1px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", boxSizing:"border-box" }}
+                style={{ width: "100%", fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", cursor: "text" }}
+                onMouseDown={e => e.stopPropagation()}
               />
-              <button onClick={() => moveUp(i)} disabled={i === 0} style={{ fontSize:11, padding:"3px 0", background:"none", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", color:"var(--text-muted)" }}>{Tr?.slideshowMoveUp || "↑ Move up"}</button>
             </div>
-            <button onClick={() => remove(i)} style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.55)", color:"#fff", border:"none", borderRadius:"50%", width:26, height:26, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+            <button onClick={() => remove(i)} style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%", width: 26, height: 26, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
           </div>
         ))}
 
-        <label style={{ width:180, height:150, borderRadius:12, border:"2px dashed var(--border)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: uploading ? "wait" : "pointer", color:"var(--text-muted)", fontSize:13, gap:6, background:"var(--bg-secondary)" }}>
-          <span style={{ fontSize:28 }}>+</span>
+        <label style={{ flexShrink: 0, width: 160, height: 150, borderRadius: 12, border: "2px dashed var(--border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: uploading ? "wait" : "pointer", color: "var(--text-muted)", fontSize: 13, gap: 6, background: "var(--bg-secondary)" }}>
+          <span style={{ fontSize: 28 }}>+</span>
           <span>{uploading ? (Tr?.slideshowUploading || "Uploading...") : (Tr?.slideshowUpload || "Upload images")}</span>
-          <span style={{ fontSize:10, color:"var(--text-muted)", marginTop:-4 }}>{Tr?.slideshowMultiple || "Select multiple"}</span>
-          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={handleUpload} disabled={uploading} />
+          <span style={{ fontSize: 10, color: "var(--text-muted)", marginTop: -4 }}>{Tr?.slideshowMultiple || "Select multiple"}</span>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleUpload} disabled={uploading} />
         </label>
       </div>
       {images.length === 0 && !uploading && (
-        <p style={{ fontSize:13, color:"var(--text-muted)", textAlign:"center", padding:"1rem 0" }}>{Tr?.slideshowEmpty || "No slideshow images yet. Upload one above."}</p>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "1rem 0" }}>{Tr?.slideshowEmpty || "No slideshow images yet. Upload one above."}</p>
       )}
     </div>
   );

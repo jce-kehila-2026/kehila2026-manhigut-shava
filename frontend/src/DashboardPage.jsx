@@ -261,11 +261,14 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   useEffect(() => {
     if (!user) return;
     getDocs(query(collection(db, "users"), limit(200))).then(snap => {
-      const others = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.id !== user.uid);
-      others.sort((a, b) => ((b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1));
-      setMembers(others);
+      const all = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }));
+      all.sort((a, b) => {
+        if (a.id === user.uid) return -1;
+        if (b.id === user.uid) return 1;
+        return (b.lastSeen ?? "") > (a.lastSeen ?? "") ? 1 : -1;
+      });
+      setMembers(all);
     });
   }, [user]);
 
@@ -497,7 +500,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             </div>
           )}
 
-          {/* Moments — same framed slideshow as desktop */}
+          {/* Moments — frameless slideshow on mobile */}
           <div>
             <p style={{ fontSize:17, color:"var(--text-primary)", margin:"0 0 0.65rem", lineHeight:1.65, fontWeight:700 }}>
               {profile?.firstName
@@ -505,9 +508,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                 : (t.dash?.welcomeBack || "Welcome back!")}
               {" "}{t.dash?.welcomeSubtitle || "Have a great time at YWP."}
             </p>
-            <div style={{ background:"#fff", padding:6, boxShadow:"0 8px 36px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06)", borderRadius:4 }}>
-              <SlideshowBanner maxHeight={240} />
-            </div>
+            <SlideshowBanner maxHeight={240} />
           </div>
 
           {/* Shortcuts — horizontal scrollable row of circles */}
@@ -759,6 +760,7 @@ export default function DashboardPage() {
   const notifBellRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
+  const [communityPostTarget, setCommunityPostTarget] = useState(null);
   const [langChangeCode, setLangChangeCode] = useState(null); // pending lang change confirmation
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   useEffect(() => {
@@ -1144,7 +1146,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Main ── */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative", paddingBottom: isMobile ? 56 : 0 }}>
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", background: "var(--bg-secondary)", position: "relative" }}>
         {/* Floating water blob background — desktop only */}
         {!isMobile && (
         <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
@@ -1518,10 +1520,10 @@ export default function DashboardPage() {
           {/* Page content */}
           <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
             {section === "home"      && <HomePage user={user} profile={profile} onNavigate={switchTab} onViewProfile={(userId) => navigate("profile", { userId })} />}
-            {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
+            {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} initialPostId={communityPostTarget} onPostConsumed={() => setCommunityPostTarget(null)} />}
             {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
             {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
-            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} onNavigateToCommunity={() => switchTab("community")} />}
+            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} onNavigateToCommunity={(postId) => { setCommunityPostTarget(postId || null); switchTab("community"); }} />}
             {section === "admin"     && <AdminPage />}
           </div>
         </div>
