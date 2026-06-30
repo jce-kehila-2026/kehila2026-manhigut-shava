@@ -486,6 +486,7 @@ function StatusPill({ status, Tr }) {
 
 /* ─── RequestMessageModal ─── */
 function RequestMessageModal({ targetUser, Tr, dir, onConfirm, onCancel }) {
+  const { lang } = useLang();
   const [message, setMessage] = useState("");
   const textareaRef = useRef(null);
   useEffect(() => { setTimeout(() => textareaRef.current?.focus(), 60); }, []);
@@ -654,7 +655,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const runSearch = (overrideArea, overrideRegion) => {
     setLoading(true); setSearched(true);
     const regionQ = (overrideRegion !== undefined ? overrideRegion : effectiveRegion).trim();
-    const areaQ   = (overrideArea   !== undefined ? overrideArea   : effectiveArea).trim();
+    const areaQ   = (overrideArea   !== undefined ? overrideArea   : "").trim();
     const filtered = allUsers.filter((u) => {
       const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
       const nameQ = memberName.toLowerCase();

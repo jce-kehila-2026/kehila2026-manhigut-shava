@@ -20,7 +20,7 @@ const AT = {
   he: {
     pageTitle: "לוח בקרה — מנהל", pageSub: "ניהול הפלטפורמה ואנליטיקה",
     tabs: { overview:"סקירה", users:"משתמשות", editUsers:"עריכת משתמשות", posts:"פוסטים", logs:"יומן פעילות", support:"תמיכה" },
-    supportTitle:"מודול תמיכה", supportPostsLabel:"פוסטים לעזרה", supportReqsLabel:"בקשות עזרה", supportReqFrom:"מאת", supportReqTo:"אל", supportReqStatus:"סטטוס", supportReqMsg:"הודעה", supportReqDate:"תאריך", supportPending:"ממתין", supportAccepted:"אושר", supportDeclined:"נדחה", supportNoPosts:"אין פוסטים עדיין", supportNoReqs:"אין בקשות עדיין", supportUnanswered:"ללא מענה", supportColPost:"פוסט", supportColAuthor:"מחברת", supportColTags:"תחומים", supportColDate:"תאריך", supportColComments:"תגובות", supportDeletePost:"מחקי פוסט",
+    supportTitle:"מודול תמיכה", supportPostsLabel:"פוסטים לעזרה", supportReqsLabel:"בקשות עזרה", supportReqFrom:"מאת", supportReqTo:"אל", supportReqStatus:"סטטוס", supportReqMsg:"הודעה", supportReqDate:"תאריך", supportPending:"ממתין", supportAccepted:"אושר", supportDeclined:"נדחה", supportNoPosts:"אין פוסטים עדיין", supportNoReqs:"אין בקשות עדיין", supportUnanswered:"ללא מענה", supportColPost:"פוסט", supportColAuthor:"מחברת", supportColTags:"תחומים", supportColDate:"תאריך", supportColComments:"תגובות", supportDeletePost:"מחקי פוסט", supportFilterAll:"הכל", supportFilterSearch:"חיפוש...", supportFilterStatus:"סינון לפי סטטוס",
     totalMembers:"סה\"כ חברות", onlineNow:"מחוברות עכשיו", verified:"מאומתות",
     totalPosts:"סה\"כ פוסטים", conversations:"שיחות", admins:"מנהלות",
     activeMembers:"חברות פעילות", thisWeek:(n)=>`+${n} השבוע`,
@@ -146,7 +146,7 @@ const AT = {
   en: {
     pageTitle: "Admin Dashboard", pageSub: "Platform management and analytics",
     tabs: { overview:"Overview", users:"Users", editUsers:"Edit Users", posts:"Posts", logs:"Activity Logs", support:"Support" },
-    supportTitle:"Support Module", supportPostsLabel:"Help Posts", supportReqsLabel:"Help Requests", supportReqFrom:"From", supportReqTo:"To", supportReqStatus:"Status", supportReqMsg:"Message", supportReqDate:"Date", supportPending:"Pending", supportAccepted:"Accepted", supportDeclined:"Declined", supportNoPosts:"No posts yet", supportNoReqs:"No requests yet", supportUnanswered:"Unanswered", supportColPost:"Post", supportColAuthor:"Author", supportColTags:"Topics", supportColDate:"Date", supportColComments:"Comments", supportDeletePost:"Delete Post",
+    supportTitle:"Support Module", supportPostsLabel:"Help Posts", supportReqsLabel:"Help Requests", supportReqFrom:"From", supportReqTo:"To", supportReqStatus:"Status", supportReqMsg:"Message", supportReqDate:"Date", supportPending:"Pending", supportAccepted:"Accepted", supportDeclined:"Declined", supportNoPosts:"No posts yet", supportNoReqs:"No requests yet", supportUnanswered:"Unanswered", supportColPost:"Post", supportColAuthor:"Author", supportColTags:"Topics", supportColDate:"Date", supportColComments:"Comments", supportDeletePost:"Delete Post", supportFilterAll:"All", supportFilterSearch:"Search…", supportFilterStatus:"Filter by status",
     totalMembers:"Total Members", onlineNow:"Online Now", verified:"Verified",
     totalPosts:"Total Posts", conversations:"Conversations", admins:"Admins",
     activeMembers:"Active members", thisWeek:(n)=>`+${n} this week`,
@@ -272,7 +272,7 @@ const AT = {
   ar: {
     pageTitle: "لوحة تحكم المشرف", pageSub: "إدارة المنصة والتحليلات",
     tabs: { overview:"نظرة عامة", users:"المستخدمات", editUsers:"تعديل المستخدمات", posts:"المنشورات", logs:"سجل النشاط", support:"الدعم" },
-    supportTitle:"وحدة الدعم", supportPostsLabel:"منشورات المساعدة", supportReqsLabel:"طلبات المساعدة", supportReqFrom:"من", supportReqTo:"إلى", supportReqStatus:"الحالة", supportReqMsg:"الرسالة", supportReqDate:"التاريخ", supportPending:"قيد الانتظار", supportAccepted:"مقبول", supportDeclined:"مرفوض", supportNoPosts:"لا توجد منشورات بعد", supportNoReqs:"لا توجد طلبات بعد", supportUnanswered:"بلا رد", supportColPost:"المنشور", supportColAuthor:"المؤلفة", supportColTags:"المواضيع", supportColDate:"التاريخ", supportColComments:"التعليقات", supportDeletePost:"حذف المنشور",
+    supportTitle:"وحدة الدعم", supportPostsLabel:"منشورات المساعدة", supportReqsLabel:"طلبات المساعدة", supportReqFrom:"من", supportReqTo:"إلى", supportReqStatus:"الحالة", supportReqMsg:"الرسالة", supportReqDate:"التاريخ", supportPending:"قيد الانتظار", supportAccepted:"مقبول", supportDeclined:"مرفوض", supportNoPosts:"لا توجد منشورات بعد", supportNoReqs:"لا توجد طلبات بعد", supportUnanswered:"بلا رد", supportColPost:"المنشور", supportColAuthor:"المؤلفة", supportColTags:"المواضيع", supportColDate:"التاريخ", supportColComments:"التعليقات", supportDeletePost:"حذف المنشور", supportFilterAll:"الكل", supportFilterSearch:"بحث...", supportFilterStatus:"تصفية حسب الحالة",
     totalMembers:"إجمالي الأعضاء", onlineNow:"متصلات الآن", verified:"موثّقات",
     totalPosts:"إجمالي المنشورات", conversations:"المحادثات", admins:"المشرفات",
     activeMembers:"أعضاء نشطات", thisWeek:(n)=>`+${n} هذا الأسبوع`,
@@ -1523,6 +1523,9 @@ export default function AdminPage() {
   const [helpPosts,        setHelpPosts]        = useState([]);
   const [helpRequests,     setHelpRequests]     = useState([]);
   const [supportLoading,   setSupportLoading]   = useState(false);
+  const [supportPostSearch,    setSupportPostSearch]    = useState("");
+  const [supportReqSearch,     setSupportReqSearch]     = useState("");
+  const [supportReqStatus,     setSupportReqStatus]     = useState("all");
 
   /* ── Blacklist ── */
   const [blacklist,        setBlacklist]        = useState([]);
@@ -1819,6 +1822,28 @@ export default function AdminPage() {
       });
     } catch (err) { console.error("Admin delete comment error:", err); }
   };
+
+  /* ── Support filters ── */
+  const filteredHelpPosts = helpPosts.filter(p => {
+    if (!supportPostSearch.trim()) return true;
+    const q = supportPostSearch.toLowerCase();
+    return (p.authorDisplayName||"").toLowerCase().includes(q)
+      || (p.content||"").toLowerCase().includes(q)
+      || (p.tags||[]).some(t => t.toLowerCase().includes(q));
+  });
+  const filteredHelpRequests = helpRequests.filter(r => {
+    const matchStatus = supportReqStatus === "all"
+      ? true
+      : supportReqStatus === "pending"
+      ? (!r.status || r.status === "pending")
+      : r.status === supportReqStatus;
+    const q = supportReqSearch.toLowerCase();
+    const matchSearch = !q
+      || (r.fromUserName||"").toLowerCase().includes(q)
+      || (r.toUserName||"").toLowerCase().includes(q)
+      || (r.message||"").toLowerCase().includes(q);
+    return matchStatus && matchSearch;
+  });
 
   /* ── Log filters ── */
   const filteredLogs = logs.filter(log => {
@@ -3235,11 +3260,20 @@ export default function AdminPage() {
           ) : (
             <>
               {/* ── Help Posts ── */}
-              <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", marginBottom:"0.75rem" }}>
-                {Tr.supportPostsLabel} ({helpPosts.length})
-              </h3>
+              <div style={{ display:"flex", alignItems:"center", gap:"1rem", marginBottom:"0.75rem", flexWrap:"wrap" }}>
+                <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>
+                  {Tr.supportPostsLabel} ({filteredHelpPosts.length}{filteredHelpPosts.length !== helpPosts.length ? ` / ${helpPosts.length}` : ""})
+                </h3>
+                <input
+                  value={supportPostSearch} onChange={e => setSupportPostSearch(e.target.value)}
+                  placeholder={Tr.supportFilterSearch}
+                  style={{ padding:"6px 12px", borderRadius:8, border:"1.5px solid var(--border)", background:"var(--bg-secondary)", color:"var(--text-primary)", fontSize:12, outline:"none", width:200 }}
+                />
+              </div>
               {helpPosts.length === 0 ? (
                 <p style={{ color:"var(--text-muted)", fontSize:13 }}>{Tr.supportNoPosts}</p>
+              ) : filteredHelpPosts.length === 0 ? (
+                <p style={{ color:"var(--text-muted)", fontSize:13, marginBottom:"2rem" }}>—</p>
               ) : (
                 <div className="card admin-table-card" style={{ overflowX:"auto", marginBottom:"2rem" }}>
                   <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
@@ -3251,7 +3285,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {helpPosts.map(p => (
+                      {filteredHelpPosts.map(p => (
                         <tr key={p.id} style={{ borderBottom:"1px solid var(--border)" }}>
                           <td style={{ padding:"10px 14px", fontSize:13, fontWeight:600 }}>{p.authorDisplayName}</td>
                           <td style={{ padding:"10px 14px", fontSize:12, maxWidth:240, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content || (p.repostOf ? `[repost] ${p.repostOf.content}` : "")}</td>
@@ -3274,16 +3308,35 @@ export default function AdminPage() {
               )}
 
               {/* ── Help Requests ── */}
-              <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", marginBottom:"0.75rem" }}>
-                {Tr.supportReqsLabel} ({helpRequests.length})
-                {helpRequests.filter(r=>!r.status||r.status==="pending").length > 0 && (
-                  <span style={{ marginInlineStart:8, background:"#e8735a", color:"#fff", fontSize:10, fontWeight:700, borderRadius:99, padding:"2px 8px" }}>
-                    {helpRequests.filter(r=>!r.status||r.status==="pending").length} {Tr.supportUnanswered}
-                  </span>
-                )}
-              </h3>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.75rem", marginBottom:"0.75rem", flexWrap:"wrap" }}>
+                <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>
+                  {Tr.supportReqsLabel} ({filteredHelpRequests.length}{filteredHelpRequests.length !== helpRequests.length ? ` / ${helpRequests.length}` : ""})
+                  {helpRequests.filter(r=>!r.status||r.status==="pending").length > 0 && (
+                    <span style={{ marginInlineStart:8, background:"#e8735a", color:"#fff", fontSize:10, fontWeight:700, borderRadius:99, padding:"2px 8px" }}>
+                      {helpRequests.filter(r=>!r.status||r.status==="pending").length} {Tr.supportUnanswered}
+                    </span>
+                  )}
+                </h3>
+                <input
+                  value={supportReqSearch} onChange={e => setSupportReqSearch(e.target.value)}
+                  placeholder={Tr.supportFilterSearch}
+                  style={{ padding:"6px 12px", borderRadius:8, border:"1.5px solid var(--border)", background:"var(--bg-secondary)", color:"var(--text-primary)", fontSize:12, outline:"none", width:180 }}
+                />
+                {["all","pending","accepted","declined"].map(s => (
+                  <button key={s} onClick={() => setSupportReqStatus(s)}
+                    style={{ padding:"5px 12px", borderRadius:99, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                      background: supportReqStatus===s ? "#4472b8" : "var(--bg-secondary)",
+                      color: supportReqStatus===s ? "#fff" : "var(--text-muted)",
+                      border: `1.5px solid ${supportReqStatus===s ? "#4472b8" : "var(--border)"}`,
+                    }}>
+                    {s==="all"?Tr.supportFilterAll:s==="pending"?Tr.supportPending:s==="accepted"?Tr.supportAccepted:Tr.supportDeclined}
+                  </button>
+                ))}
+              </div>
               {helpRequests.length === 0 ? (
                 <p style={{ color:"var(--text-muted)", fontSize:13 }}>{Tr.supportNoReqs}</p>
+              ) : filteredHelpRequests.length === 0 ? (
+                <p style={{ color:"var(--text-muted)", fontSize:13 }}>—</p>
               ) : (
                 <div className="card admin-table-card" style={{ overflowX:"auto" }}>
                   <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
@@ -3295,7 +3348,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {helpRequests.map(r => {
+                      {filteredHelpRequests.map(r => {
                         const st = r.status || "pending";
                         const stColor = st==="accepted" ? "#4ade80" : st==="declined" ? "#e8735a" : "#f59e0b";
                         const stLabel = st==="accepted" ? Tr.supportAccepted : st==="declined" ? Tr.supportDeclined : Tr.supportPending;
