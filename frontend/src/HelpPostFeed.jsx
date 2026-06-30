@@ -355,7 +355,7 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
     const reps = replies(c.id);
     const shown = showReplies[c.id];
     return (
-      <div style={{ paddingInlineStart: depth * 28, marginBottom: 8 }}>
+      <div style={{ paddingInlineStart: Math.min(depth, 4) * 28, marginBottom: 8 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
           <Avatar photoURL={c.authorPhotoURL} name={c.authorDisplayName} size={30} />
           <div style={{ flex: 1, background: "var(--bg-secondary)", borderRadius: 12, padding: "8px 12px" }}>
@@ -367,7 +367,7 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 12, paddingInlineStart: 38, marginTop: 3 }}>
-          {depth < 2 && user && (
+          {depth < 15 && user && (
             <button onClick={() => setReplyTo(replyTo?.id === c.id ? null : { id: c.id, authorDisplayName: c.authorDisplayName })}
               style={{ fontSize: 11, fontWeight: 600, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, fontFamily: "inherit" }}>
               {Tr.reply}
@@ -380,13 +380,13 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
             </button>
           )}
         </div>
-        {depth < 2 && reps.length > 0 && (
+        {depth < 15 && reps.length > 0 && (
           <div style={{ paddingInlineStart: 38, marginTop: 4 }}>
             <button onClick={() => setShowReplies(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
               style={{ fontSize: 11, fontWeight: 600, background: "none", border: "none", cursor: "pointer", color: "#4472b8", padding: 0, fontFamily: "inherit" }}>
               {shown ? Tr.hideReplies : Tr.showReplies(reps.length)}
             </button>
-            {shown && reps.map(r => <CommentRow key={r.id} c={r} depth={1} />)}
+            {shown && reps.map(r => <CommentRow key={r.id} c={r} depth={depth + 1} />)}
           </div>
         )}
         {replyTo?.id === c.id && (

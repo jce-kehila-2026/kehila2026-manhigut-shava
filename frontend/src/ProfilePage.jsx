@@ -895,7 +895,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   /* Tab definitions */
   const ownerTabs = [
     { id: "profile",   label: t.profile.about || "About" },
-    { id: "account",   label: lang==="he"?"חשבון":lang==="ar"?"الحساب":"Account" },
+    { id: "account",   label: lang==="he"?"קישורים חברתיים":lang==="ar"?"روابط التواصل الاجتماعي":"Social Links" },
     { id: "posts",     label: postsTitle || "Posts" },
     { id: "helpPosts", label: lang==="he"?"פוסטי עזרה":lang==="ar"?"منشورات المساعدة":"Help Posts" },
   ];
@@ -1740,7 +1740,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {/* OWNER: Account tab */}
         {isOwner && currentTab === "account" && (
           <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa" }}>
-            <SectionTitle label={lang==="he"?"חשבון":lang==="ar"?"الحساب":"Account"} />
+            <SectionTitle label={lang==="he"?"קישורים חברתיים":lang==="ar"?"روابط التواصل الاجتماعي":"Social Links"} />
             {emailSuccess && <div style={S.emailSuccessMsg}>{emailSuccess}</div>}
             {passwordSuccess && <div style={S.emailSuccessMsg}>{passwordSuccess}</div>}
             <div style={S.emailRow}>

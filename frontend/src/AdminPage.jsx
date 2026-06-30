@@ -2068,7 +2068,8 @@ export default function AdminPage() {
           {/* Platform health + quick actions + recent members */}
           <div className="admin-overview-mid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem", alignItems: "start" }}>
 
-            {/* Platform health */}
+            {/* Platform health + latest help post */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div className="card" style={{ padding: "1.25rem" }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1.1rem" }}>{Tr.platformHealth}</p>
               {[
@@ -2096,6 +2097,27 @@ export default function AdminPage() {
                   <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary,#111827)", margin: 0 }}>{(totalLikes + totalComments).toLocaleString()}</p>
                 </div>
               </div>
+            </div>
+
+            {/* Most recent help post */}
+            {helpPosts.length > 0 && (() => {
+              const latest = helpPosts[0];
+              return (
+                <div className="card" style={{ padding: "1.25rem", cursor: "pointer", border: "1.5px solid rgba(232,115,90,0.28)" }}
+                  onClick={() => setTab("support")}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "#e8735a"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(232,115,90,0.28)"}
+                >
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#e8735a", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.75rem" }}>
+                    {lang==="he"?"פוסט עזרה אחרון":lang==="ar"?"آخر منشور مساعدة":"Latest Help Post"}
+                  </p>
+                  <p style={{ fontSize: 13, color: "var(--text-primary,#111827)", fontWeight: 500, margin: "0 0 8px", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {latest.content || "—"}
+                  </p>
+                  <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)" }}>{Tr.postBy(latest.authorDisplayName)}</span>
+                </div>
+              );
+            })()}
             </div>
 
             {/* Recent members */}
@@ -2176,25 +2198,6 @@ export default function AdminPage() {
                 );
               })()}
 
-              {/* Most recent help post */}
-              {helpPosts.length > 0 && (() => {
-                const latest = helpPosts[0];
-                return (
-                  <div className="card" style={{ padding: "1.25rem", cursor: "pointer", border: "1.5px solid rgba(232,115,90,0.28)" }}
-                    onClick={() => setTab("support")}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = "#e8735a"}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(232,115,90,0.28)"}
-                  >
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#e8735a", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.75rem" }}>
-                      {lang==="he"?"פוסט עזרה אחרון":lang==="ar"?"آخر منشور مساعدة":"Latest Help Post"}
-                    </p>
-                    <p style={{ fontSize: 13, color: "var(--text-primary,#111827)", fontWeight: 500, margin: "0 0 8px", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {latest.content || "—"}
-                    </p>
-                    <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)" }}>{Tr.postBy(latest.authorDisplayName)}</span>
-                  </div>
-                );
-              })()}
             </div>
 
           </div>
