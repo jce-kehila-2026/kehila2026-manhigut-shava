@@ -3,13 +3,18 @@ import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
 import {
-  updateEmail,
   sendPasswordResetEmail,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   EmailAuthProvider,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, auth } from "./firebase";
+import { db, auth, functions } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+
+const sendEmailChangeOtpFn   = httpsCallable(functions, "sendEmailChangeOtp");
+const verifyEmailChangeOtpFn = httpsCallable(functions, "verifyEmailChangeOtp");
 import { saveContact, getContact } from "./contact";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -765,11 +770,25 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [myPosts,      setMyPosts]      = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
 
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [newEmail,       setNewEmail]       = useState("");
-  const [password,       setPassword]       = useState("");
-  const [emailError,     setEmailError]     = useState("");
-  const [emailSuccess,   setEmailSuccess]   = useState("");
+  const [showEmailModal,  setShowEmailModal]  = useState(false);
+  const [emailStep,       setEmailStep]       = useState("verify"); // "verify" | "change" | "otp"
+  const [newEmail,        setNewEmail]        = useState("");
+  const [password,        setPassword]        = useState("");
+  const [emailOtp,        setEmailOtp]        = useState("");
+  const [emailOtpCountdown, setEmailOtpCountdown] = useState(0);
+  const [emailError,      setEmailError]      = useState("");
+  const [emailSuccess,    setEmailSuccess]    = useState("");
+
+  const closeEmailModal = () => {
+    setShowEmailModal(false);
+    setEmailStep("verify");
+    setPassword("");
+    setNewEmail("");
+    setEmailOtp("");
+    setEmailOtpCountdown(0);
+    setEmailError("");
+    setEmailSuccess("");
+  };
 
   const [passwordError,          setPasswordError]          = useState("");
   const [passwordSuccess,        setPasswordSuccess]        = useState("");
@@ -835,6 +854,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   }, [user, viewUserId]);
 
   /* ── Load profile posts ── */
+  useEffect(() => {
+    if (emailOtpCountdown <= 0) return;
+    const t = setTimeout(() => setEmailOtpCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [emailOtpCountdown]);
+
   useEffect(() => {
     const targetId = viewUserId || user?.uid;
     if (!targetId) return;
@@ -1025,21 +1050,66 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     }
   };
 
-  /* ── Email change ── */
+  /* ── Email change — step 1: verify identity ── */
+  const handleVerifyIdentity = async () => {
+    if (!isOwner || !user) return;
+    setEmailError("");
+    try {
+      if (isGoogleUser) {
+        await reauthenticateWithPopup(auth.currentUser, new GoogleAuthProvider());
+      } else {
+        const cred = EmailAuthProvider.credential(user.email, password);
+        await reauthenticateWithCredential(auth.currentUser, cred);
+      }
+      setEmailStep("change");
+    } catch (err) {
+      if (err.code === "auth/wrong-password")        setEmailError("Incorrect password.");
+      else if (err.code === "auth/popup-closed-by-user") setEmailError("Google sign-in was cancelled.");
+      else setEmailError(t.profile.errorGeneral);
+    }
+  };
+
+  /* ── Email change — step 2: send OTP to new address ── */
   const handleEmailChange = async () => {
     if (!isOwner || !user) return;
-    setEmailError(""); setEmailSuccess("");
+    setEmailError("");
     try {
-      const cred = EmailAuthProvider.credential(user.email, password);
-      await reauthenticateWithCredential(auth.currentUser, cred);
-      await updateEmail(auth.currentUser, newEmail);
-      await updateDoc(doc(db, "users", user.uid), { email: newEmail });
-      setEmailSuccess("Email updated successfully.");
-      setPassword(""); setNewEmail("");
+      await sendEmailChangeOtpFn({ newEmail });
+      setEmailStep("otp");
+      setEmailOtpCountdown(90);
     } catch (err) {
-      if (err.code === "auth/wrong-password")   setEmailError("Incorrect password.");
-      else if (err.code === "auth/invalid-email") setEmailError("Invalid email address.");
+      console.error("sendEmailChangeOtp error:", err.code, err.message);
+      if (err.code === "functions/already-exists")   setEmailError("That email is already in use.");
+      else if (err.code === "functions/invalid-argument") setEmailError("Invalid email address.");
       else setEmailError(t.profile.errorGeneral);
+    }
+  };
+
+  /* ── Email change — step 3: verify OTP and apply change ── */
+  const handleVerifyEmailOtp = async () => {
+    if (!isOwner || !user) return;
+    setEmailError("");
+    try {
+      await verifyEmailChangeOtpFn({ otp: emailOtp });
+      setEmailSuccess("Email updated successfully.");
+      setEmailStep("done");
+    } catch (err) {
+      console.error("verifyEmailChangeOtp error:", err.code, err.message);
+      if (err.code === "functions/deadline-exceeded")    setEmailError("Code expired. Request a new one.");
+      else if (err.code === "functions/resource-exhausted") setEmailError("Too many attempts. Request a new code.");
+      else if (err.code === "functions/invalid-argument")   setEmailError(err.message);
+      else setEmailError(t.profile.errorGeneral);
+    }
+  };
+
+  const handleResendEmailOtp = async () => {
+    setEmailError("");
+    try {
+      await sendEmailChangeOtpFn({ newEmail });
+      setEmailOtpCountdown(90);
+      setEmailOtp("");
+    } catch {
+      setEmailError(t.profile.errorGeneral);
     }
   };
 
@@ -1921,25 +1991,88 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
       {/* ── Email Change Modal ── */}
       {showEmailModal && isOwner && (
-        <div style={S.modal} onClick={() => setShowEmailModal(false)}>
+        <div style={S.modal} onClick={closeEmailModal}>
           <div style={S.modalBox} onClick={(e) => e.stopPropagation()}>
             <p style={S.modalTitle}>{t.profile.changeEmail}</p>
-            <p style={S.modalSub}>{t.profile.emailModalSub}</p>
             {emailError && <div style={S.errorMsg}>{emailError}</div>}
-            <div style={S.group}>
-              <label style={S.label}>{t.profile.currentPassword}</label>
-              <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
-                value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <div style={S.group}>
-              <label style={S.label}>{t.profile.newEmail}</label>
-              <input className="profile-input" style={S.modalInput} type="email" placeholder="new@email.com"
-                value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-            </div>
-            <div style={S.modalActions}>
-              <button className="cancel-btn" style={S.cancelBtn} onClick={() => setShowEmailModal(false)}>{t.profile.cancel}</button>
-              <button style={S.confirmBtn} onClick={handleEmailChange}>{t.profile.confirm}</button>
-            </div>
+
+            {/* Step 1: verify identity */}
+            {emailStep === "verify" && (
+              <>
+                <p style={S.modalSub}>
+                  {isGoogleUser
+                    ? "First, confirm it's you by signing in with Google."
+                    : "First, enter your current password to confirm it's you."}
+                </p>
+                {!isGoogleUser && (
+                  <div style={S.group}>
+                    <label style={S.label}>{t.profile.currentPassword}</label>
+                    <input className="profile-input" style={S.modalInput} type="password" placeholder="••••••••"
+                      value={password} onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleVerifyIdentity()} />
+                  </div>
+                )}
+                <div style={S.modalActions}>
+                  <button className="cancel-btn" style={S.cancelBtn} onClick={closeEmailModal}>{t.profile.cancel}</button>
+                  <button style={S.confirmBtn} onClick={handleVerifyIdentity}>
+                    {isGoogleUser ? "Verify with Google" : "Verify"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Step 2: enter new email */}
+            {emailStep === "change" && (
+              <>
+                <p style={S.modalSub}>{t.profile.emailModalNewSub}</p>
+                <div style={S.group}>
+                  <label style={S.label}>{t.profile.newEmail}</label>
+                  <input className="profile-input" style={S.modalInput} type="email" placeholder="new@email.com"
+                    value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleEmailChange()} />
+                </div>
+                <div style={S.modalActions}>
+                  <button className="cancel-btn" style={S.cancelBtn} onClick={closeEmailModal}>{t.profile.cancel}</button>
+                  <button style={S.confirmBtn} onClick={handleEmailChange}>Send Code</button>
+                </div>
+              </>
+            )}
+
+            {/* Step 3: enter OTP sent to new email */}
+            {emailStep === "otp" && (
+              <>
+                <p style={S.modalSub}>
+                  We sent a 6-digit code to <strong>{newEmail}</strong>. Enter it below.
+                </p>
+                <div style={S.group}>
+                  <label style={S.label}>Verification Code</label>
+                  <input className="profile-input" style={{ ...S.modalInput, letterSpacing: "0.25em", textAlign: "center", fontSize: 20 }}
+                    type="text" inputMode="numeric" maxLength={6} placeholder="000000"
+                    value={emailOtp} onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onKeyDown={(e) => e.key === "Enter" && handleVerifyEmailOtp()} />
+                </div>
+                <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 12px", textAlign: "center" }}>
+                  {emailOtpCountdown > 0
+                    ? `Resend in ${emailOtpCountdown}s`
+                    : <button onClick={handleResendEmailOtp} style={{ background: "none", border: "none", color: "#4a7ae8", cursor: "pointer", fontSize: 12, padding: 0 }}>Resend code</button>
+                  }
+                </p>
+                <div style={S.modalActions}>
+                  <button className="cancel-btn" style={S.cancelBtn} onClick={closeEmailModal}>{t.profile.cancel}</button>
+                  <button style={S.confirmBtn} onClick={handleVerifyEmailOtp} disabled={emailOtp.length < 6}>{t.profile.confirm}</button>
+                </div>
+              </>
+            )}
+
+            {/* Done */}
+            {emailStep === "done" && (
+              <>
+                <div style={S.emailSuccessMsg}>{emailSuccess}</div>
+                <div style={{ ...S.modalActions, justifyContent: "center" }}>
+                  <button style={S.confirmBtn} onClick={closeEmailModal}>Close</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
