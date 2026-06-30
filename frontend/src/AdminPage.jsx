@@ -63,7 +63,7 @@ const AT = {
       canSendAnnouncements:"שליחת הודעות לקהילה",
       canExportData:"ייצוא נתונים",
     },
-    showDataTab:"נתונים", reportsTab:"דיווחים",
+    showDataTab:"נתונים", reportsTab:"דיווחים", supportStatsTitle:"נתוני תמיכה", supportStatsPosts:"פוסטי עזרה", supportStatsReqs:"בקשות עזרה", supportStatsTopAreas:"תחומים מבוקשים", supportStatsNoData:"אין נתוני תמיכה עדיין — בקרי בלשונית התמיכה תחילה.",
     noReports:"אין דיווחים עדיין.", reportFrom:"דווח ע\"י", reportedUser:"משתמשת מדווחת",
     reportReason:"סיבה", reportDate:"תאריך", reportStatus:"סטטוס",
     markResolved:"סמני כטופל", dismiss:"דחי", reportPending:"ממתין", reportResolved:"טופל",
@@ -189,7 +189,7 @@ const AT = {
       canSendAnnouncements:"Send Community Announcements",
       canExportData:"Export Data",
     },
-    showDataTab:"Data", reportsTab:"Reports",
+    showDataTab:"Data", reportsTab:"Reports", supportStatsTitle:"Support Stats", supportStatsPosts:"Help Posts", supportStatsReqs:"Help Requests", supportStatsTopAreas:"Top Requested Areas", supportStatsNoData:"No support data yet — visit the Support tab first.",
     noReports:"No reports yet.", reportFrom:"Reported by", reportedUser:"Reported user",
     reportReason:"Reason", reportDate:"Date", reportStatus:"Status",
     markResolved:"Mark Resolved", dismiss:"Dismiss", reportPending:"Pending", reportResolved:"Resolved",
@@ -310,7 +310,7 @@ const AT = {
       canSendAnnouncements:"إرسال إعلانات للمجتمع",
       canExportData:"تصدير البيانات",
     },
-    showDataTab:"البيانات", reportsTab:"البلاغات",
+    showDataTab:"البيانات", reportsTab:"البلاغات", supportStatsTitle:"إحصائيات الدعم", supportStatsPosts:"منشورات المساعدة", supportStatsReqs:"طلبات المساعدة", supportStatsTopAreas:"أكثر المجالات طلبًا", supportStatsNoData:"لا توجد بيانات دعم بعد — قومي بزيارة تبويب الدعم أولاً.",
     noReports:"لا توجد بلاغات بعد.", reportFrom:"مُبلَّغ من قِبَل", reportedUser:"المستخدمة المُبلَّغ عنها",
     reportReason:"السبب", reportDate:"التاريخ", reportStatus:"الحالة",
     markResolved:"تحديد كمعالَج", dismiss:"رفض", reportPending:"قيد الانتظار", reportResolved:"تمت المعالجة",
@@ -1607,7 +1607,7 @@ export default function AdminPage() {
     if (tab === "logs"       && logs.length === 0)      fetchLogs();
     if (tab === "reports"    && reports.length === 0)   fetchReports();
     if (tab === "blacklist"  && blacklist.length === 0)  fetchBlacklist();
-    if ((tab === "support" || tab === "overview") && helpPosts.length === 0) fetchSupport();
+    if ((tab === "support" || tab === "overview" || tab === "data") && helpPosts.length === 0) fetchSupport();
   }, [tab]);
 
   const fetchReports = useCallback(async () => {
@@ -2885,6 +2885,84 @@ export default function AdminPage() {
               <MemberGrowthChart users={users} Tr={Tr} />
             </div>
           )}
+
+          {/* ── Support Stats ── */}
+          {(() => {
+            const pending  = helpRequests.filter(r => !r.status || r.status === "pending").length;
+            const accepted = helpRequests.filter(r => r.status === "accepted").length;
+            const declined = helpRequests.filter(r => r.status === "declined").length;
+            const areaCount = {};
+            helpRequests.forEach(r => {
+              const toUser = users.find(u => u.id === r.toUserId);
+              (toUser?.helpAreas || []).forEach(a => { areaCount[a] = (areaCount[a] || 0) + 1; });
+            });
+            const topAreas = Object.entries(areaCount).sort((a,b) => b[1]-a[1]).slice(0, 5);
+            return (
+              <div className="card" style={{ padding:"1.25rem", marginBottom:"1.25rem" }}>
+                <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.09em", margin:"0 0 1.1rem" }}>{Tr.supportStatsTitle}</p>
+                {helpPosts.length === 0 && helpRequests.length === 0 && !supportLoading ? (
+                  <p style={{ fontSize:12, color:"var(--text-muted)", margin:0 }}>{Tr.supportStatsNoData}</p>
+                ) : (
+                  <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"1.25rem" }}>
+                    {/* Left: counts + request breakdown */}
+                    <div>
+                      <div style={{ display:"flex", gap:"1rem", marginBottom:"1rem", flexWrap:"wrap" }}>
+                        {[
+                          { label: Tr.supportStatsPosts, val: helpPosts.length, color: "#e8735a" },
+                          { label: Tr.supportStatsReqs,  val: helpRequests.length, color: "#4472b8" },
+                        ].map(s => (
+                          <div key={s.label} style={{ background:"var(--bg-secondary)", borderRadius:12, padding:"0.65rem 1.1rem", flex:1, minWidth:80 }}>
+                            <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 4px" }}>{s.label}</p>
+                            <p style={{ fontSize:22, fontWeight:800, color:s.color, margin:0 }}>{s.val}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {helpRequests.length > 0 && (
+                        <>
+                          <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 8px" }}>{Tr.supportReqStatus}</p>
+                          {[
+                            { label: Tr.supportPending,  val: pending,  pct: Math.round(pending/Math.max(helpRequests.length,1)*100),  color:"#f59e0b" },
+                            { label: Tr.supportAccepted, val: accepted, pct: Math.round(accepted/Math.max(helpRequests.length,1)*100), color:"#7ba87a" },
+                            { label: Tr.supportDeclined, val: declined, pct: Math.round(declined/Math.max(helpRequests.length,1)*100), color:"#e8735a" },
+                          ].map(s => (
+                            <div key={s.label} style={{ marginBottom:8 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                                <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary)" }}>{s.label}</span>
+                                <span style={{ fontSize:12, fontWeight:700, color:s.color }}>{s.val} ({s.pct}%)</span>
+                              </div>
+                              <div style={{ height:5, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
+                                <div style={{ height:"100%", width:`${s.pct}%`, background:s.color, borderRadius:99, transition:"width 0.7s ease" }} />
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                    {/* Right: top requested areas */}
+                    {topAreas.length > 0 && (
+                      <div>
+                        <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 8px" }}>{Tr.supportStatsTopAreas}</p>
+                        {topAreas.map(([area, count], i) => (
+                          <div key={area} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                            <span style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", width:16, textAlign:"center" }}>{i+1}</span>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+                                <span style={{ fontSize:12, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{area}</span>
+                                <span style={{ fontSize:11, fontWeight:700, color:"#4472b8", flexShrink:0, marginInlineStart:8 }}>{count}</span>
+                              </div>
+                              <div style={{ height:4, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
+                                <div style={{ height:"100%", width:`${Math.round(count/Math.max(topAreas[0][1],1)*100)}%`, background:"#4472b8", borderRadius:99 }} />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
         </>
       )}

@@ -586,7 +586,7 @@ export default function SupportPage({ onViewProfile, onMessage }) {
   const [activeTab, setActiveTab] = useState("helpFeed"); // kept for compat, not used in main layout
   const [reqsExpanded, setReqsExpanded] = useState(false);
   const [recvExpanded, setRecvExpanded] = useState(false);
-  const [searchPanelOpen, setSearchPanelOpen] = useState(true);
+  const [panelState, setPanelState] = useState("normal"); // "closed" | "normal" | "wide"
   const [unifiedQuery, setUnifiedQuery] = useState("");
   const [showUnifiedSuggest, setShowUnifiedSuggest] = useState(false);
   const [unifiedDropPos, setUnifiedDropPos] = useState(null);
@@ -1140,28 +1140,41 @@ export default function SupportPage({ onViewProfile, onMessage }) {
           <div style={{ flexShrink:0, display:"flex", alignItems:"flex-start", position:"sticky", top:16, alignSelf:"flex-start" }}>
 
             {/* Toggle strip — the "tab" on the left edge of the panel */}
-            <div style={{ width:32, display:"flex", flexDirection:"column", alignItems:"center", gap:6, paddingTop:4, marginInlineEnd: searchPanelOpen ? 8 : 0 }}>
+            <div style={{ width:32, display:"flex", flexDirection:"column", alignItems:"center", gap:6, paddingTop:4, marginInlineEnd: panelState !== "closed" ? 8 : 0 }}>
               <button
-                onClick={() => setSearchPanelOpen(v => !v)}
-                title={searchPanelOpen ? (lang==="he"?"סגור":lang==="ar"?"إغلاق":"Collapse") : (lang==="he"?"חיפוש ישיר":lang==="ar"?"بحث مباشر":"Find a Member")}
+                onClick={() => setPanelState(s => s === "closed" ? "normal" : "closed")}
+                title={panelState !== "closed" ? (lang==="he"?"סגור":lang==="ar"?"إغلاق":"Collapse") : (lang==="he"?"חיפוש ישיר":lang==="ar"?"بحث مباشر":"Find a Member")}
                 style={{ width:32, height:32, borderRadius:10, border:"1.5px solid rgba(68,114,184,0.4)", background:"rgba(68,114,184,0.08)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s", boxShadow:"0 2px 8px rgba(68,114,184,0.12)" }}
                 onMouseEnter={e => { e.currentTarget.style.background="#4472b8"; e.currentTarget.style.color="#fff"; }}
                 onMouseLeave={e => { e.currentTarget.style.background="rgba(68,114,184,0.08)"; e.currentTarget.style.color="#4472b8"; }}
               >
-                {/* Arrow points left to open (since panel is on the right), right to collapse */}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ transform: searchPanelOpen ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s" }}>
+                  style={{ transform: panelState !== "closed" ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s" }}>
                   <polyline points="15 18 9 12 15 6"/>
                 </svg>
               </button>
-              {!searchPanelOpen && (
+              {panelState !== "closed" && (
+                <button
+                  onClick={() => setPanelState(s => s === "wide" ? "normal" : "wide")}
+                  title={panelState === "wide" ? (lang==="he"?"צמצם":lang==="ar"?"تضييق":"Narrow") : (lang==="he"?"הרחב":lang==="ar"?"توسيع":"Widen")}
+                  style={{ width:28, height:28, borderRadius:8, border:"1.5px solid rgba(68,114,184,0.3)", background:"rgba(68,114,184,0.06)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background="#4472b8"; e.currentTarget.style.color="#fff"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background="rgba(68,114,184,0.06)"; e.currentTarget.style.color="#4472b8"; }}
+                >
+                  {panelState === "wide"
+                    ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 9 3 9 9"/><polyline points="15 21 9 21 9 15"/></svg>
+                    : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 3 15 3 15 9"/><polyline points="21 21 15 21 15 15"/></svg>
+                  }
+                </button>
+              )}
+              {panelState === "closed" && (
                 <svg style={{ opacity:0.3, marginTop:4 }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               )}
             </div>
 
             {/* Panel body — hidden when collapsed */}
-            {searchPanelOpen && (
-              <div style={{ width:288, direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto", overscrollBehavior:"contain" }}>
+            {panelState !== "closed" && (
+              <div style={{ width: panelState === "wide" ? 460 : 288, direction:dir, maxHeight:"calc(100vh - 80px)", overflowY:"auto", overscrollBehavior:"contain", transition:"width 0.2s ease" }}>
 
                 {/* Search input box */}
                 <div style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"0.85rem", marginBottom:"0.6rem" }}>
