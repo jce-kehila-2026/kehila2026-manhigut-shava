@@ -16,8 +16,9 @@ export function AuthProvider({ children }) {
       console.error("Google redirect sign-in error:", err.code, err.message);
     });
 
+    let initialLoad = true;
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
+      if (initialLoad) setLoading(true);
       setUser(firebaseUser ?? null);
       if (firebaseUser) {
         const snap = await getDoc(doc(db, "users", firebaseUser.uid));
@@ -65,7 +66,7 @@ export function AuthProvider({ children }) {
       } else {
         setProfile(null);
       }
-      setLoading(false);
+      if (initialLoad) { setLoading(false); initialLoad = false; }
     });
     return unsubscribe;
   }, []);
