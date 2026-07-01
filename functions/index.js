@@ -5,6 +5,14 @@ const sgMail = require("@sendgrid/mail");
 admin.initializeApp();
 const db = admin.firestore();
 
+/* Read SendGrid config from either process.env (new) or functions.config() (legacy) */
+function getSgKey() {
+  return process.env.SENDGRID_KEY || functions.config().sendgrid?.key || "";
+}
+function getSgFrom() {
+  return process.env.SENDGRID_FROM || functions.config().sendgrid?.from || "noreply@manhigut-shava.com";
+}
+
 /* ── Send 6-digit OTP to email ── */
 exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
   const { email, uid } = data;
@@ -17,12 +25,12 @@ exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
 
   await db.collection("otps").doc(uid).set({ otp, expiresAt, email, attempts: 0 });
 
-  sgMail.setApiKey(process.env.SENDGRID_KEY);
+  sgMail.setApiKey(getSgKey());
 
   await sgMail.send({
     to: email,
     from: {
-      email: process.env.SENDGRID_FROM || "noreply@manhigut-shava.com",
+      email: getSgFrom(),
       name: "מנהיגות שווה",
     },
     subject: "קוד האימות שלך — מנהיגות שווה",
@@ -154,11 +162,11 @@ exports.sendEmailChangeOtp = functions.https.onCall(async (data, context) => {
 
     await db.collection("emailChangeOtps").doc(uid).set({ otp, expiresAt, newEmail, attempts: 0 });
 
-    sgMail.setApiKey(process.env.SENDGRID_KEY);
+    sgMail.setApiKey(getSgKey());
     await sgMail.send({
       to: newEmail,
       from: {
-        email: process.env.SENDGRID_FROM || "noreply@manhigut-shava.com",
+        email: getSgFrom(),
         name: "מנהיגות שווה",
       },
       subject: "אישור שינוי דוא״ל — מנהיגות שווה",

@@ -914,6 +914,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [adminEditOpen,   setAdminEditOpen]   = useState(false);
   const [adminEditFields, setAdminEditFields] = useState({});
   const [adminEditSaving, setAdminEditSaving] = useState(false);
+  const [adminEditMode,   setAdminEditMode]   = useState(false);
   const postsTitle = isOwner ? t.profile.myPosts : t.profile.posts;
   const noPostsMessage = isOwner ? t.profile.noMyPosts : t.profile.noPosts;
 
@@ -928,7 +929,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     { id: "about", label: t.profile.about || "About" },
     { id: "posts", label: postsTitle || "Posts" },
   ];
-  const tabs = isOwner ? ownerTabs : visitorTabs;
+  const tabs = (isOwner || adminEditMode) ? ownerTabs : visitorTabs;
   const currentTab = activeTab || tabs[0].id;
 
   const getPostMedia = (post) => {
@@ -1581,12 +1582,14 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           {form.profession && <p style={S.profilePro}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang)}</p>}
         </div>
 
-        {/* Actions: completeness circle + LinkedIn / Message */}
-        <div style={S.profileActions}>
+      </div>
+
+      {/* ── Action buttons (below cover, always clickable) ── */}
+      {(!isOwner || form.linkedIn) && (
+        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", padding: isMobile ? "0.75rem 1rem" : "0.75rem 2rem" }}>
           {form.linkedIn && (
-            <a href={safeUrl(form.linkedIn)}
-              target="_blank" rel="noreferrer"
-              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#1d4896", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", border:"none", whiteSpace:"nowrap" }}
+            <a href={safeUrl(form.linkedIn)} target="_blank" rel="noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#1d4896", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}
               onMouseEnter={e => e.currentTarget.style.background = "#0b1f52"}
               onMouseLeave={e => e.currentTarget.style.background = "#1d4896"}
             >
@@ -1595,7 +1598,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             </a>
           )}
           {!isOwner && onMessage && (
-            <button onClick={handleMessageClick} style={{ padding:"10px 20px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+            <button onClick={handleMessageClick} style={{ padding:"7px 16px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:13, fontWeight:700, cursor:"pointer" }}>
               {t.profile.message || "Message"}
             </button>
           )}
@@ -1611,24 +1614,15 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           )}
           {!isOwner && viewerCanManageUsers && (
             <button
-              onClick={() => {
-                setAdminEditFields({
-                  firstName:  form.firstName  || "",
-                  lastName:   form.lastName   || "",
-                  region:     form.region     || "",
-                  profession: form.profession || "",
-                  bio:        form.bio        || "",
-                });
-                setAdminEditOpen(true);
-              }}
-              style={{ padding:"10px 16px", borderRadius:99, background:"rgba(68,114,184,0.1)", color:"var(--brand,#4472b8)", border:"1.5px solid var(--brand,#4472b8)", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
+              onClick={() => setAdminEditMode(v => !v)}
+              style={{ padding:"7px 14px", borderRadius:99, background: adminEditMode ? "#4472b8" : "rgba(68,114,184,0.1)", color: adminEditMode ? "#fff" : "#4472b8", border:"1.5px solid #4472b8", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              {t.profile?.adminEdit || "Admin: Edit"}
+              {adminEditMode ? (lang==="he"?"יציאה מעריכה":lang==="ar"?"إنهاء التعديل":"Exit Edit") : (t.profile?.adminEdit || "Admin: Edit")}
             </button>
           )}
         </div>
-      </div>
+      )}
 
       {/* ── Birthday decorations ── */}
       {isBirthdayToday(birthdayValue) && (
@@ -1668,7 +1662,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       <div style={S.body}>
 
         {/* OWNER: Profile tab — two-column on desktop */}
-        {isOwner && currentTab === "profile" && (
+        {(isOwner || adminEditMode) && currentTab === "profile" && (
           <div>
             {error && <div style={S.errorMsg}>{error}</div>}
             <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", borderRadius:10, background:dark?"rgba(68,114,184,0.1)":"#eef4ff", border:`1px solid ${dark?"rgba(68,114,184,0.25)":"#c7d9f5"}`, marginBottom:"1rem", fontSize:12, color:"#4472b8", fontWeight:600 }}>
@@ -1865,7 +1859,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         )}
 
         {/* OWNER: Account tab */}
-        {isOwner && currentTab === "account" && (
+        {(isOwner || adminEditMode) && currentTab === "account" && (
           <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa" }}>
             <SectionTitle label={lang==="he"?"קישורים חברתיים":lang==="ar"?"روابط التواصل الاجتماعي":"Social Links"} />
             <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", borderRadius:10, background:dark?"rgba(68,114,184,0.1)":"#eef4ff", border:`1px solid ${dark?"rgba(68,114,184,0.25)":"#c7d9f5"}`, marginBottom:"1rem", fontSize:12, color:"#4472b8", fontWeight:600 }}>
@@ -1966,7 +1960,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {currentTab === "posts" && <PostsGrid />}
 
         {/* Help Posts tab (owner only) */}
-        {isOwner && currentTab === "helpPosts" && <HelpPostsGrid />}
+        {(isOwner || adminEditMode) && currentTab === "helpPosts" && <HelpPostsGrid />}
 
         {/* VISITOR: Personal Info tab (read-only, mirrors owner's profile tab) */}
         {!isOwner && currentTab === "about" && (
