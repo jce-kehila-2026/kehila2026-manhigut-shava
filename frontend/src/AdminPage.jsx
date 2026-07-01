@@ -20,7 +20,7 @@ const AT = {
   he: {
     pageTitle: "לוח בקרה — מנהל", pageSub: "ניהול הפלטפורמה ואנליטיקה",
     tabs: { overview:"סקירה", users:"משתמשות", editUsers:"עריכת משתמשות", posts:"פוסטים", logs:"יומן פעילות", support:"תמיכה" },
-    supportTitle:"מודול תמיכה", supportPostsLabel:"פוסטים לעזרה", supportReqsLabel:"בקשות עזרה", supportReqFrom:"מאת", supportReqTo:"אל", supportReqStatus:"סטטוס", supportReqMsg:"הודעה", supportReqDate:"תאריך", supportPending:"ממתין", supportAccepted:"אושר", supportDeclined:"נדחה", supportNoPosts:"אין פוסטים עדיין", supportNoReqs:"אין בקשות עדיין", supportUnanswered:"ללא מענה", supportColPost:"פוסט", supportColAuthor:"מחברת", supportColTags:"תחומים", supportColDate:"תאריך", supportColComments:"תגובות", supportDeletePost:"מחקי פוסט",
+    supportTitle:"מודול תמיכה", supportPostsLabel:"פוסטים לעזרה", supportReqsLabel:"בקשות עזרה", supportReqFrom:"מאת", supportReqTo:"אל", supportReqStatus:"סטטוס", supportReqMsg:"הודעה", supportReqDate:"תאריך", supportPending:"ממתין", supportAccepted:"אושר", supportDeclined:"נדחה", supportNoPosts:"אין פוסטים עדיין", supportNoReqs:"אין בקשות עדיין", supportUnanswered:"ללא מענה", supportColPost:"פוסט", supportColAuthor:"מחברת", supportColTags:"תחומים", supportColDate:"תאריך", supportColComments:"תגובות", supportDeletePost:"מחקי פוסט", supportFilterAll:"הכל", supportFilterSearch:"חיפוש...", supportFilterStatus:"סינון לפי סטטוס",
     totalMembers:"סה\"כ חברות", onlineNow:"מחוברות עכשיו", verified:"מאומתות",
     totalPosts:"סה\"כ פוסטים", conversations:"שיחות", admins:"מנהלות",
     activeMembers:"חברות פעילות", thisWeek:(n)=>`+${n} השבוע`,
@@ -63,7 +63,7 @@ const AT = {
       canSendAnnouncements:"שליחת הודעות לקהילה",
       canExportData:"ייצוא נתונים",
     },
-    showDataTab:"נתונים", reportsTab:"דיווחים",
+    showDataTab:"נתונים", reportsTab:"דיווחים", supportStatsTitle:"נתוני תמיכה", supportStatsPosts:"פוסטי עזרה", supportStatsReqs:"בקשות עזרה", supportStatsTopAreas:"תחומים מבוקשים", supportStatsNoData:"אין נתוני תמיכה עדיין — בקרי בלשונית התמיכה תחילה.",
     noReports:"אין דיווחים עדיין.", reportFrom:"דווח ע\"י", reportedUser:"משתמשת מדווחת",
     reportReason:"סיבה", reportDate:"תאריך", reportStatus:"סטטוס",
     markResolved:"סמני כטופל", dismiss:"דחי", reportPending:"ממתין", reportResolved:"טופל",
@@ -146,7 +146,7 @@ const AT = {
   en: {
     pageTitle: "Admin Dashboard", pageSub: "Platform management and analytics",
     tabs: { overview:"Overview", users:"Users", editUsers:"Edit Users", posts:"Posts", logs:"Activity Logs", support:"Support" },
-    supportTitle:"Support Module", supportPostsLabel:"Help Posts", supportReqsLabel:"Help Requests", supportReqFrom:"From", supportReqTo:"To", supportReqStatus:"Status", supportReqMsg:"Message", supportReqDate:"Date", supportPending:"Pending", supportAccepted:"Accepted", supportDeclined:"Declined", supportNoPosts:"No posts yet", supportNoReqs:"No requests yet", supportUnanswered:"Unanswered", supportColPost:"Post", supportColAuthor:"Author", supportColTags:"Topics", supportColDate:"Date", supportColComments:"Comments", supportDeletePost:"Delete Post",
+    supportTitle:"Support Module", supportPostsLabel:"Help Posts", supportReqsLabel:"Help Requests", supportReqFrom:"From", supportReqTo:"To", supportReqStatus:"Status", supportReqMsg:"Message", supportReqDate:"Date", supportPending:"Pending", supportAccepted:"Accepted", supportDeclined:"Declined", supportNoPosts:"No posts yet", supportNoReqs:"No requests yet", supportUnanswered:"Unanswered", supportColPost:"Post", supportColAuthor:"Author", supportColTags:"Topics", supportColDate:"Date", supportColComments:"Comments", supportDeletePost:"Delete Post", supportFilterAll:"All", supportFilterSearch:"Search…", supportFilterStatus:"Filter by status",
     totalMembers:"Total Members", onlineNow:"Online Now", verified:"Verified",
     totalPosts:"Total Posts", conversations:"Conversations", admins:"Admins",
     activeMembers:"Active members", thisWeek:(n)=>`+${n} this week`,
@@ -189,7 +189,7 @@ const AT = {
       canSendAnnouncements:"Send Community Announcements",
       canExportData:"Export Data",
     },
-    showDataTab:"Data", reportsTab:"Reports",
+    showDataTab:"Data", reportsTab:"Reports", supportStatsTitle:"Support Stats", supportStatsPosts:"Help Posts", supportStatsReqs:"Help Requests", supportStatsTopAreas:"Top Requested Areas", supportStatsNoData:"No support data yet — visit the Support tab first.",
     noReports:"No reports yet.", reportFrom:"Reported by", reportedUser:"Reported user",
     reportReason:"Reason", reportDate:"Date", reportStatus:"Status",
     markResolved:"Mark Resolved", dismiss:"Dismiss", reportPending:"Pending", reportResolved:"Resolved",
@@ -272,7 +272,7 @@ const AT = {
   ar: {
     pageTitle: "لوحة تحكم المشرف", pageSub: "إدارة المنصة والتحليلات",
     tabs: { overview:"نظرة عامة", users:"المستخدمات", editUsers:"تعديل المستخدمات", posts:"المنشورات", logs:"سجل النشاط", support:"الدعم" },
-    supportTitle:"وحدة الدعم", supportPostsLabel:"منشورات المساعدة", supportReqsLabel:"طلبات المساعدة", supportReqFrom:"من", supportReqTo:"إلى", supportReqStatus:"الحالة", supportReqMsg:"الرسالة", supportReqDate:"التاريخ", supportPending:"قيد الانتظار", supportAccepted:"مقبول", supportDeclined:"مرفوض", supportNoPosts:"لا توجد منشورات بعد", supportNoReqs:"لا توجد طلبات بعد", supportUnanswered:"بلا رد", supportColPost:"المنشور", supportColAuthor:"المؤلفة", supportColTags:"المواضيع", supportColDate:"التاريخ", supportColComments:"التعليقات", supportDeletePost:"حذف المنشور",
+    supportTitle:"وحدة الدعم", supportPostsLabel:"منشورات المساعدة", supportReqsLabel:"طلبات المساعدة", supportReqFrom:"من", supportReqTo:"إلى", supportReqStatus:"الحالة", supportReqMsg:"الرسالة", supportReqDate:"التاريخ", supportPending:"قيد الانتظار", supportAccepted:"مقبول", supportDeclined:"مرفوض", supportNoPosts:"لا توجد منشورات بعد", supportNoReqs:"لا توجد طلبات بعد", supportUnanswered:"بلا رد", supportColPost:"المنشور", supportColAuthor:"المؤلفة", supportColTags:"المواضيع", supportColDate:"التاريخ", supportColComments:"التعليقات", supportDeletePost:"حذف المنشور", supportFilterAll:"الكل", supportFilterSearch:"بحث...", supportFilterStatus:"تصفية حسب الحالة",
     totalMembers:"إجمالي الأعضاء", onlineNow:"متصلات الآن", verified:"موثّقات",
     totalPosts:"إجمالي المنشورات", conversations:"المحادثات", admins:"المشرفات",
     activeMembers:"أعضاء نشطات", thisWeek:(n)=>`+${n} هذا الأسبوع`,
@@ -310,7 +310,7 @@ const AT = {
       canSendAnnouncements:"إرسال إعلانات للمجتمع",
       canExportData:"تصدير البيانات",
     },
-    showDataTab:"البيانات", reportsTab:"البلاغات",
+    showDataTab:"البيانات", reportsTab:"البلاغات", supportStatsTitle:"إحصائيات الدعم", supportStatsPosts:"منشورات المساعدة", supportStatsReqs:"طلبات المساعدة", supportStatsTopAreas:"أكثر المجالات طلبًا", supportStatsNoData:"لا توجد بيانات دعم بعد — قومي بزيارة تبويب الدعم أولاً.",
     noReports:"لا توجد بلاغات بعد.", reportFrom:"مُبلَّغ من قِبَل", reportedUser:"المستخدمة المُبلَّغ عنها",
     reportReason:"السبب", reportDate:"التاريخ", reportStatus:"الحالة",
     markResolved:"تحديد كمعالَج", dismiss:"رفض", reportPending:"قيد الانتظار", reportResolved:"تمت المعالجة",
@@ -1011,6 +1011,7 @@ function SlideshowAdmin({ Tr }) {
   const [images, setImages]         = useState([]);
   const [uploading, setUploading]   = useState(false);
   const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [localCaptions, setLocalCaptions] = useState({});
   const dragIndexRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -1101,8 +1102,9 @@ function SlideshowAdmin({ Tr }) {
             <img src={img.url} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block", pointerEvents: "none" }} />
             <div style={{ padding: "0.5rem" }}>
               <input
-                value={img.caption || ""}
-                onChange={e => updateCaption(i, e.target.value)}
+                value={localCaptions[i] ?? img.caption ?? ""}
+                onChange={e => setLocalCaptions(prev => ({ ...prev, [i]: e.target.value }))}
+                onBlur={() => { const cap = localCaptions[i] ?? img.caption ?? ""; if (cap !== img.caption) updateCaption(i, cap); }}
                 placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
                 style={{ width: "100%", fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", cursor: "text" }}
                 onMouseDown={e => e.stopPropagation()}
@@ -1555,6 +1557,9 @@ export default function AdminPage() {
   const [helpPosts,        setHelpPosts]        = useState([]);
   const [helpRequests,     setHelpRequests]     = useState([]);
   const [supportLoading,   setSupportLoading]   = useState(false);
+  const [supportPostSearch,    setSupportPostSearch]    = useState("");
+  const [supportReqSearch,     setSupportReqSearch]     = useState("");
+  const [supportReqStatus,     setSupportReqStatus]     = useState("all");
 
   /* ── Blacklist ── */
   const [blacklist,        setBlacklist]        = useState([]);
@@ -1636,7 +1641,7 @@ export default function AdminPage() {
     if (tab === "logs"       && logs.length === 0)      fetchLogs();
     if (tab === "reports"    && reports.length === 0)   fetchReports();
     if (tab === "blacklist"  && blacklist.length === 0)  fetchBlacklist();
-    if (tab === "support"    && helpPosts.length === 0)  fetchSupport();
+    if ((tab === "support" || tab === "overview" || tab === "data") && helpPosts.length === 0) fetchSupport();
   }, [tab]);
 
   const fetchReports = useCallback(async () => {
@@ -1851,6 +1856,28 @@ export default function AdminPage() {
       });
     } catch (err) { console.error("Admin delete comment error:", err); }
   };
+
+  /* ── Support filters ── */
+  const filteredHelpPosts = helpPosts.filter(p => {
+    if (!supportPostSearch.trim()) return true;
+    const q = supportPostSearch.toLowerCase();
+    return (p.authorDisplayName||"").toLowerCase().includes(q)
+      || (p.content||"").toLowerCase().includes(q)
+      || (p.tags||[]).some(t => t.toLowerCase().includes(q));
+  });
+  const filteredHelpRequests = helpRequests.filter(r => {
+    const matchStatus = supportReqStatus === "all"
+      ? true
+      : supportReqStatus === "pending"
+      ? (!r.status || r.status === "pending")
+      : r.status === supportReqStatus;
+    const q = supportReqSearch.toLowerCase();
+    const matchSearch = !q
+      || (r.fromUserName||"").toLowerCase().includes(q)
+      || (r.toUserName||"").toLowerCase().includes(q)
+      || (r.message||"").toLowerCase().includes(q);
+    return matchStatus && matchSearch;
+  });
 
   /* ── Log filters ── */
   const filteredLogs = logs.filter(log => {
@@ -2100,7 +2127,8 @@ export default function AdminPage() {
           {/* Platform health + quick actions + recent members */}
           <div className="admin-overview-mid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem", alignItems: "start" }}>
 
-            {/* Platform health */}
+            {/* Platform health + latest help post */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div className="card" style={{ padding: "1.25rem" }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1.1rem" }}>{Tr.platformHealth}</p>
               {[
@@ -2128,6 +2156,27 @@ export default function AdminPage() {
                   <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary,#111827)", margin: 0 }}>{(totalLikes + totalComments).toLocaleString()}</p>
                 </div>
               </div>
+            </div>
+
+            {/* Most recent help post */}
+            {helpPosts.length > 0 && (() => {
+              const latest = helpPosts[0];
+              return (
+                <div className="card" style={{ padding: "1.25rem", cursor: "pointer", border: "1.5px solid rgba(232,115,90,0.28)" }}
+                  onClick={() => setTab("support")}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "#e8735a"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(232,115,90,0.28)"}
+                >
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#e8735a", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 0.75rem" }}>
+                    {lang==="he"?"פוסט עזרה אחרון":lang==="ar"?"آخر منشور مساعدة":"Latest Help Post"}
+                  </p>
+                  <p style={{ fontSize: 13, color: "var(--text-primary,#111827)", fontWeight: 500, margin: "0 0 8px", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {latest.content || "—"}
+                  </p>
+                  <span style={{ fontSize: 11, color: "var(--text-muted,#6b7280)" }}>{Tr.postBy(latest.authorDisplayName)}</span>
+                </div>
+              );
+            })()}
             </div>
 
             {/* Recent members */}
@@ -2207,6 +2256,7 @@ export default function AdminPage() {
                   </div>
                 );
               })()}
+
             </div>
 
           </div>
@@ -2870,6 +2920,84 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* ── Support Stats ── */}
+          {(() => {
+            const pending  = helpRequests.filter(r => !r.status || r.status === "pending").length;
+            const accepted = helpRequests.filter(r => r.status === "accepted").length;
+            const declined = helpRequests.filter(r => r.status === "declined").length;
+            const areaCount = {};
+            helpRequests.forEach(r => {
+              const toUser = users.find(u => u.id === r.toUserId);
+              (toUser?.helpAreas || []).forEach(a => { areaCount[a] = (areaCount[a] || 0) + 1; });
+            });
+            const topAreas = Object.entries(areaCount).sort((a,b) => b[1]-a[1]).slice(0, 5);
+            return (
+              <div className="card" style={{ padding:"1.25rem", marginBottom:"1.25rem" }}>
+                <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted,#6b7280)", textTransform:"uppercase", letterSpacing:"0.09em", margin:"0 0 1.1rem" }}>{Tr.supportStatsTitle}</p>
+                {helpPosts.length === 0 && helpRequests.length === 0 && !supportLoading ? (
+                  <p style={{ fontSize:12, color:"var(--text-muted)", margin:0 }}>{Tr.supportStatsNoData}</p>
+                ) : (
+                  <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"1.25rem" }}>
+                    {/* Left: counts + request breakdown */}
+                    <div>
+                      <div style={{ display:"flex", gap:"1rem", marginBottom:"1rem", flexWrap:"wrap" }}>
+                        {[
+                          { label: Tr.supportStatsPosts, val: helpPosts.length, color: "#e8735a" },
+                          { label: Tr.supportStatsReqs,  val: helpRequests.length, color: "#4472b8" },
+                        ].map(s => (
+                          <div key={s.label} style={{ background:"var(--bg-secondary)", borderRadius:12, padding:"0.65rem 1.1rem", flex:1, minWidth:80 }}>
+                            <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 4px" }}>{s.label}</p>
+                            <p style={{ fontSize:22, fontWeight:800, color:s.color, margin:0 }}>{s.val}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {helpRequests.length > 0 && (
+                        <>
+                          <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 8px" }}>{Tr.supportReqStatus}</p>
+                          {[
+                            { label: Tr.supportPending,  val: pending,  pct: Math.round(pending/Math.max(helpRequests.length,1)*100),  color:"#f59e0b" },
+                            { label: Tr.supportAccepted, val: accepted, pct: Math.round(accepted/Math.max(helpRequests.length,1)*100), color:"#7ba87a" },
+                            { label: Tr.supportDeclined, val: declined, pct: Math.round(declined/Math.max(helpRequests.length,1)*100), color:"#e8735a" },
+                          ].map(s => (
+                            <div key={s.label} style={{ marginBottom:8 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                                <span style={{ fontSize:12, fontWeight:600, color:"var(--text-secondary)" }}>{s.label}</span>
+                                <span style={{ fontSize:12, fontWeight:700, color:s.color }}>{s.val} ({s.pct}%)</span>
+                              </div>
+                              <div style={{ height:5, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
+                                <div style={{ height:"100%", width:`${s.pct}%`, background:s.color, borderRadius:99, transition:"width 0.7s ease" }} />
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                    {/* Right: top requested areas */}
+                    {topAreas.length > 0 && (
+                      <div>
+                        <p style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 8px" }}>{Tr.supportStatsTopAreas}</p>
+                        {topAreas.map(([area, count], i) => (
+                          <div key={area} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                            <span style={{ fontSize:10, fontWeight:700, color:"var(--text-muted)", width:16, textAlign:"center" }}>{i+1}</span>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+                                <span style={{ fontSize:12, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{area}</span>
+                                <span style={{ fontSize:11, fontWeight:700, color:"#4472b8", flexShrink:0, marginInlineStart:8 }}>{count}</span>
+                              </div>
+                              <div style={{ height:4, background:"var(--bg-tertiary,#f0f6fb)", borderRadius:99, overflow:"hidden" }}>
+                                <div style={{ height:"100%", width:`${Math.round(count/Math.max(topAreas[0][1],1)*100)}%`, background:"#4472b8", borderRadius:99 }} />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
         </>
       )}
 
@@ -2977,6 +3105,10 @@ export default function AdminPage() {
                             {Tr.dismiss}
                           </button>
                         </>)}
+                        <button onClick={async()=>{ if(window.confirm(lang==="he"?"למחוק דיווח זה?":lang==="ar"?"حذف هذا البلاغ؟":"Delete this report?")){ await deleteDoc(doc(db,"reports",r.id)); setReports(prev=>prev.filter(x=>x.id!==r.id)); }}}
+                          style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid rgba(232,115,90,0.4)",background:"rgba(232,115,90,0.06)",color:"#e8735a",cursor:"pointer" }}>
+                          {Tr.deleteLbl}
+                        </button>
                         <button onClick={() => setExpandedReportId(isExpandedR ? null : r.id)}
                           style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer" }}>
                           {isExpandedR ? "▲" : `▼ ${Tr.convoBtn}`}
@@ -3037,6 +3169,10 @@ export default function AdminPage() {
                                 {Tr.dismiss}
                               </button>
                             </>)}
+                            <button onClick={async()=>{ if(window.confirm(lang==="he"?"למחוק דיווח זה?":lang==="ar"?"حذف هذا البلاغ؟":"Delete this report?")){ await deleteDoc(doc(db,"reports",r.id)); setReports(prev=>prev.filter(x=>x.id!==r.id)); }}}
+                              style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid rgba(232,115,90,0.4)", background:"rgba(232,115,90,0.06)", color:"#e8735a", cursor:"pointer" }}>
+                              {Tr.deleteLbl}
+                            </button>
                             <button onClick={() => setExpandedReportId(expandedReportId === r.id ? null : r.id)}
                               style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #93c5fd", background:"#eff6ff", color:"#1d4896", cursor:"pointer" }}>
                               {expandedReportId === r.id ? "▲" : `▼ ${Tr.convoBtn}`}
@@ -3236,11 +3372,20 @@ export default function AdminPage() {
           ) : (
             <>
               {/* ── Help Posts ── */}
-              <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", marginBottom:"0.75rem" }}>
-                {Tr.supportPostsLabel} ({helpPosts.length})
-              </h3>
+              <div style={{ display:"flex", alignItems:"center", gap:"1rem", marginBottom:"0.75rem", flexWrap:"wrap" }}>
+                <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>
+                  {Tr.supportPostsLabel} ({filteredHelpPosts.length}{filteredHelpPosts.length !== helpPosts.length ? ` / ${helpPosts.length}` : ""})
+                </h3>
+                <input
+                  value={supportPostSearch} onChange={e => setSupportPostSearch(e.target.value)}
+                  placeholder={Tr.supportFilterSearch}
+                  style={{ padding:"6px 12px", borderRadius:8, border:"1.5px solid var(--border)", background:"var(--bg-secondary)", color:"var(--text-primary)", fontSize:12, outline:"none", width:200 }}
+                />
+              </div>
               {helpPosts.length === 0 ? (
                 <p style={{ color:"var(--text-muted)", fontSize:13 }}>{Tr.supportNoPosts}</p>
+              ) : filteredHelpPosts.length === 0 ? (
+                <p style={{ color:"var(--text-muted)", fontSize:13, marginBottom:"2rem" }}>—</p>
               ) : (
                 <div className="card admin-table-card" style={{ overflowX:"auto", marginBottom:"2rem" }}>
                   <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
@@ -3252,7 +3397,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {helpPosts.map(p => (
+                      {filteredHelpPosts.map(p => (
                         <tr key={p.id} style={{ borderBottom:"1px solid var(--border)" }}>
                           <td style={{ padding:"10px 14px", fontSize:13, fontWeight:600 }}>{p.authorDisplayName}</td>
                           <td style={{ padding:"10px 14px", fontSize:12, maxWidth:240, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content || (p.repostOf ? `[repost] ${p.repostOf.content}` : "")}</td>
@@ -3275,28 +3420,47 @@ export default function AdminPage() {
               )}
 
               {/* ── Help Requests ── */}
-              <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", marginBottom:"0.75rem" }}>
-                {Tr.supportReqsLabel} ({helpRequests.length})
-                {helpRequests.filter(r=>!r.status||r.status==="pending").length > 0 && (
-                  <span style={{ marginInlineStart:8, background:"#e8735a", color:"#fff", fontSize:10, fontWeight:700, borderRadius:99, padding:"2px 8px" }}>
-                    {helpRequests.filter(r=>!r.status||r.status==="pending").length} {Tr.supportUnanswered}
-                  </span>
-                )}
-              </h3>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.75rem", marginBottom:"0.75rem", flexWrap:"wrap" }}>
+                <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>
+                  {Tr.supportReqsLabel} ({filteredHelpRequests.length}{filteredHelpRequests.length !== helpRequests.length ? ` / ${helpRequests.length}` : ""})
+                  {helpRequests.filter(r=>!r.status||r.status==="pending").length > 0 && (
+                    <span style={{ marginInlineStart:8, background:"#e8735a", color:"#fff", fontSize:10, fontWeight:700, borderRadius:99, padding:"2px 8px" }}>
+                      {helpRequests.filter(r=>!r.status||r.status==="pending").length} {Tr.supportUnanswered}
+                    </span>
+                  )}
+                </h3>
+                <input
+                  value={supportReqSearch} onChange={e => setSupportReqSearch(e.target.value)}
+                  placeholder={Tr.supportFilterSearch}
+                  style={{ padding:"6px 12px", borderRadius:8, border:"1.5px solid var(--border)", background:"var(--bg-secondary)", color:"var(--text-primary)", fontSize:12, outline:"none", width:180 }}
+                />
+                {["all","pending","accepted","declined"].map(s => (
+                  <button key={s} onClick={() => setSupportReqStatus(s)}
+                    style={{ padding:"5px 12px", borderRadius:99, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                      background: supportReqStatus===s ? "#4472b8" : "var(--bg-secondary)",
+                      color: supportReqStatus===s ? "#fff" : "var(--text-muted)",
+                      border: `1.5px solid ${supportReqStatus===s ? "#4472b8" : "var(--border)"}`,
+                    }}>
+                    {s==="all"?Tr.supportFilterAll:s==="pending"?Tr.supportPending:s==="accepted"?Tr.supportAccepted:Tr.supportDeclined}
+                  </button>
+                ))}
+              </div>
               {helpRequests.length === 0 ? (
                 <p style={{ color:"var(--text-muted)", fontSize:13 }}>{Tr.supportNoReqs}</p>
+              ) : filteredHelpRequests.length === 0 ? (
+                <p style={{ color:"var(--text-muted)", fontSize:13 }}>—</p>
               ) : (
                 <div className="card admin-table-card" style={{ overflowX:"auto" }}>
                   <table style={{ width:"100%", borderCollapse:"collapse", minWidth:560 }}>
                     <thead>
                       <tr style={{ background:"var(--bg-secondary)" }}>
-                        {[Tr.supportReqFrom, Tr.supportReqTo, Tr.supportReqMsg, Tr.supportReqStatus, Tr.supportReqDate].map((h,i)=>(
+                        {[Tr.supportReqFrom, Tr.supportReqTo, Tr.supportReqMsg, Tr.supportReqStatus, Tr.supportReqDate, ""].map((h,i)=>(
                           <th key={i} style={{ padding:"10px 14px", textAlign:"left", fontSize:12, fontWeight:700, color:"var(--text-muted)", borderBottom:"1px solid var(--border)" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {helpRequests.map(r => {
+                      {filteredHelpRequests.map(r => {
                         const st = r.status || "pending";
                         const stColor = st==="accepted" ? "#4ade80" : st==="declined" ? "#e8735a" : "#f59e0b";
                         const stLabel = st==="accepted" ? Tr.supportAccepted : st==="declined" ? Tr.supportDeclined : Tr.supportPending;
@@ -3310,6 +3474,12 @@ export default function AdminPage() {
                             </td>
                             <td style={{ padding:"10px 14px", fontSize:11, color:"var(--text-muted)", whiteSpace:"nowrap" }}>
                               {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : r.createdAt?.seconds ? new Date(r.createdAt.seconds*1000).toLocaleDateString() : "—"}
+                            </td>
+                            <td style={{ padding:"10px 14px" }}>
+                              <button onClick={async()=>{ if(window.confirm(lang==="he"?"למחוק בקשה זו?":lang==="ar"?"حذف هذا الطلب؟":"Delete this request?")){ await deleteDoc(doc(db,"helpRequests",r.id)); setHelpRequests(prev=>prev.filter(x=>x.id!==r.id)); }}}
+                                style={{ fontSize:11, color:"#e8735a", background:"none", border:"none", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>
+                                {Tr.deleteLbl}
+                              </button>
                             </td>
                           </tr>
                         );

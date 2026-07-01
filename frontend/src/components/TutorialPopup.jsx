@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useLang } from "../LanguageContext";
 
-const STEP_TARGET_IDS = ["tut-members", "tut-community", "tut-chat", "tut-profile"];
-const STEP_ICONS      = ["🔍", "💬", "✉️", "👤"];
+const STEP_TARGET_IDS = ["tut-community", "tut-chat", "tut-members", "tut-profile"];
+const STEP_ICONS      = ["💬", "✉️", "🔍", "👤"];
 
 const DEFAULT_STEPS = [
-  { title: "Find Help",       text: "Search members who can help you by profession or skill." },
   { title: "Community",       text: "Share updates and connect with the whole network." },
   { title: "Direct Messages", text: "Send private messages to any member directly." },
+  { title: "Find Help",       text: "Search members who can help you by profession or skill." },
   { title: "My Profile",      text: "Complete your profile so others can find you." },
 ];
 
