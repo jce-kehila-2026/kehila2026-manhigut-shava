@@ -490,7 +490,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll"
                 style={{ display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x" }}>
                 {[...members, ...members, ...members].map((m, i) => {
-                  const name = `${m.firstName||""} ${m.lastName||""}`.trim() || m.email;
+                  const name = `${m.firstName||""} ${m.lastName||""}`.trim() || m.email || "";
                   const av = avatarUrl(m);
                   const active = (i % members.length) === featuredIdx;
                   return (
@@ -663,7 +663,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                     display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x",
                   }}>
                     {[...members, ...members, ...members].map((m, i) => {
-                      const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
+                      const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email || "";
                       const av = avatarUrl(m);
                       const active = (i % members.length) === featuredIdx;
                       return (
