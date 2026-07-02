@@ -59,9 +59,7 @@ const AT = {
       canManageContent:"ניהול תוכן (פוסטים / תגובות)",
       canViewLogs:"צפייה ביומן פעילות",
       canManageAdmins:"ניהול מנהלות והרשאות",
-      canViewStats:"צפייה בנתונים וסטטיסטיקות",
-      canSendAnnouncements:"שליחת הודעות לקהילה",
-      canExportData:"ייצוא נתונים",
+      canViewStats:"צפייה בנתונים וסטטיסטיקות (כולל ייצוא)",
     },
     showDataTab:"נתונים", reportsTab:"דיווחים", supportStatsTitle:"נתוני תמיכה", supportStatsPosts:"פוסטי עזרה", supportStatsReqs:"בקשות עזרה", supportStatsTopAreas:"תחומים מבוקשים", supportStatsNoData:"אין נתוני תמיכה עדיין — בקרי בלשונית התמיכה תחילה.",
     noReports:"אין דיווחים עדיין.", reportFrom:"דווח ע\"י", reportedUser:"משתמשת מדווחת",
@@ -185,9 +183,7 @@ const AT = {
       canManageContent:"Manage Content (posts / comments)",
       canViewLogs:"View Activity Logs",
       canManageAdmins:"Manage Admins & Permissions",
-      canViewStats:"View Statistics & Data",
-      canSendAnnouncements:"Send Community Announcements",
-      canExportData:"Export Data",
+      canViewStats:"View Statistics & Data (incl. export)",
     },
     showDataTab:"Data", reportsTab:"Reports", supportStatsTitle:"Support Stats", supportStatsPosts:"Help Posts", supportStatsReqs:"Help Requests", supportStatsTopAreas:"Top Requested Areas", supportStatsNoData:"No support data yet — visit the Support tab first.",
     noReports:"No reports yet.", reportFrom:"Reported by", reportedUser:"Reported user",
@@ -306,9 +302,7 @@ const AT = {
       canManageContent:"إدارة المحتوى (منشورات / تعليقات)",
       canViewLogs:"عرض سجل النشاط",
       canManageAdmins:"إدارة المشرفات والصلاحيات",
-      canViewStats:"عرض الإحصاءات والبيانات",
-      canSendAnnouncements:"إرسال إعلانات للمجتمع",
-      canExportData:"تصدير البيانات",
+      canViewStats:"عرض الإحصاءات والبيانات (شامل التصدير)",
     },
     showDataTab:"البيانات", reportsTab:"البلاغات", supportStatsTitle:"إحصائيات الدعم", supportStatsPosts:"منشورات المساعدة", supportStatsReqs:"طلبات المساعدة", supportStatsTopAreas:"أكثر المجالات طلبًا", supportStatsNoData:"لا توجد بيانات دعم بعد — قومي بزيارة تبويب الدعم أولاً.",
     noReports:"لا توجد بلاغات بعد.", reportFrom:"مُبلَّغ من قِبَل", reportedUser:"المستخدمة المُبلَّغ عنها",
@@ -705,7 +699,7 @@ const REQUIRED_IMPORT = ["email", "firstName"];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /* ─── Permission keys ─── */
-const PERM_KEYS = ["canManageUsers","canManageContent","canViewLogs","canManageAdmins","canViewStats","canSendAnnouncements","canExportData"];
+const PERM_KEYS = ["canManageUsers","canManageContent","canViewLogs","canManageAdmins","canViewStats"];
 const DEFAULT_PERMS = Object.fromEntries(PERM_KEYS.map(k => [k, false]));
 
 /* ── Simple confirm modal ── */
@@ -1597,7 +1591,6 @@ export default function AdminPage({ onViewProfile }) {
   const canViewLogs      = !hasExplicitPerms || !!_ap.canViewLogs;
   const canManageAdmins  = !hasExplicitPerms || !!_ap.canManageAdmins;
   const canViewStats     = !hasExplicitPerms || !!_ap.canViewStats;
-  const canExportData    = !hasExplicitPerms || !!_ap.canExportData;
 
   useEffect(() => {
     if (!profile?.isAdmin) return;
@@ -2036,7 +2029,7 @@ export default function AdminPage({ onViewProfile }) {
   /* ── TABS config — filtered by permissions ── */
   const TABS = [
     { id: "overview",  label: Tr.tabs.overview, show: true },
-    { id: "users",     label: `${Tr.tabs.users} (${users.length})`, show: canManageUsers },
+    { id: "users",     label: `${Tr.tabs.users} (${users.length})`, show: canManageUsers || canManageAdmins },
     { id: "posts",     label: `${Tr.tabs.posts} (${posts.length})`, show: canManageContent },
     { id: "support",   label: Tr.tabs.support, show: canManageContent },
     { id: "data",      label: Tr.showDataTab, show: canViewStats },
