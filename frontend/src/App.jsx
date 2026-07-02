@@ -87,11 +87,17 @@ function AppContent() {
   const { user, profile, loading } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
+  useEffect(() => {
+    const handlePop = () => { setShowAuth(false); };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
+
   if (loading) return null;
 
   if (!user) {
     if (showAuth) return <><CursorTrail /><AuthPage onBack={() => setShowAuth(false)} /></>;
-    return <><CursorTrail /><LandingPage onLogin={() => setShowAuth(true)} /></>;
+    return <><CursorTrail /><LandingPage onLogin={() => { window.history.pushState({ page: "auth" }, ""); setShowAuth(true); }} /></>;
   }
 
   if (profile === null) {
