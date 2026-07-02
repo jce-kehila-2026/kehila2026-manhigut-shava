@@ -1568,6 +1568,7 @@ export default function AdminPage({ onViewProfile }) {
   const [confirmDeleteTarget,  setConfirmDeleteTarget]  = useState(null); // user to delete
   const [confirmRevokeTarget,  setConfirmRevokeTarget]  = useState(null); // user to revoke admin
   const [makeAdminConfirmTarget, setMakeAdminConfirmTarget] = useState(null); // step 1: confirm
+  const [adminNotice, setAdminNotice] = useState(null);
   const [permsTarget,          setPermsTarget]          = useState(null); // step 2: set perms (isNew=true)
   const [editPermsTarget,      setEditPermsTarget]      = useState(null); // edit existing admin perms
 
@@ -1802,8 +1803,16 @@ export default function AdminPage({ onViewProfile }) {
   };
 
   const doUpdatePerms = async (targetUser, perms) => {
-    await updateDoc(doc(db, "users", targetUser.id), { adminPermissions: perms });
-    setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, adminPermissions: perms } : u));
+    const hasAnyPerm = Object.values(perms).some(Boolean);
+    if (!hasAnyPerm) {
+      await updateDoc(doc(db, "users", targetUser.id), { isAdmin: false, adminPermissions: {} });
+      setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, isAdmin: false, adminPermissions: {} } : u));
+      const name = `${targetUser.firstName || ""} ${targetUser.lastName || ""}`.trim();
+      setAdminNotice(lang === "he" ? `הרשאות ${name} הוסרו — היא כבר לא מנהלת.` : lang === "ar" ? `تمت إزالة صلاحيات ${name} — لم تعد مشرفة.` : `${name}'s permissions were all removed — admin access revoked.`);
+    } else {
+      await updateDoc(doc(db, "users", targetUser.id), { adminPermissions: perms });
+      setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, adminPermissions: perms } : u));
+    }
     setEditPermsTarget(null);
   };
 
@@ -2040,8 +2049,21 @@ export default function AdminPage({ onViewProfile }) {
   ].filter(t => t.show);
 
   /* ─────────────────────────────────────── RENDER ─── */
+  useEffect(() => {
+    if (!adminNotice) return;
+    const t = setTimeout(() => setAdminNotice(null), 4500);
+    return () => clearTimeout(t);
+  }, [adminNotice]);
+
   return (
     <div style={S.page} className="admin-root">
+      {adminNotice && (
+        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:9999, background:"#1e293b", color:"#fff", padding:"12px 20px", borderRadius:12, fontSize:13, fontWeight:600, boxShadow:"0 4px 20px rgba(0,0,0,0.25)", display:"flex", alignItems:"center", gap:10, maxWidth:420, textAlign:"center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {adminNotice}
+          <button onClick={() => setAdminNotice(null)} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:16, lineHeight:1, padding:"0 0 0 4px" }}>×</button>
+        </div>
+      )}
       <style>{`
         @media (max-width: 640px) {
           .admin-root { padding: 1rem 0.75rem !important; }
