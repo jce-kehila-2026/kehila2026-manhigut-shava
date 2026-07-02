@@ -845,20 +845,20 @@ export default function HelpPostFeed({ onViewProfile, compact = false, headerAct
   return (
     <div style={{ direction: dir }}>
       {/* Header + Create button */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-        <div>
+      <div style={{ marginBottom: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: "0.5rem" }}>
           <h2 style={{ margin: 0, fontSize: isMobile ? 17 : 20, fontWeight: 800, color: "var(--text-primary)" }}>{Tr.feedTitle}</h2>
-          <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--text-muted)" }}>{Tr.feedSub}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {headerActions}
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          {headerActions}
-          {user && (
-            <button onClick={() => setCreateOpen(true)}
-              style={{ padding: "9px 18px", borderRadius: 12, background: "#4472b8", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-              + {Tr.createBtn}
-            </button>
-          )}
-        </div>
+        <p style={{ margin: "0 0 0.6rem", fontSize: 13, color: "var(--text-muted)" }}>{Tr.feedSub}</p>
+        {user && (
+          <button onClick={() => setCreateOpen(true)}
+            style={{ padding: "9px 18px", borderRadius: 12, background: "#4472b8", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            + {Tr.createBtn}
+          </button>
+        )}
       </div>
 
       {/* Feed */}

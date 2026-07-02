@@ -593,6 +593,7 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
   const [filtersOpen, setFiltersOpen] = useState(false);
   const nameInputRef = useRef(null);
   const unifiedInputRef = useRef(null);
+  const findMemberRef = useRef(null);
 
   const effectiveRegion = selectedRegion === "OTHER" ? otherRegion : selectedRegion;
   const hasFilters = selectedAreas.length > 0 || !!selectedRegion;
@@ -1118,6 +1119,14 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
             initialPostId={initialHelpPostId}
             onPostConsumed={onHelpPostConsumed}
             headerActions={<>
+              {isMobile && (
+                <button
+                  onClick={() => { setFiltersOpen(true); setTimeout(() => findMemberRef.current?.scrollIntoView({ behavior:"smooth", block:"start" }), 50); }}
+                  style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:99, border:"1.5px solid rgba(68,114,184,0.4)", background:"rgba(68,114,184,0.08)", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  {lang==="he"?"חיפוש חברה":lang==="ar"?"بحث":"Find"}
+                </button>
+              )}
               {sentRequests.length > 0 && (
                 <button onClick={()=>setReqsExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c7d9f5"}`, background:dark?"rgba(68,114,184,0.13)":"#eef4ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                   {lang==="he"?"הבקשות שלי":lang==="ar"?"طلباتي":"My Requests"}
@@ -1401,7 +1410,7 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
             </div>
           )}
 
-          <button onClick={()=>setFiltersOpen(v=>!v)} style={{ width:"100%", padding:"10px 16px", borderRadius:12, border:"1.5px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.5rem" }}>
+          <button ref={findMemberRef} onClick={()=>setFiltersOpen(v=>!v)} style={{ width:"100%", padding:"10px 16px", borderRadius:12, border:"1.5px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.5rem" }}>
             <span>{lang==="he"?"חיפוש חברה":lang==="ar"?"البحث عن عضوة":"Find a Member"}</span>
             <span style={{ opacity:0.5, fontSize:11 }}>{filtersOpen?"▲":"▼"}</span>
           </button>

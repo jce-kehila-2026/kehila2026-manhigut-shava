@@ -447,9 +447,9 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             </div>
           )}
 
-          {/* Moments — greeting + slideshow on mobile */}
+          {/* Moments — greeting + slideshow on mobile/split-screen */}
           <div>
-            <p style={{ fontSize:17, color:"var(--text-primary)", margin:"0 0 0.65rem", lineHeight:1.65, fontWeight:700 }}>
+            <p style={{ fontSize:17, color:"var(--text-primary)", margin:"0 0 0.65rem", lineHeight:1.65, fontWeight:700, textAlign: isNarrow ? undefined : "center" }}>
               {profile?.firstName
                 ? `${t.dash?.welcomeBack || "Welcome back,"} ${profile.firstName}!`
                 : (t.dash?.welcomeBack || "Welcome back!")}
