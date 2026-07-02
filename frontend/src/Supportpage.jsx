@@ -1368,6 +1368,36 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
       {/* ── Mobile: collapsible search panel ── */}
       {isMobile && (
         <div style={{ marginTop:"1rem", direction:dir }}>
+
+          {/* Recommended members — always visible on mobile (no filter needed) */}
+          {!searched && !hasFilters && recommended.length > 0 && (
+            <div style={{ marginBottom:"1rem", background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem" }}>
+              <p style={{ ...S.sectionLabel, fontSize:11, marginBottom:"0.6rem" }}>{Tr.recommended}</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:"0.4rem" }}>
+                {recommended.slice(0,4).map(u => {
+                  const name = getFullName(u);
+                  const prof = u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "";
+                  const sent = !!requested[u.id];
+                  return (
+                    <div key={u.id} style={{ display:"flex", gap:9, alignItems:"center", padding:"0.5rem 0.6rem", borderRadius:10, border:"1px solid var(--border)", background:"var(--bg-secondary)", cursor:"pointer" }}
+                      onClick={() => setSelectedUser(u)}>
+                      <MemberAvatar user={u} size={36} fontSize={13} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ margin:0, fontSize:12, fontWeight:700, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                        {prof && <p style={{ margin:0, fontSize:10, color:"var(--text-secondary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prof}</p>}
+                      </div>
+                      {!cantSendHelp(u) && (
+                        <button onClick={e=>{e.stopPropagation();initiateRequest(u);}} disabled={sent} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:sent?"var(--bg-secondary)":"#4472b8", color:sent?"var(--text-muted)":"#fff", fontSize:10, fontWeight:700, cursor:sent?"default":"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                          {sent?"✓":Tr.sendReq}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <button onClick={()=>setFiltersOpen(v=>!v)} style={{ width:"100%", padding:"10px 16px", borderRadius:12, border:"1.5px solid var(--border)", background:"var(--bg-primary)", color:"var(--text-primary)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"0.5rem" }}>
             <span>{lang==="he"?"חיפוש חברה":lang==="ar"?"البحث عن عضوة":"Find a Member"}</span>
             <span style={{ opacity:0.5, fontSize:11 }}>{filtersOpen?"▲":"▼"}</span>

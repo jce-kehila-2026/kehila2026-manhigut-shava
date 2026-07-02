@@ -208,10 +208,10 @@ const eyebrow = {
 function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, vertical, tutId, imgScale = 1 }) {
   const [hov, setHov] = useState(false);
   const color = coral ? "#e8735a" : "#4472b8";
-  const size = isMobile ? "min(90px, calc(25vw - 14px))" : vertical ? "110px" : "120px";
+  const size = isMobile ? "90px" : vertical ? "110px" : "120px";
   const basePx = isMobile ? 58 : vertical ? 64 : 72;
   const scaledPx = Math.round(basePx * imgScale);
-  const imgSize = isMobile ? `min(${scaledPx}px, calc(17vw))` : `${scaledPx}px`;
+  const imgSize = isMobile ? `${scaledPx}px` : `${scaledPx}px`;
   const ringInset = vertical ? 18 : 22;
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
@@ -1623,6 +1623,8 @@ export default function DashboardPage() {
               style={{
                 position: "fixed",
                 ...(tutorialBtnPos
+                  && tutorialBtnPos.left >= 8 && tutorialBtnPos.left <= window.innerWidth - 48
+                  && tutorialBtnPos.top  >= 8 && tutorialBtnPos.top  <= window.innerHeight - 48
                   ? { left: tutorialBtnPos.left, top: tutorialBtnPos.top }
                   : { bottom: isMobile ? 72 : 24, right: 16 }),
                 zIndex: 200, userSelect: "none", touchAction: "none",
