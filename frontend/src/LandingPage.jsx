@@ -249,6 +249,13 @@ if (!document.getElementById("lp-css")) {
       80% {transform:rotate(-0.6deg) translateY(-3px);}
       100%{transform:rotate(0deg) translateY(0);}
     }
+    @keyframes lp-char-rtl {
+      0%  {transform:scaleX(-1) rotate(0deg) translateY(0);}
+      20% {transform:scaleX(-1) rotate(-1.2deg) translateY(-4px);}
+      50% {transform:scaleX(-1) rotate(0.8deg)  translateY(-7px);}
+      80% {transform:scaleX(-1) rotate(-0.6deg) translateY(-3px);}
+      100%{transform:scaleX(-1) rotate(0deg) translateY(0);}
+    }
 
     /* Background blob floats */
     @keyframes lp-float-a {0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-32px) scale(1.04)}}
@@ -1304,9 +1311,9 @@ export default function LandingPage({ onLogin }) {
               width: isMobile ? "clamp(140px,50vw,210px)" : "clamp(340px,44vw,580px)",
               objectFit:"contain",
               display:"block",position:"relative",zIndex:3,
-              animation:heroReady?"lp-char 5s 1s ease-in-out infinite":"none",
+              animation:heroReady?(isRTL?"lp-char-rtl 5s 1s ease-in-out infinite":"lp-char 5s 1s ease-in-out infinite"):"none",
               transformOrigin:"bottom center",
-              transform: isRTL ? "scaleX(-1)" : "none",
+              transform: heroReady ? undefined : (isRTL ? "scaleX(-1)" : "none"),
               filter:"drop-shadow(0 8px 32px rgba(68,114,184,0.22))",
             }}
           />
