@@ -5,14 +5,6 @@ const sgMail = require("@sendgrid/mail");
 admin.initializeApp();
 const db = admin.firestore();
 
-/* Read SendGrid config from either process.env (new) or functions.config() (legacy) */
-function getSgKey() {
-  return process.env.SENDGRID_KEY || functions.config().sendgrid?.key || "";
-}
-function getSgFrom() {
-  return process.env.SENDGRID_FROM || functions.config().sendgrid?.from || "noreply@manhigut-shava.com";
-}
-
 /* ── Send 6-digit OTP to email ── */
 exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
   const { email, uid } = data;
@@ -25,41 +17,30 @@ exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
 
   await db.collection("otps").doc(uid).set({ otp, expiresAt, email, attempts: 0 });
 
-  const key = getSgKey();
-  if (!key) {
-    console.error("sendOtpEmail: SendGrid key is missing");
-    throw new functions.https.HttpsError("internal", "Email service is not configured.");
-  }
+  sgMail.setApiKey(process.env.SENDGRID_KEY);
 
-  sgMail.setApiKey(key);
-
-  try {
-    await sgMail.send({
-      to: email,
-      from: {
-        email: getSgFrom(),
-        name: "מנהיגות שווה",
-      },
-      subject: "קוד האימות שלך — מנהיגות שווה",
-      html: `
-        <div dir="rtl" style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f8faff;border-radius:12px;">
-          <div style="background:#1a3a8f;border-radius:10px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
-            <span style="font-size:1.1rem;font-weight:800;color:#fff;">מנהיגות שווה — רשת בוגרות</span>
-          </div>
-          <h2 style="color:#1a3a8f;margin-bottom:0.5rem;">אימות כתובת האימייל שלך</h2>
-          <p style="color:#5a6a8a;margin-bottom:1.5rem;">הכניסי את הקוד הבא באתר כדי להשלים את ההרשמה:</p>
-          <div style="background:#fff;border:2px solid #c8ddfb;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
-            <div style="font-size:3rem;font-weight:900;letter-spacing:16px;color:#1a3a8f;">${otp}</div>
-          </div>
-          <p style="color:#94a3b8;font-size:0.85rem;">הקוד תקף ל-10 דקות בלבד.</p>
-          <p style="color:#94a3b8;font-size:0.85rem;">אם לא ביקשת קוד זה, התעלמי מהודעה זו.</p>
+  await sgMail.send({
+    to: email,
+    from: {
+      email: process.env.SENDGRID_FROM || "noreply@manhigut-shava.com",
+      name: "מנהיגות שווה",
+    },
+    subject: "קוד האימות שלך — מנהיגות שווה",
+    html: `
+      <div dir="rtl" style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f8faff;border-radius:12px;">
+        <div style="background:#1a3a8f;border-radius:10px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
+          <span style="font-size:1.1rem;font-weight:800;color:#fff;">מנהיגות שווה — רשת בוגרות</span>
         </div>
-      `,
-    });
-  } catch (sgErr) {
-    console.error("sendOtpEmail: SendGrid error:", JSON.stringify(sgErr?.response?.body || sgErr.message));
-    throw new functions.https.HttpsError("internal", "Failed to send email. Please try again later.");
-  }
+        <h2 style="color:#1a3a8f;margin-bottom:0.5rem;">אימות כתובת האימייל שלך</h2>
+        <p style="color:#5a6a8a;margin-bottom:1.5rem;">הכניסי את הקוד הבא באתר כדי להשלים את ההרשמה:</p>
+        <div style="background:#fff;border:2px solid #c8ddfb;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
+          <div style="font-size:3rem;font-weight:900;letter-spacing:16px;color:#1a3a8f;">${otp}</div>
+        </div>
+        <p style="color:#94a3b8;font-size:0.85rem;">הקוד תקף ל-10 דקות בלבד.</p>
+        <p style="color:#94a3b8;font-size:0.85rem;">אם לא ביקשת קוד זה, התעלמי מהודעה זו.</p>
+      </div>
+    `,
+  });
 
   return { success: true };
 });
@@ -100,11 +81,7 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("invalid-argument", "Missing uid.");
   }
 
-  try {
-    await admin.auth().deleteUser(uid);
-  } catch (e) {
-    if (e.code !== "auth/user-not-found") throw e;
-  }
+  await admin.auth().deleteUser(uid);
   return { success: true };
 });
 
@@ -177,11 +154,11 @@ exports.sendEmailChangeOtp = functions.https.onCall(async (data, context) => {
 
     await db.collection("emailChangeOtps").doc(uid).set({ otp, expiresAt, newEmail, attempts: 0 });
 
-    sgMail.setApiKey(getSgKey());
+    sgMail.setApiKey(process.env.SENDGRID_KEY);
     await sgMail.send({
       to: newEmail,
       from: {
-        email: getSgFrom(),
+        email: process.env.SENDGRID_FROM || "noreply@manhigut-shava.com",
         name: "מנהיגות שווה",
       },
       subject: "אישור שינוי דוא״ל — מנהיגות שווה",
@@ -257,3 +234,34 @@ exports.verifyEmailChangeOtp = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("internal", e.message || "Unexpected error.");
   }
 });
+
+/* ── Scheduled: delete accounts that haven't verified email after 7 days ── */
+exports.cleanupUnverifiedAccounts = functions.pubsub
+  .schedule("every 24 hours")
+  .onRun(async () => {
+    const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+    const snap = await db.collection("users").where("emailVerified", "==", false).get();
+
+    const stale = snap.docs.filter(d => {
+      const t = new Date(d.data().createdAt).getTime();
+      return !isNaN(t) && t < cutoffMs;
+    });
+
+    await Promise.all(stale.map(async d => {
+      const uid = d.id;
+      try {
+        await admin.auth().deleteUser(uid);
+      } catch (e) {
+        if (e.code !== "auth/user-not-found") {
+          console.error("cleanupUnverifiedAccounts: auth delete failed for", uid, e);
+        }
+      }
+      await db.collection("users").doc(uid).collection("private").doc("contact").delete().catch(() => {});
+      await db.collection("otps").doc(uid).delete().catch(() => {});
+      await d.ref.delete();
+    }));
+
+    console.log(`cleanupUnverifiedAccounts: removed ${stale.length} stale unverified accounts`);
+    return null;
+  });

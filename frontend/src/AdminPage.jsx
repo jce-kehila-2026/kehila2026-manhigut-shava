@@ -1508,7 +1508,7 @@ function MemberGrowthChart({ users, Tr }) {
 /* ══════════════════════════════════════════════════════
    MAIN ADMIN PAGE
 ═══════════════════════════════════════════════════════ */
-export default function AdminPage({ onViewProfile }) {
+export default function AdminPage() {
   const { user, profile } = useAuth();
   const { lang } = useLang();
   const Tr = AT[lang] || AT.he;
@@ -1569,8 +1569,6 @@ export default function AdminPage({ onViewProfile }) {
   const [blacklistAdding,  setBlacklistAdding]  = useState(false);
 
   /* ── Permission / confirm modals ── */
-  const [deleteError, setDeleteError] = useState("");
-  const [deleting, setDeleting] = useState(false);
   const [confirmDeleteTarget,  setConfirmDeleteTarget]  = useState(null); // user to delete
   const [confirmRevokeTarget,  setConfirmRevokeTarget]  = useState(null); // user to revoke admin
   const [makeAdminConfirmTarget, setMakeAdminConfirmTarget] = useState(null); // step 1: confirm
@@ -1773,26 +1771,12 @@ export default function AdminPage({ onViewProfile }) {
 
   /* ── User operations ── */
   const doDeleteUser = async (id) => {
-    setDeleteError("");
-    setDeleting(true);
     try {
       await httpsCallable(functions, "deleteUserAccount")({ uid: id });
       await deleteDoc(doc(db, "users", id));
       setUsers(prev => prev.filter(u => u.id !== id));
-      setConfirmDeleteTarget(null);
-    } catch (e) {
-      console.error(e);
-      const code = e?.code || "";
-      if (code.includes("permission-denied")) {
-        setDeleteError("אין לך הרשאה למחוק משתמשת זו.");
-      } else if (code.includes("not-found")) {
-        setDeleteError("המשתמשת לא נמצאה — ייתכן שכבר נמחקה.");
-      } else {
-        setDeleteError("מחיקה נכשלה. נסי שוב.");
-      }
-    } finally {
-      setDeleting(false);
-    }
+    } catch (e) { console.error(e); }
+    setConfirmDeleteTarget(null);
   };
 
   const doRevokeAdmin = async (id) => {
@@ -2361,7 +2345,6 @@ export default function AdminPage({ onViewProfile }) {
                       <div style={{ padding:"0.65rem 1rem",borderTop:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)" }}>
                         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 16px" }}>
                           {[
-                            { label:"Email",      val:u.email },
                             { label:Tr.colJoined, val:u.createdAt ? new Date(u.createdAt).toLocaleDateString() : null },
                             { label:Tr.campus,    val:u.campus },
                             { label:Tr.degree,    val:[u.bachelorDegree,u.masterDegree].filter(Boolean).join(" · ")||null },
@@ -2380,7 +2363,7 @@ export default function AdminPage({ onViewProfile }) {
                     )}
                     {u.id !== user?.uid && (
                       <div style={{ display:"flex",gap:6,flexWrap:"wrap",padding:"0.6rem 1rem",borderTop:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)" }}>
-                        {canManageUsers && <button onClick={e => { e.stopPropagation(); onViewProfile?.(u.id); }}
+                        {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
                           style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-primary,#fff)",color:"var(--text-primary,#111827)",cursor:"pointer" }}>
                           {Tr.editUser||"Edit"}
                         </button>}
@@ -2437,8 +2420,7 @@ export default function AdminPage({ onViewProfile }) {
                             : <div style={{ width:32,height:32,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0 }}>{getInitials(`${u.firstName} ${u.lastName}`)}</div>
                           }
                           <div>
-                            <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)",margin:0 }}>{u.firstName} {u.lastName}</p>
-                            {u.email && <p style={{ fontSize:11,color:"var(--text-muted,#6b7280)",margin:"1px 0 0",wordBreak:"break-all" }}>{u.email}</p>}
+                            <p style={{ fontSize:13,fontWeight:700,color:"var(--text-primary,#111827)" }}>{u.firstName} {u.lastName}</p>
                           </div>
                         </div>
                       </td>
@@ -2459,7 +2441,7 @@ export default function AdminPage({ onViewProfile }) {
                       <td style={{ padding:"11px 14px" }}>
                         {u.id !== user?.uid && (
                           <div className="admin-table-actions" style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
-                            {canManageUsers && <button onClick={e => { e.stopPropagation(); onViewProfile?.(u.id); }}
+                            {canManageUsers && <button onClick={e => { e.stopPropagation(); setEditingUser(u); }}
                               style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)",color:"var(--text-primary,#111827)",cursor:"pointer",whiteSpace:"nowrap" }}>
                               {Tr.editUser || "Edit"}
                             </button>}
@@ -2494,7 +2476,6 @@ export default function AdminPage({ onViewProfile }) {
                           onClick={e => e.stopPropagation()}>
                           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:"10px 24px" }}>
                             {[
-                              { label: "Email",      val: u.email },
                               { label: Tr.region,    val: u.region },
                               { label: Tr.campus,    val: u.campus },
                               { label: Tr.degree,    val: [u.bachelorDegree, u.masterDegree].filter(Boolean).join(" · ") || null },
@@ -2568,7 +2549,7 @@ export default function AdminPage({ onViewProfile }) {
                           style={S.editBtn}
                           onMouseEnter={e => e.currentTarget.style.background = "#dbeafe"}
                           onMouseLeave={e => e.currentTarget.style.background = "none"}
-                          onClick={() => onViewProfile?.(u.id)}
+                          onClick={() => setEditingUser(u)}
                         >
                           {Tr.editLbl}
                         </button>
@@ -3617,14 +3598,12 @@ export default function AdminPage({ onViewProfile }) {
       {confirmDeleteTarget && (
         <ConfirmModal
           danger
-          title={deleteError ? (Tr.confirmDeleteTitle) : (deleting ? (lang==="he"?"מוחקת...":lang==="ar"?"جاري الحذف...":"Deleting...") : Tr.confirmDeleteTitle)}
-          message={deleteError
-            ? deleteError
-            : Tr.confirmDeleteMsg(`${confirmDeleteTarget.firstName} ${confirmDeleteTarget.lastName}`)}
-          confirmLabel={deleting ? "..." : Tr.confirmDeleteBtn}
+          title={Tr.confirmDeleteTitle}
+          message={Tr.confirmDeleteMsg(`${confirmDeleteTarget.firstName} ${confirmDeleteTarget.lastName}`)}
+          confirmLabel={Tr.confirmDeleteBtn}
           cancelLabel={Tr.cancel}
-          onConfirm={() => { if (!deleting) doDeleteUser(confirmDeleteTarget.id); }}
-          onCancel={() => { if (!deleting) { setConfirmDeleteTarget(null); setDeleteError(""); } }}
+          onConfirm={() => doDeleteUser(confirmDeleteTarget.id)}
+          onCancel={() => setConfirmDeleteTarget(null)}
         />
       )}
 

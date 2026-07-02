@@ -162,23 +162,8 @@ function BottomTabs({ items, section, navigate, unreadDMs }) {
 }
 
 /* ── Language switcher ── */
-function LangSwitcher({ lang, onChangeLang, compact }) {
+function LangSwitcher({ lang, onChangeLang }) {
   const langs = [{ code: "en", label: "EN" }, { code: "he", label: "עב" }, { code: "ar", label: "عر" }];
-  if (compact) {
-    const idx = langs.findIndex(l => l.code === lang);
-    const next = langs[(idx + 1) % langs.length];
-    return (
-      <button onClick={() => onChangeLang(next.code)} style={{
-        padding: "5px 10px", borderRadius: 99,
-        border: "1px solid var(--border)",
-        background: "var(--bg-tertiary)",
-        color: "var(--text-secondary)",
-        fontSize: 10, fontWeight: 700, cursor: "pointer",
-        letterSpacing: "0.04em", minWidth: 36, flexShrink: 0,
-        fontFamily: "'Figtree',system-ui,sans-serif",
-      }}>{langs[idx].label}</button>
-    );
-  }
   return (
     <div style={{ display: "flex", gap: 2, background: "var(--bg-tertiary)", borderRadius: 99, padding: 3 }}>
       {langs.map(({ code, label }) => (
@@ -490,7 +475,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll"
                 style={{ display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x" }}>
                 {[...members, ...members, ...members].map((m, i) => {
-                  const name = `${m.firstName||""} ${m.lastName||""}`.trim() || m.email || "";
+                  const name = `${m.firstName||""} ${m.lastName||""}`.trim() || m.email;
                   const av = avatarUrl(m);
                   const active = (i % members.length) === featuredIdx;
                   return (
@@ -663,7 +648,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                     display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x",
                   }}>
                     {[...members, ...members, ...members].map((m, i) => {
-                      const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email || "";
+                      const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
                       const av = avatarUrl(m);
                       const active = (i % members.length) === featuredIdx;
                       return (
@@ -776,7 +761,6 @@ export default function DashboardPage() {
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
   const [communityPostTarget, setCommunityPostTarget] = useState(null);
-  const [helpPostTarget, setHelpPostTarget] = useState(null);
   const [langChangeCode, setLangChangeCode] = useState(null); // pending lang change confirmation
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   useEffect(() => {
@@ -1285,7 +1269,7 @@ export default function DashboardPage() {
               </div>
               <div style={{ flex: 1 }} />
 
-              <LangSwitcher compact={isMobile} lang={lang} onChangeLang={(code) => {
+              <LangSwitcher lang={lang} onChangeLang={(code) => {
                 if (code === lang) return;
                 setLangChangeCode(code);
               }} />
@@ -1461,32 +1445,34 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Logout — icon only in mobile header */}
+              {/* Logout — mobile only */}
               {isMobile && (
                 <button onClick={logout} title={t.nav.logout} style={{
-                  width: 34, height: 34, borderRadius: 99,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "transparent", border: "none",
-                  color: "var(--danger)", cursor: "pointer",
-                  transition: "all var(--t-fast)", flexShrink: 0,
-                }}>
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 11px", borderRadius: 99,
+                  background: "transparent", border: "1px solid var(--border)",
+                  color: "var(--danger)", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                  transition: "all var(--t-fast)",
+                }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#fff0f0"; e.currentTarget.style.borderColor = "var(--danger)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; }}
+                >
                   {Icon.logout}
+                  {!isMobile && <span>{t.nav.logout}</span>}
                 </button>
               )}
 
-              {!isMobile && (
-                <button onClick={toggleTheme} title={dark ? "Switch to light mode" : "Switch to dark mode"} style={{
-                  width: 34, height: 34, borderRadius: 99,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "transparent", border: "1px solid var(--border)",
-                  color: "var(--text-secondary)", cursor: "pointer", transition: "all var(--t-fast)",
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--brand)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border)"; }}
-                >
-                  {dark ? Icon.sun : Icon.moon}
-                </button>
-              )}
+              <button onClick={toggleTheme} title={dark ? "Switch to light mode" : "Switch to dark mode"} style={{
+                width: 34, height: 34, borderRadius: 99,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "transparent", border: "1px solid var(--border)",
+                color: "var(--text-secondary)", cursor: "pointer", transition: "all var(--t-fast)",
+              }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--brand)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+              >
+                {dark ? Icon.sun : Icon.moon}
+              </button>
 
               {/* User chip — greeting + online dot + avatar + admin badge, on all screen sizes */}
               {(() => {
@@ -1534,11 +1520,11 @@ export default function DashboardPage() {
           {/* Page content */}
           <div style={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
             {section === "home"      && <HomePage user={user} profile={profile} onNavigate={switchTab} onViewProfile={(userId) => navigate("profile", { userId })} />}
-            {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} initialPostId={communityPostTarget} onPostConsumed={() => setCommunityPostTarget(null)} onNavigateToHelpPost={(postId) => { setHelpPostTarget(postId); switchTab("members"); }} />}
+            {section === "community" && <CommunityPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} initialPostId={communityPostTarget} onPostConsumed={() => setCommunityPostTarget(null)} />}
             {section === "chat"      && <ChatPage onUnreadChange={setUnreadDMs} onViewProfile={(userId) => navigate("profile", { userId })} openChatWithUserId={chatTarget} />}
-            {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} initialHelpPostId={helpPostTarget} onHelpPostConsumed={() => setHelpPostTarget(null)} />}
-            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} onNavigateToCommunity={(postId) => { setCommunityPostTarget(postId || null); switchTab("community"); }} onNavigateToHelpPost={(postId) => { setHelpPostTarget(postId); switchTab("members"); }} />}
-            {section === "admin"     && <AdminPage onViewProfile={(userId) => navigate("profile", { userId })} />}
+            {section === "members"   && <SupportPage onViewProfile={(userId) => navigate("profile", { userId })} onMessage={(userId) => navigate("chat", { userId })} />}
+            {section === "profile"   && <ProfilePage viewUserId={profileTarget} onMessage={(userId) => navigate("chat", { userId })} onNavigateToCommunity={(postId) => { setCommunityPostTarget(postId || null); switchTab("community"); }} />}
+            {section === "admin"     && <AdminPage />}
           </div>
         </div>
       </main>
@@ -1600,22 +1586,6 @@ export default function DashboardPage() {
               </button>
             );
           })}
-          {/* Dark mode toggle in bottom nav on mobile */}
-          <button
-            onClick={toggleTheme}
-            style={{
-              flex: 1, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", gap: 3,
-              background: "transparent", border: "none", cursor: "pointer",
-              color: "rgba(218,234,248,0.45)",
-              transition: "color 0.18s ease",
-            }}
-          >
-            <span style={{ flexShrink: 0 }}>{dark ? Icon.sun : Icon.moon}</span>
-            <span style={{ fontSize: 9.5, fontWeight: 400, letterSpacing: "0.01em" }}>
-              {dark ? (t.dash?.lightMode || "Light") : (t.dash?.darkMode || "Dark")}
-            </span>
-          </button>
         </nav>
       )}
 

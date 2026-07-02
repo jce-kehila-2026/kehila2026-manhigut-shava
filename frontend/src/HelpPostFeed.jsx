@@ -447,13 +447,11 @@ function CommentsSection({ postId, postAuthorUid, Tr, isRTL, onRequestHelp }) {
 function HelpRequestModal({ toUid: toUserId, toName, fromProfile, user, onClose, onSent, lang }) {
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
-  const [sendErr, setSendErr] = useState("");
   const dir = lang === "he" || lang === "ar" ? "rtl" : "ltr";
 
   const send = async () => {
     if (sending) return;
     setSending(true);
-    setSendErr("");
     try {
       const fromName = `${fromProfile?.firstName || ""} ${fromProfile?.lastName || ""}`.trim() || user.email;
       const reqRef = await addDoc(collection(db, "helpRequests"), {
@@ -468,6 +466,7 @@ function HelpRequestModal({ toUid: toUserId, toName, fromProfile, user, onClose,
         status: "pending",
         createdAt: serverTimestamp(),
       });
+      // also open/create a DM conversation and send the request as a prompt
       try {
         const p1 = fromProfile || { firstName: user.email, lastName: "", photoURL: null };
         const p2 = { firstName: toName, lastName: "", photoURL: null };
@@ -480,7 +479,6 @@ function HelpRequestModal({ toUid: toUserId, toName, fromProfile, user, onClose,
       onClose();
     } catch (err) {
       console.error("Help request error:", err);
-      setSendErr(lang === "he" ? "שליחה נכשלה. נסי שוב." : lang === "ar" ? "فشل الإرسال. حاولي مجدداً." : "Failed to send. Please try again.");
     } finally {
       setSending(false);
     }
@@ -500,12 +498,9 @@ function HelpRequestModal({ toUid: toUserId, toName, fromProfile, user, onClose,
         <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--text-muted)" }}>{labels.to} <strong>{toName}</strong></p>
         <textarea value={msg} onChange={e => setMsg(e.target.value)} placeholder={labels.msgPh} rows={3}
           style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 12, border: "1.5px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", resize: "vertical", outline: "none", direction: dir }} />
-        {sendErr && <p style={{ margin:"8px 0 0", fontSize:12, color:"#e05a5a", fontWeight:600, direction:dir }}>{sendErr}</p>}
         <div style={{ display: "flex", gap: 8, marginTop: "0.75rem", justifyContent: "flex-end" }}>
-          <button onClick={onClose} disabled={sending} style={{ padding: "8px 18px", borderRadius: 10, border: "1.5px solid var(--border)", background: "none", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{labels.cancel}</button>
-          <button onClick={send} disabled={sending} style={{ padding: "8px 18px", borderRadius: 10, background: "#4472b8", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.7 : 1, fontFamily: "inherit" }}>
-            {sending ? (lang==="he"?"שולח...":lang==="ar"?"جاري الإرسال...":"Sending...") : labels.send}
-          </button>
+          <button onClick={onClose} style={{ padding: "8px 18px", borderRadius: 10, border: "1.5px solid var(--border)", background: "none", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{labels.cancel}</button>
+          <button onClick={send} disabled={sending} style={{ padding: "8px 18px", borderRadius: 10, background: "#4472b8", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{labels.send}</button>
         </div>
       </div>
     </div>
@@ -720,10 +715,7 @@ function PostCard({ post, onDeleted, onReposted, Tr, lang, isRTL, onViewProfile 
           </button>
         )}
         {helpReqSent && (
-          <span style={{ marginInlineStart: "auto", fontSize: 12, color: "#16a34a", fontWeight: 700, display:"flex", alignItems:"center", gap:4 }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            {lang==="he"?"הבקשה נשלחה!":lang==="ar"?"تم إرسال الطلب!":"Request sent!"}
-          </span>
+          <span style={{ marginInlineStart: "auto", fontSize: 11, color: "#4ade80", fontWeight: 700 }}>✓</span>
         )}
       </div>
 
@@ -757,7 +749,7 @@ function PostCard({ post, onDeleted, onReposted, Tr, lang, isRTL, onViewProfile 
 }
 
 /* ── Main Feed ── */
-export default function HelpPostFeed({ onViewProfile, compact = false, headerActions = null, initialPostId = null, onPostConsumed, onPostClick }) {
+export default function HelpPostFeed({ onViewProfile, compact = false, headerActions = null }) {
   const { user, profile } = useAuth();
   const { lang, isRTL } = useLang();
   const { dark } = useTheme();
@@ -791,19 +783,6 @@ export default function HelpPostFeed({ onViewProfile, compact = false, headerAct
     return unsub;
   }, [profile]);
 
-  const scrolledRef = useRef(false);
-  useEffect(() => {
-    if (!initialPostId || loading || scrolledRef.current) return;
-    const el = document.getElementById(`helppost-${initialPostId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.style.boxShadow = "0 0 0 3px #4472b8";
-      setTimeout(() => { el.style.boxShadow = ""; }, 2000);
-      scrolledRef.current = true;
-      onPostConsumed?.();
-    }
-  }, [initialPostId, loading]);
-
   const handleDeleted = useCallback((id) => setPosts(prev => prev.filter(p => p.id !== id)), []);
   const handleReposted = useCallback((newPost) => setPosts(prev => [newPost, ...prev]), []);
   const handlePublished = useCallback(() => {}, []);
@@ -822,10 +801,7 @@ export default function HelpPostFeed({ onViewProfile, compact = false, headerAct
         ) : (
           <div>
             {posts.slice(0, 3).map(post => (
-              <div key={post.id} onClick={() => onPostClick?.(post.id)} style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--border)", direction: dir, cursor: onPostClick ? "pointer" : "default" }}
-                onMouseEnter={e => { if (onPostClick) e.currentTarget.style.background = "var(--bg-secondary)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = ""; }}
-              >
+              <div key={post.id} style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--border)", direction: dir }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
                   <Avatar photoURL={post.authorPhotoURL} name={post.authorDisplayName} size={26} />
                   <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{post.authorDisplayName}</span>
@@ -869,10 +845,8 @@ export default function HelpPostFeed({ onViewProfile, compact = false, headerAct
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {posts.map(post => (
-            <div key={post.id} id={`helppost-${post.id}`} style={{ borderRadius:16, transition:"box-shadow 0.4s" }}>
-              <PostCard post={post} Tr={Tr} lang={lang} isRTL={isRTL}
-                onDeleted={handleDeleted} onReposted={handleReposted} onViewProfile={onViewProfile} />
-            </div>
+            <PostCard key={post.id} post={post} Tr={Tr} lang={lang} isRTL={isRTL}
+              onDeleted={handleDeleted} onReposted={handleReposted} onViewProfile={onViewProfile} />
           ))}
         </div>
       )}
@@ -889,6 +863,6 @@ export default function HelpPostFeed({ onViewProfile, compact = false, headerAct
 }
 
 /* ── Compact widget export for sidebar use ── */
-export function HelpPostsWidget({ onPostClick }) {
-  return <HelpPostFeed compact onPostClick={onPostClick} />;
+export function HelpPostsWidget({ lang }) {
+  return <HelpPostFeed compact />;
 }
