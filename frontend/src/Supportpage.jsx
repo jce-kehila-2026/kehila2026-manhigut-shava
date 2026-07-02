@@ -560,7 +560,7 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
   const { lang, isRTL } = useLang();
   const { dark } = useTheme();
   const Tr = T[lang] || T.he;
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(520);
 
   const [memberName,     setMemberName]     = useState("");
   const [selectedRegion,   setSelectedRegion]   = useState("");
@@ -849,7 +849,7 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
   const dir = isRTL ? "rtl" : "ltr";
   const S = {
     page: {
-      padding: isMobile ? "1.25rem 0.75rem 4rem" : "2rem 2.5rem 4rem",
+      padding: isMobile ? "1.25rem 0.75rem 4rem" : "1.5rem 1.25rem 4rem",
       width: "100%", height: "100%",
       overflowY: "auto", overflowX: "hidden",
       boxSizing: "border-box",
