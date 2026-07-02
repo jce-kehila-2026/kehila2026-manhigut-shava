@@ -555,7 +555,7 @@ function MemberAvatar({ user, size = 46, fontSize = 15 }) {
   );
 }
 
-export default function SupportPage({ onViewProfile, onMessage }) {
+export default function SupportPage({ onViewProfile, onMessage, initialHelpPostId, onHelpPostConsumed }) {
   const { user } = useAuth();
   const { lang, isRTL } = useLang();
   const { dark } = useTheme();
@@ -1115,6 +1115,8 @@ export default function SupportPage({ onViewProfile, onMessage }) {
         <div style={{ flex:1.5, minWidth:0 }}>
           <HelpPostFeed
             onViewProfile={onViewProfile}
+            initialPostId={initialHelpPostId}
+            onPostConsumed={onHelpPostConsumed}
             headerActions={<>
               {sentRequests.length > 0 && (
                 <button onClick={()=>setReqsExpanded(v=>!v)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 13px", borderRadius:99, border:`1.5px solid ${dark?"rgba(68,114,184,0.35)":"#c7d9f5"}`, background:dark?"rgba(68,114,184,0.13)":"#eef4ff", color:"#4472b8", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>

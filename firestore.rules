@@ -212,6 +212,12 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
     }
 
+    /* ── Featured members (public landing page "Women who lead" section) ── */
+    match /featuredMembers/{uid} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     /* ── Help Posts (community help feed) ── */
     match /helpPosts/{postId} {
       allow read:   if isAuth();

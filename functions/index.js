@@ -25,30 +25,41 @@ exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
 
   await db.collection("otps").doc(uid).set({ otp, expiresAt, email, attempts: 0 });
 
-  sgMail.setApiKey(getSgKey());
+  const key = getSgKey();
+  if (!key) {
+    console.error("sendOtpEmail: SendGrid key is missing");
+    throw new functions.https.HttpsError("internal", "Email service is not configured.");
+  }
 
-  await sgMail.send({
-    to: email,
-    from: {
-      email: getSgFrom(),
-      name: "מנהיגות שווה",
-    },
-    subject: "קוד האימות שלך — מנהיגות שווה",
-    html: `
-      <div dir="rtl" style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f8faff;border-radius:12px;">
-        <div style="background:#1a3a8f;border-radius:10px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
-          <span style="font-size:1.1rem;font-weight:800;color:#fff;">מנהיגות שווה — רשת בוגרות</span>
+  sgMail.setApiKey(key);
+
+  try {
+    await sgMail.send({
+      to: email,
+      from: {
+        email: getSgFrom(),
+        name: "מנהיגות שווה",
+      },
+      subject: "קוד האימות שלך — מנהיגות שווה",
+      html: `
+        <div dir="rtl" style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f8faff;border-radius:12px;">
+          <div style="background:#1a3a8f;border-radius:10px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
+            <span style="font-size:1.1rem;font-weight:800;color:#fff;">מנהיגות שווה — רשת בוגרות</span>
+          </div>
+          <h2 style="color:#1a3a8f;margin-bottom:0.5rem;">אימות כתובת האימייל שלך</h2>
+          <p style="color:#5a6a8a;margin-bottom:1.5rem;">הכניסי את הקוד הבא באתר כדי להשלים את ההרשמה:</p>
+          <div style="background:#fff;border:2px solid #c8ddfb;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
+            <div style="font-size:3rem;font-weight:900;letter-spacing:16px;color:#1a3a8f;">${otp}</div>
+          </div>
+          <p style="color:#94a3b8;font-size:0.85rem;">הקוד תקף ל-10 דקות בלבד.</p>
+          <p style="color:#94a3b8;font-size:0.85rem;">אם לא ביקשת קוד זה, התעלמי מהודעה זו.</p>
         </div>
-        <h2 style="color:#1a3a8f;margin-bottom:0.5rem;">אימות כתובת האימייל שלך</h2>
-        <p style="color:#5a6a8a;margin-bottom:1.5rem;">הכניסי את הקוד הבא באתר כדי להשלים את ההרשמה:</p>
-        <div style="background:#fff;border:2px solid #c8ddfb;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
-          <div style="font-size:3rem;font-weight:900;letter-spacing:16px;color:#1a3a8f;">${otp}</div>
-        </div>
-        <p style="color:#94a3b8;font-size:0.85rem;">הקוד תקף ל-10 דקות בלבד.</p>
-        <p style="color:#94a3b8;font-size:0.85rem;">אם לא ביקשת קוד זה, התעלמי מהודעה זו.</p>
-      </div>
-    `,
-  });
+      `,
+    });
+  } catch (sgErr) {
+    console.error("sendOtpEmail: SendGrid error:", JSON.stringify(sgErr?.response?.body || sgErr.message));
+    throw new functions.https.HttpsError("internal", "Failed to send email. Please try again later.");
+  }
 
   return { success: true };
 });
@@ -89,7 +100,11 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("invalid-argument", "Missing uid.");
   }
 
-  await admin.auth().deleteUser(uid);
+  try {
+    await admin.auth().deleteUser(uid);
+  } catch (e) {
+    if (e.code !== "auth/user-not-found") throw e;
+  }
   return { success: true };
 });
 
