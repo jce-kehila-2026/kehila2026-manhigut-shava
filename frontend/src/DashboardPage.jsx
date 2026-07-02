@@ -325,7 +325,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   };
 
   const quickCircles = [
-    { imgSrc: "/CommunitySymbol.png", title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: true,  imgScale: 1.3 },
+    { imgSrc: "/CommunitySymbol.png?v=2", title: t.dash.goToCommunity, desc: t.dash.descCommunity, action: "community", coral: true,  imgScale: 1.3 },
     { imgSrc: "/ChatSymbol.png",      title: t.dash.goToMessages,  desc: t.dash.descMessages,  action: "chat",      coral: false },
     { imgSrc: "/FindHelpSymbol.png",  title: t.dash.goToSupport,   desc: t.dash.descSupport,   action: "members",   coral: true  },
     { imgSrc: "/ProfileSymbol.png",   title: t.dash.goToProfile,   desc: t.dash.descProfile,   action: "profile",   coral: false },
@@ -1622,7 +1622,7 @@ export default function DashboardPage() {
               onMouseLeave={() => setTutorialBtnHover(false)}
               style={{
                 position: "fixed",
-                ...(tutorialBtnPos
+                ...(!isMobile && tutorialBtnPos
                   && tutorialBtnPos.left >= 8 && tutorialBtnPos.left <= window.innerWidth - 48
                   && tutorialBtnPos.top  >= 8 && tutorialBtnPos.top  <= window.innerHeight - 48
                   ? { left: tutorialBtnPos.left, top: tutorialBtnPos.top }

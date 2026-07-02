@@ -17,6 +17,14 @@
       "rewrites": [{ "source": "**", "destination": "/index.html" }],
       "headers": [
         {
+          "source": "**/*.html",
+          "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+        },
+        {
+          "source": "**/*.@(png|jpg|jpeg|gif|svg|ico)",
+          "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+        },
+        {
           "source": "**",
           "headers": [
             {
