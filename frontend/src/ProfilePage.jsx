@@ -895,7 +895,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const fields = [
     form.firstName,
     form.lastName,
-    form.phone,
     form.region,
     form.profession || form.currentRole,
     form.bio,
