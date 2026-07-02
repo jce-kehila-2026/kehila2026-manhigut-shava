@@ -1158,13 +1158,13 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
                 <button
                   onClick={() => setPanelState(s => s === "wide" ? "normal" : "wide")}
                   title={panelState === "wide" ? (lang==="he"?"צמצם":lang==="ar"?"تضييق":"Narrow") : (lang==="he"?"הרחב":lang==="ar"?"توسيع":"Widen")}
-                  style={{ width:36, height:36, borderRadius:10, border:"1.5px solid rgba(68,114,184,0.35)", background:"rgba(68,114,184,0.08)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}
+                  style={{ width:42, height:42, borderRadius:10, border:"1.5px solid rgba(68,114,184,0.35)", background:"rgba(68,114,184,0.08)", color:"#4472b8", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}
                   onMouseEnter={e => { e.currentTarget.style.background="#4472b8"; e.currentTarget.style.color="#fff"; }}
                   onMouseLeave={e => { e.currentTarget.style.background="rgba(68,114,184,0.08)"; e.currentTarget.style.color="#4472b8"; }}
                 >
                   {panelState === "wide"
-                    ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 9 3 9 9"/><polyline points="15 21 9 21 9 15"/></svg>
-                    : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 3 15 3 15 9"/><polyline points="21 21 15 21 15 15"/></svg>
+                    ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 9 3 9 9"/><polyline points="15 21 9 21 9 15"/></svg>
+                    : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 3 15 3 15 9"/><polyline points="21 21 15 21 15 15"/></svg>
                   }
                 </button>
               )}
@@ -1312,7 +1312,9 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
                   <div style={{ ...S.emptyBox, fontSize:12 }}>{Tr.noResults}</div>
                 )}
                 {searched && sortedResults.length > 0 && (
-                  <div style={{ display:"flex", flexDirection:"column", gap: layoutMode==="list"?"0.3rem":"0.5rem" }}>
+                  <div style={layoutMode === "cards"
+                    ? { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.6rem" }
+                    : { display:"flex", flexDirection:"column", gap:"0.3rem" }}>
                     {sortedResults.map((u) => {
                       const name = getFullName(u);
                       const prof = u.professionTranslations?.[lang] || translateProfession(u.currentRole ?? u.profession, lang) || "";
@@ -1335,17 +1337,18 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
                         );
                       }
                       return (
-                        <div key={u.id} style={{ background:"var(--bg-primary)", borderRadius:12, border:"1.5px solid var(--border)", padding:"0.7rem", cursor:"pointer" }}
+                        <div key={u.id} style={{ background:"var(--bg-primary)", borderRadius:14, border:"1.5px solid var(--border)", padding:"1rem 0.75rem 0.75rem", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:8, boxShadow:"0 2px 8px rgba(68,114,184,0.06)" }}
                           onClick={() => setSelectedUser(u)}>
-                          <div style={{ display:"flex", gap:9, alignItems:"center", marginBottom:8 }}>
-                            <MemberAvatar user={u} size={48} fontSize={16} />
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <p style={{ margin:0, fontSize:13, fontWeight:700, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
-                              {prof && <p style={{ margin:0, fontSize:11, color:"var(--text-secondary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prof}</p>}
-                              {u.region && <span style={{ fontSize:10, color:"var(--text-muted)" }}>{translateLocation(u.region, lang)}</span>}
-                            </div>
+                          <MemberAvatar user={u} size={64} fontSize={22} />
+                          <div style={{ width:"100%", textAlign:"center", minWidth:0 }}>
+                            <p style={{ margin:"0 0 2px", fontSize:13, fontWeight:700, color:"var(--text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</p>
+                            {prof && <p style={{ margin:"0 0 3px", fontSize:10, fontWeight:700, color:"#4472b8", textTransform:"uppercase", letterSpacing:"0.06em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prof}</p>}
+                            {u.region && <span style={{ fontSize:10, color:"var(--text-muted)" }}>{translateLocation(u.region, lang)}</span>}
                           </div>
-                          <div style={{ display:"flex", gap:5 }} onClick={e=>e.stopPropagation()}>
+                          {u.bio && (
+                            <p style={{ margin:0, fontSize:11, color:"var(--text-secondary)", textAlign:"center", lineHeight:1.5, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{u.bio}</p>
+                          )}
+                          <div style={{ display:"flex", gap:5, width:"100%", marginTop:"auto" }} onClick={e=>e.stopPropagation()}>
                             <button onClick={() => setSelectedUser(u)} style={{ flex:1, padding:"5px 0", borderRadius:8, border:"1.5px solid var(--border)", background:"none", color:"var(--text-secondary)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{Tr.viewProfile}</button>
                             {!cantSendHelp(u) && (
                               <button onClick={() => initiateRequest(u)} disabled={sent} style={{ flex:1, padding:"5px 0", borderRadius:8, border:"none", background:sent?"var(--bg-secondary)":"#4472b8", color:sent?"var(--text-muted)":"#fff", fontSize:11, fontWeight:600, cursor:sent?"default":"pointer", fontFamily:"inherit" }}>

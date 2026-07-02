@@ -446,6 +446,24 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             </div>
           )}
 
+          {/* Moments — greeting + slideshow on mobile */}
+          <div>
+            <p style={{ fontSize:17, color:"var(--text-primary)", margin:"0 0 0.65rem", lineHeight:1.65, fontWeight:700 }}>
+              {profile?.firstName
+                ? `${t.dash?.welcomeBack || "Welcome back,"} ${profile.firstName}!`
+                : (t.dash?.welcomeBack || "Welcome back!")}
+              {" "}{t.dash?.welcomeSubtitle || "Have a great time at YWP."}
+            </p>
+            <SlideshowBanner maxHeight={320} />
+          </div>
+
+          {/* Shortcuts — horizontal scrollable row of circles */}
+          <div style={{ display:"flex", gap:"0.75rem", overflowX:"auto", paddingBottom:4 }}>
+            {quickCircles.map((item, i) => (
+              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} imgScale={item.imgScale || 1} onClick={() => onNavigate(item.action)} />
+            ))}
+          </div>
+
           {/* Us — same polaroid + floating text + strip as desktop */}
           {members.length > 0 && featured && (
             <div>
@@ -518,24 +536,6 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               </div>
             </div>
           )}
-
-          {/* Moments — frameless slideshow on mobile */}
-          <div>
-            <p style={{ fontSize:17, color:"var(--text-primary)", margin:"0 0 0.65rem", lineHeight:1.65, fontWeight:700 }}>
-              {profile?.firstName
-                ? `${t.dash?.welcomeBack || "Welcome back,"} ${profile.firstName}!`
-                : (t.dash?.welcomeBack || "Welcome back!")}
-              {" "}{t.dash?.welcomeSubtitle || "Have a great time at YWP."}
-            </p>
-            <SlideshowBanner maxHeight={240} />
-          </div>
-
-          {/* Shortcuts — horizontal scrollable row of circles */}
-          <div style={{ display:"flex", gap:"0.75rem", overflowX:"auto", paddingBottom:4 }}>
-            {quickCircles.map((item, i) => (
-              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} imgScale={item.imgScale || 1} onClick={() => onNavigate(item.action)} />
-            ))}
-          </div>
         </div>
       ) : (
         /* ── DESKTOP 3-column layout ── */
@@ -1622,7 +1622,7 @@ export default function DashboardPage() {
               onMouseLeave={() => setTutorialBtnHover(false)}
               style={{
                 position: "fixed",
-                ...(!isMobile && tutorialBtnPos
+                ...(tutorialBtnPos
                   && tutorialBtnPos.left >= 8 && tutorialBtnPos.left <= window.innerWidth - 48
                   && tutorialBtnPos.top  >= 8 && tutorialBtnPos.top  <= window.innerHeight - 48
                   ? { left: tutorialBtnPos.left, top: tutorialBtnPos.top }
