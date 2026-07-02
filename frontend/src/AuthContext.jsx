@@ -40,27 +40,51 @@ export function AuthProvider({ children }) {
 
           setProfile(profileData);
         } else {
-          /* No Firestore doc — check if this is a new Google/social sign-in */
-          const isGoogle = firebaseUser.providerData?.some(p => p.providerId === "google.com");
-          if (isGoogle) {
-            const parts = (firebaseUser.displayName || "").split(" ");
-            const basicProfile = {
-              firstName:     parts[0] || "",
-              lastName:      parts.slice(1).join(" ") || "",
-              email:         firebaseUser.email || "",
-              phone:         firebaseUser.phoneNumber || "",
-              emailVerified: true,
-              acceptedTerms: true,
-              createdAt:     new Date().toISOString(),
-            };
-            try {
-              await setDoc(doc(db, "users", firebaseUser.uid), basicProfile, { merge: true });
-              setProfile(basicProfile);
-            } catch (_) {
+          /* snap.exists() returned false — verify with a second read to handle cache/race false-negatives */
+          const verifySnap = await getDoc(doc(db, "users", firebaseUser.uid));
+          if (verifySnap.exists()) {
+            /* Doc exists (false negative on first read) — just load the real profile */
+            let profileData = verifySnap.data();
+            const isEmailPassword = firebaseUser.providerData?.some(p => p.providerId === "password");
+            if (!isEmailPassword && profileData.emailVerified === false) {
+              try {
+                await updateDoc(doc(db, "users", firebaseUser.uid), { emailVerified: true });
+                profileData = { ...profileData, emailVerified: true };
+              } catch (_) {}
+            }
+            setProfile(profileData);
+          } else {
+            /* Doc truly doesn't exist — new Google/social sign-in */
+            const isGoogle = firebaseUser.providerData?.some(p => p.providerId === "google.com");
+            if (isGoogle) {
+              const parts = (firebaseUser.displayName || "").split(" ");
+              /* Write only account-level fields; name fields written separately below
+                 so they never overwrite a user's manually-chosen name on false-negatives */
+              const accountFields = {
+                email:         firebaseUser.email || "",
+                emailVerified: true,
+                acceptedTerms: true,
+                createdAt:     new Date().toISOString(),
+              };
+              try {
+                await setDoc(doc(db, "users", firebaseUser.uid), accountFields, { merge: true });
+                /* Re-read to pick up any fields that may have existed */
+                const afterSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+                const afterData = afterSnap.exists() ? afterSnap.data() : accountFields;
+                /* For a brand-new user with no name yet, seed name from Google display name */
+                if (!afterData.firstName && !afterData.lastName && (parts[0] || parts[1])) {
+                  const nameFields = { firstName: parts[0] || "", lastName: parts.slice(1).join(" ") || "" };
+                  await setDoc(doc(db, "users", firebaseUser.uid), nameFields, { merge: true });
+                  setProfile({ ...afterData, ...nameFields });
+                } else {
+                  setProfile(afterData);
+                }
+              } catch (_) {
+                setProfile(null);
+              }
+            } else {
               setProfile(null);
             }
-          } else {
-            setProfile(null);
           }
         }
       } else {

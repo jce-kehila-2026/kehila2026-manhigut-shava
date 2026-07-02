@@ -216,7 +216,8 @@ function QuickCircle({ imgSrc, title, desc, coral, floatIdx, onClick, isMobile, 
   const floatAnim = isMobile ? "none" : `qc-float-${floatIdx % 4} ${4.5 + floatIdx * 0.5}s ${floatIdx * 0.6}s ease-in-out infinite`;
   return (
     <div id={tutId} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: isMobile ? 4 : 10, cursor:"pointer",
-      animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s` }}
+      animation:"qc-pop 0.55s ease both", animationDelay:`${floatIdx * 0.12}s`,
+      flexShrink: 0, minWidth: isMobile ? 72 : undefined }}
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -332,9 +333,12 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
   const profilePct = (() => {
     const fields = [
-      profile?.firstName, profile?.lastName, profile?.phone,
-      profile?.region, profile?.profession || profile?.currentRole,
-      profile?.bio, profile?.birthDate || profile?.birthdate,
+      profile?.firstName,
+      profile?.lastName,
+      profile?.region,
+      profile?.profession || profile?.currentRole,
+      profile?.bio,
+      profile?.birthDate || profile?.birthdate,
       profile?.helpAreas?.length > 0,
     ];
     return Math.round((fields.filter(Boolean).length / fields.length) * 100);
@@ -766,6 +770,7 @@ export default function DashboardPage() {
   const { lang, setLang, setLangPermanent, t, isRTL } = useLang();
   const { dark, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
+  const isVeryNarrow = useIsMobile(480);
 
   const [section,    setSection]    = useState("home");
   const [navHistory, setNavHistory] = useState(["home"]);
@@ -1285,7 +1290,7 @@ export default function DashboardPage() {
               </div>
               <div style={{ flex: 1 }} />
 
-              <LangSwitcher compact={isMobile} lang={lang} onChangeLang={(code) => {
+              <LangSwitcher compact={isVeryNarrow} lang={lang} onChangeLang={(code) => {
                 if (code === lang) return;
                 setLangChangeCode(code);
               }} />

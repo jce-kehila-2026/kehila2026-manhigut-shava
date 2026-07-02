@@ -64,15 +64,14 @@ function CursorTrail() {
   return null;
 }
 
-/* Fallback for Google users with no Firestore doc — create basic profile then reload */
+/* Fallback for Google users with no Firestore doc — create minimal stub then reload */
 function GoogleProfileSetup() {
   const { user, refreshProfile } = useAuth();
   useEffect(() => {
     if (!user) return;
-    const parts = (user.displayName || "").split(" ");
+    /* Only write account-level fields here; name fields are handled in AuthContext
+       to avoid overwriting a user's manually-chosen name on re-login */
     setDoc(doc(db, "users", user.uid), {
-      firstName:     parts[0] || "",
-      lastName:      parts.slice(1).join(" ") || "",
       email:         user.email || "",
       emailVerified: true,
       acceptedTerms: true,
