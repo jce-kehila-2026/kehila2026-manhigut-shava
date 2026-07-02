@@ -12,9 +12,9 @@ export function useIsMobile(breakpoint = 768) {
 }
 
 export function useIsTablet() {
-  const [isTablet, setIsTablet] = useState(() => window.innerWidth <= 1024 && window.innerWidth > 768);
+  const [isTablet, setIsTablet] = useState(() => window.innerWidth <= 1200 && window.innerWidth > 960);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1024px) and (min-width: 769px)");
+    const mq = window.matchMedia("(max-width: 1200px) and (min-width: 961px)");
     const handler = (e) => setIsTablet(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);

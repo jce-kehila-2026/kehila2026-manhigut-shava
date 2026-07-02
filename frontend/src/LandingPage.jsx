@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useLang } from "./LanguageContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useTheme } from "./ThemeContext";
+import { db } from "./firebase";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 
 /* ── Palette ── */
 const C_LIGHT = {
@@ -1077,7 +1079,24 @@ export default function LandingPage({ onLogin }) {
     setTimeout(() => { setRippling(false); onLogin(); }, 680);
   }, [onLogin]);
 
-  const leaders    = T.leadersData;
+  const [featuredLeaders, setFeaturedLeaders] = useState(null);
+  useEffect(() => {
+    getDocs(query(collection(db, "featuredMembers"), orderBy("order")))
+      .then(snap => {
+        if (snap.empty) return;
+        setFeaturedLeaders(snap.docs.map(d => {
+          const v = d.data();
+          return {
+            name:        (lang === "he" ? v.nameHe : lang === "ar" ? v.nameAr : v.name) || v.name,
+            role:        (lang === "he" ? v.roleHe : lang === "ar" ? v.roleAr : v.role) || v.role,
+            achievement: (lang === "he" ? v.achievementHe : lang === "ar" ? v.achievementAr : v.achievement) || v.achievement,
+            photo:       v.photo || null,
+          };
+        }));
+      })
+      .catch(() => {});
+  }, [lang]);
+  const leaders    = featuredLeaders ?? T.leadersData;
   const featAccents = [C.blue,C.coral,C.blue,C.coral,C.blue,C.coral];
   const featIcons   = [Ic.mentor,Ic.lead,Ic.comm,Ic.net,Ic.activ,Ic.grad];
 

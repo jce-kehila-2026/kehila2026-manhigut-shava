@@ -724,7 +724,7 @@ function BirthdayWishes({ targetId, currentUser, currentProfile, isOwner, t, rel
 }
 
 
-export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommunity }) {
+export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommunity, onNavigateToHelpPost }) {
   const { user, profile: authProfile, refreshProfile, logout } = useAuth();
   const { t, lang, isRTL } = useLang();
   const { T, dark } = useTheme();
@@ -905,7 +905,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const pct = Math.round((fields.filter(Boolean).length / fields.length) * 100);
   const isOwner = !viewUserId || viewUserId === user?.uid;
   const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
-  const isReadOnly = !isOwner;
 
   /* Admin edit permissions */
   const _vap = authProfile?.adminPermissions;
@@ -914,6 +913,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [adminEditOpen,   setAdminEditOpen]   = useState(false);
   const [adminEditFields, setAdminEditFields] = useState({});
   const [adminEditSaving, setAdminEditSaving] = useState(false);
+  const [adminEditMode,   setAdminEditMode]   = useState(false);
+  const isReadOnly = !isOwner && !adminEditMode;
   const postsTitle = isOwner ? t.profile.myPosts : t.profile.posts;
   const noPostsMessage = isOwner ? t.profile.noMyPosts : t.profile.noPosts;
 
@@ -925,10 +926,11 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     { id: "helpPosts", label: lang==="he"?"פוסטי עזרה":lang==="ar"?"منشورات المساعدة":"Help Posts" },
   ];
   const visitorTabs = [
-    { id: "about", label: t.profile.about || "About" },
-    { id: "posts", label: postsTitle || "Posts" },
+    { id: "about",     label: t.profile.about || "About" },
+    { id: "posts",     label: postsTitle || "Posts" },
+    { id: "helpPosts", label: lang==="he"?"פוסטי עזרה":lang==="ar"?"منشورات المساعدة":"Help Posts" },
   ];
-  const tabs = isOwner ? ownerTabs : visitorTabs;
+  const tabs = (isOwner || adminEditMode) ? ownerTabs : visitorTabs;
   const currentTab = activeTab || tabs[0].id;
 
   const getPostMedia = (post) => {
@@ -1453,7 +1455,10 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:"1.25rem" }}>
           {myHelpPosts.map((post) => (
             <div key={post.id} className="profile-card"
-              style={{ background:T.card, borderRadius:"18px", border:`1.5px solid ${T.cardBorder}`, borderLeft:"4px solid #e8735a", boxShadow:"0 2px 8px rgba(232,115,90,0.08)", padding:"1.25rem", display:"flex", flexDirection:"column", gap:"0.75rem" }}
+              onClick={() => onNavigateToHelpPost?.(post.id)}
+              style={{ background:T.card, borderRadius:"18px", border:`1.5px solid ${T.cardBorder}`, borderLeft:"4px solid #e8735a", boxShadow:"0 2px 8px rgba(232,115,90,0.08)", padding:"1.25rem", display:"flex", flexDirection:"column", gap:"0.75rem", cursor: onNavigateToHelpPost ? "pointer" : "default", transition:"box-shadow 0.18s, transform 0.18s" }}
+              onMouseEnter={e => { if (onNavigateToHelpPost) { e.currentTarget.style.boxShadow="0 6px 20px rgba(232,115,90,0.18)"; e.currentTarget.style.transform="translateY(-2px)"; }}}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow="0 2px 8px rgba(232,115,90,0.08)"; e.currentTarget.style.transform="none"; }}
             >
               {post.content && (
                 <p style={{ fontSize:"14px", color:T.text, margin:0, lineHeight:"1.6", whiteSpace:"pre-wrap", wordBreak:"break-word", display:"-webkit-box", WebkitLineClamp:4, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
@@ -1581,12 +1586,14 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           {form.profession && <p style={S.profilePro}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang)}</p>}
         </div>
 
-        {/* Actions: completeness circle + LinkedIn / Message */}
-        <div style={S.profileActions}>
+      </div>
+
+      {/* ── Action buttons (below cover, always clickable) ── */}
+      {(!isOwner || form.linkedIn) && (
+        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", padding: isMobile ? "0.75rem 1rem" : "0.75rem 2rem" }}>
           {form.linkedIn && (
-            <a href={safeUrl(form.linkedIn)}
-              target="_blank" rel="noreferrer"
-              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#1d4896", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", border:"none", whiteSpace:"nowrap" }}
+            <a href={safeUrl(form.linkedIn)} target="_blank" rel="noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#1d4896", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}
               onMouseEnter={e => e.currentTarget.style.background = "#0b1f52"}
               onMouseLeave={e => e.currentTarget.style.background = "#1d4896"}
             >
@@ -1595,7 +1602,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             </a>
           )}
           {!isOwner && onMessage && (
-            <button onClick={handleMessageClick} style={{ padding:"10px 20px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+            <button onClick={handleMessageClick} style={{ padding:"7px 16px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:13, fontWeight:700, cursor:"pointer" }}>
               {t.profile.message || "Message"}
             </button>
           )}
@@ -1611,24 +1618,15 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
           )}
           {!isOwner && viewerCanManageUsers && (
             <button
-              onClick={() => {
-                setAdminEditFields({
-                  firstName:  form.firstName  || "",
-                  lastName:   form.lastName   || "",
-                  region:     form.region     || "",
-                  profession: form.profession || "",
-                  bio:        form.bio        || "",
-                });
-                setAdminEditOpen(true);
-              }}
-              style={{ padding:"10px 16px", borderRadius:99, background:"rgba(68,114,184,0.1)", color:"var(--brand,#4472b8)", border:"1.5px solid var(--brand,#4472b8)", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
+              onClick={() => { setAdminEditMode(v => !v); setActiveTab(null); }}
+              style={{ padding:"7px 14px", borderRadius:99, background: adminEditMode ? "#4472b8" : "rgba(68,114,184,0.1)", color: adminEditMode ? "#fff" : "#4472b8", border:"1.5px solid #4472b8", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              {t.profile?.adminEdit || "Admin: Edit"}
+              {adminEditMode ? (lang==="he"?"יציאה מעריכה":lang==="ar"?"إنهاء التعديل":"Exit Edit") : (t.profile?.adminEdit || "Admin: Edit")}
             </button>
           )}
         </div>
-      </div>
+      )}
 
       {/* ── Birthday decorations ── */}
       {isBirthdayToday(birthdayValue) && (
@@ -1668,7 +1666,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       <div style={S.body}>
 
         {/* OWNER: Profile tab — two-column on desktop */}
-        {isOwner && currentTab === "profile" && (
+        {(isOwner || adminEditMode) && currentTab === "profile" && (
           <div>
             {error && <div style={S.errorMsg}>{error}</div>}
             <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", borderRadius:10, background:dark?"rgba(68,114,184,0.1)":"#eef4ff", border:`1px solid ${dark?"rgba(68,114,184,0.25)":"#c7d9f5"}`, marginBottom:"1rem", fontSize:12, color:"#4472b8", fontWeight:600 }}>
@@ -1679,7 +1677,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
             <div style={isMobile ? {} : { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem", alignItems:"stretch" }}>
 
               {/* Left: Personal Info */}
-              <div className="profile-card" style={{ ...S.card, marginBottom: isMobile ? "1rem" : 0, boxShadow:"none", borderLeft:`1.5px solid ${T.cardBorder}`, display:"flex", flexDirection:"column" }}>
+              <div className="profile-card" style={{ ...S.card, marginBottom: isMobile ? "1rem" : 0, boxShadow:"none", borderLeft:`1.5px solid ${T.cardBorder}`, display:"flex", flexDirection:"column", minWidth:0 }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1rem" }}>
                   <p style={{ fontSize:"11px", fontWeight:"700", color:T.text, textTransform:"uppercase", letterSpacing:"0.12em", margin:0 }}>
                     {t.profile.personalInfo}
@@ -1773,7 +1771,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
               </div>
 
               {/* Right: Additional Details */}
-              <div className="profile-card" style={{ ...S.card, marginBottom: isMobile ? "1rem" : 0, boxShadow:"none", borderLeft:`1.5px solid ${T.cardBorder}`, display:"flex", flexDirection:"column" }}>
+              <div className="profile-card" style={{ ...S.card, marginBottom: isMobile ? "1rem" : 0, boxShadow:"none", borderLeft:`1.5px solid ${T.cardBorder}`, display:"flex", flexDirection:"column", minWidth:0 }}>
                 <div style={S.row}>
                   <div style={{ ...S.group, marginBottom:"0.75rem" }}>
                     <label style={S.label}>{t.profile.experience}<OptionalTag /></label>
@@ -1865,7 +1863,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         )}
 
         {/* OWNER: Account tab */}
-        {isOwner && currentTab === "account" && (
+        {(isOwner || adminEditMode) && currentTab === "account" && (
           <div className="profile-card" style={{ ...S.card, borderLeftColor:"#a78bfa" }}>
             <SectionTitle label={lang==="he"?"קישורים חברתיים":lang==="ar"?"روابط التواصل الاجتماعي":"Social Links"} />
             <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", borderRadius:10, background:dark?"rgba(68,114,184,0.1)":"#eef4ff", border:`1px solid ${dark?"rgba(68,114,184,0.25)":"#c7d9f5"}`, marginBottom:"1rem", fontSize:12, color:"#4472b8", fontWeight:600 }}>
@@ -1965,8 +1963,8 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
         {/* Posts tab (owner + visitor) */}
         {currentTab === "posts" && <PostsGrid />}
 
-        {/* Help Posts tab (owner only) */}
-        {isOwner && currentTab === "helpPosts" && <HelpPostsGrid />}
+        {/* Help Posts tab (everyone) */}
+        {currentTab === "helpPosts" && <HelpPostsGrid />}
 
         {/* VISITOR: Personal Info tab (read-only, mirrors owner's profile tab) */}
         {!isOwner && currentTab === "about" && (
@@ -2128,36 +2126,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 </div>
               )}
 
-              {/* Social / contact links */}
-              {form.linkedIn && (
-                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                  <p style={S.label}>{t.profile.linkedIn}</p>
-                  <a href={safeUrl(form.linkedIn)} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize:"13px", color:"#1d4896", textDecoration:"none", fontWeight:600 }}>
-                    {form.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "")}
-                  </a>
-                </div>
-              )}
-              {form.facebookURL && (
-                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                  <p style={S.label}>{t.profile?.facebook || "Facebook"}</p>
-                  <a href={safeUrl(form.facebookURL)} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-                    Facebook
-                  </a>
-                </div>
-              )}
-              {form.contactEmail && (
-                <div style={{ ...S.group, marginBottom:"0.75rem" }}>
-                  <p style={S.label}>{t.profile?.contactEmail || "Contact Email"}</p>
-                  <a href={`mailto:${form.contactEmail}`}
-                    style={{ fontSize:13, color:"var(--brand)", textDecoration:"none", display:"flex", alignItems:"center", gap:5 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
-                    {form.contactEmail}
-                  </a>
-                </div>
-              )}
             </div>
 
           </div>

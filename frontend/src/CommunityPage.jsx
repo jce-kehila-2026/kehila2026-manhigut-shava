@@ -1376,7 +1376,7 @@ function BirthdaysCard({ birthdays, onViewProfile, currentUserUid, currentUser, 
 }
 
 /* ── Main CommunityPage ── */
-export default function CommunityPage({ onViewProfile, onMessage, initialPostId, onPostConsumed }) {
+export default function CommunityPage({ onViewProfile, onMessage, initialPostId, onPostConsumed, onNavigateToHelpPost }) {
   const { t } = useLang();
   const { user, profile: authProfile } = useAuth();
   const isMobile = useIsMobile();
@@ -1671,7 +1671,7 @@ export default function CommunityPage({ onViewProfile, onMessage, initialPostId,
             currentUser={user}
             currentUserProfile={profile}
           />
-          <HelpPostsWidget />
+          <HelpPostsWidget onPostClick={onNavigateToHelpPost} />
           <SlideshowBanner />
 
         </aside>

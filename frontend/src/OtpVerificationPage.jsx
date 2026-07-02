@@ -46,7 +46,8 @@ export default function OtpVerificationPage() {
       setSent(true);
       setCountdown(90);
     } catch (e) {
-      setError("שגיאה בשליחת הקוד: " + (e.message || "נסי שוב."));
+      console.error("sendOtp error:", e);
+      setError("לא הצלחנו לשלוח את הקוד לכתובת האימייל שלך. נסי שוב מאוחר יותר, או פני לתמיכה אם הבעיה ממשיכה.");
     }
   }
 
@@ -83,7 +84,17 @@ export default function OtpVerificationPage() {
       await verifyOtpFn({ uid: user.uid, otp });
       await refreshProfile();
     } catch (e) {
-      setError(e.message || "קוד שגוי. נסי שוב.");
+      console.error("verifyOtp error:", e);
+      const msg = e.message || "";
+      if (msg.includes("פג תוקף") || msg.includes("expired") || msg.includes("deadline")) {
+        setError("הקוד פג תוקף. לחצי על 'שלחי שוב' לקבלת קוד חדש.");
+      } else if (msg.includes("ניסיונות") || msg.includes("attempts") || msg.includes("exhausted")) {
+        setError("יותר מדי ניסיונות שגויים. לחצי על 'שלחי שוב' לקוד חדש.");
+      } else if (msg.includes("שגוי") || msg.includes("incorrect") || msg.includes("invalid")) {
+        setError("הקוד שהכנסת שגוי. נסי שוב.");
+      } else {
+        setError("משהו השתבש. נסי שוב או לחצי 'שלחי שוב'.");
+      }
       setDigits(["", "", "", "", "", ""]);
       inputs.current[0]?.focus();
     } finally {
