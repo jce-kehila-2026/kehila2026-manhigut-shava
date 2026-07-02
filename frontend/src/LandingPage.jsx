@@ -1306,6 +1306,7 @@ export default function LandingPage({ onLogin }) {
               display:"block",position:"relative",zIndex:3,
               animation:heroReady?"lp-char 5s 1s ease-in-out infinite":"none",
               transformOrigin:"bottom center",
+              transform: isRTL ? "scaleX(-1)" : "none",
               filter:"drop-shadow(0 8px 32px rgba(68,114,184,0.22))",
             }}
           />
