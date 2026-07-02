@@ -265,7 +265,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [featuredFade, setFeaturedFade] = useState(true);
   const [latestPost, setLatestPost]     = useState(null);
   const { t, lang } = useLang();
-  const isMobile = useIsMobile(1024);
+  const isMobile = useIsMobile(1300);
   const stripRef = useRef(null);
 
   useEffect(() => {
