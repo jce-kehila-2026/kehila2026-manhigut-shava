@@ -266,6 +266,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
   const [latestPost, setLatestPost]     = useState(null);
   const { t, lang } = useLang();
   const isMobile = useIsMobile(1300);
+  const isNarrow = useIsMobile(560);
   const stripRef = useRef(null);
 
   useEffect(() => {
@@ -457,10 +458,10 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
             <SlideshowBanner maxHeight={320} />
           </div>
 
-          {/* Shortcuts — horizontal scrollable row of circles */}
-          <div style={{ display:"flex", gap:"0.75rem", overflowX:"auto", paddingBottom:4 }}>
+          {/* Shortcuts — row of circles; scrollable on narrow, centered on split-screen */}
+          <div style={{ display:"flex", gap:"1rem", overflowX: isNarrow ? "auto" : "visible", justifyContent: isNarrow ? undefined : "center", flexWrap: isNarrow ? "nowrap" : "wrap", paddingBottom:4 }}>
             {quickCircles.map((item, i) => (
-              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={true} imgScale={item.imgScale || 1} onClick={() => onNavigate(item.action)} />
+              <QuickCircle key={item.action} {...item} tutId={`tut-${item.action}`} floatIdx={i} isMobile={isNarrow} imgScale={item.imgScale || 1} onClick={() => onNavigate(item.action)} />
             ))}
           </div>
 
