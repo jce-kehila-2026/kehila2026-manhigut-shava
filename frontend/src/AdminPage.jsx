@@ -3385,13 +3385,27 @@ export default function AdminPage({ onViewProfile }) {
       {/* ══ SUPPORT TAB ══ */}
       {tab === "support" && (
         <div>
-          <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", marginBottom:"1.5rem" }}>{Tr.supportTitle}</h2>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"0.75rem", marginBottom:"1.5rem" }}>
+            <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", margin:0 }}>{Tr.supportTitle}</h2>
+            <div style={{ display:"flex", gap:"0.6rem" }}>
+              <button onClick={() => document.getElementById("admin-help-posts")?.scrollIntoView({ behavior:"smooth", block:"start" })}
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:10, border:"1.5px solid rgba(232,115,90,0.4)", background:"rgba(232,115,90,0.07)", color:"#e8735a", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                {Tr.supportPostsLabel}
+              </button>
+              <button onClick={() => document.getElementById("admin-help-requests")?.scrollIntoView({ behavior:"smooth", block:"start" })}
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:10, border:"1.5px solid rgba(68,114,184,0.4)", background:"rgba(68,114,184,0.07)", color:"#4472b8", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                {Tr.supportReqsLabel}
+              </button>
+            </div>
+          </div>
           {supportLoading ? (
             <div style={{ textAlign:"center", padding:"3rem", color:"var(--text-muted)" }}>...</div>
           ) : (
             <>
               {/* ── Help Posts ── */}
-              <div style={{ display:"flex", alignItems:"center", gap:"1rem", marginBottom:"0.75rem", flexWrap:"wrap" }}>
+              <div id="admin-help-posts" style={{ display:"flex", alignItems:"center", gap:"1rem", marginBottom:"0.75rem", flexWrap:"wrap" }}>
                 <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>
                   {Tr.supportPostsLabel} ({filteredHelpPosts.length}{filteredHelpPosts.length !== helpPosts.length ? ` / ${helpPosts.length}` : ""})
                 </h3>
@@ -3439,7 +3453,7 @@ export default function AdminPage({ onViewProfile }) {
               )}
 
               {/* ── Help Requests ── */}
-              <div style={{ display:"flex", alignItems:"center", gap:"0.75rem", marginBottom:"0.75rem", flexWrap:"wrap" }}>
+              <div id="admin-help-requests" style={{ display:"flex", alignItems:"center", gap:"0.75rem", marginBottom:"0.75rem", flexWrap:"wrap" }}>
                 <h3 style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", margin:0 }}>
                   {Tr.supportReqsLabel} ({filteredHelpRequests.length}{filteredHelpRequests.length !== helpRequests.length ? ` / ${helpRequests.length}` : ""})
                   {helpRequests.filter(r=>!r.status||r.status==="pending").length > 0 && (

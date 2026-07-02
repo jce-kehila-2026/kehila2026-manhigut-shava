@@ -884,8 +884,12 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     const targetId = viewUserId || user?.uid;
     if (!targetId) return;
     setHelpPostsLoading(true);
-    getDocs(query(collection(db, "helpPosts"), where("authorUid", "==", targetId), orderBy("createdAt", "desc")))
-      .then((snap) => setMyHelpPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+    getDocs(query(collection(db, "helpPosts"), where("authorUid", "==", targetId)))
+      .then((snap) => {
+        const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        setMyHelpPosts(posts);
+      })
       .catch(() => {})
       .finally(() => setHelpPostsLoading(false));
   }, [user, viewUserId]);
