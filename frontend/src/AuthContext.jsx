@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
               createdAt:     new Date().toISOString(),
             };
             try {
-              await setDoc(doc(db, "users", firebaseUser.uid), basicProfile);
+              await setDoc(doc(db, "users", firebaseUser.uid), basicProfile, { merge: true });
               setProfile(basicProfile);
             } catch (_) {
               setProfile(null);

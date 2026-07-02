@@ -77,7 +77,7 @@ function GoogleProfileSetup() {
       emailVerified: true,
       acceptedTerms: true,
       createdAt:     new Date().toISOString(),
-    })
+    }, { merge: true })
       .then(() => refreshProfile())
       .catch(() => refreshProfile());
   }, [user]);
