@@ -1351,7 +1351,7 @@ function MemberGrowthChart({ users, Tr }) {
 
   const fromDate = new Date(dateFrom + "T00:00:00");
   const toDate   = new Date(dateTo   + "T23:59:59");
-  const dayCount = Math.max(1, Math.round((toDate - fromDate) / 86400000) + 1);
+  const dayCount = Math.max(1, Math.floor((toDate - fromDate) / 86400000) + 1);
   const days     = Array.from({ length: dayCount }, (_, i) => {
     const d = new Date(fromDate);
     d.setDate(fromDate.getDate() + i);
