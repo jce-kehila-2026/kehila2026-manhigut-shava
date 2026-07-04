@@ -61,10 +61,10 @@ const AT = {
       canManageAdmins:"ניהול מנהלות והרשאות",
       canViewStats:"צפייה בנתונים וסטטיסטיקות (כולל ייצוא)",
     },
-    showDataTab:"נתונים", reportsTab:"דיווחים", supportStatsTitle:"נתוני תמיכה", supportStatsPosts:"פוסטי עזרה", supportStatsReqs:"בקשות עזרה", supportStatsTopAreas:"תחומים מבוקשים", supportStatsNoData:"אין נתוני תמיכה עדיין — בקרי בלשונית התמיכה תחילה.",
+    showDataTab:"נתונים", reportsTab:"דיווחים ורשימה שחורה", supportStatsTitle:"נתוני תמיכה", supportStatsPosts:"פוסטי עזרה", supportStatsReqs:"בקשות עזרה", supportStatsTopAreas:"תחומים מבוקשים", supportStatsNoData:"אין נתוני תמיכה עדיין — בקרי בלשונית התמיכה תחילה.",
     noReports:"אין דיווחים עדיין.", reportFrom:"דווח ע\"י", reportedUser:"משתמשת מדווחת",
     reportReason:"סיבה", reportDate:"תאריך", reportStatus:"סטטוס",
-    markResolved:"סמני כטופל", dismiss:"דחי", reportPending:"ממתין", reportResolved:"טופל",
+    markResolved:"סמני כטופל", dismiss:"דחי", reportPending:"ממתין", reportResolved:"טופל", reopenReport:"פתחי מחדש",
     blacklistTab:"רשימה שחורה", blacklistAdd:"הוספה לרשימה שחורה", blacklistEmail:"כתובת אימייל",
     blacklistReason:"סיבה (רשות)", blacklistAddBtn:"חסמי", blacklistRemove:"הסר/י",
     blacklistEmpty:"הרשימה השחורה ריקה.", blacklistNote:"משתמשות עם כתובות אלו לא יוכלו להירשם או להתחבר.",
@@ -145,7 +145,7 @@ const AT = {
     slideshowTitle:"סרגל תמונות", slideshowCaptionPh:"כיתוב (רשות)",
     slideshowMoveUp:"↑ העלה", slideshowUploading:"מעלה...",
     slideshowUpload:"העלה תמונות", slideshowMultiple:"בחרי מספר",
-    slideshowEmpty:"אין תמונות לסרגל עדיין. העלי תמונה למעלה.",
+    slideshowEmpty:"אין תמונות לסרגל עדיין. העלי תמונה למעלה.", slideshowPreview:"תצוגה מקדימה",
     chartMembers:"חברות", chartTotal:"סה\"כ",
     editUsersSectionTitle:"עריכת משתמשות", noUsersMatch:"לא נמצאו משתמשות.", colAdmin:"מנהלת", colName:"שם",
     pendingBadge:(n)=>`(${n} ממתינות)`,
@@ -194,10 +194,10 @@ const AT = {
       canManageAdmins:"Manage Admins & Permissions",
       canViewStats:"View Statistics & Data (incl. export)",
     },
-    showDataTab:"Data", reportsTab:"Reports", supportStatsTitle:"Support Stats", supportStatsPosts:"Help Posts", supportStatsReqs:"Help Requests", supportStatsTopAreas:"Top Requested Areas", supportStatsNoData:"No support data yet — visit the Support tab first.",
+    showDataTab:"Data", reportsTab:"Reports & Blacklist", supportStatsTitle:"Support Stats", supportStatsPosts:"Help Posts", supportStatsReqs:"Help Requests", supportStatsTopAreas:"Top Requested Areas", supportStatsNoData:"No support data yet — visit the Support tab first.",
     noReports:"No reports yet.", reportFrom:"Reported by", reportedUser:"Reported user",
     reportReason:"Reason", reportDate:"Date", reportStatus:"Status",
-    markResolved:"Mark Resolved", dismiss:"Dismiss", reportPending:"Pending", reportResolved:"Resolved",
+    markResolved:"Mark Resolved", dismiss:"Dismiss", reportPending:"Pending", reportResolved:"Resolved", reopenReport:"Reopen",
     blacklistTab:"Blacklist", blacklistAdd:"Add to Blacklist", blacklistEmail:"Email address",
     blacklistReason:"Reason (optional)", blacklistAddBtn:"Block", blacklistRemove:"Remove",
     blacklistEmpty:"Blacklist is empty.", blacklistNote:"Users with these addresses cannot register or sign in.",
@@ -278,7 +278,7 @@ const AT = {
     slideshowTitle:"Slideshow", slideshowCaptionPh:"Caption (optional)",
     slideshowMoveUp:"↑ Move up", slideshowUploading:"Uploading...",
     slideshowUpload:"Upload images", slideshowMultiple:"Select multiple",
-    slideshowEmpty:"No slideshow images yet. Upload one above.",
+    slideshowEmpty:"No slideshow images yet. Upload one above.", slideshowPreview:"Preview",
     chartMembers:"members", chartTotal:"total",
     editUsersSectionTitle:"Edit Users", noUsersMatch:"No users match your search.", colAdmin:"Admin", colName:"Name",
     pendingBadge:(n)=>`(${n} pending)`,
@@ -322,10 +322,10 @@ const AT = {
       canManageAdmins:"إدارة المشرفات والصلاحيات",
       canViewStats:"عرض الإحصاءات والبيانات (شامل التصدير)",
     },
-    showDataTab:"البيانات", reportsTab:"البلاغات", supportStatsTitle:"إحصائيات الدعم", supportStatsPosts:"منشورات المساعدة", supportStatsReqs:"طلبات المساعدة", supportStatsTopAreas:"أكثر المجالات طلبًا", supportStatsNoData:"لا توجد بيانات دعم بعد — قومي بزيارة تبويب الدعم أولاً.",
+    showDataTab:"البيانات", reportsTab:"البلاغات والقائمة السوداء", supportStatsTitle:"إحصائيات الدعم", supportStatsPosts:"منشورات المساعدة", supportStatsReqs:"طلبات المساعدة", supportStatsTopAreas:"أكثر المجالات طلبًا", supportStatsNoData:"لا توجد بيانات دعم بعد — قومي بزيارة تبويب الدعم أولاً.",
     noReports:"لا توجد بلاغات بعد.", reportFrom:"مُبلَّغ من قِبَل", reportedUser:"المستخدمة المُبلَّغ عنها",
     reportReason:"السبب", reportDate:"التاريخ", reportStatus:"الحالة",
-    markResolved:"تحديد كمعالَج", dismiss:"رفض", reportPending:"قيد الانتظار", reportResolved:"تمت المعالجة",
+    markResolved:"تحديد كمعالَج", dismiss:"رفض", reportPending:"قيد الانتظار", reportResolved:"تمت المعالجة", reopenReport:"إعادة فتح",
     blacklistTab:"القائمة السوداء", blacklistAdd:"إضافة إلى القائمة السوداء", blacklistEmail:"البريد الإلكتروني",
     blacklistReason:"السبب (اختياري)", blacklistAddBtn:"حظر", blacklistRemove:"إزالة",
     blacklistEmpty:"القائمة السوداء فارغة.", blacklistNote:"لن تتمكن المستخدمات بهذه العناوين من التسجيل أو تسجيل الدخول.",
@@ -411,7 +411,7 @@ const AT = {
     slideshowTitle:"عرض الشرائح", slideshowCaptionPh:"التسمية (اختياري)",
     slideshowMoveUp:"↑ نقل للأعلى", slideshowUploading:"جارٍ الرفع...",
     slideshowUpload:"رفع صور", slideshowMultiple:"اختر متعددة",
-    slideshowEmpty:"لا توجد صور للعرض بعد. ارفعي صورة أعلاه.",
+    slideshowEmpty:"لا توجد صور للعرض بعد. ارفعي صورة أعلاه.", slideshowPreview:"معاينة",
     chartMembers:"أعضاء", chartTotal:"إجمالي",
     editUsersSectionTitle:"تعديل المستخدمات", noUsersMatch:"لا توجد مستخدمات تطابق البحث.", colAdmin:"مشرفة", colName:"الاسم",
     pendingBadge:(n)=>`(${n} قيد الانتظار)`,
@@ -1087,63 +1087,70 @@ function SlideshowAdmin({ Tr }) {
   };
 
   return (
-    <div style={{ width: "100%" }}>
-      {images.length > 0 && (
-        <div style={{ marginBottom: "1.5rem" }}>
-          <SlideshowBanner />
-        </div>
-      )}
-
-      {images.length > 0 && (
-        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: "0.75rem" }}>
-          {Tr?.slideshowDragHint || "Drag photos to reorder"}
-        </p>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "row", overflowX: "auto", gap: "1rem", marginBottom: "1rem", paddingBottom: "0.5rem" }}>
-        {images.map((img, i) => (
-          <div
-            key={img.url}
-            draggable
-            onDragStart={() => handleDragStart(i)}
-            onDragOver={(e) => handleDragOver(e, i)}
-            onDrop={(e) => handleDrop(e, i)}
-            onDragEnd={handleDragEnd}
-            style={{
-              position: "relative", flexShrink: 0, width: 160, borderRadius: 12, overflow: "hidden",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.1)", background: "var(--bg-secondary)",
-              cursor: "grab",
-              opacity: dragOverIdx === i && dragIndexRef.current !== i ? 0.45 : 1,
-              outline: dragOverIdx === i && dragIndexRef.current !== i ? "2px dashed var(--primary, #6c63ff)" : "none",
-              transition: "opacity 0.15s, outline 0.15s",
-            }}
-          >
-            {/* order badge */}
-            <div style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,0,0,0.65)", color: "#fff", borderRadius: 20, minWidth: 22, height: 22, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", lineHeight: 1, pointerEvents: "none" }}>{i + 1}</div>
-            <img src={img.url} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block", pointerEvents: "none" }} />
-            <div style={{ padding: "0.5rem" }}>
-              <input
-                value={localCaptions[i] ?? img.caption ?? ""}
-                onChange={e => setLocalCaptions(prev => ({ ...prev, [i]: e.target.value }))}
-                onBlur={() => { const cap = localCaptions[i] ?? img.caption ?? ""; if (cap !== img.caption) updateCaption(i, cap); }}
-                placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
-                style={{ width: "100%", fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", cursor: "text" }}
-                onMouseDown={e => e.stopPropagation()}
-              />
+    <div style={{ width: "100%", display: "flex", gap: "1.5rem", alignItems: "flex-start", flexWrap: "wrap" }}>
+      {/* LEFT: edit controls */}
+      <div style={{ flex: "1 1 320px", minWidth: 280 }}>
+        {images.length > 0 && (
+          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: "0.6rem", marginTop: 0 }}>
+            {Tr?.slideshowDragHint || "Drag photos to reorder"}
+          </p>
+        )}
+        <div style={{ display: "flex", flexDirection: "row", overflowX: "auto", gap: "0.75rem", paddingBottom: "0.5rem" }}>
+          {images.map((img, i) => (
+            <div
+              key={img.url}
+              draggable
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDrop={(e) => handleDrop(e, i)}
+              onDragEnd={handleDragEnd}
+              style={{
+                position: "relative", flexShrink: 0, width: 140, borderRadius: 10, overflow: "hidden",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.10)", background: "var(--bg-secondary)",
+                cursor: "grab",
+                opacity: dragOverIdx === i && dragIndexRef.current !== i ? 0.45 : 1,
+                outline: dragOverIdx === i && dragIndexRef.current !== i ? "2px dashed var(--primary, #6c63ff)" : "none",
+                transition: "opacity 0.15s, outline 0.15s",
+              }}
+            >
+              <div style={{ position: "absolute", top: 5, left: 5, background: "rgba(0,0,0,0.65)", color: "#fff", borderRadius: 20, minWidth: 20, height: 20, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px", lineHeight: 1, pointerEvents: "none" }}>{i + 1}</div>
+              <img src={img.url} alt="" style={{ width: "100%", height: 90, objectFit: "cover", display: "block", pointerEvents: "none" }} />
+              <div style={{ padding: "0.4rem" }}>
+                <input
+                  value={localCaptions[i] ?? img.caption ?? ""}
+                  onChange={e => setLocalCaptions(prev => ({ ...prev, [i]: e.target.value }))}
+                  onBlur={() => { const cap = localCaptions[i] ?? img.caption ?? ""; if (cap !== img.caption) updateCaption(i, cap); }}
+                  placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
+                  style={{ width: "100%", fontSize: 11, padding: "3px 7px", borderRadius: 5, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", cursor: "text" }}
+                  onMouseDown={e => e.stopPropagation()}
+                />
+              </div>
+              <button onClick={() => remove(i)} style={{ position: "absolute", top: 5, right: 5, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
             </div>
-            <button onClick={() => remove(i)} style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%", width: 26, height: 26, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
-          </div>
-        ))}
+          ))}
 
-        <label style={{ flexShrink: 0, width: 160, height: 150, borderRadius: 12, border: "2px dashed var(--border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: uploading ? "wait" : "pointer", color: "var(--text-muted)", fontSize: 13, gap: 6, background: "var(--bg-secondary)" }}>
-          <span style={{ fontSize: 28 }}>+</span>
-          <span>{uploading ? (Tr?.slideshowUploading || "Uploading...") : (Tr?.slideshowUpload || "Upload images")}</span>
-          <span style={{ fontSize: 10, color: "var(--text-muted)", marginTop: -4 }}>{Tr?.slideshowMultiple || "Select multiple"}</span>
-          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleUpload} disabled={uploading} />
-        </label>
+          <label style={{ flexShrink: 0, width: 140, height: 130, borderRadius: 10, border: "2px dashed var(--border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: uploading ? "wait" : "pointer", color: "var(--text-muted)", fontSize: 12, gap: 5, background: "var(--bg-secondary)" }}>
+            <span style={{ fontSize: 24 }}>+</span>
+            <span>{uploading ? (Tr?.slideshowUploading || "Uploading...") : (Tr?.slideshowUpload || "Upload images")}</span>
+            <span style={{ fontSize: 10, color: "var(--text-muted)", marginTop: -3 }}>{Tr?.slideshowMultiple || "Select multiple"}</span>
+            <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleUpload} disabled={uploading} />
+          </label>
+        </div>
+        {images.length === 0 && !uploading && (
+          <p style={{ fontSize: 13, color: "var(--text-muted)", padding: "1rem 0" }}>{Tr?.slideshowEmpty || "No slideshow images yet. Upload one above."}</p>
+        )}
       </div>
-      {images.length === 0 && !uploading && (
-        <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "1rem 0" }}>{Tr?.slideshowEmpty || "No slideshow images yet. Upload one above."}</p>
+
+      {/* RIGHT: live preview */}
+      {images.length > 0 && (
+        <div style={{ flex: "0 0 340px", minWidth: 260 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.5rem", marginTop: 0 }}>
+            {Tr?.slideshowPreview || "Preview"}
+          </p>
+          <div style={{ borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.10)" }}>
+            <SlideshowBanner />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1668,7 +1675,7 @@ export default function AdminPage({ onViewProfile }) {
 
   useEffect(() => {
     if (tab === "logs"     && logs.length === 0)     fetchLogs();
-    if (tab === "reports"  && reports.length === 0)  fetchReports();
+    if (tab === "reports") fetchReports();
     if (tab === "reports"  && blacklist.length === 0) fetchBlacklist();
     if ((tab === "support" || tab === "overview" || tab === "data") && helpPosts.length === 0) fetchSupport();
   }, [tab]);
@@ -1959,7 +1966,7 @@ export default function AdminPage({ onViewProfile }) {
       const matchAdmin   = !userFilterAdmin   || !!u.isAdmin;
       const matchOnline  = !userFilterOnline  || isActuallyOnline(u);
       const matchPending = !userFilterPending || !u.emailVerified;
-      return matchSearch && matchAdmin && matchOnline && matchPending;
+      return matchSearch && matchAdmin && matchOnline && matchPending && !u.blacklisted;
     })
     .sort((a, b) => {
       if (userSortBy === "alpha")  return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
@@ -3142,8 +3149,6 @@ export default function AdminPage({ onViewProfile }) {
                 </button>
               ))}
             </div>
-            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchReports}>{reportsLoading ? "…" : `↻ ${Tr.refresh}`}</button>
-
           </div>
           {(() => {
             const filteredReports = reports.filter(r => {
@@ -3206,7 +3211,7 @@ export default function AdminPage({ onViewProfile }) {
                         </div>
                       )}
                       <div style={{ display:"flex",gap:6,flexWrap:"wrap",padding:"0.55rem 1rem",background:"var(--bg-secondary,#f0f6fb)" }}>
-                        {r.status === "pending" && (<>
+                        {r.status === "pending" ? (<>
                           <button onClick={() => updateReportStatus(r.id, "resolved")}
                             style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #a3d9a5",background:"#f0fdf4",color:"#166534",cursor:"pointer" }}>
                             {Tr.markResolved}
@@ -3215,7 +3220,12 @@ export default function AdminPage({ onViewProfile }) {
                             style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #d1d5db",background:"#f9fafb",color:"#6b7280",cursor:"pointer" }}>
                             {Tr.dismiss}
                           </button>
-                        </>)}
+                        </>) : (
+                          <button onClick={() => updateReportStatus(r.id, "pending")}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer" }}>
+                            {Tr.reopenReport||"Reopen"}
+                          </button>
+                        )}
                         <button onClick={async()=>{ if(window.confirm(lang==="he"?"למחוק דיווח זה?":lang==="ar"?"حذف هذا البلاغ؟":"Delete this report?")){ await deleteDoc(doc(db,"reports",r.id)); setReports(prev=>prev.filter(x=>x.id!==r.id)); }}}
                           style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid rgba(232,115,90,0.4)",background:"rgba(232,115,90,0.06)",color:"#e8735a",cursor:"pointer" }}>
                           {Tr.deleteLbl}
@@ -3270,7 +3280,7 @@ export default function AdminPage({ onViewProfile }) {
                         </td>
                         <td style={S.td} onClick={e => e.stopPropagation()}>
                           <div className="admin-table-actions" style={{ display:"flex", gap:4 }}>
-                            {r.status === "pending" && (<>
+                            {r.status === "pending" ? (<>
                               <button onClick={() => updateReportStatus(r.id, "resolved")}
                                 style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #a3d9a5", background:"#f0fdf4", color:"#166534", cursor:"pointer", whiteSpace:"nowrap" }}>
                                 {Tr.markResolved}
@@ -3279,7 +3289,12 @@ export default function AdminPage({ onViewProfile }) {
                                 style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #d1d5db", background:"#f9fafb", color:"#6b7280", cursor:"pointer" }}>
                                 {Tr.dismiss}
                               </button>
-                            </>)}
+                            </>) : (
+                              <button onClick={() => updateReportStatus(r.id, "pending")}
+                                style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #93c5fd", background:"#eff6ff", color:"#1d4896", cursor:"pointer", whiteSpace:"nowrap" }}>
+                                {Tr.reopenReport||"Reopen"}
+                              </button>
+                            )}
                             <button onClick={async()=>{ if(window.confirm(lang==="he"?"למחוק דיווח זה?":lang==="ar"?"حذف هذا البلاغ؟":"Delete this report?")){ await deleteDoc(doc(db,"reports",r.id)); setReports(prev=>prev.filter(x=>x.id!==r.id)); }}}
                               style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid rgba(232,115,90,0.4)", background:"rgba(232,115,90,0.06)", color:"#e8735a", cursor:"pointer" }}>
                               {Tr.deleteLbl}
@@ -3512,7 +3527,7 @@ export default function AdminPage({ onViewProfile }) {
                   ) : filteredBlacklist.length === 0 ? (
                     <div className="empty-state"><p>{blacklist.length===0 ? Tr.blacklistEmpty : Tr.noReportsFiltered}</p></div>
                   ) : (
-                    <div className="card" style={{ overflowX:"auto" }}>
+                    <div className="card" style={{ overflowX:"auto", maxHeight:520, overflowY:"auto" }}>
                       <table style={{ ...S.table, minWidth:400 }}>
                         <thead>
                           <tr>
