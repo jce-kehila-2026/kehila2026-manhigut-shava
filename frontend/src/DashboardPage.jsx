@@ -924,7 +924,9 @@ export default function DashboardPage() {
       updateDoc(doc(db, "notifications", n.id), { read: true }).catch(() => {});
     }
     setShowNotifs(false);
-    if (n.type === "new_message") {
+    if (n.type === "new_report") {
+      switchTab("admin");
+    } else if (n.type === "new_message") {
       navigate("chat", { userId: n.fromUserId });
     } else if (n.type === "help_request") {
       switchTab("members");
@@ -1391,7 +1393,9 @@ export default function DashboardPage() {
                       </p>
                     ) : (
                       notifications.slice(0, 30).map((n) => {
-                        const typeIcon = n.type === "new_message"
+                        const typeIcon = n.type === "new_report"
+                          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c25c5c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                          : n.type === "new_message"
                           ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#4472b8" }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                           : n.type === "help_request"
                           ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#e07b39" }}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -1401,7 +1405,9 @@ export default function DashboardPage() {
                           ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#4ca87b" }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                           : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ color: "#4472b8" }}><ellipse cx="12" cy="9" rx="7" ry="8.5" fill="currentColor"/><path d="M10.5 17.5Q12 19.5 13.5 17.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M12 19.5Q13 21 12 22.5" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round"/><ellipse cx="9.5" cy="6.5" rx="1.5" ry="2" fill="rgba(255,255,255,0.4)"/></svg>;
 
-                        const bodyText = n.type === "birthday_wish"
+                        const bodyText = n.type === "new_report"
+                          ? (t.community?.notifNewReport ? t.community.notifNewReport(n.fromUserName, n.reportedName) : `🚨 ${n.fromUserName} reported ${n.reportedName}${n.reason ? `: ${n.reason}` : ""}`)
+                          : n.type === "birthday_wish"
                           ? (t.community?.birthdayWishNotif ? t.community.birthdayWishNotif(n.fromUserName) : `${n.fromUserName} sent you a birthday balloon!`)
                           : n.type === "new_message"
                           ? (t.community?.notifNewMessage ? t.community.notifNewMessage(n.fromUserName, n.message) : `${n.fromUserName}: ${n.message || "sent you a message"}`)

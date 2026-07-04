@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { collection, getDocs, doc, updateDoc, addDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, addDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { useLang } from "./LanguageContext";
@@ -776,7 +776,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
           text: m.text || (m.imageUrl ? "[image]" : ""),
           sentAt: m.createdAt || m.timestamp || null,
         }));
-      await addDoc(collection(db, "reports"), {
+      const reportRef = await addDoc(collection(db, "reports"), {
         reporterId: user.uid,
         reporterName: myName,
         reportedId: otherId,
@@ -787,6 +787,26 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
         createdAt: new Date().toISOString(),
         status: "pending",
       });
+      /* Notify all admins about the new report */
+      try {
+        const adminSnap = await getDocs(query(collection(db, "users"), where("isAdmin", "==", true)));
+        const now = new Date().toISOString();
+        await Promise.all(adminSnap.docs
+          .filter(d => d.id !== user.uid)
+          .map(d => addDoc(collection(db, "notifications"), {
+            toUserId: d.id,
+            fromUserId: user.uid,
+            fromUserName: myName,
+            fromUserAvatar: profile?.photoURL || profile?.avatarUrl || "",
+            type: "new_report",
+            reportedName: otherName,
+            reportId: reportRef.id,
+            reason: reportReason.trim(),
+            createdAt: now,
+            read: false,
+          }))
+        );
+      } catch (_) {}
       setReportSent(true);
       setTimeout(() => {
         setReportModal(false);
