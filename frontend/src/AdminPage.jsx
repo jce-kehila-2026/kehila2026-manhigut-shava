@@ -73,6 +73,7 @@ const AT = {
     noRecommended:"אין משתמשות מדווחות עדיין", currentBlocked:"חסומות כרגע",
     filterByEmail:"סנני לפי אימייל...", reportSubReports:"דיווחים", reportSubBlacklist:"רשימה שחורה",
     recommendedAll:"כל המדווחות", recommended2plus:"2+ דיווחים", recommendedNotBlocked:"לא חסומות",
+    sortHighest:"הכי הרבה קודם", sortLowest:"הכי פחות קודם",
     topSectors:"אתניות / קהילה", topReligions:"זהות דתית ולאומית", topRegions:"אזורי מגורים",
     region:"אזור", campus:"קמפוס", degree:"תואר", birthdate:"תאריך לידה",
     identity:"השתייכות לאומית-דתית", ethnicity:"קהילה/אתניות",
@@ -205,6 +206,7 @@ const AT = {
     noRecommended:"No reported users yet", currentBlocked:"Currently Blocked",
     filterByEmail:"Filter by email…", reportSubReports:"Reports", reportSubBlacklist:"Blacklist",
     recommendedAll:"All reported", recommended2plus:"2+ reports", recommendedNotBlocked:"Not blocked",
+    sortHighest:"Most reports first", sortLowest:"Fewest reports first",
     topSectors:"Ethnicity / Community", topReligions:"National & Religious Identity", topRegions:"Regions",
     region:"Region", campus:"Campus", degree:"Degree", birthdate:"Date of Birth",
     identity:"National-Religious Identity", ethnicity:"Community/Ethnicity",
@@ -332,6 +334,7 @@ const AT = {
     noRecommended:"لا توجد مستخدمات مُبلَّغ عنهن بعد", currentBlocked:"المحظورات حالياً",
     filterByEmail:"تصفية بالبريد الإلكتروني...", reportSubReports:"البلاغات", reportSubBlacklist:"القائمة السوداء",
     recommendedAll:"جميع المُبلَّغ عنهن", recommended2plus:"بلاغان فأكثر", recommendedNotBlocked:"غير محظورات",
+    sortHighest:"الأكثر بلاغات أولاً", sortLowest:"الأقل بلاغات أولاً",
     topSectors:"الانتماء / المجتمع", topReligions:"الهوية الوطنية والدينية", topRegions:"مناطق السكن",
     region:"المنطقة", campus:"الحرم الجامعي", degree:"الدرجة العلمية", birthdate:"تاريخ الميلاد",
     identity:"الهوية الوطنية-الدينية", ethnicity:"المجتمع/الانتماء",
@@ -1590,6 +1593,7 @@ export default function AdminPage({ onViewProfile }) {
   const [blSearch,            setBlSearch]            = useState(""); // live search for add-form
   const [blCurrentSearch,     setBlCurrentSearch]     = useState(""); // filter current blacklist
   const [blRecommendedFilter, setBlRecommendedFilter] = useState("all"); // "all"|"2plus"|"notblocked"
+  const [blRecommendedSort,   setBlRecommendedSort]   = useState("desc"); // "desc"|"asc"
 
   /* ── Permission / confirm modals ── */
   const [deleteError, setDeleteError] = useState("");
@@ -3349,7 +3353,7 @@ export default function AdminPage({ onViewProfile }) {
             const recommended = users
               .filter(u => reportCountMap[u.id] > 0)
               .map(u => ({ ...u, reportCount: reportCountMap[u.id] }))
-              .sort((a,b) => b.reportCount - a.reportCount)
+              .sort((a,b) => blRecommendedSort==="asc" ? a.reportCount-b.reportCount : b.reportCount-a.reportCount)
               .filter(u => blRecommendedFilter==="2plus" ? u.reportCount>=2 : blRecommendedFilter==="notblocked" ? !u.blacklisted : true);
             const filteredBlacklist = blCurrentSearch.trim()
               ? blacklist.filter(b => (b.email||"").toLowerCase().includes(blCurrentSearch.trim().toLowerCase()))
@@ -3443,22 +3447,24 @@ export default function AdminPage({ onViewProfile }) {
 
                 {/* Recommended section */}
                 <div style={{ marginBottom:"1.5rem" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:"0.75rem", flexWrap:"wrap" }}>
+                  <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:8, marginBottom:"0.75rem" }}>
                     <span style={{ fontSize:13, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>{Tr.recommendedTitle}</span>
-                    <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                      {[
-                        { val:"all",        label: Tr.recommendedAll },
-                        { val:"2plus",      label: Tr.recommended2plus },
-                        { val:"notblocked", label: Tr.recommendedNotBlocked },
-                      ].map(f => (
-                        <button key={f.val} onClick={() => setBlRecommendedFilter(f.val)}
-                          style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:99, border:"none", cursor:"pointer",
-                            background: blRecommendedFilter===f.val ? "rgba(233,65,91,0.18)" : "var(--bg-secondary,#f0f6fb)",
-                            color: blRecommendedFilter===f.val ? "#c2410c" : "var(--text-secondary,#64748b)" }}>
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
+                    {[
+                      { val:"all",        label: Tr.recommendedAll },
+                      { val:"2plus",      label: Tr.recommended2plus },
+                      { val:"notblocked", label: Tr.recommendedNotBlocked },
+                    ].map(f => (
+                      <button key={f.val} onClick={() => setBlRecommendedFilter(f.val)}
+                        style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:99, border:"none", cursor:"pointer",
+                          background: blRecommendedFilter===f.val ? "rgba(233,65,91,0.18)" : "var(--bg-secondary,#f0f6fb)",
+                          color: blRecommendedFilter===f.val ? "#c2410c" : "var(--text-secondary,#64748b)" }}>
+                        {f.label}
+                      </button>
+                    ))}
+                    <button onClick={() => setBlRecommendedSort(s => s==="desc"?"asc":"desc")}
+                      style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:99, border:"1px solid var(--border,#daeaf8)", background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-secondary,#64748b)", cursor:"pointer" }}>
+                      {blRecommendedSort==="desc" ? `↓ ${Tr.sortHighest||"Most first"}` : `↑ ${Tr.sortLowest||"Fewest first"}`}
+                    </button>
                   </div>
                   {recommended.length === 0 ? (
                     <div className="empty-state"><p>{Tr.noRecommended}</p></div>
@@ -3680,20 +3686,19 @@ export default function AdminPage({ onViewProfile }) {
       {/* ══ SUPPORT TAB ══ */}
       {tab === "support" && (
         <div>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"0.75rem", marginBottom:"1.5rem" }}>
-            <h2 style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)", margin:0 }}>{Tr.supportTitle}</h2>
-            <div style={{ display:"flex", gap:"0.6rem" }}>
-              <button onClick={() => document.getElementById("admin-help-posts")?.scrollIntoView({ behavior:"smooth", block:"start" })}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:10, border:"1.5px solid rgba(232,115,90,0.4)", background:"rgba(232,115,90,0.07)", color:"#e8735a", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                {Tr.supportPostsLabel}
-              </button>
-              <button onClick={() => document.getElementById("admin-help-requests")?.scrollIntoView({ behavior:"smooth", block:"start" })}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:10, border:"1.5px solid rgba(68,114,184,0.4)", background:"rgba(68,114,184,0.07)", color:"#4472b8", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                {Tr.supportReqsLabel}
-              </button>
-            </div>
+          <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1.5rem" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>{Tr.supportTitle}</span>
+            <button onClick={() => document.getElementById("admin-help-posts")?.scrollIntoView({ behavior:"smooth", block:"start" })}
+              style={{ fontSize:11, fontWeight:600, padding:"4px 12px", borderRadius:99, border:"none", cursor:"pointer", background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-secondary,#64748b)", display:"flex", alignItems:"center", gap:5 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              {Tr.supportPostsLabel}
+            </button>
+            <button onClick={() => document.getElementById("admin-help-requests")?.scrollIntoView({ behavior:"smooth", block:"start" })}
+              style={{ fontSize:11, fontWeight:600, padding:"4px 12px", borderRadius:99, border:"none", cursor:"pointer", background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-secondary,#64748b)", display:"flex", alignItems:"center", gap:5 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              {Tr.supportReqsLabel}
+            </button>
+            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchSupport}>{supportLoading ? "…" : `↻ ${Tr.refresh}`}</button>
           </div>
           {supportLoading ? (
             <div style={{ textAlign:"center", padding:"3rem", color:"var(--text-muted)" }}>...</div>

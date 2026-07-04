@@ -72,13 +72,8 @@ export function SlideshowBanner({ maxHeight = 220 }) {
 
         {images.length > 1 && (
           <>
-            {/* In RTL: left button = next (forward = leftward), shows › pointing into sequence */}
-            <button onClick={() => go(isRTL ? 1 : -1)} style={{ ...btnStyle, left: 10 }}>
-              {isRTL ? "›" : "‹"}
-            </button>
-            <button onClick={() => go(isRTL ? -1 : 1)} style={{ ...btnStyle, right: 10 }}>
-              {isRTL ? "‹" : "›"}
-            </button>
+            <button onClick={() => go(isRTL ? 1 : -1)} style={{ ...btnStyle, left: 10 }}>‹</button>
+            <button onClick={() => go(isRTL ? -1 : 1)} style={{ ...btnStyle, right: 10 }}>›</button>
             <div style={{
               position: "absolute", bottom: 10, left: 0, right: 0,
               display: "flex", justifyContent: "center", gap: 6,

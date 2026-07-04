@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { onAuthStateChanged, signOut, getRedirectResult } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 const AuthContext = createContext(null);
@@ -27,13 +27,27 @@ export function AuthProvider({ children }) {
         if (snap.exists()) {
           let profileData = snap.data();
 
-          /* Kick out blacklisted users immediately */
+          /* Kick out blacklisted users immediately — check both the user doc flag
+             and the blacklist collection (catches Google sign-in which bypasses AuthPage check) */
           if (profileData.blacklisted) {
             setIsBlacklisted(true);
             setBlacklistReason(profileData.blacklistReason || "");
             await signOut(auth);
             if (initialLoad) { setLoading(false); initialLoad = false; }
             return;
+          }
+          const checkEmail = (profileData.email || firebaseUser.email || "").toLowerCase();
+          if (checkEmail) {
+            const blSnap = await getDocs(query(collection(db, "blacklist"), where("email", "==", checkEmail)));
+            if (!blSnap.empty) {
+              const blReason = blSnap.docs[0].data().reason || "";
+              try { await updateDoc(doc(db, "users", firebaseUser.uid), { blacklisted: true, blacklistReason: blReason }); } catch(_) {}
+              setIsBlacklisted(true);
+              setBlacklistReason(blReason);
+              await signOut(auth);
+              if (initialLoad) { setLoading(false); initialLoad = false; }
+              return;
+            }
           }
 
           /* Auto-fix: Google / Phone users should always be treated as email-verified.
