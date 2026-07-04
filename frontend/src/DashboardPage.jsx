@@ -279,7 +279,8 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
     if (!user) return;
     getDocs(query(collection(db, "users"), limit(200))).then(snap => {
       const all = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }));
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(d => !d.blacklisted);
       all.sort((a, b) => {
         if (a.id === user.uid) return -1;
         if (b.id === user.uid) return 1;
@@ -509,7 +510,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
               </div>
 
               {/* Infinite gallery strip — swipeable on mobile */}
-              <div style={{ borderRadius:10, overflow:"hidden", boxShadow:"0 4px 16px rgba(68,114,184,0.09)" }}>
+              <div dir="ltr" style={{ borderRadius:10, overflow:"hidden", boxShadow:"0 4px 16px rgba(68,114,184,0.09)" }}>
               <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll"
                 style={{ display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x" }}>
                 {[...members, ...members, ...members].map((m, i) => {
@@ -518,7 +519,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                   const active = (i % members.length) === featuredIdx;
                   return (
                     <div key={i} className="gallery-photo"
-                      style={{ width:80, height:110, outline: active ? "3px solid #4472b8" : "none", outlineOffset: active ? -3 : 0 }}
+                      style={{ width:90, height:125, outline: active ? "3px solid #4472b8" : "none", outlineOffset: active ? -3 : 0 }}
                       onClick={() => {
                         const realIdx = i % members.length;
                         setFeaturedFade(false);
@@ -527,7 +528,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                       {av
                         ? <img src={av} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} alt="" />
                         : <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg,${i%2===0?"#4472b8,#6da3d4":"#6da3d4,#4472b8"})`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <span style={{ color:"#fff", fontSize:24, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>
+                            <span style={{ color:"#fff", fontSize:26, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>
                           </div>}
                       <div className="name-overlay">{name.split(" ")[0]}</div>
                     </div>
@@ -654,7 +655,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                 <div style={{ display:"flex", alignItems:"stretch", gap:6 }}>
                   <button onClick={() => scrollStrip(-1)} style={{
                     display:"flex", alignItems:"center", justifyContent:"center",
-                    width:20, height:120, borderRadius:7, flexShrink:0,
+                    width:22, height:135, borderRadius:7, flexShrink:0,
                     border:"1.5px solid rgba(68,114,184,0.2)", background:"var(--bg-primary)",
                     color:"#4472b8", cursor:"pointer", padding:0,
                     transition:"all 0.22s",
@@ -663,7 +664,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                   onMouseLeave={e => { e.currentTarget.style.background="var(--bg-primary)"; e.currentTarget.style.color="#4472b8"; e.currentTarget.style.borderColor="rgba(68,114,184,0.2)"; }}>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                   </button>
-                  <div style={{ flex:1, borderRadius:10, overflow:"hidden", boxShadow:"0 4px 20px rgba(68,114,184,0.10)" }}>
+                  <div dir="ltr" style={{ flex:1, borderRadius:10, overflow:"hidden", boxShadow:"0 4px 20px rgba(68,114,184,0.10)" }}>
                   <div ref={stripRef} onScroll={handleStripScroll} className="gallery-scroll" style={{
                     display:"flex", gap:3, overflowX:"auto", touchAction:"pan-x",
                   }}>
@@ -676,7 +677,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                           key={i}
                           className="gallery-photo"
                           style={{
-                            width: 90, height: 120,
+                            width: 100, height: 135,
                             outline: active ? "3px solid #4472b8" : "none",
                             outlineOffset: active ? -3 : 0,
                           }}
@@ -689,7 +690,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                           {av
                             ? <img src={av} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} alt="" />
                             : <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg,${i%2===0?"#4472b8,#6da3d4":"#6da3d4,#4472b8"})`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                <span style={{ color:"#fff", fontSize:28, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>
+                                <span style={{ color:"#fff", fontSize:30, fontWeight:900, fontFamily:"'Outfit',sans-serif" }}>{name[0]?.toUpperCase()}</span>
                               </div>}
                           <div className="name-overlay">{name.split(" ")[0]}</div>
                         </div>
@@ -699,7 +700,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
                   </div>
                   <button onClick={() => scrollStrip(1)} style={{
                     display:"flex", alignItems:"center", justifyContent:"center",
-                    width:20, height:120, borderRadius:7, flexShrink:0,
+                    width:22, height:135, borderRadius:7, flexShrink:0,
                     border:"1.5px solid rgba(68,114,184,0.2)", background:"var(--bg-primary)",
                     color:"#4472b8", cursor:"pointer", padding:0,
                     transition:"all 0.22s",

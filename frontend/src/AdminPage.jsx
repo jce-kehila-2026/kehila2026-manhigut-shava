@@ -2087,7 +2087,7 @@ export default function AdminPage({ onViewProfile }) {
   /* ── TABS config — filtered by permissions ── */
   const TABS = [
     { id: "overview",  label: Tr.tabs.overview, show: true },
-    { id: "users",     label: `${Tr.tabs.users} (${users.length})`, show: canManageUsers || canManageAdmins },
+    { id: "users",     label: `${Tr.tabs.users} (${users.filter(u => !u.blacklisted).length})`, show: canManageUsers || canManageAdmins },
     { id: "posts",     label: `${Tr.tabs.posts} (${posts.length})`, show: canManageContent },
     { id: "support",   label: Tr.tabs.support, show: canManageContent },
     { id: "data",      label: Tr.showDataTab, show: canViewStats },
@@ -3115,7 +3115,7 @@ export default function AdminPage({ onViewProfile }) {
                 {st.label}
               </button>
             ))}
-            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={reportSubTab==="reports" ? fetchReports : fetchBlacklist}>
+            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={() => { fetchReports(); fetchBlacklist(); }}>
               {(reportsLoading||blacklistLoading) ? "…" : `↻ ${Tr.refresh}`}
             </button>
           </div>
