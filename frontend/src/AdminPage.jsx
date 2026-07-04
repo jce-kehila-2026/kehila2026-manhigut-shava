@@ -68,6 +68,11 @@ const AT = {
     blacklistTab:"רשימה שחורה", blacklistAdd:"הוספה לרשימה שחורה", blacklistEmail:"כתובת אימייל",
     blacklistReason:"סיבה (רשות)", blacklistAddBtn:"חסמי", blacklistRemove:"הסר/י",
     blacklistEmpty:"הרשימה השחורה ריקה.", blacklistNote:"משתמשות עם כתובות אלו לא יוכלו להירשם או להתחבר.",
+    blacklistSearchPh:"חפשי לפי שם או אימייל...", blacklistBlockUnknown:"חסמי אימייל לא ידוע",
+    recommendedTitle:"מומלצות לחסימה", reportCountLabel:(n)=>`${n} דיווח${n===1?"":"ים"}`,
+    noRecommended:"אין משתמשות מדווחות עדיין", currentBlocked:"חסומות כרגע",
+    filterByEmail:"סנני לפי אימייל...", reportSubReports:"דיווחים", reportSubBlacklist:"רשימה שחורה",
+    recommendedAll:"כל המדווחות", recommended2plus:"2+ דיווחים", recommendedNotBlocked:"לא חסומות",
     topSectors:"אתניות / קהילה", topReligions:"זהות דתית ולאומית", topRegions:"אזורי מגורים",
     region:"אזור", campus:"קמפוס", degree:"תואר", birthdate:"תאריך לידה",
     identity:"השתייכות לאומית-דתית", ethnicity:"קהילה/אתניות",
@@ -195,6 +200,11 @@ const AT = {
     blacklistTab:"Blacklist", blacklistAdd:"Add to Blacklist", blacklistEmail:"Email address",
     blacklistReason:"Reason (optional)", blacklistAddBtn:"Block", blacklistRemove:"Remove",
     blacklistEmpty:"Blacklist is empty.", blacklistNote:"Users with these addresses cannot register or sign in.",
+    blacklistSearchPh:"Search by name or email…", blacklistBlockUnknown:"Block unknown email",
+    recommendedTitle:"Recommended for Blacklist", reportCountLabel:(n)=>`${n} report${n===1?"":"s"}`,
+    noRecommended:"No reported users yet", currentBlocked:"Currently Blocked",
+    filterByEmail:"Filter by email…", reportSubReports:"Reports", reportSubBlacklist:"Blacklist",
+    recommendedAll:"All reported", recommended2plus:"2+ reports", recommendedNotBlocked:"Not blocked",
     topSectors:"Ethnicity / Community", topReligions:"National & Religious Identity", topRegions:"Regions",
     region:"Region", campus:"Campus", degree:"Degree", birthdate:"Date of Birth",
     identity:"National-Religious Identity", ethnicity:"Community/Ethnicity",
@@ -317,6 +327,11 @@ const AT = {
     blacklistTab:"القائمة السوداء", blacklistAdd:"إضافة إلى القائمة السوداء", blacklistEmail:"البريد الإلكتروني",
     blacklistReason:"السبب (اختياري)", blacklistAddBtn:"حظر", blacklistRemove:"إزالة",
     blacklistEmpty:"القائمة السوداء فارغة.", blacklistNote:"لن تتمكن المستخدمات بهذه العناوين من التسجيل أو تسجيل الدخول.",
+    blacklistSearchPh:"ابحثي بالاسم أو البريد الإلكتروني...", blacklistBlockUnknown:"حظر بريد غير معروف",
+    recommendedTitle:"موصى بهن للحظر", reportCountLabel:(n)=>`${n} بلاغ${n===1?"":"ات"}`,
+    noRecommended:"لا توجد مستخدمات مُبلَّغ عنهن بعد", currentBlocked:"المحظورات حالياً",
+    filterByEmail:"تصفية بالبريد الإلكتروني...", reportSubReports:"البلاغات", reportSubBlacklist:"القائمة السوداء",
+    recommendedAll:"جميع المُبلَّغ عنهن", recommended2plus:"بلاغان فأكثر", recommendedNotBlocked:"غير محظورات",
     topSectors:"الانتماء / المجتمع", topReligions:"الهوية الوطنية والدينية", topRegions:"مناطق السكن",
     region:"المنطقة", campus:"الحرم الجامعي", degree:"الدرجة العلمية", birthdate:"تاريخ الميلاد",
     identity:"الهوية الوطنية-الدينية", ethnicity:"المجتمع/الانتماء",
@@ -1565,13 +1580,16 @@ export default function AdminPage({ onViewProfile }) {
   const [supportReqSearch,     setSupportReqSearch]     = useState("");
   const [supportReqStatus,     setSupportReqStatus]     = useState("all");
 
-  /* ── Blacklist ── */
-  const [blacklist,        setBlacklist]        = useState([]);
-  const [blacklistLoading, setBlacklistLoading] = useState(false);
-  const [blacklistEmail,   setBlacklistEmail]   = useState("");
-  const [blacklistReason,  setBlacklistReason]  = useState("");
-  const [blacklistAdding,  setBlacklistAdding]  = useState(false);
-  const [blacklistLookup,  setBlacklistLookup]  = useState(null); // found user or null
+  /* ── Blacklist (lives inside Reports tab) ── */
+  const [blacklist,           setBlacklist]           = useState([]);
+  const [blacklistLoading,    setBlacklistLoading]    = useState(false);
+  const [blacklistEmail,      setBlacklistEmail]      = useState("");
+  const [blacklistReason,     setBlacklistReason]     = useState("");
+  const [blacklistAdding,     setBlacklistAdding]     = useState(false);
+  const [reportSubTab,        setReportSubTab]        = useState("reports"); // "reports" | "blacklist"
+  const [blSearch,            setBlSearch]            = useState(""); // live search for add-form
+  const [blCurrentSearch,     setBlCurrentSearch]     = useState(""); // filter current blacklist
+  const [blRecommendedFilter, setBlRecommendedFilter] = useState("all"); // "all"|"2plus"|"notblocked"
 
   /* ── Permission / confirm modals ── */
   const [deleteError, setDeleteError] = useState("");
@@ -1645,9 +1663,9 @@ export default function AdminPage({ onViewProfile }) {
   }, []);
 
   useEffect(() => {
-    if (tab === "logs"       && logs.length === 0)      fetchLogs();
-    if (tab === "reports"    && reports.length === 0)   fetchReports();
-    if (tab === "blacklist"  && blacklist.length === 0)  fetchBlacklist();
+    if (tab === "logs"     && logs.length === 0)     fetchLogs();
+    if (tab === "reports"  && reports.length === 0)  fetchReports();
+    if (tab === "reports"  && blacklist.length === 0) fetchBlacklist();
     if ((tab === "support" || tab === "overview" || tab === "data") && helpPosts.length === 0) fetchSupport();
   }, [tab]);
 
@@ -1692,7 +1710,7 @@ export default function AdminPage({ onViewProfile }) {
       }
       setBlacklistEmail("");
       setBlacklistReason("");
-      setBlacklistLookup(null);
+      setBlSearch("");
     } catch (err) { console.error(err); }
     setBlacklistAdding(false);
   };
@@ -2065,7 +2083,6 @@ export default function AdminPage({ onViewProfile }) {
     { id: "reports",   label: `${Tr.reportsTab}${reports.length > 0 ? ` (${reports.filter(r=>r.status==="pending").length})` : ""}`, show: canManageContent },
     { id: "logs",      label: Tr.tabs.logs, show: canViewLogs },
     { id: "slideshow",  label: Tr.slideshowTitle, show: canManageContent },
-    { id: "blacklist",  label: `${Tr.blacklistTab || "Blacklist"}${blacklist.length > 0 ? ` (${blacklist.length})` : ""}`, show: canManageUsers },
   ].filter(t => t.show);
 
   /* ─────────────────────────────────────── RENDER ─── */
@@ -3074,7 +3091,27 @@ export default function AdminPage({ onViewProfile }) {
       {/* ══ REPORTS TAB ══ */}
       {tab === "reports" && (
         <div>
-          {/* Reports header + inline filter bar */}
+          {/* Sub-tab pills */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:"1.25rem", borderBottom:"2px solid var(--border,#daeaf8)", paddingBottom:"0.75rem", flexWrap:"wrap" }}>
+            {[
+              { id:"reports",   label:`${Tr.reportSubReports||"Reports"}${reports.filter(r=>r.status==="pending").length>0?` (${reports.filter(r=>r.status==="pending").length})`:""}` },
+              { id:"blacklist", label:`${Tr.reportSubBlacklist||"Blacklist"}${blacklist.length>0?` (${blacklist.length})`:""}` },
+            ].map(st => (
+              <button key={st.id} onClick={() => setReportSubTab(st.id)}
+                style={{ padding:"6px 20px", borderRadius:99, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                  background: reportSubTab===st.id ? "var(--brand,#4472b8)" : "var(--bg-secondary,#f0f6fb)",
+                  color: reportSubTab===st.id ? "#fff" : "var(--text-secondary,#64748b)" }}>
+                {st.label}
+              </button>
+            ))}
+            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={reportSubTab==="reports" ? fetchReports : fetchBlacklist}>
+              {(reportsLoading||blacklistLoading) ? "…" : `↻ ${Tr.refresh}`}
+            </button>
+          </div>
+
+          {/* ── Sub-tab: Reports ── */}
+          {reportSubTab === "reports" && (<div>
+          {/* filter bar */}
           <div className="admin-filter-bar" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
             <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
               {Tr.reportsTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>{Tr.pendingBadge(reports.filter(r=>r.status==="pending").length)}</span>
@@ -3294,6 +3331,213 @@ export default function AdminPage({ onViewProfile }) {
                 </tbody>
               </table>
             </div>
+            );
+          })()}
+          </div>)}
+
+          {/* ── Sub-tab: Blacklist ── */}
+          {reportSubTab === "blacklist" && (() => {
+            const blQ = blSearch.trim().toLowerCase();
+            const blDropdown = blQ.length >= 1 ? users.filter(u => {
+              const name = `${u.firstName||""} ${u.lastName||""}`.toLowerCase();
+              return name.includes(blQ) || (u.email||"").toLowerCase().includes(blQ);
+            }).slice(0, 7) : [];
+            const reportCountMap = reports.reduce((acc, r) => {
+              if (r.reportedId) acc[r.reportedId] = (acc[r.reportedId]||0)+1;
+              return acc;
+            }, {});
+            const recommended = users
+              .filter(u => reportCountMap[u.id] > 0)
+              .map(u => ({ ...u, reportCount: reportCountMap[u.id] }))
+              .sort((a,b) => b.reportCount - a.reportCount)
+              .filter(u => blRecommendedFilter==="2plus" ? u.reportCount>=2 : blRecommendedFilter==="notblocked" ? !u.blacklisted : true);
+            const filteredBlacklist = blCurrentSearch.trim()
+              ? blacklist.filter(b => (b.email||"").toLowerCase().includes(blCurrentSearch.trim().toLowerCase()))
+              : blacklist;
+            return (
+              <div>
+                {/* Add form */}
+                <div className="card" style={{ padding:"1.25rem", marginBottom:"1.25rem" }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"0.85rem" }}>{Tr.blacklistAdd}</p>
+                  <p style={{ fontSize:12, color:"var(--text-muted)", marginBottom:"0.85rem" }}>{Tr.blacklistNote}</p>
+                  <div style={{ position:"relative", marginBottom: blacklistEmail ? "0.75rem" : 0 }}>
+                    <input
+                      value={blSearch}
+                      onChange={e => { setBlSearch(e.target.value); setBlacklistEmail(""); setBlacklistReason(""); }}
+                      placeholder={Tr.blacklistSearchPh}
+                      style={{ width:"100%", padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
+                    />
+                    {!blacklistEmail && blQ.length >= 1 && (blDropdown.length > 0 || blSearch.includes("@")) && (
+                      <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"var(--bg-primary,#fff)", border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, zIndex:200, boxShadow:"0 4px 16px rgba(0,0,0,0.12)", overflow:"hidden" }}>
+                        {blDropdown.map(u => (
+                          <div key={u.id}
+                            onClick={() => { setBlacklistEmail(u.email||""); setBlSearch(`${u.firstName||""} ${u.lastName||""}`.trim()); }}
+                            style={{ padding:"8px 14px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, borderBottom:"1px solid var(--bg-tertiary,#f0f6fb)" }}
+                            onMouseEnter={e=>e.currentTarget.style.background="var(--bg-secondary,#f0f6fb)"}
+                            onMouseLeave={e=>e.currentTarget.style.background=""}>
+                            <div style={{ minWidth:0 }}>
+                              <p style={{ fontSize:13, fontWeight:600, color:"var(--text-primary,#111827)", margin:"0 0 1px" }}>{u.firstName} {u.lastName}</p>
+                              <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.email||"—"}</p>
+                            </div>
+                            <div style={{ display:"flex", gap:5, flexShrink:0 }}>
+                              {reportCountMap[u.id] > 0 && (
+                                <span style={{ fontSize:10, fontWeight:700, background:"rgba(233,65,91,0.12)", color:"#e9415b", padding:"2px 8px", borderRadius:99, whiteSpace:"nowrap" }}>{reportCountMap[u.id]}×</span>
+                              )}
+                              {u.blacklisted && <span style={{ fontSize:10, fontWeight:700, background:"rgba(194,92,92,0.12)", color:"#c25c5c", padding:"2px 8px", borderRadius:99 }}>✓ {Tr.blacklistTab}</span>}
+                            </div>
+                          </div>
+                        ))}
+                        {blSearch.includes("@") && !blDropdown.some(u => u.email?.toLowerCase()===blQ) && (
+                          <div
+                            onClick={() => { setBlacklistEmail(blSearch.trim().toLowerCase()); }}
+                            style={{ padding:"8px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, borderTop: blDropdown.length>0?"1px solid var(--border,#daeaf8)":undefined }}
+                            onMouseEnter={e=>e.currentTarget.style.background="var(--bg-secondary,#f0f6fb)"}
+                            onMouseLeave={e=>e.currentTarget.style.background=""}>
+                            <span style={{ fontSize:11, color:"var(--text-muted,#6b7280)" }}>⚪ {Tr.blacklistNotInSystem}</span>
+                            <span style={{ fontSize:11, fontWeight:700, color:"#c25c5c", marginLeft:"auto" }}>⊕ {Tr.blacklistBlockUnknown}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {blacklistEmail && (() => {
+                    const found = users.find(u => u.email?.toLowerCase()===blacklistEmail.toLowerCase());
+                    return (
+                      <div>
+                        <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:6, marginBottom:"0.6rem", padding:"7px 12px", borderRadius:8, background: found?"rgba(232,115,90,0.08)":"var(--bg-secondary,#f0f6fb)", border:`1px solid ${found?"rgba(232,115,90,0.25)":"var(--border,#daeaf8)"}` }}>
+                          {found ? (
+                            <>
+                              <span style={{ fontSize:12, fontWeight:700, color:"#c2410c" }}>🔴 {found.firstName} {found.lastName}</span>
+                              <span style={{ fontSize:11, color:"#6b7280" }}>{blacklistEmail}</span>
+                              {reportCountMap[found.id] > 0 && <span style={{ fontSize:11, fontWeight:700, background:"rgba(233,65,91,0.12)", color:"#e9415b", padding:"2px 8px", borderRadius:99 }}>{reportCountMap[found.id]}× {Tr.reportPending}</span>}
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ fontSize:12, fontWeight:600, color:"var(--text-muted,#6b7280)" }}>⚪ {Tr.blacklistNotInSystem}</span>
+                              <span style={{ fontSize:11, color:"#6b7280", marginLeft:4 }}>{blacklistEmail}</span>
+                            </>
+                          )}
+                        </div>
+                        <div style={{ display:"flex", gap:"0.6rem", flexWrap:"wrap" }}>
+                          <input
+                            value={blacklistReason}
+                            onChange={e => setBlacklistReason(e.target.value)}
+                            placeholder={Tr.blacklistReason}
+                            onKeyDown={e => e.key==="Enter" && addToBlacklist()}
+                            style={{ flex:1, minWidth:180, padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
+                          />
+                          <button onClick={() => { setBlacklistEmail(""); setBlSearch(""); setBlacklistReason(""); }}
+                            style={{ padding:"9px 14px", borderRadius:10, background:"var(--bg-secondary,#f0f6fb)", color:"var(--text-secondary)", border:"1px solid var(--border)", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+                            {Tr.cancel}
+                          </button>
+                          <button onClick={addToBlacklist} disabled={blacklistAdding}
+                            style={{ padding:"9px 22px", borderRadius:10, background:"#c25c5c", color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor:blacklistAdding?"not-allowed":"pointer", opacity:blacklistAdding?0.6:1, whiteSpace:"nowrap" }}>
+                            {blacklistAdding ? "…" : Tr.blacklistAddBtn}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Recommended section */}
+                <div style={{ marginBottom:"1.5rem" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:"0.75rem", flexWrap:"wrap" }}>
+                    <span style={{ fontSize:13, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>{Tr.recommendedTitle}</span>
+                    <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                      {[
+                        { val:"all",        label: Tr.recommendedAll },
+                        { val:"2plus",      label: Tr.recommended2plus },
+                        { val:"notblocked", label: Tr.recommendedNotBlocked },
+                      ].map(f => (
+                        <button key={f.val} onClick={() => setBlRecommendedFilter(f.val)}
+                          style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:99, border:"none", cursor:"pointer",
+                            background: blRecommendedFilter===f.val ? "rgba(233,65,91,0.18)" : "var(--bg-secondary,#f0f6fb)",
+                            color: blRecommendedFilter===f.val ? "#c2410c" : "var(--text-secondary,#64748b)" }}>
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {recommended.length === 0 ? (
+                    <div className="empty-state"><p>{Tr.noRecommended}</p></div>
+                  ) : (
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      {recommended.slice(0,10).map(u => (
+                        <div key={u.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderRadius:10, background:"var(--bg-primary,#fff)", border:`1.5px solid ${u.reportCount>=3?"rgba(233,65,91,0.35)":"var(--border,#daeaf8)"}`, boxShadow:"0 1px 4px rgba(29,72,150,0.04)" }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <p style={{ fontSize:13, fontWeight:700, color:"var(--text-primary,#111827)", margin:"0 0 1px" }}>{u.firstName} {u.lastName}</p>
+                            <p style={{ fontSize:11, color:"var(--text-muted,#6b7280)", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.email||"—"}</p>
+                          </div>
+                          <span style={{ fontSize:11, fontWeight:800, background:"rgba(233,65,91,0.13)", color:"#e9415b", padding:"3px 10px", borderRadius:99, whiteSpace:"nowrap", flexShrink:0 }}>
+                            {Tr.reportCountLabel(u.reportCount)}
+                          </span>
+                          {u.blacklisted ? (
+                            <span style={{ fontSize:11, fontWeight:700, background:"rgba(194,92,92,0.12)", color:"#c25c5c", padding:"3px 10px", borderRadius:99, whiteSpace:"nowrap" }}>✓ {Tr.blacklistTab}</span>
+                          ) : (
+                            <button
+                              onClick={() => { setBlacklistEmail(u.email||""); setBlSearch(`${u.firstName||""} ${u.lastName||""}`.trim()); window.scrollTo({ top:0, behavior:"smooth" }); }}
+                              style={{ padding:"4px 12px", borderRadius:8, fontSize:11, fontWeight:700, border:"1px solid #d99090", background:"#f5dada", color:"#c25c5c", cursor:"pointer", whiteSpace:"nowrap" }}>
+                              {Tr.blacklistAddBtn}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Currently blocked */}
+                <div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:"0.75rem", flexWrap:"wrap" }}>
+                    <span style={{ fontSize:13, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
+                      {Tr.currentBlocked} <span style={{ fontSize:11, fontWeight:500, color:"var(--text-muted)" }}>({blacklist.length})</span>
+                    </span>
+                    <input
+                      value={blCurrentSearch}
+                      onChange={e => setBlCurrentSearch(e.target.value)}
+                      placeholder={Tr.filterByEmail}
+                      style={{ fontSize:12, padding:"5px 10px", border:"1.5px solid var(--border,#daeaf8)", borderRadius:8, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)" }}
+                    />
+                  </div>
+                  {blacklistLoading ? (
+                    <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted)" }}>{Tr.loading}</div>
+                  ) : filteredBlacklist.length === 0 ? (
+                    <div className="empty-state"><p>{blacklist.length===0 ? Tr.blacklistEmpty : Tr.noReportsFiltered}</p></div>
+                  ) : (
+                    <div className="card" style={{ overflowX:"auto" }}>
+                      <table style={{ ...S.table, minWidth:400 }}>
+                        <thead>
+                          <tr>
+                            {[Tr.blacklistEmail, Tr.blacklistReason, Tr.addedByLabel, Tr.reportDate, ""].map(h => (
+                              <th key={h} style={{ ...S.th, whiteSpace:"nowrap" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredBlacklist.map(b => (
+                            <tr key={b.id} style={S.row}
+                              onMouseEnter={e=>e.currentTarget.style.background="var(--bg-secondary,#f0f6fb)"}
+                              onMouseLeave={e=>e.currentTarget.style.background="var(--bg-primary,#fff)"}>
+                              <td style={{ ...S.td, fontWeight:600, color:"#c25c5c", fontFamily:"monospace" }}>{b.email}</td>
+                              <td style={{ ...S.td, maxWidth:240, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.reason||"—"}</td>
+                              <td style={S.td}>{b.addedBy||"—"}</td>
+                              <td style={{ ...S.td, whiteSpace:"nowrap", fontSize:11 }}>{b.addedAt ? new Date(b.addedAt).toLocaleDateString() : "—"}</td>
+                              <td style={S.td}>
+                                <button onClick={() => removeFromBlacklist(b.id)}
+                                  style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #d99090", background:"#f5dada", color:"#c25c5c", cursor:"pointer" }}>
+                                  {Tr.blacklistRemove}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
             );
           })()}
         </div>
@@ -3573,94 +3817,6 @@ export default function AdminPage({ onViewProfile }) {
                 </div>
               )}
             </>
-          )}
-        </div>
-      )}
-
-      {/* ══ BLACKLIST TAB ══ */}
-      {tab === "blacklist" && (
-        <div>
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:10, marginBottom:"1rem" }}>
-            <span style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", fontFamily:"'Outfit',sans-serif" }}>
-              {Tr.blacklistTab} <span style={{ fontSize:12, fontWeight:500, color:"var(--text-muted)" }}>({blacklist.length})</span>
-            </span>
-            <button style={{ ...S.refreshBtn, marginLeft:"auto" }} onClick={fetchBlacklist}>{blacklistLoading ? "…" : `↻ ${Tr.refresh}`}</button>
-          </div>
-          <p style={{ fontSize:12, color:"var(--text-muted)", marginBottom:"1rem" }}>{Tr.blacklistNote}</p>
-
-          {/* Add form */}
-          <div className="card" style={{ padding:"1.25rem", marginBottom:"1.25rem" }}>
-            <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"0.85rem" }}>{Tr.blacklistAdd}</p>
-            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
-              <div style={{ flex:2, minWidth:200, display:"flex", flexDirection:"column", gap:4 }}>
-                <input
-                  value={blacklistEmail}
-                  onChange={e => {
-                    const v = e.target.value;
-                    setBlacklistEmail(v);
-                    const match = users.find(u => u.email?.toLowerCase() === v.trim().toLowerCase());
-                    setBlacklistLookup(match || (v.trim() ? false : null));
-                  }}
-                  placeholder={Tr.blacklistEmail}
-                  type="email"
-                  onKeyDown={e => e.key === "Enter" && addToBlacklist()}
-                  style={{ width:"100%", padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
-                />
-                {blacklistLookup === false && <span style={{ fontSize:11, color:"var(--text-muted)" }}>⚪ {Tr.blacklistNotInSystem || "Not registered in system"}</span>}
-                {blacklistLookup && <span style={{ fontSize:11, color:"#e07a5f", fontWeight:600 }}>🔴 {Tr.blacklistFoundUser ? Tr.blacklistFoundUser(`${blacklistLookup.firstName||""} ${blacklistLookup.lastName||""}`.trim()) : `Found: ${(`${blacklistLookup.firstName||""} ${blacklistLookup.lastName||""}`).trim()} — will be blocked immediately`}</span>}
-              </div>
-              <input
-                value={blacklistReason}
-                onChange={e => setBlacklistReason(e.target.value)}
-                placeholder={Tr.blacklistReason}
-                onKeyDown={e => e.key === "Enter" && addToBlacklist()}
-                style={{ flex:3, minWidth:200, padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
-              />
-              <button
-                onClick={addToBlacklist}
-                disabled={!blacklistEmail.trim() || blacklistAdding}
-                style={{ padding:"9px 22px", borderRadius:10, background:"#c25c5c", color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor: !blacklistEmail.trim() || blacklistAdding ? "not-allowed" : "pointer", opacity: !blacklistEmail.trim() || blacklistAdding ? 0.6 : 1, whiteSpace:"nowrap" }}>
-                {blacklistAdding ? "…" : Tr.blacklistAddBtn}
-              </button>
-            </div>
-          </div>
-
-          {/* Blacklist table */}
-          {blacklistLoading ? (
-            <div style={{ padding:"2rem", textAlign:"center", color:"var(--text-muted)" }}>Loading…</div>
-          ) : blacklist.length === 0 ? (
-            <div className="empty-state"><p>{Tr.blacklistEmpty}</p></div>
-          ) : (
-            <div className="card" style={{ overflowX:"auto" }}>
-              <table style={{ ...S.table, minWidth:400 }}>
-                <thead>
-                  <tr>
-                    {[Tr.blacklistEmail, Tr.blacklistReason, Tr.addedByLabel, Tr.reportDate, ""].map(h => (
-                      <th key={h} style={{ ...S.th, whiteSpace:"nowrap" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {blacklist.map(b => (
-                    <tr key={b.id} style={S.row}
-                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary,#f0f6fb)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "var(--bg-primary,#fff)"}
-                    >
-                      <td style={{ ...S.td, fontWeight:600, color:"#c25c5c", fontFamily:"monospace" }}>{b.email}</td>
-                      <td style={{ ...S.td, maxWidth:260, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.reason || "—"}</td>
-                      <td style={S.td}>{b.addedBy || "—"}</td>
-                      <td style={{ ...S.td, whiteSpace:"nowrap", fontSize:11 }}>{b.addedAt ? new Date(b.addedAt).toLocaleDateString() : "—"}</td>
-                      <td style={S.td}>
-                        <button onClick={() => removeFromBlacklist(b.id)}
-                          style={{ padding:"4px 10px", borderRadius:"var(--r-sm,8px)", fontSize:11, fontWeight:600, border:"1px solid #d99090", background:"#f5dada", color:"#c25c5c", cursor:"pointer" }}>
-                          {Tr.blacklistRemove}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           )}
         </div>
       )}
