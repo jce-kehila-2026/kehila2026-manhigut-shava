@@ -34,9 +34,17 @@ export function SlideshowBanner({ maxHeight = 220 }) {
     timerRef.current = setInterval(() => setIdx(i => (i + 1) % images.length), 4000);
   };
 
+  const btnStyle = {
+    position: "absolute", top: "50%", transform: "translateY(-50%)",
+    background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
+    width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    backdropFilter: "blur(4px)",
+  };
+
   return (
-    <div>
-      {/* image area */}
+    <div dir="ltr">
+      {/* image area — dir:ltr prevents RTL page layout from physically flipping arrow positions */}
       <div style={{
         position: "relative",
         borderRadius: hasCaption ? "16px 16px 0 0" : 16,
@@ -64,20 +72,13 @@ export function SlideshowBanner({ maxHeight = 220 }) {
 
         {images.length > 1 && (
           <>
-            <button onClick={() => go(isRTL ? 1 : -1)} style={{
-              position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
-              background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
-              width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backdropFilter: "blur(4px)",
-            }}>‹</button>
-            <button onClick={() => go(isRTL ? -1 : 1)} style={{
-              position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-              background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
-              width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backdropFilter: "blur(4px)",
-            }}>›</button>
+            {/* In RTL: left button = next (forward = leftward), shows › pointing into sequence */}
+            <button onClick={() => go(isRTL ? 1 : -1)} style={{ ...btnStyle, left: 10 }}>
+              {isRTL ? "›" : "‹"}
+            </button>
+            <button onClick={() => go(isRTL ? -1 : 1)} style={{ ...btnStyle, right: 10 }}>
+              {isRTL ? "‹" : "›"}
+            </button>
             <div style={{
               position: "absolute", bottom: 10, left: 0, right: 0,
               display: "flex", justifyContent: "center", gap: 6,
