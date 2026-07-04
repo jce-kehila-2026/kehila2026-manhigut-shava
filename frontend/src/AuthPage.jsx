@@ -63,7 +63,9 @@ const AUTH_T = {
     errPhone:"מספר טלפון לא תקין. השתמשי בפורמט: 05X-XXXXXXX",
     errAgree:"יש לאשר את הסכמת שיתוף הפרטים.",
     errPassMatch:"הסיסמאות אינן תואמות.",
-    blacklisted:"כתובת האימייל הזו חסומה לצמיתות. לפרטים פנה/י לתמיכה.",
+    blacklisted:"כתובת האימייל הזו חסומה לצמיתות.",
+    blacklistContact:"לפרטים: ניצן סניור שניאור (מנכ״לית) — anitzan86@gmail.com | 058-6277762",
+    blacklistReason:"סיבה",
     backHome:"← חזרה לדף הבית",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
@@ -118,6 +120,9 @@ const AUTH_T = {
     errPhone:"Invalid phone number. Use format: 05X-XXXXXXX",
     errAgree:"Please agree to share your details.",
     errPassMatch:"Passwords do not match.",
+    blacklisted:"This email address has been permanently blocked.",
+    blacklistContact:"Nitzan Senior Schneior (CEO) — anitzan86@gmail.com | 058-6277762",
+    blacklistReason:"Reason",
     backHome:"← Back to Home",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
@@ -172,6 +177,9 @@ const AUTH_T = {
     errPhone:"رقم الهاتف غير صالح. استخدمي الصيغة: 05X-XXXXXXX",
     errAgree:"يجب الموافقة على مشاركة بياناتك.",
     errPassMatch:"كلمتا المرور غير متطابقتين.",
+    blacklisted:"تم حظر عنوان البريد الإلكتروني هذا بشكل دائم.",
+    blacklistContact:"نيتسان سينيور شنيئور (المديرة التنفيذية) — anitzan86@gmail.com | 058-6277762",
+    blacklistReason:"السبب",
     backHome:"← العودة إلى الصفحة الرئيسية",
     passEmailPh:"your@email.com",
     passPh2:"••••••••",
@@ -315,17 +323,22 @@ function GoogleButton({ label, Tr }) {
 
 function LoginForm({ onSwitchTab, Tr, dir }) {
   const [form, setForm] = useState({ email:"", password:"" });
-  const [error, setError]       = useState("");
-  const [resetSent, setResetSent] = useState(false);
-  const [loading, setLoading]   = useState(false);
+  const [error, setError]           = useState("");
+  const [blockReason, setBlockReason] = useState(null);
+  const [resetSent, setResetSent]   = useState(false);
+  const [loading, setLoading]       = useState(false);
   const set = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
   const submit = async (e) => {
-    e.preventDefault(); setError(""); setLoading(true);
+    e.preventDefault(); setError(""); setBlockReason(null); setLoading(true);
     try {
       const blQ = query(collection(db, "blacklist"), where("email", "==", form.email.trim().toLowerCase()));
       const blSnap = await getDocs(blQ);
-      if (!blSnap.empty) { setError(Tr?.blacklisted || "This account has been permanently blocked. Please contact support."); return; }
+      if (!blSnap.empty) {
+        setBlockReason(blSnap.docs[0].data().reason || "");
+        setError(Tr?.blacklisted || "This account has been permanently blocked.");
+        return;
+      }
       await signInWithEmailAndPassword(auth, form.email, form.password);
     }
     catch (e) { setError(firebaseMsg(e.code, Tr)); }
@@ -348,7 +361,15 @@ function LoginForm({ onSwitchTab, Tr, dir }) {
       <p style={{ color:C.mute, fontSize:"0.86rem", marginBottom:"1.6rem", fontWeight:400 }}>
         {Tr?.loginSub||"היכנסי לרשת הבוגרות שלך"}
       </p>
-      {error    && <div style={errBox}>{error}</div>}
+      {error && (
+        <div style={errBox}>
+          {error}
+          {blockReason !== null && (<>
+            {blockReason ? <div style={{ marginTop:5, fontSize:12, opacity:0.85 }}>{Tr?.blacklistReason||"סיבה"}: {blockReason}</div> : null}
+            <div style={{ marginTop:4, fontSize:12, opacity:0.85 }}>{Tr?.blacklistContact||"ניצן סניור שניאור — anitzan86@gmail.com | 058-6277762"}</div>
+          </>)}
+        </div>
+      )}
       {resetSent && <div style={okBox}>{Tr?.resetSent||"נשלח דוא״ל לאיפוס סיסמה ✓"}</div>}
       <Fld label={Tr?.emailLbl||"דוא״ל"}>
         <input style={inp} type="email" name="email" placeholder={Tr?.passEmailPh||"your@email.com"} dir="ltr"
@@ -399,10 +420,11 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
     region:"",
     password:"", confirmPassword:"",
   });
-  const [agreed, setAgreed]   = useState(false);
-  const [agreeErr, setAgreeErr] = useState(false);
-  const [error, setError]     = useState("");
-  const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed]           = useState(false);
+  const [agreeErr, setAgreeErr]       = useState(false);
+  const [error, setError]             = useState("");
+  const [blockReason, setBlockReason] = useState(null);
+  const [loading, setLoading]         = useState(false);
   const [touched, setTouched] = useState({ email:false, phone:false });
 
   const set = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
@@ -436,7 +458,11 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
     try {
       const blQ = query(collection(db, "blacklist"), where("email", "==", form.email.trim().toLowerCase()));
       const blSnap = await getDocs(blQ);
-      if (!blSnap.empty) { setError(Tr?.blacklisted || "This email address is blocked from registering."); setLoading(false); return; }
+      if (!blSnap.empty) {
+        setBlockReason(blSnap.docs[0].data().reason || "");
+        setError(Tr?.blacklisted || "This email address is blocked from registering.");
+        setLoading(false); return;
+      }
       const { user } = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const normalizedPhone = normalizePhone(form.phone);
       await setDoc(doc(db, "users", user.uid), {
@@ -479,7 +505,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
         <>
           <h2 style={heading}>{Tr?.step1H||"הרשמה לרשת"}</h2>
           <p style={sub}>{Tr?.step1Sub||"מלאי את הפרטים האישיים שלך"}</p>
-          {error && <div style={errBox}>{error}</div>}
+          {error && <div style={errBox}>{error}{blockReason!==null&&(<><br/>{blockReason?<span style={{fontSize:12}}>{Tr?.blacklistReason||"סיבה"}: {blockReason}<br/></span>:null}<span style={{fontSize:12}}>{Tr?.blacklistContact||"ניצן סניור שניאור — anitzan86@gmail.com | 058-6277762"}</span></>)}</div>}
           <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"0.7rem" }}>
             <Fld label={Tr?.firstNameLbl||"שם פרטי *"}>
               <input style={inputStyle("firstName")} name="firstName" value={form.firstName} onChange={set} placeholder={Tr?.firstNamePh||"שם"} required onFocus={focusOn} onBlur={focusOff}/>
@@ -526,7 +552,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
         <>
           <h2 style={heading}>{Tr?.step2H||"פרטים מקצועיים"}</h2>
           <p style={sub}>{Tr?.step2Sub||"ספרי לנו עליך"}</p>
-          {error && <div style={errBox}>{error}</div>}
+          {error && <div style={errBox}>{error}{blockReason!==null&&(<><br/>{blockReason?<span style={{fontSize:12}}>{Tr?.blacklistReason||"סיבה"}: {blockReason}<br/></span>:null}<span style={{fontSize:12}}>{Tr?.blacklistContact||"ניצן סניור שניאור — anitzan86@gmail.com | 058-6277762"}</span></>)}</div>}
           <Fld label={Tr?.instituteLbl||"מוסד לימודים"}>
             <select style={{ ...inp, color:form.institution?C.ink:C.mute }} name="institution" value={form.institution} onChange={set} onFocus={focusOn} onBlur={focusOff}>
               <option value="">{Tr?.institutePh||"בחרי מוסד..."}</option>
@@ -562,7 +588,7 @@ function SignUpForm({ onSwitchTab, Tr, dir }) {
         <>
           <h2 style={heading}>{Tr?.step3H||"הגדרת סיסמה"}</h2>
           <p style={sub}>{Tr?.step3Sub||"כמעט סיימנו"}</p>
-          {error && <div style={errBox}>{error}</div>}
+          {error && <div style={errBox}>{error}{blockReason!==null&&(<><br/>{blockReason?<span style={{fontSize:12}}>{Tr?.blacklistReason||"סיבה"}: {blockReason}<br/></span>:null}<span style={{fontSize:12}}>{Tr?.blacklistContact||"ניצן סניור שניאור — anitzan86@gmail.com | 058-6277762"}</span></>)}</div>}
           <Fld label={Tr?.passLbl2||"סיסמה *"}>
             <input style={inputStyle("password")} type="password" name="password" value={form.password} onChange={set} placeholder={Tr?.passPh||"לפחות 6 תווים"} required onFocus={focusOn} onBlur={focusOff}/>
           </Fld>

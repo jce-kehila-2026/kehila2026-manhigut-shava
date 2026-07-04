@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
+import { useLang } from "../LanguageContext";
 
 export function SlideshowBanner({ maxHeight = 220 }) {
   const [images, setImages] = useState([]);
   const [idx, setIdx]       = useState(0);
   const timerRef            = useRef(null);
+  const { lang }            = useLang();
+  const isRTL               = lang === "he" || lang === "ar";
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "siteSettings", "slideshow"), (snap) => {
@@ -61,14 +64,14 @@ export function SlideshowBanner({ maxHeight = 220 }) {
 
         {images.length > 1 && (
           <>
-            <button onClick={() => go(-1)} style={{
+            <button onClick={() => go(isRTL ? 1 : -1)} style={{
               position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
               background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
               width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,
               display: "flex", alignItems: "center", justifyContent: "center",
               backdropFilter: "blur(4px)",
             }}>‹</button>
-            <button onClick={() => go(1)} style={{
+            <button onClick={() => go(isRTL ? -1 : 1)} style={{
               position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
               background: "rgba(255,255,255,0.22)", border: "none", borderRadius: "50%",
               width: 34, height: 34, cursor: "pointer", color: "#fff", fontSize: 18,

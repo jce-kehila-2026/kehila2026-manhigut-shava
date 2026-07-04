@@ -1666,14 +1666,14 @@ export default function LandingPage({ onLogin }) {
                 <span style={{color:C.blue,flexShrink:0}}>{Ic.people}</span>
                 <span style={{fontWeight:600,color:C.ink}}>{T.contactCEO}</span>
               </div>
-              <a href="mailto:ANITZAN86@GMAIL.COM" style={{
+              <a href="mailto:anitzan86@gmail.com" style={{
                 display:"inline-flex",alignItems:"center",gap:10,
                 color:C.inkMid,textDecoration:"none",fontSize:14,transition:"color 0.18s",
               }}
                 onMouseOver={e=>{e.currentTarget.style.color=C.blue;}}
                 onMouseOut={e =>{e.currentTarget.style.color=C.inkMid;}}
               >
-                <span style={{color:C.blue,flexShrink:0}}>{Ic.mail}</span>ANITZAN86@GMAIL.COM
+                <span style={{color:C.blue,flexShrink:0}}>{Ic.mail}</span>anitzan86@gmail.com
               </a>
               <div style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:C.inkMid}}>
                 <span style={{color:C.blue,flexShrink:0}}>{Ic.phone}</span>

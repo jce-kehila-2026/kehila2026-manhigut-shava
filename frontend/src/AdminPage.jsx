@@ -91,7 +91,10 @@ const AT = {
     },
     allMembers:"כל החברות", searchByNamePh:"חפשי לפי שם, אימייל, מקצוע...",
     sortRecent:"אחרונות", sortAlpha:"א–ת", sortAdminsFirst:"מנהלות קודם",
-    adminsOnly:"מנהלות בלבד", onlineOnly:"מחוברות עכשיו",
+    adminsOnly:"מנהלות בלבד", onlineOnly:"מחוברות עכשיו", pendingOnly:"ממתינות בלבד",
+    sendReminder:"שלחי תזכורת",
+    blacklistFoundUser:(n)=>`נמצאה במערכת: ${n} — תיחסם מיידית`,
+    blacklistNotInSystem:"לא רשומה במערכת",
     colMember:"חברה", colStatus:"סטטוס", colJoined:"הצטרפות", colActions:"פעולות",
     statusPending:"ממתינה", adminBadge:"מנהלת", onlineBadge:"מחוברת",
     viewOnly:"צפייה בלבד", noMembersFound:"לא נמצאו חברות.",
@@ -215,7 +218,10 @@ const AT = {
     },
     allMembers:"All Members", searchByNamePh:"Search by name, email, profession…",
     sortRecent:"Recent", sortAlpha:"A–Z", sortAdminsFirst:"Admins first",
-    adminsOnly:"Admins only", onlineOnly:"Online now",
+    adminsOnly:"Admins only", onlineOnly:"Online now", pendingOnly:"Pending only",
+    sendReminder:"Send reminder",
+    blacklistFoundUser:(n)=>`Found in system: ${n} — will be blocked immediately`,
+    blacklistNotInSystem:"Not registered in system",
     colMember:"Member", colStatus:"Status", colJoined:"Joined", colActions:"Actions",
     statusPending:"Pending", adminBadge:"Admin", onlineBadge:"Online",
     viewOnly:"View only", noMembersFound:"No members found.",
@@ -339,7 +345,10 @@ const AT = {
     importBadType:"ملف غير صالح — يُقبل .xlsx أو .xls فقط.", importEmpty:"الورقة فارغة.", importMissing:"حقول مفقودة", importBadEmail:"بريد إلكتروني غير صالح",
     allMembers:"جميع الأعضاء", searchByNamePh:"ابحثي بالاسم أو البريد الإلكتروني أو المهنة...",
     sortRecent:"الأحدث", sortAlpha:"أ–ي", sortAdminsFirst:"المشرفات أولاً",
-    adminsOnly:"المشرفات فقط", onlineOnly:"متصلات الآن",
+    adminsOnly:"المشرفات فقط", onlineOnly:"متصلات الآن", pendingOnly:"قيد الانتظار فقط",
+    sendReminder:"أرسلي تذكيراً",
+    blacklistFoundUser:(n)=>`موجودة في النظام: ${n} — سيتم حظرها فوراً`,
+    blacklistNotInSystem:"غير مسجلة في النظام",
     colMember:"عضوة", colStatus:"الحالة", colJoined:"تاريخ الانضمام", colActions:"الإجراءات",
     statusPending:"قيد الانتظار", adminBadge:"مشرفة", onlineBadge:"متصلة",
     viewOnly:"عرض فقط", noMembersFound:"لم يتم العثور على أعضاء.",
@@ -1522,6 +1531,7 @@ export default function AdminPage({ onViewProfile }) {
   const [userSortBy, setUserSortBy] = useState("recent");   // recent | alpha | region | perms
   const [userFilterAdmin, setUserFilterAdmin] = useState(false);
   const [userFilterOnline, setUserFilterOnline] = useState(false);
+  const [userFilterPending, setUserFilterPending] = useState(false);
 
   /* ── Posts: search + filter + expanded comments ── */
   const [postSearch, setPostSearch] = useState("");
@@ -1561,6 +1571,7 @@ export default function AdminPage({ onViewProfile }) {
   const [blacklistEmail,   setBlacklistEmail]   = useState("");
   const [blacklistReason,  setBlacklistReason]  = useState("");
   const [blacklistAdding,  setBlacklistAdding]  = useState(false);
+  const [blacklistLookup,  setBlacklistLookup]  = useState(null); // found user or null
 
   /* ── Permission / confirm modals ── */
   const [deleteError, setDeleteError] = useState("");
@@ -1664,16 +1675,24 @@ export default function AdminPage({ onViewProfile }) {
     if (!email || blacklistAdding) return;
     setBlacklistAdding(true);
     try {
+      const reason = blacklistReason.trim() || "";
       const ref = await addDoc(collection(db, "blacklist"), {
         email,
-        reason: blacklistReason.trim() || "",
+        reason,
         addedBy: adminName,
         addedById: user?.uid,
         addedAt: new Date().toISOString(),
       });
-      setBlacklist(prev => [{ id: ref.id, email, reason: blacklistReason.trim(), addedBy: adminName, addedAt: new Date().toISOString() }, ...prev]);
+      setBlacklist(prev => [{ id: ref.id, email, reason, addedBy: adminName, addedAt: new Date().toISOString() }, ...prev]);
+      /* Also mark the user's Firestore doc if they're already registered */
+      const existing = users.find(u => u.email?.toLowerCase() === email);
+      if (existing) {
+        await updateDoc(doc(db, "users", existing.id), { blacklisted: true, blacklistReason: reason });
+        setUsers(prev => prev.map(u => u.id === existing.id ? { ...u, blacklisted: true, blacklistReason: reason } : u));
+      }
       setBlacklistEmail("");
       setBlacklistReason("");
+      setBlacklistLookup(null);
     } catch (err) { console.error(err); }
     setBlacklistAdding(false);
   };
@@ -1915,9 +1934,10 @@ export default function AdminPage({ onViewProfile }) {
         const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
         return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.region ?? "").toLowerCase().includes(s);
       })();
-      const matchAdmin  = !userFilterAdmin  || !!u.isAdmin;
-      const matchOnline = !userFilterOnline || isActuallyOnline(u);
-      return matchSearch && matchAdmin && matchOnline;
+      const matchAdmin   = !userFilterAdmin   || !!u.isAdmin;
+      const matchOnline  = !userFilterOnline  || isActuallyOnline(u);
+      const matchPending = !userFilterPending || !u.emailVerified;
+      return matchSearch && matchAdmin && matchOnline && matchPending;
     })
     .sort((a, b) => {
       if (userSortBy === "alpha")  return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
@@ -2343,6 +2363,10 @@ export default function AdminPage({ onViewProfile }) {
                 <input type="checkbox" checked={userFilterOnline} onChange={e => setUserFilterOnline(e.target.checked)} style={{ cursor:"pointer" }} />
                 {Tr.onlineOnly}
               </label>
+              <label style={{ fontSize:11, fontWeight:600, color:"#e07a5f", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={userFilterPending} onChange={e => setUserFilterPending(e.target.checked)} style={{ cursor:"pointer", accentColor:"#e07a5f" }} />
+                {Tr.pendingOnly || "Pending"}
+              </label>
             </div>
           </div>
           {isMobile ? (
@@ -2399,6 +2423,12 @@ export default function AdminPage({ onViewProfile }) {
                           style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-primary,#fff)",color:"var(--text-primary,#111827)",cursor:"pointer" }}>
                           {Tr.editUser||"Edit"}
                         </button>}
+                        {!u.emailVerified && u.email && (
+                          <a href={`mailto:${u.email}?subject=${encodeURIComponent(lang==="he"?"השלמת ההרשמה לרשת BogrotNet":lang==="ar"?"أكملي تسجيلك في شبكة BogrotNet":"Complete your BogrotNet registration")}&body=${encodeURIComponent(lang==="he"?`שלום ${u.firstName||""},\n\nשמנו לב שעדיין לא השלמת את ההרשמה לרשת BogrotNet. אנא לחצי על הקישור הבא כדי להמשיך:\nhttps://bogrotnet.web.app\n\nלשאלות, פני לניצן סניור שניאור: anitzan86@gmail.com`:lang==="ar"?`مرحباً ${u.firstName||""},\n\nلاحظنا أنك لم تكملي تسجيلك في شبكة BogrotNet. يرجى النقر على الرابط التالي للمتابعة:\nhttps://bogrotnet.web.app\n\nللاستفسارات: anitzan86@gmail.com`:`Hi ${u.firstName||""},\n\nWe noticed you haven't completed your BogrotNet registration yet. Please click below to continue:\nhttps://bogrotnet.web.app\n\nFor questions, contact Nitzan Senior Schneior: anitzan86@gmail.com`)}`}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #f97316",background:"#fff7ed",color:"#c2410c",cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4 }}>
+                            ✉ {Tr.sendReminder||"Send reminder"}
+                          </a>
+                        )}
                         {canManageAdmins && (u.isAdmin ? (<>
                           <button onClick={e => { e.stopPropagation(); setEditPermsTarget(u); }}
                             style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer" }}>
@@ -2478,6 +2508,12 @@ export default function AdminPage({ onViewProfile }) {
                               style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid var(--border,#daeaf8)",background:"var(--bg-secondary,#f0f6fb)",color:"var(--text-primary,#111827)",cursor:"pointer",whiteSpace:"nowrap" }}>
                               {Tr.editUser || "Edit"}
                             </button>}
+                            {!u.emailVerified && u.email && (
+                              <a href={`mailto:${u.email}?subject=${encodeURIComponent(lang==="he"?"השלמת ההרשמה לרשת BogrotNet":lang==="ar"?"أكملي تسجيلك في شبكة BogrotNet":"Complete your BogrotNet registration")}&body=${encodeURIComponent(lang==="he"?`שלום ${u.firstName||""},\n\nשמנו לב שעדיין לא השלמת את ההרשמה לרשת BogrotNet. אנא לחצי על הקישור הבא:\nhttps://bogrotnet.web.app\n\nלשאלות, פני לניצן: anitzan86@gmail.com`:lang==="ar"?`مرحباً ${u.firstName||""},\n\nلاحظنا أنك لم تكملي تسجيلك في BogrotNet:\nhttps://bogrotnet.web.app\n\nللاستفسارات: anitzan86@gmail.com`:`Hi ${u.firstName||""},\n\nWe noticed you haven't completed your BogrotNet registration. Please continue here:\nhttps://bogrotnet.web.app\n\nQuestions? Contact Nitzan: anitzan86@gmail.com`)}`}
+                                style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #f97316",background:"#fff7ed",color:"#c2410c",cursor:"pointer",whiteSpace:"nowrap",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3 }}>
+                                ✉ {Tr.sendReminder||"Remind"}
+                              </a>
+                            )}
                             {canManageAdmins && (u.isAdmin ? (<>
                               <button onClick={() => setEditPermsTarget(u)}
                                 style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #93c5fd",background:"#eff6ff",color:"#1d4896",cursor:"pointer",whiteSpace:"nowrap" }}>
@@ -3556,14 +3592,23 @@ export default function AdminPage({ onViewProfile }) {
           <div className="card" style={{ padding:"1.25rem", marginBottom:"1.25rem" }}>
             <p style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"0.85rem" }}>{Tr.blacklistAdd}</p>
             <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
-              <input
-                value={blacklistEmail}
-                onChange={e => setBlacklistEmail(e.target.value)}
-                placeholder={Tr.blacklistEmail}
-                type="email"
-                onKeyDown={e => e.key === "Enter" && addToBlacklist()}
-                style={{ flex:2, minWidth:200, padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
-              />
+              <div style={{ flex:2, minWidth:200, display:"flex", flexDirection:"column", gap:4 }}>
+                <input
+                  value={blacklistEmail}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setBlacklistEmail(v);
+                    const match = users.find(u => u.email?.toLowerCase() === v.trim().toLowerCase());
+                    setBlacklistLookup(match || (v.trim() ? false : null));
+                  }}
+                  placeholder={Tr.blacklistEmail}
+                  type="email"
+                  onKeyDown={e => e.key === "Enter" && addToBlacklist()}
+                  style={{ width:"100%", padding:"9px 12px", fontSize:13, border:"1.5px solid var(--border,#daeaf8)", borderRadius:10, background:"var(--bg-secondary)", color:"var(--text-primary)", fontFamily:"var(--font)", boxSizing:"border-box" }}
+                />
+                {blacklistLookup === false && <span style={{ fontSize:11, color:"var(--text-muted)" }}>⚪ {Tr.blacklistNotInSystem || "Not registered in system"}</span>}
+                {blacklistLookup && <span style={{ fontSize:11, color:"#e07a5f", fontWeight:600 }}>🔴 {Tr.blacklistFoundUser ? Tr.blacklistFoundUser(`${blacklistLookup.firstName||""} ${blacklistLookup.lastName||""}`.trim()) : `Found: ${(`${blacklistLookup.firstName||""} ${blacklistLookup.lastName||""}`).trim()} — will be blocked immediately`}</span>}
+              </div>
               <input
                 value={blacklistReason}
                 onChange={e => setBlacklistReason(e.target.value)}

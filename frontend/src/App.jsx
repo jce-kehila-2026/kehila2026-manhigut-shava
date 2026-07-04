@@ -83,8 +83,36 @@ function GoogleProfileSetup() {
   return null;
 }
 
+function BlockedScreen({ reason }) {
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"var(--bg-primary,#f8fafc)", padding:"2rem" }}>
+      <div style={{ maxWidth:420, textAlign:"center" }}>
+        <div style={{ width:64, height:64, borderRadius:"50%", background:"#fee2e2", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 1.25rem" }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </div>
+        <h2 style={{ fontSize:20, fontWeight:800, color:"#1e293b", marginBottom:"0.5rem" }}>הגישה שלך נחסמה</h2>
+        <p style={{ fontSize:14, color:"#64748b", marginBottom: reason ? "0.5rem" : "1.5rem", lineHeight:1.6 }}>
+          חשבון זה נחסם על ידי מנהל המערכת. לפרטים נוספים, פני לניצן סניור שניאור.
+        </p>
+        {reason && (
+          <p style={{ fontSize:13, color:"#94a3b8", marginBottom:"1.5rem", background:"#f1f5f9", borderRadius:10, padding:"0.6rem 1rem" }}>
+            סיבה: {reason}
+          </p>
+        )}
+        <div style={{ display:"flex", flexDirection:"column", gap:8, alignItems:"center" }}>
+          <a href="mailto:anitzan86@gmail.com" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 20px", borderRadius:99, background:"#4472b8", color:"#fff", textDecoration:"none", fontSize:13, fontWeight:700 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+            anitzan86@gmail.com
+          </a>
+          <a href="tel:0586277762" style={{ fontSize:13, color:"#4472b8", fontWeight:600 }}>058-6277762</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isBlacklisted, blacklistReason } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
@@ -94,6 +122,8 @@ function AppContent() {
   }, []);
 
   if (loading) return null;
+
+  if (isBlacklisted) return <BlockedScreen reason={blacklistReason} />;
 
   if (!user) {
     if (showAuth) return <><CursorTrail /><AuthPage onBack={() => setShowAuth(false)} /></>;

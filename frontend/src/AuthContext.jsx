@@ -9,6 +9,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
   const [profile, setProfile] = useState(undefined);
   const [loading, setLoading] = useState(true);
+  const [isBlacklisted, setIsBlacklisted] = useState(false);
+  const [blacklistReason, setBlacklistReason] = useState("");
   useEffect(() => {
     /* Process the result of signInWithRedirect (Google sign-in).
        This resolves silently if there's no pending redirect. */
@@ -24,6 +26,15 @@ export function AuthProvider({ children }) {
         const snap = await getDoc(doc(db, "users", firebaseUser.uid));
         if (snap.exists()) {
           let profileData = snap.data();
+
+          /* Kick out blacklisted users immediately */
+          if (profileData.blacklisted) {
+            setIsBlacklisted(true);
+            setBlacklistReason(profileData.blacklistReason || "");
+            await signOut(auth);
+            if (initialLoad) { setLoading(false); initialLoad = false; }
+            return;
+          }
 
           /* Auto-fix: Google / Phone users should always be treated as email-verified.
              If their Firestore profile still has emailVerified:false (set during a prior
@@ -106,12 +117,14 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     sessionStorage.removeItem("section");
+    setIsBlacklisted(false);
+    setBlacklistReason("");
     await signOut(auth);
     setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile, isBlacklisted, blacklistReason }}>
       {children}
     </AuthContext.Provider>
   );
