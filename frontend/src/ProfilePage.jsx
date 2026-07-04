@@ -1545,46 +1545,6 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
                 ? `${form.firstName} ${form.lastName}`.trim()
                 : (isOwner ? t.profile.myProfile : t.profile.memberProfile)}
             </h2>
-            <div style={S.profileActions}>
-              {form.linkedIn && (
-                <a href={safeUrl(form.linkedIn)} target="_blank" rel="noreferrer" title="LinkedIn"
-                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:"50%", background:"rgba(255,255,255,0.18)", color:"#fff", textDecoration:"none", flexShrink:0, backdropFilter:"blur(4px)", border:"1px solid rgba(255,255,255,0.3)" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.32)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
-                </a>
-              )}
-              {!isOwner && onMessage && (
-                <button onClick={handleMessageClick} title={t.profile.message || "Message"}
-                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:"50%", background:"rgba(255,255,255,0.18)", color:"#fff", border:"1px solid rgba(255,255,255,0.3)", cursor:"pointer", flexShrink:0, padding:0, backdropFilter:"blur(4px)" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.32)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                </button>
-              )}
-              {!isOwner && viewerCanManageUsers && (
-                <button
-                  title={t.profile?.adminEdit || "Admin: Edit"}
-                  onClick={() => {
-                    setAdminEditFields({
-                      firstName:  form.firstName  || "",
-                      lastName:   form.lastName   || "",
-                      region:     form.region     || "",
-                      profession: form.profession || "",
-                      bio:        form.bio        || "",
-                    });
-                    setAdminEditOpen(true);
-                  }}
-                  style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:"50%", background:"rgba(255,255,255,0.18)", color:"#fff", border:"1px solid rgba(255,255,255,0.3)", cursor:"pointer", flexShrink:0, padding:0, backdropFilter:"blur(4px)" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.32)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-              )}
-            </div>
           </div>
           {form.profession && <p style={S.profilePro}>{form.professionTranslations?.[lang] || translateProfession(form.profession, lang)}</p>}
         </div>
@@ -1595,37 +1555,41 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       {(!isOwner || form.linkedIn) && (
         <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", padding: isMobile ? "0.75rem 1rem" : "0.75rem 2rem" }}>
           {form.linkedIn && (
-            <a href={safeUrl(form.linkedIn)} target="_blank" rel="noreferrer"
-              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#1d4896", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#0b1f52"}
-              onMouseLeave={e => e.currentTarget.style.background = "#1d4896"}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
-              LinkedIn
-            </a>
-          )}
-          {!isOwner && onMessage && (
-            <button onClick={handleMessageClick} style={{ padding:"7px 16px", borderRadius:99, background:T.tagBg, color:"#1d4896", border:`1px solid ${T.cardBorderL}`, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-              {t.profile.message || "Message"}
-            </button>
-          )}
-          {!isOwner && form.contactEmail && (
-            <a href={`mailto:${form.contactEmail}`}
-              style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"7px 13px", borderRadius:99, background:"#4472b8", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}
+            <a href={safeUrl(form.linkedIn)} target="_blank" rel="noreferrer" title="LinkedIn"
+              style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:"50%", background:"#4472b8", color:"#fff", textDecoration:"none", flexShrink:0 }}
               onMouseEnter={e => e.currentTarget.style.background = "#1d4896"}
               onMouseLeave={e => e.currentTarget.style.background = "#4472b8"}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
-              {lang==="he"?"אימייל":lang==="ar"?"بريد":"Email"}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+            </a>
+          )}
+          {!isOwner && onMessage && (
+            <button onClick={handleMessageClick} title={t.profile.message || "Message"}
+              style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:"50%", background:"#4472b8", color:"#fff", border:"none", cursor:"pointer", flexShrink:0, padding:0 }}
+              onMouseEnter={e => e.currentTarget.style.background = "#1d4896"}
+              onMouseLeave={e => e.currentTarget.style.background = "#4472b8"}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          )}
+          {!isOwner && form.contactEmail && (
+            <a href={`mailto:${form.contactEmail}`} title={lang==="he"?"אימייל":lang==="ar"?"بريد":"Email"}
+              style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:"50%", background:"#4472b8", color:"#fff", textDecoration:"none", flexShrink:0 }}
+              onMouseEnter={e => e.currentTarget.style.background = "#1d4896"}
+              onMouseLeave={e => e.currentTarget.style.background = "#4472b8"}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
             </a>
           )}
           {!isOwner && viewerCanManageUsers && (
             <button
               onClick={() => { setAdminEditMode(v => !v); setActiveTab(null); }}
-              style={{ padding:"7px 14px", borderRadius:99, background: adminEditMode ? "#4472b8" : "rgba(68,114,184,0.1)", color: adminEditMode ? "#fff" : "#4472b8", border:"1.5px solid #4472b8", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
+              title={adminEditMode ? (lang==="he"?"יציאה מעריכה":lang==="ar"?"إنهاء التعديل":"Exit Edit") : (t.profile?.adminEdit || "Admin: Edit")}
+              style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:"50%", background:"#4472b8", color:"#fff", border:"none", cursor:"pointer", flexShrink:0, padding:0 }}
+              onMouseEnter={e => e.currentTarget.style.background = "#1d4896"}
+              onMouseLeave={e => e.currentTarget.style.background = "#4472b8"}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              {adminEditMode ? (lang==="he"?"יציאה מעריכה":lang==="ar"?"إنهاء التعديل":"Exit Edit") : (t.profile?.adminEdit || "Admin: Edit")}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           )}
         </div>
