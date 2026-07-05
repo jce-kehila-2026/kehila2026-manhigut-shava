@@ -1782,10 +1782,11 @@ export default function AdminPage({ onViewProfile }) {
     return !Number.isNaN(lastSeenMs) && Date.now() - lastSeenMs < 5 * 60 * 1000;
   };
   const now          = Date.now();
-  const onlineNow    = users.filter(isActuallyOnline).length;
-  const verifiedN    = users.filter(u => u.emailVerified).length;
-  const adminsN      = users.filter(u => u.isAdmin).length;
-  const newThisWeek  = users.filter(u => u.createdAt && (now - new Date(u.createdAt)) < 7*86400*1000).length;
+  const activeUsers  = users.filter(u => !u.blacklisted);
+  const onlineNow    = activeUsers.filter(isActuallyOnline).length;
+  const verifiedN    = activeUsers.filter(u => u.emailVerified).length;
+  const adminsN      = activeUsers.filter(u => u.isAdmin).length;
+  const newThisWeek  = activeUsers.filter(u => u.createdAt && (now - new Date(u.createdAt)) < 7*86400*1000).length;
   const totalLikes   = posts.reduce((s, p) => s + (p.likesCount || 0), 0);
   const totalComments = posts.reduce((s, p) => s + (p.commentCount || 0), 0);
 
@@ -2190,13 +2191,13 @@ export default function AdminPage({ onViewProfile }) {
         <>
           {/* Stat cards */}
           <div className="admin-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-            <StatCard label={Tr.totalMembers}  value={users.length}   color="#4472b8" sub={Tr.thisWeek(newThisWeek)}
+            <StatCard label={Tr.totalMembers}  value={activeUsers.length}   color="#4472b8" sub={Tr.thisWeek(newThisWeek)}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
               onClick={() => setStatDetailType("members")} />
             <StatCard label={Tr.onlineNow}     value={onlineNow}      color="#7ba87a" sub={Tr.activeMembers}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>}
               onClick={() => setStatDetailType("online")} />
-            <StatCard label={Tr.withHelpAreas} value={users.filter(u => u.helpAreas?.length > 0).length} color="#1d4896" sub={`${Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1)*100)}%`}
+            <StatCard label={Tr.withHelpAreas} value={activeUsers.filter(u => u.helpAreas?.length > 0).length} color="#1d4896" sub={`${Math.round(activeUsers.filter(u => u.helpAreas?.length > 0).length / Math.max(activeUsers.length,1)*100)}%`}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
               onClick={() => setStatDetailType("helpAreas")} />
             <StatCard label={Tr.totalPosts}    value={posts.length}   color="#8b5cf6" sub={Tr.postsSubLabel(totalLikes, totalComments)}
@@ -2218,9 +2219,9 @@ export default function AdminPage({ onViewProfile }) {
             <div className="card" style={{ padding: "1.25rem" }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1.1rem" }}>{Tr.platformHealth}</p>
               {[
-                { label: Tr.verifiedMembers, pct: Math.round(verifiedN / Math.max(users.length,1) * 100), color: "#7ba87a" },
-                { label: Tr.helpAreaCoverage, pct: Math.round(users.filter(u => u.helpAreas?.length > 0).length / Math.max(users.length,1) * 100), color: "#4472b8" },
-                { label: Tr.onlineRightNow, pct: Math.round(onlineNow / Math.max(users.length,1) * 100), color: "#d4a574" },
+                { label: Tr.verifiedMembers, pct: Math.round(verifiedN / Math.max(activeUsers.length,1) * 100), color: "#7ba87a" },
+                { label: Tr.helpAreaCoverage, pct: Math.round(activeUsers.filter(u => u.helpAreas?.length > 0).length / Math.max(activeUsers.length,1) * 100), color: "#4472b8" },
+                { label: Tr.onlineRightNow, pct: Math.round(onlineNow / Math.max(activeUsers.length,1) * 100), color: "#d4a574" },
               ].map(m => (
                 <div key={m.label} style={{ marginBottom: "0.9rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
