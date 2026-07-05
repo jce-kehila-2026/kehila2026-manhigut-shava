@@ -1087,67 +1087,74 @@ function SlideshowAdmin({ Tr }) {
   };
 
   return (
-    <div style={{ width: "100%", display: "flex", gap: "1.5rem", alignItems: "flex-start", flexWrap: "wrap" }}>
-      {/* LEFT: edit controls */}
-      <div style={{ flex: "1 1 320px", minWidth: 280 }}>
-        {images.length > 0 && (
-          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: "0.6rem", marginTop: 0 }}>
-            {Tr?.slideshowDragHint || "Drag photos to reorder"}
-          </p>
-        )}
-        <div style={{ display: "flex", flexDirection: "row", overflowX: "auto", gap: "0.75rem", paddingBottom: "0.5rem" }}>
-          {images.map((img, i) => (
-            <div
-              key={img.url}
-              draggable
-              onDragStart={() => handleDragStart(i)}
-              onDragOver={(e) => handleDragOver(e, i)}
-              onDrop={(e) => handleDrop(e, i)}
-              onDragEnd={handleDragEnd}
-              style={{
-                position: "relative", flexShrink: 0, width: 140, borderRadius: 10, overflow: "hidden",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.10)", background: "var(--bg-secondary)",
-                cursor: "grab",
-                opacity: dragOverIdx === i && dragIndexRef.current !== i ? 0.45 : 1,
-                outline: dragOverIdx === i && dragIndexRef.current !== i ? "2px dashed var(--primary, #6c63ff)" : "none",
-                transition: "opacity 0.15s, outline 0.15s",
-              }}
-            >
-              <div style={{ position: "absolute", top: 5, left: 5, background: "rgba(0,0,0,0.65)", color: "#fff", borderRadius: 20, minWidth: 20, height: 20, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px", lineHeight: 1, pointerEvents: "none" }}>{i + 1}</div>
-              <img src={img.url} alt="" style={{ width: "100%", height: 90, objectFit: "cover", display: "block", pointerEvents: "none" }} />
-              <div style={{ padding: "0.4rem" }}>
-                <input
-                  value={localCaptions[i] ?? img.caption ?? ""}
-                  onChange={e => setLocalCaptions(prev => ({ ...prev, [i]: e.target.value }))}
-                  onBlur={() => { const cap = localCaptions[i] ?? img.caption ?? ""; if (cap !== img.caption) updateCaption(i, cap); }}
-                  placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
-                  style={{ width: "100%", fontSize: 11, padding: "3px 7px", borderRadius: 5, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", cursor: "text" }}
-                  onMouseDown={e => e.stopPropagation()}
-                />
-              </div>
-              <button onClick={() => remove(i)} style={{ position: "absolute", top: 5, right: 5, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
-            </div>
-          ))}
+    <div style={{ width: "100%" }}>
+      {images.length > 0 && (
+        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: "0.85rem", marginTop: 0 }}>
+          {Tr?.slideshowDragHint || "Drag photos to reorder"}
+        </p>
+      )}
 
-          <label style={{ flexShrink: 0, width: 140, height: 130, borderRadius: 10, border: "2px dashed var(--border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: uploading ? "wait" : "pointer", color: "var(--text-muted)", fontSize: 12, gap: 5, background: "var(--bg-secondary)" }}>
-            <span style={{ fontSize: 24 }}>+</span>
-            <span>{uploading ? (Tr?.slideshowUploading || "Uploading...") : (Tr?.slideshowUpload || "Upload images")}</span>
-            <span style={{ fontSize: 10, color: "var(--text-muted)", marginTop: -3 }}>{Tr?.slideshowMultiple || "Select multiple"}</span>
-            <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleUpload} disabled={uploading} />
-          </label>
-        </div>
-        {images.length === 0 && !uploading && (
-          <p style={{ fontSize: 13, color: "var(--text-muted)", padding: "1rem 0" }}>{Tr?.slideshowEmpty || "No slideshow images yet. Upload one above."}</p>
-        )}
+      {/* 4-column grid: add button first, then existing slides */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: images.length > 0 ? "2rem" : 0 }}>
+        {/* Add button — always top-left */}
+        <label style={{
+          minHeight: 200, borderRadius: 12, border: "2px dashed var(--border)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          cursor: uploading ? "wait" : "pointer", color: "var(--text-muted)",
+          fontSize: 13, gap: 7, background: "var(--bg-secondary)",
+        }}>
+          <span style={{ fontSize: 36 }}>+</span>
+          <span style={{ fontWeight: 600 }}>{uploading ? (Tr?.slideshowUploading || "Uploading...") : (Tr?.slideshowUpload || "Upload images")}</span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: -4 }}>{Tr?.slideshowMultiple || "Select multiple"}</span>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleUpload} disabled={uploading} />
+        </label>
+
+        {/* Existing image tiles */}
+        {images.map((img, i) => (
+          <div
+            key={img.url}
+            draggable
+            onDragStart={() => handleDragStart(i)}
+            onDragOver={(e) => handleDragOver(e, i)}
+            onDrop={(e) => handleDrop(e, i)}
+            onDragEnd={handleDragEnd}
+            style={{
+              position: "relative", borderRadius: 12, overflow: "hidden",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.10)", background: "var(--bg-secondary)",
+              cursor: "grab",
+              opacity: dragOverIdx === i && dragIndexRef.current !== i ? 0.45 : 1,
+              outline: dragOverIdx === i && dragIndexRef.current !== i ? "2px dashed var(--primary, #6c63ff)" : "none",
+              transition: "opacity 0.15s, outline 0.15s",
+            }}
+          >
+            <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.65)", color: "#fff", borderRadius: 20, minWidth: 24, height: 24, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", lineHeight: 1, pointerEvents: "none", zIndex: 1 }}>{i + 1}</div>
+            <img src={img.url} alt="" style={{ width: "100%", height: 165, objectFit: "cover", display: "block", pointerEvents: "none" }} />
+            <div style={{ padding: "0.55rem 0.7rem" }}>
+              <input
+                value={localCaptions[i] ?? img.caption ?? ""}
+                onChange={e => setLocalCaptions(prev => ({ ...prev, [i]: e.target.value }))}
+                onBlur={() => { const cap = localCaptions[i] ?? img.caption ?? ""; if (cap !== img.caption) updateCaption(i, cap); }}
+                placeholder={Tr?.slideshowCaptionPh || "Caption (optional)"}
+                style={{ width: "100%", fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-primary)", boxSizing: "border-box", cursor: "text" }}
+                onMouseDown={e => e.stopPropagation()}
+              />
+            </div>
+            <button onClick={() => remove(i)} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>×</button>
+          </div>
+        ))}
       </div>
 
-      {/* RIGHT: live preview */}
+      {images.length === 0 && !uploading && (
+        <p style={{ fontSize: 13, color: "var(--text-muted)", padding: "0.5rem 0 1.5rem" }}>{Tr?.slideshowEmpty || "No slideshow images yet. Click + to upload."}</p>
+      )}
+
+      {/* Live preview below the grid */}
       {images.length > 0 && (
-        <div style={{ flex: "0 0 340px", minWidth: 260 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.5rem", marginTop: 0 }}>
+        <div>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.6rem" }}>
             {Tr?.slideshowPreview || "Preview"}
           </p>
-          <div style={{ borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.10)" }}>
+          <div style={{ borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.10)", maxWidth: 780 }}>
             <SlideshowBanner />
           </div>
         </div>
@@ -2261,7 +2268,7 @@ export default function AdminPage({ onViewProfile }) {
             {/* Recent members */}
             <div className="card" style={{ padding: "1.25rem" }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted,#6b7280)", textTransform: "uppercase", letterSpacing: "0.09em", margin: "0 0 1rem" }}>{Tr.recentMembers}</p>
-              {users.slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6).map(u => (
+              {users.filter(u => !u.blacklisted).slice().sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6).map(u => (
                 <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0", borderBottom: "1px solid var(--bg-tertiary,#f0f6fb)" }}>
                   <div style={{ width:30,height:30,borderRadius:"50%",background:avatarColor(`${u.firstName} ${u.lastName}`),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0,overflow:"hidden" }}>
                     {(u.photoURL || u.avatarUrl)

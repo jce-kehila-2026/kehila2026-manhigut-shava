@@ -652,7 +652,7 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 
               {/* Photo gallery strip — filmstrip of rectangular member photos */}
               {members.length > 0 && (
-                <div style={{ display:"flex", alignItems:"stretch", gap:6 }}>
+                <div dir="ltr" style={{ display:"flex", alignItems:"stretch", gap:6 }}>
                   <button onClick={() => scrollStrip(-1)} style={{
                     display:"flex", alignItems:"center", justifyContent:"center",
                     width:22, height:135, borderRadius:7, flexShrink:0,
