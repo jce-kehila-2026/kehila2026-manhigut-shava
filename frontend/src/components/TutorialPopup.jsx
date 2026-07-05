@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLang } from "../LanguageContext";
 
 const STEP_TARGET_IDS = ["tut-community", "tut-chat", "tut-members", "tut-profile", "tut-settings"];
-const STEP_ICONS      = ["💬", "✉️", "🔍", "👤", "⚙️"];
+const STEP_ICONS      = ["💬", "✉️", "🔍", "👤", "🌙"];
 
 const DEFAULT_STEPS = [
   { title: "Community",       text: "Share updates and connect with the whole network." },

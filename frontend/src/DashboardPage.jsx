@@ -842,7 +842,8 @@ function SettingsPopup({ onClose, onNavigateProfile, lang, setLangChangeCode, da
 
       {/* Dark mode toggle */}
       <div style={{ padding: "0.5rem 1rem 0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ color: "var(--text-secondary)", display: "flex" }}>{dark ? Icon.sun : Icon.moon}</span>
           {t.settings?.darkMode || "Dark Mode"}
         </span>
         <button onClick={toggleTheme} role="switch" aria-checked={dark} style={{
@@ -1187,51 +1188,29 @@ export default function DashboardPage() {
           zIndex: 2,
         }} />
         {/* Logo row */}
-        <div style={{
+        <div onClick={() => navigate("home")} style={{
           display: "flex", alignItems: "center", gap: 10,
           paddingLeft: sidebarExpanded ? 12 : 0,
-          paddingRight: sidebarExpanded ? 8 : 0,
           marginBottom: "0.85rem", flexShrink: 0,
           justifyContent: sidebarExpanded ? "flex-start" : "center",
+          cursor: "pointer",
         }}>
-          <div onClick={() => navigate("home")} style={{
-            display: "flex", alignItems: "center", gap: 10,
-            flex: sidebarExpanded ? 1 : "none", cursor: "pointer", minWidth: 0,
+          <div style={{
+            width: 42, height: 42, borderRadius: 14, flexShrink: 0,
+            background: "#ffffff",
+            boxShadow: "0 0 0 2px rgba(232,115,90,0.45), 0 4px 16px rgba(68,114,184,0.3)",
+            overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <div style={{
-              width: 42, height: 42, borderRadius: 14, flexShrink: 0,
-              background: "#ffffff",
-              boxShadow: "0 0 0 2px rgba(232,115,90,0.45), 0 4px 16px rgba(68,114,184,0.3)",
-              overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <img src="/NewLogoNGO.png"
-                onError={e => { e.currentTarget.parentElement.style.background = "linear-gradient(135deg,#4472b8,#1d4896)"; e.currentTarget.style.display = "none"; }}
-                alt="BogrotNet"
-                style={{ width: "100%", height: "100%", objectFit: "contain", transform: isRTL ? "scaleX(-1)" : "none" }}
-              />
-            </div>
-            {sidebarExpanded && (
-              <span style={{ fontSize: 15, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis" }}>
-                BogrotNet
-              </span>
-            )}
+            <img src="/NewLogoNGO.png"
+              onError={e => { e.currentTarget.parentElement.style.background = "linear-gradient(135deg,#4472b8,#1d4896)"; e.currentTarget.style.display = "none"; }}
+              alt="BogrotNet"
+              style={{ width: "100%", height: "100%", objectFit: "contain", transform: isRTL ? "scaleX(-1)" : "none" }}
+            />
           </div>
           {sidebarExpanded && (
-            <button
-              onClick={toggleTheme}
-              title={dark ? "Switch to light mode" : "Switch to dark mode"}
-              style={{
-                width: 30, height: 30, borderRadius: 99, border: "none", cursor: "pointer",
-                background: "rgba(255,255,255,0.1)",
-                color: "rgba(218,234,248,0.75)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0, transition: "background 0.2s",
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
-              onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
-            >
-              {dark ? Icon.sun : Icon.moon}
-            </button>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em" }}>
+              BogrotNet
+            </span>
           )}
         </div>
 
@@ -1280,10 +1259,29 @@ export default function DashboardPage() {
         {/* Logout + avatar */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: sidebarExpanded ? "stretch" : "center",
           gap: "10px", paddingLeft: sidebarExpanded ? 8 : 0, paddingRight: sidebarExpanded ? 8 : 0 }}>
-          <NavBtn
-            item={{ id: "logout", label: t.nav.logout, icon: Icon.logout }}
-            active={false} badge={0} onClick={logout} expanded={sidebarExpanded}
-          />
+          <button
+            onClick={logout}
+            title={t.nav.logout}
+            style={{
+              width: sidebarExpanded ? "100%" : 46, height: 46,
+              display: "flex", alignItems: "center",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              gap: sidebarExpanded ? 12 : 0,
+              paddingLeft: sidebarExpanded ? 12 : 0,
+              borderRadius: 14,
+              background: "transparent",
+              color: "#f87171",
+              border: "none", cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.12)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <span style={{ flexShrink: 0 }}>{Icon.logout}</span>
+            {sidebarExpanded && (
+              <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{t.nav.logout}</span>
+            )}
+          </button>
           <div style={{ position: "relative", cursor: "pointer",
             display: "flex", alignItems: "center", gap: 10,
             paddingLeft: sidebarExpanded ? 12 : 0,
