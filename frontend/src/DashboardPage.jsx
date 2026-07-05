@@ -1187,29 +1187,51 @@ export default function DashboardPage() {
           zIndex: 2,
         }} />
         {/* Logo row */}
-        <div onClick={() => navigate("home")} style={{
+        <div style={{
           display: "flex", alignItems: "center", gap: 10,
           paddingLeft: sidebarExpanded ? 12 : 0,
+          paddingRight: sidebarExpanded ? 8 : 0,
           marginBottom: "0.85rem", flexShrink: 0,
           justifyContent: sidebarExpanded ? "flex-start" : "center",
-          cursor: "pointer",
         }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 14, flexShrink: 0,
-            background: "#ffffff",
-            boxShadow: "0 0 0 2px rgba(232,115,90,0.45), 0 4px 16px rgba(68,114,184,0.3)",
-            overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+          <div onClick={() => navigate("home")} style={{
+            display: "flex", alignItems: "center", gap: 10,
+            flex: sidebarExpanded ? 1 : "none", cursor: "pointer", minWidth: 0,
           }}>
-            <img src="/NewLogoNGO.png"
-              onError={e => { e.currentTarget.parentElement.style.background = "linear-gradient(135deg,#4472b8,#1d4896)"; e.currentTarget.style.display = "none"; }}
-              alt="BogrotNet"
-              style={{ width: "100%", height: "100%", objectFit: "contain", transform: isRTL ? "scaleX(-1)" : "none" }}
-            />
+            <div style={{
+              width: 42, height: 42, borderRadius: 14, flexShrink: 0,
+              background: "#ffffff",
+              boxShadow: "0 0 0 2px rgba(232,115,90,0.45), 0 4px 16px rgba(68,114,184,0.3)",
+              overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <img src="/NewLogoNGO.png"
+                onError={e => { e.currentTarget.parentElement.style.background = "linear-gradient(135deg,#4472b8,#1d4896)"; e.currentTarget.style.display = "none"; }}
+                alt="BogrotNet"
+                style={{ width: "100%", height: "100%", objectFit: "contain", transform: isRTL ? "scaleX(-1)" : "none" }}
+              />
+            </div>
+            {sidebarExpanded && (
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis" }}>
+                BogrotNet
+              </span>
+            )}
           </div>
           {sidebarExpanded && (
-            <span style={{ fontSize: 15, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", fontFamily: "'Outfit',sans-serif", letterSpacing: "-0.01em" }}>
-              BogrotNet
-            </span>
+            <button
+              onClick={toggleTheme}
+              title={dark ? "Switch to light mode" : "Switch to dark mode"}
+              style={{
+                width: 30, height: 30, borderRadius: 99, border: "none", cursor: "pointer",
+                background: "rgba(255,255,255,0.1)",
+                color: "rgba(218,234,248,0.75)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, transition: "background 0.2s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+            >
+              {dark ? Icon.sun : Icon.moon}
+            </button>
           )}
         </div>
 
