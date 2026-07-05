@@ -609,7 +609,7 @@ export default function SupportPage({ onViewProfile, onMessage, initialHelpPostI
       const docs = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const me   = docs.find((d) => d.id === user.uid);
       if (me) setSenderProfile(me);
-      const others = docs.filter((d) => d.id !== user.uid);
+      const others = docs.filter((d) => d.id !== user.uid && !d.blacklisted);
       setAllUsers(others);
       const sorted = [...others].sort((a, b) => {
         const ta = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;

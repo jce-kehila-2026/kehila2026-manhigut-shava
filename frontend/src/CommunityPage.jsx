@@ -1427,6 +1427,7 @@ export default function CommunityPage({ onViewProfile, onMessage, initialPostId,
       });
       setUsersAvatarMap(avatarMap);
       const upcoming = users
+        .filter((u) => !u.blacklisted)
         .map((u) => ({ ...u, daysUntil: isBirthdaySoon(u.birthDate ?? u.birthdate) }))
         .filter((u) => u.daysUntil !== null)
         .sort((a, b) => a.daysUntil - b.daysUntil);

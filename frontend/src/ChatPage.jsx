@@ -695,7 +695,7 @@ export default function ChatPage({ onUnreadChange, onViewProfile, openChatWithUs
 
   useEffect(() => {
     getDocs(collection(db, "users")).then((snap) =>
-      setAllUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      setAllUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter(u => !u.blacklisted))
     );
   }, []);
 
