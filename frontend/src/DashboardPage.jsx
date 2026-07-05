@@ -30,6 +30,7 @@ const Icon = {
   sun: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
   moon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
   bell: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  settings: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
 };
 
 function useTimeAgo() {
@@ -766,6 +767,118 @@ function HomePage({ user, profile, onNavigate, onViewProfile }) {
 }
 
 
+/* ── Settings popup (gear button dropdown) ── */
+function SettingsPopup({ onClose, onNavigateProfile, lang, setLangChangeCode, dark, toggleTheme, logout, profile, t, isRTL }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const handle = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [onClose]);
+
+  const langs = [{ code: "he", label: "עב" }, { code: "en", label: "EN" }, { code: "ar", label: "عر" }];
+  const initials = profile ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase() : "?";
+
+  return (
+    <div ref={ref} style={{
+      position: "absolute",
+      top: "calc(100% + 8px)",
+      [isRTL ? "left" : "right"]: 0,
+      width: 230,
+      background: "var(--bg-primary)",
+      border: "1px solid var(--border)",
+      borderRadius: 16,
+      boxShadow: "0 16px 48px rgba(15,25,50,0.22), 0 0 0 1px rgba(68,114,184,0.06)",
+      zIndex: 300,
+      overflow: "hidden",
+    }}>
+      {/* Profile shortcut */}
+      <button onClick={() => { onNavigateProfile(); onClose(); }} style={{
+        width: "100%", display: "flex", alignItems: "center", gap: 10,
+        padding: "0.9rem 1rem", background: "none", border: "none", cursor: "pointer",
+        textAlign: isRTL ? "right" : "left",
+      }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+      >
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          {(profile?.photoURL || profile?.avatarUrl) ? (
+            <img src={profile.photoURL || profile.avatarUrl} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} alt="" />
+          ) : (
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#4472b8,#6da3d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>{initials}</div>
+          )}
+          <div style={{ position: "absolute", bottom: 0, right: 0, width: 9, height: 9, borderRadius: "50%", background: "#4ade80", border: "1.5px solid var(--bg-primary)" }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {profile?.firstName} {profile?.lastName}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600 }}>
+            {t.settings?.myProfile || "My Profile"} →
+          </div>
+        </div>
+      </button>
+
+      <div style={{ height: 1, background: "var(--border)", margin: "0 1rem" }} />
+
+      {/* Language */}
+      <div style={{ padding: "0.75rem 1rem 0.5rem" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+          {t.settings?.language || "Language"}
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {langs.map(({ code, label }) => (
+            <button key={code} onClick={() => { if (code !== lang) { setLangChangeCode(code); onClose(); } }} style={{
+              flex: 1, padding: "7px 0",
+              background: lang === code ? "var(--brand)" : "var(--bg-tertiary)",
+              color: lang === code ? "#fff" : "var(--text-secondary)",
+              border: lang === code ? "none" : "1px solid var(--border)",
+              borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer",
+              transition: "all 0.15s",
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dark mode toggle */}
+      <div style={{ padding: "0.5rem 1rem 0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+          {t.settings?.darkMode || "Dark Mode"}
+        </span>
+        <button onClick={toggleTheme} role="switch" aria-checked={dark} style={{
+          width: 40, height: 22, borderRadius: 99, border: "none", cursor: "pointer",
+          background: dark ? "var(--brand)" : "var(--border)",
+          position: "relative", transition: "background 0.2s", flexShrink: 0, padding: 0,
+        }}>
+          <span style={{
+            position: "absolute", top: 2,
+            left: dark ? "calc(100% - 20px)" : 2,
+            width: 18, height: 18, borderRadius: "50%", background: "#fff",
+            transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+            display: "block",
+          }} />
+        </button>
+      </div>
+
+      <div style={{ height: 1, background: "var(--border)" }} />
+
+      {/* Logout */}
+      <button onClick={() => { logout(); onClose(); }} style={{
+        width: "100%", display: "flex", alignItems: "center", gap: 10,
+        padding: "0.8rem 1rem", background: "none", border: "none", cursor: "pointer",
+        color: "var(--danger,#ef4444)", fontSize: 13, fontWeight: 600,
+        textAlign: isRTL ? "right" : "left",
+      }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.06)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+      >
+        {Icon.logout}
+        {t.settings?.logOut || t.nav?.logout || "Log Out"}
+      </button>
+    </div>
+  );
+}
+
 /* ── Main dashboard shell ── */
 export default function DashboardPage() {
   const { user, profile, logout } = useAuth();
@@ -780,6 +893,8 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState([]);
   const [showNotifs,    setShowNotifs]    = useState(false);
   const notifBellRef = useRef(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef(null);
   const [profileTarget, setProfileTarget] = useState(null);
   const [chatTarget, setChatTarget] = useState(null);
   const [communityPostTarget, setCommunityPostTarget] = useState(null);
@@ -1294,11 +1409,6 @@ export default function DashboardPage() {
               </div>
               <div style={{ flex: 1 }} />
 
-              <LangSwitcher compact={isVeryNarrow} lang={lang} onChangeLang={(code) => {
-                if (code === lang) return;
-                setLangChangeCode(code);
-              }} />
-
               {/* Notification bell */}
               <div ref={notifBellRef} style={{ position: "relative" }}>
                 <button
@@ -1474,32 +1584,40 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Logout — icon only in mobile header */}
-              {isMobile && (
-                <button onClick={logout} title={t.nav.logout} style={{
-                  width: 34, height: 34, borderRadius: 99,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "transparent", border: "none",
-                  color: "var(--danger)", cursor: "pointer",
-                  transition: "all var(--t-fast)", flexShrink: 0,
-                }}>
-                  {Icon.logout}
-                </button>
-              )}
-
-              {(
-                <button onClick={toggleTheme} title={dark ? "Switch to light mode" : "Switch to dark mode"} style={{
-                  width: 34, height: 34, borderRadius: 99,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "transparent", border: "1px solid var(--border)",
-                  color: "var(--text-secondary)", cursor: "pointer", transition: "all var(--t-fast)",
-                }}
+              {/* Settings gear */}
+              <div ref={settingsRef} style={{ position: "relative" }}>
+                <button
+                  id="tut-settings"
+                  onClick={() => setShowSettings(v => !v)}
+                  title={t.settings?.title || "Settings"}
+                  style={{
+                    width: 34, height: 34, borderRadius: 99,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: showSettings ? "var(--bg-hover)" : "transparent",
+                    border: "1px solid var(--border)",
+                    color: showSettings ? "var(--brand)" : "var(--text-secondary)",
+                    cursor: "pointer", transition: "all var(--t-fast)", flexShrink: 0,
+                  }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--brand)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+                  onMouseLeave={(e) => { if (!showSettings) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border)"; } }}
                 >
-                  {dark ? Icon.sun : Icon.moon}
+                  {Icon.settings}
                 </button>
-              )}
+                {showSettings && (
+                  <SettingsPopup
+                    onClose={() => setShowSettings(false)}
+                    onNavigateProfile={() => switchTab("profile")}
+                    lang={lang}
+                    setLangChangeCode={setLangChangeCode}
+                    dark={dark}
+                    toggleTheme={toggleTheme}
+                    logout={logout}
+                    profile={profile}
+                    t={t}
+                    isRTL={isRTL}
+                  />
+                )}
+              </div>
 
               {/* User chip — greeting + online dot + avatar + admin badge, on all screen sizes */}
               {(() => {

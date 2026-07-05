@@ -1,19 +1,20 @@
 import { useState, useEffect } from "react";
 import { useLang } from "../LanguageContext";
 
-const STEP_TARGET_IDS = ["tut-community", "tut-chat", "tut-members", "tut-profile"];
-const STEP_ICONS      = ["💬", "✉️", "🔍", "👤"];
+const STEP_TARGET_IDS = ["tut-community", "tut-chat", "tut-members", "tut-profile", "tut-settings"];
+const STEP_ICONS      = ["💬", "✉️", "🔍", "👤", "⚙️"];
 
 const DEFAULT_STEPS = [
   { title: "Community",       text: "Share updates and connect with the whole network." },
   { title: "Direct Messages", text: "Send private messages to any member directly." },
   { title: "Find Help",       text: "Search members who can help you by profession or skill." },
   { title: "My Profile",      text: "Complete your profile so others can find you." },
+  { title: "Settings",        text: "Change language, toggle dark mode, or log out from here." },
 ];
 
 export function TutorialPopup({ onClose }) {
   const { t } = useLang();
-  const steps = ((t.tutorial?.steps?.length === 4 ? t.tutorial.steps : DEFAULT_STEPS))
+  const steps = ((t.tutorial?.steps?.length === 5 ? t.tutorial.steps : DEFAULT_STEPS))
     .map((s, i) => ({ ...s, targetId: STEP_TARGET_IDS[i], icon: STEP_ICONS[i] }));
 
   const [step, setStep] = useState(0);
