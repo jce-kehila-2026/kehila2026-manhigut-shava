@@ -1940,7 +1940,9 @@ export default function AdminPage({ onViewProfile }) {
   };
 
   /* ── Support filters ── */
+  const blacklistedIds = new Set(users.filter(u => u.blacklisted).map(u => u.id));
   const filteredHelpPosts = helpPosts.filter(p => {
+    if (blacklistedIds.has(p.authorUid)) return false;
     if (!supportPostSearch.trim()) return true;
     const q = supportPostSearch.toLowerCase();
     return (p.authorDisplayName||"").toLowerCase().includes(q)
@@ -1948,6 +1950,7 @@ export default function AdminPage({ onViewProfile }) {
       || (p.tags||[]).some(t => t.toLowerCase().includes(q));
   });
   const filteredHelpRequests = helpRequests.filter(r => {
+    if (blacklistedIds.has(r.fromUserId)) return false;
     const matchStatus = supportReqStatus === "all"
       ? true
       : supportReqStatus === "pending"
