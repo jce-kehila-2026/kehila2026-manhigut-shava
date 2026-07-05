@@ -1152,7 +1152,7 @@ function SlideshowAdmin({ Tr }) {
       </div>
 
       {/* RIGHT: sticky live preview */}
-      <div style={{ flex: "0 0 420px", position: "sticky", top: "1rem" }}>
+      <div style={{ flex: "0 0 560px", position: "sticky", top: "1rem" }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.6rem", marginTop: 0 }}>
           {Tr?.slideshowPreview || "Preview"}
         </p>
