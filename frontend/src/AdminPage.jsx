@@ -1097,10 +1097,10 @@ function SlideshowAdmin({ Tr }) {
           </p>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
           {/* Add button — always top-left */}
           <label style={{
-            minHeight: 190, borderRadius: 12, border: "2px dashed var(--border)",
+            minHeight: 145, borderRadius: 12, border: "2px dashed var(--border)",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             cursor: uploading ? "wait" : "pointer", color: "var(--text-muted)",
             fontSize: 13, gap: 7, background: "var(--bg-secondary)",
@@ -1130,7 +1130,7 @@ function SlideshowAdmin({ Tr }) {
               }}
             >
               <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.65)", color: "#fff", borderRadius: 20, minWidth: 24, height: 24, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", lineHeight: 1, pointerEvents: "none", zIndex: 1 }}>{i + 1}</div>
-              <img src={img.url} alt="" style={{ width: "100%", height: 160, objectFit: "cover", display: "block", pointerEvents: "none" }} />
+              <img src={img.url} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block", pointerEvents: "none" }} />
               <div style={{ padding: "0.55rem 0.7rem" }}>
                 <input
                   value={localCaptions[i] ?? img.caption ?? ""}
@@ -1152,7 +1152,7 @@ function SlideshowAdmin({ Tr }) {
       </div>
 
       {/* RIGHT: sticky live preview */}
-      <div style={{ flex: "0 0 300px", position: "sticky", top: "1rem" }}>
+      <div style={{ flex: "0 0 420px", position: "sticky", top: "1rem" }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.6rem", marginTop: 0 }}>
           {Tr?.slideshowPreview || "Preview"}
         </p>
