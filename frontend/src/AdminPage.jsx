@@ -1158,7 +1158,7 @@ function SlideshowAdmin({ Tr }) {
         </p>
         {images.length > 0 ? (
           <div style={{ borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.10)" }}>
-            <SlideshowBanner />
+            <SlideshowBanner maxHeight={420} />
           </div>
         ) : (
           <div style={{ borderRadius: 14, border: "2px dashed var(--border)", minHeight: 160, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-secondary)" }}>
