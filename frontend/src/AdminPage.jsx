@@ -1035,6 +1035,12 @@ function SlideshowAdmin({ Tr }) {
   const [localCaptions, setLocalCaptions] = useState({});
   const dragIndexRef = useRef(null);
   const fileRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", fn, { passive: true });
+    return () => window.removeEventListener("resize", fn);
+  }, []);
 
   useEffect(() => {
     getDoc(doc(db, "siteSettings", "slideshow")).then((snap) => {
@@ -1087,7 +1093,7 @@ function SlideshowAdmin({ Tr }) {
   };
 
   return (
-    <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-start", width: "100%" }}>
+    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1.5rem", alignItems: "flex-start", width: "100%" }}>
 
       {/* LEFT: scrollable slide grid */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1097,7 +1103,7 @@ function SlideshowAdmin({ Tr }) {
           </p>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: "0.75rem" }}>
           {/* Add button — always top-left */}
           <label style={{
             minHeight: 145, borderRadius: 12, border: "2px dashed var(--border)",
@@ -1152,7 +1158,7 @@ function SlideshowAdmin({ Tr }) {
       </div>
 
       {/* RIGHT: sticky live preview */}
-      <div style={{ flex: "0 0 560px", position: "sticky", top: "1rem" }}>
+      <div style={{ flex: isMobile ? "1 1 auto" : "0 0 360px", width: isMobile ? "100%" : undefined, position: isMobile ? "static" : "sticky", top: "1rem" }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.6rem", marginTop: 0 }}>
           {Tr?.slideshowPreview || "Preview"}
         </p>
