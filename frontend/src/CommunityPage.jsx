@@ -1445,6 +1445,9 @@ export default function CommunityPage({ onViewProfile, onMessage, initialPostId,
       if (autoPostedRef.current.has(key)) return;
       autoPostedRef.current.add(key);
 
+      // Check current posts state first to avoid a flash while the Firestore query is in-flight
+      if (posts.some(p => p.birthdayAutoPost && p.birthdayUserId === bdayUser.id && p.createdAt?.startsWith(todayStr))) return;
+
       const q = query(collection(db, "posts"), where("birthdayUserId", "==", bdayUser.id));
       const snap = await getDocs(q);
       const alreadyPosted = snap.docs.some(
@@ -1456,7 +1459,7 @@ export default function CommunityPage({ onViewProfile, onMessage, initialPostId,
       await addDoc(collection(db, "posts"), {
         text: t.community.birthdayAutoPostText(name),
         media: [],
-        authorId: "system",
+        authorId: user.uid,
         authorName: "BogrotNet",
         authorAvatar: "/NewLogoNGO.png",
         authorProfession: "Community",
@@ -1504,7 +1507,7 @@ export default function CommunityPage({ onViewProfile, onMessage, initialPostId,
   };
 
   const blockedIds = authProfile?.isAdmin ? [] : (authProfile?.blockedUsers || []);
-  const visiblePosts = posts.filter(p => !blockedIds.includes(p.authorId));
+  const visiblePosts = posts.filter(p => p.birthdayAutoPost || !blockedIds.includes(p.authorId));
   const pinnedPosts  = visiblePosts.filter((p) => p.isPinned);
   const regularPosts = visiblePosts.filter((p) => !p.isPinned);
 
