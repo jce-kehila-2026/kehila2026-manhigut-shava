@@ -4,6 +4,7 @@ import {
   orderBy, updateDoc, limit, where, setDoc, getDoc,
 } from "firebase/firestore";
 import { SlideshowBanner } from "./components/SlideshowBanner";
+import { ImageCropper } from "./components/ImageCropper";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { httpsCallable } from "firebase/functions";
 import { db, functions, storage } from "./firebase";
@@ -1029,10 +1030,14 @@ function StatDetailPanel({ type, users, posts, convs, onClose, Tr, isActuallyOnl
    SLIDESHOW ADMIN COMPONENT
 ═══════════════════════════════════════════════════════ */
 function SlideshowAdmin({ Tr }) {
+  const { lang } = useLang();
   const [images, setImages]         = useState([]);
   const [uploading, setUploading]   = useState(false);
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [localCaptions, setLocalCaptions] = useState({});
+  const [cropFile, setCropFile]     = useState(null);
+  const [cropQueue, setCropQueue]   = useState([]);
+  const croppedBlobs                = useRef([]);
   const dragIndexRef = useRef(null);
   const fileRef = useRef(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
@@ -1053,20 +1058,46 @@ function SlideshowAdmin({ Tr }) {
     setImages(imgs);
   };
 
-  const handleUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+  const uploadBlobs = async (blobs, currentImages) => {
     setUploading(true);
     try {
-      const newImgs = await Promise.all(files.map(async (file) => {
-        const path = `slideshow/${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name}`;
+      const newImgs = await Promise.all(blobs.map(async (blob) => {
+        const path = `slideshow/${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const sRef = storageRef(storage, path);
-        await uploadBytes(sRef, file);
+        await uploadBytes(sRef, blob);
         const url = await getDownloadURL(sRef);
         return { url, storagePath: path, caption: "" };
       }));
-      await persist([...images, ...newImgs]);
-    } finally { setUploading(false); e.target.value = ""; }
+      await persist([...currentImages, ...newImgs]);
+    } finally { setUploading(false); }
+  };
+
+  const handleUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    croppedBlobs.current = [];
+    setCropQueue(files.slice(1));
+    setCropFile(files[0]);
+  };
+
+  const handleCropConfirm = async (blob) => {
+    croppedBlobs.current.push(blob);
+    if (cropQueue.length > 0) {
+      setCropFile(cropQueue[0]);
+      setCropQueue(prev => prev.slice(1));
+    } else {
+      setCropFile(null);
+      setCropQueue([]);
+      await uploadBlobs(croppedBlobs.current, images);
+      croppedBlobs.current = [];
+    }
+  };
+
+  const handleCropCancel = () => {
+    setCropFile(null);
+    setCropQueue([]);
+    croppedBlobs.current = [];
   };
 
   const updateCaption = async (i, caption) => {
@@ -1093,6 +1124,15 @@ function SlideshowAdmin({ Tr }) {
   };
 
   return (
+    <>
+    {cropFile && (
+      <ImageCropper
+        file={cropFile}
+        lang={lang}
+        onConfirm={handleCropConfirm}
+        onCancel={handleCropCancel}
+      />
+    )}
     <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1.5rem", alignItems: "flex-start", width: "100%" }}>
 
       {/* LEFT: scrollable slide grid */}
@@ -1174,6 +1214,7 @@ function SlideshowAdmin({ Tr }) {
       </div>
 
     </div>
+    </>
   );
 }
 
