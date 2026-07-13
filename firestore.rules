@@ -231,12 +231,21 @@ service cloud.firestore {
     match /customProfessions/{docId} {
       allow read:   if isAuth();
       allow create: if isAuth();
+      allow delete: if isAdmin();
     }
 
     /* ── Custom institutions (user-contributed, shared dropdown) ── */
     match /customInstitutions/{docId} {
       allow read:   if isAuth();
       allow create: if isAuth();
+      allow delete: if isAdmin();
+    }
+
+    /* ── Custom regions (user-contributed, shared dropdown) ── */
+    match /customRegions/{docId} {
+      allow read:   if isAuth();
+      allow create: if isAuth();
+      allow delete: if isAdmin();
     }
 
     /* ── Default: deny all ── */

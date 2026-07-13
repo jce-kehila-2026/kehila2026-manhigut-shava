@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { useLang } from "../LanguageContext";
 import { useTheme } from "../ThemeContext";
+import { useAuth } from "../AuthContext";
 import { PROFESSIONS_BY_LANG, translateProfession } from "../utils/translateProfile";
 
 async function gtrans(text, tl) {
@@ -23,6 +24,8 @@ let cachedCustom = null;
 export default function ProfessionPicker({ value, translations, onChange, placeholder }) {
   const { lang, isRTL } = useLang();
   const { T } = useTheme();
+  const { profile: authProfile } = useAuth();
+  const isAdmin = authProfile?.isAdmin === true;
 
   const [open, setOpen]       = useState(false);
   const [query, setQuery]     = useState("");
@@ -74,6 +77,7 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
     enValue:      c.en || c.he || "",
     translations: { he: c.he || "", en: c.en || "", ar: c.ar || "" },
     isCustom:     true,
+    id:           c.id,
   }));
 
   const allOptions = [...knownOptions, ...customOptions];
@@ -96,7 +100,6 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
   };
 
   const handleSelect = opt => {
-    // "Other" → stay open and clear query so user can type their custom profession
     const isOther = ["אחר", "Other", "أخرى"].includes(opt.label);
     if (isOther) {
       setQuery("");
@@ -112,7 +115,6 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
     if (!trimQ || adding) return;
     setAdding(true);
     try {
-      // Step 1: translate — fall back to raw text if API fails
       let t;
       try {
         t = await translateAll(trimQ);
@@ -120,14 +122,15 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
         t = { he: trimQ, en: trimQ, ar: trimQ };
       }
 
-      // Step 2: update local state immediately (always, regardless of Firestore)
-      const entry = { he: t.he, en: t.en, ar: t.ar };
+      let id;
+      try {
+        const docRef = await addDoc(collection(db, "customProfessions"), { ...t, addedAt: serverTimestamp() });
+        id = docRef.id;
+      } catch {}
+
+      const entry = { id, he: t.he, en: t.en, ar: t.ar };
       cachedCustom = [...(cachedCustom || []), entry];
       setCustom(prev => [...prev, entry]);
-
-      // Step 3: persist to Firestore so other users see it — fire and forget
-      addDoc(collection(db, "customProfessions"), { ...t, addedAt: serverTimestamp() })
-        .catch(() => {});
 
       setOpen(false);
       setQuery("");
@@ -135,6 +138,16 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
     } finally {
       setAdding(false);
     }
+  };
+
+  const handleDelete = async (id) => {
+    const confirmMsg = lang === "he" ? "למחוק ערך זה?" : lang === "ar" ? "حذف هذا الخيار؟" : "Delete this option?";
+    if (!id || !window.confirm(confirmMsg)) return;
+    try {
+      await deleteDoc(doc(db, "customProfessions", id));
+      cachedCustom = (cachedCustom || []).filter(c => c.id !== id);
+      setCustom(prev => prev.filter(c => c.id !== id));
+    } catch {}
   };
 
   const addLabel = lang === "he"
@@ -157,6 +170,13 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
     direction: isRTL ? "rtl" : "ltr",
     cursor: "pointer",
     outline: "none",
+  };
+
+  const baseRowStyle = {
+    display: "flex", alignItems: "center", gap: 6,
+    width: "100%", textAlign: isRTL ? "right" : "left",
+    padding: "10px 14px", background: "none", border: "none",
+    fontSize: 14, color: T.text, fontFamily: "inherit", cursor: "pointer",
   };
 
   return (
@@ -193,27 +213,48 @@ export default function ProfessionPicker({ value, translations, onChange, placeh
           boxShadow: "0 6px 24px rgba(68,114,184,0.15)",
           direction: isRTL ? "rtl" : "ltr",
         }}>
-          {filtered.map((opt, i) => (
-            <button
-              key={i}
-              type="button"
-              onMouseDown={e => { e.preventDefault(); handleSelect(opt); }}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                width: "100%", textAlign: isRTL ? "right" : "left",
-                padding: "10px 14px", background: "none", border: "none",
-                borderBottom: i < filtered.length - 1 ? `1px solid ${T.inputBorder}` : "none",
-                cursor: "pointer", fontSize: 14, color: T.text, fontFamily: "inherit",
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(68,114,184,0.07)"}
-              onMouseLeave={e => e.currentTarget.style.background = "none"}
-            >
-              {opt.label}
-              {opt.isCustom && (
-                <span style={{ fontSize: 10, opacity: 0.45, marginInlineStart: "auto" }}>★</span>
-              )}
-            </button>
-          ))}
+          {filtered.map((opt, i) => {
+            const borderBottom = i < filtered.length - 1 ? `1px solid ${T.inputBorder}` : "none";
+            if (opt.isCustom && isAdmin) {
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "stretch", borderBottom }}>
+                  <button
+                    type="button"
+                    onMouseDown={e => { e.preventDefault(); handleSelect(opt); }}
+                    style={{ ...baseRowStyle, flex: 1, borderBottom: "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(68,114,184,0.07)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}
+                  >
+                    {opt.label}
+                    <span style={{ fontSize: 10, opacity: 0.45, marginInlineStart: "auto" }}>★</span>
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={e => { e.preventDefault(); handleDelete(opt.id); }}
+                    title={lang === "he" ? "מחק" : lang === "ar" ? "احذف" : "Delete"}
+                    style={{ background: "none", border: "none", padding: "10px 12px 10px 4px", cursor: "pointer", color: "#ef4444", opacity: 0.55, fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                    onMouseLeave={e => e.currentTarget.style.opacity = "0.55"}
+                  >×</button>
+                </div>
+              );
+            }
+            return (
+              <button
+                key={i}
+                type="button"
+                onMouseDown={e => { e.preventDefault(); handleSelect(opt); }}
+                style={{ ...baseRowStyle, borderBottom }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(68,114,184,0.07)"}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}
+              >
+                {opt.label}
+                {opt.isCustom && (
+                  <span style={{ fontSize: 10, opacity: 0.45, marginInlineStart: "auto" }}>★</span>
+                )}
+              </button>
+            );
+          })}
 
           {filtered.length === 0 && !showAdd && (
             <div style={{ padding: "10px 14px", fontSize: 13, opacity: 0.45, direction: isRTL ? "rtl" : "ltr" }}>
