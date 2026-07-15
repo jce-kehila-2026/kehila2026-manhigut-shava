@@ -14,6 +14,7 @@ import { deletePostWithCleanup } from "./utils/deletePost";
 import { daysUntilBirthday, formatBirthday } from "./utils/birthday";
 import ImageEditorModal from "./ImageEditorModal";
 import { SlideshowBanner } from "./components/SlideshowBanner";
+import { BalloonsEffect } from "./components/BalloonsEffect";
 import { translateProfession } from "./utils/translateProfile";
 import { HelpPostsWidget } from "./HelpPostFeed";
 
@@ -578,8 +579,8 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
               ↻ {post.repostOf.authorName}
             </p>
             {post.repostOf.text && (
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
-                {renderTextWithLinks(post.repostOf.text)}
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55, wordBreak: "break-word", whiteSpace: "pre-wrap", maxHeight: "90px", overflowY: "auto" }}>
+                {renderTextWithLinks(post.repostOf.text.length > 280 ? post.repostOf.text.slice(0, 280) + "…" : post.repostOf.text)}
               </p>
             )}
             {post.repostOf.media?.length > 0 && (
@@ -719,14 +720,14 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
       {showRepostModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(74,31,61,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "1rem", backdropFilter: "blur(6px)" }}
           onClick={() => setShowRepostModal(false)}>
-          <div style={{ background: "var(--bg-primary)", borderRadius: "var(--r-xl)", padding: "1.5rem", width: "100%", maxWidth: 480, boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", gap: "1rem" }}
+          <div style={{ background: "var(--bg-primary)", borderRadius: "var(--r-xl)", padding: "1.5rem", width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", gap: "1rem" }}
             onClick={(e) => e.stopPropagation()}>
             <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>{t.community.repost}</p>
 
             <div style={{ background: "var(--bg-secondary)", borderRadius: "var(--r-md)", padding: "0.85rem 1rem", border: "1px solid var(--border)", borderLeft: "3px solid var(--brand)" }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: "var(--brand-dark)", marginBottom: 4 }}>{post.authorName}</p>
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
-                {post.text ? renderTextWithLinks(post.text.length > 200 ? post.text.slice(0, 200) + "…" : post.text) : t.community.mediaPost}
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, wordBreak: "break-word", whiteSpace: "pre-wrap", maxHeight: "100px", overflowY: "auto" }}>
+                {post.text ? renderTextWithLinks(post.text.length > 300 ? post.text.slice(0, 300) + "…" : post.text) : t.community.mediaPost}
               </p>
             </div>
 
@@ -1059,6 +1060,7 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
   const [wishData, setWishData] = useState(null);
   const [clicking, setClicking] = useState(false);
   const [justSent, setJustSent] = useState(false);
+  const [showBalloons, setShowBalloons] = useState(false);
   const todayStr = new Date().toISOString().slice(0, 10);
   const docId = `${birthdayUserId}_${todayStr}`;
 
@@ -1100,6 +1102,7 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
         read: false,
       });
       setJustSent(true);
+      setShowBalloons(true);
       setTimeout(() => setJustSent(false), 2000);
     } catch (e) {
       console.error("Birthday wish failed:", e);
@@ -1133,28 +1136,31 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={hasWished || clicking}
-      title={hasWished ? t.community.birthdayWishSent : t.community.birthdayBalloonTooltip}
-      style={{
-        flex: 1,
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-        padding: "7px 0",
-        borderRadius: "var(--r-full)",
-        background: hasWished
-          ? "linear-gradient(135deg, #4472b8, #6da3d4)"
-          : "linear-gradient(135deg, rgba(68,114,184,0.12), rgba(109,163,212,0.12))",
-        color: hasWished ? "#fff" : "#4472b8",
-        border: hasWished ? "none" : "1.5px solid rgba(68,114,184,0.35)",
-        fontSize: 12, fontWeight: 700, cursor: hasWished ? "default" : "pointer",
-        transition: "all 0.2s",
-        transform: justSent ? "scale(1.06)" : "scale(1)",
-      }}
-    >
-      <BalloonSVG size={15} color={hasWished ? "#fff" : "#4472b8"} />
-      {justSent ? t.community.birthdayWishSent : count > 0 ? count : ""}
-    </button>
+    <>
+      {showBalloons && <BalloonsEffect onDone={() => setShowBalloons(false)} />}
+      <button
+        onClick={handleClick}
+        disabled={hasWished || clicking}
+        title={hasWished ? t.community.birthdayWishSent : t.community.birthdayBalloonTooltip}
+        style={{
+          flex: 1,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+          padding: "7px 0",
+          borderRadius: "var(--r-full)",
+          background: hasWished
+            ? "linear-gradient(135deg, #4472b8, #6da3d4)"
+            : "linear-gradient(135deg, rgba(68,114,184,0.12), rgba(109,163,212,0.12))",
+          color: hasWished ? "#fff" : "#4472b8",
+          border: hasWished ? "none" : "1.5px solid rgba(68,114,184,0.35)",
+          fontSize: 12, fontWeight: 700, cursor: hasWished ? "default" : "pointer",
+          transition: "all 0.2s",
+          transform: justSent ? "scale(1.06)" : "scale(1)",
+        }}
+      >
+        <BalloonSVG size={15} color={hasWished ? "#fff" : "#4472b8"} />
+        {justSent ? t.community.birthdayWishSent : count > 0 ? count : ""}
+      </button>
+    </>
   );
 }
 

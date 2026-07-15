@@ -13,6 +13,7 @@ import ChatPage             from "./ChatPage";
 import { isBirthdayToday, daysUntilBirthday } from "./utils/birthday";
 import { SlideshowBanner } from "./components/SlideshowBanner";
 import { TutorialPopup } from "./components/TutorialPopup";
+import { BalloonsEffect } from "./components/BalloonsEffect";
 import { translateProfession } from "./utils/translateProfile";
 import { HelpPostsWidget } from "./HelpPostFeed";
 
@@ -1090,6 +1091,17 @@ export default function DashboardPage() {
     if (profile.tutorialDone === false) setShowTutorial(true);
   }, [profile]);
 
+  const [showBirthdayBalloons, setShowBirthdayBalloons] = useState(false);
+  useEffect(() => {
+    if (!profile) return;
+    const bdate = profile.birthDate || profile.birthdate;
+    if (!bdate) return;
+    if (isBirthdayToday(bdate) && !sessionStorage.getItem("bdayBalloons")) {
+      sessionStorage.setItem("bdayBalloons", "1");
+      setTimeout(() => setShowBirthdayBalloons(true), 1200);
+    }
+  }, [profile]);
+
   const [tutorialBtnHidden, setTutorialBtnHidden] = useState(
     () => localStorage.getItem("tutorialBtnHidden") === "true"
   );
@@ -1157,6 +1169,7 @@ export default function DashboardPage() {
       direction: dir,
       overflow: "hidden",
     }}>
+      {showBirthdayBalloons && <BalloonsEffect onDone={() => setShowBirthdayBalloons(false)} />}
       {showTutorial && (
         <TutorialPopup onClose={() => {
           setShowTutorial(false);
