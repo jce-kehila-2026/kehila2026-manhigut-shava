@@ -1619,6 +1619,7 @@ export default function AdminPage({ onViewProfile }) {
   const [userFilterAdmin, setUserFilterAdmin] = useState(false);
   const [userFilterOnline, setUserFilterOnline] = useState(false);
   const [userFilterPending, setUserFilterPending] = useState(false);
+  const [userFilterBlacklisted, setUserFilterBlacklisted] = useState(false);
 
   /* ── Posts: search + filter + expanded comments ── */
   const [postSearch, setPostSearch] = useState("");
@@ -1789,8 +1790,26 @@ export default function AdminPage({ onViewProfile }) {
   };
 
   const removeFromBlacklist = async (id) => {
+    const entry = blacklist.find(b => b.id === id);
     await deleteDoc(doc(db, "blacklist", id));
     setBlacklist(prev => prev.filter(b => b.id !== id));
+    /* Also clear the blacklisted flag on the user doc if they're registered */
+    if (entry?.email) {
+      const existing = users.find(u => u.email?.toLowerCase() === entry.email.toLowerCase());
+      if (existing) {
+        await updateDoc(doc(db, "users", existing.id), { blacklisted: false, blacklistReason: null });
+        setUsers(prev => prev.map(u => u.id === existing.id ? { ...u, blacklisted: false, blacklistReason: null } : u));
+      }
+    }
+  };
+
+  const restoreBlacklistedUser = async (u) => {
+    const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email || "this user";
+    const msg = lang === "he" ? `לשחרר את ${name} מהרשימה השחורה?` : lang === "ar" ? `هل تريدين إلغاء حظر ${name}؟` : `Restore ${name}'s account? They will be able to sign in again.`;
+    if (!window.confirm(msg)) return;
+    await updateDoc(doc(db, "users", u.id), { blacklisted: false, blacklistReason: null });
+    setUsers(prev => prev.map(u2 => u2.id === u.id ? { ...u2, blacklisted: false, blacklistReason: null } : u2));
+    setUserFilterBlacklisted(false);
   };
 
   const updateReportStatus = async (id, status) => {
@@ -2029,10 +2048,11 @@ export default function AdminPage({ onViewProfile }) {
         const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.toLowerCase();
         return name.includes(s) || (u.email ?? "").toLowerCase().includes(s) || (u.profession ?? "").toLowerCase().includes(s) || (u.region ?? "").toLowerCase().includes(s);
       })();
-      const matchAdmin   = !userFilterAdmin   || !!u.isAdmin;
-      const matchOnline  = !userFilterOnline  || isActuallyOnline(u);
-      const matchPending = !userFilterPending || !u.emailVerified;
-      return matchSearch && matchAdmin && matchOnline && matchPending && !u.blacklisted;
+      const matchAdmin       = !userFilterAdmin       || !!u.isAdmin;
+      const matchOnline      = !userFilterOnline      || isActuallyOnline(u);
+      const matchPending     = !userFilterPending     || !u.emailVerified;
+      const matchBlacklisted = userFilterBlacklisted  ? !!u.blacklisted : !u.blacklisted;
+      return matchSearch && matchAdmin && matchOnline && matchPending && matchBlacklisted;
     })
     .sort((a, b) => {
       if (userSortBy === "alpha")  return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "he");
@@ -2461,6 +2481,10 @@ export default function AdminPage({ onViewProfile }) {
                 <input type="checkbox" checked={userFilterPending} onChange={e => setUserFilterPending(e.target.checked)} style={{ cursor:"pointer", accentColor:"#e07a5f" }} />
                 {Tr.pendingOnly || "Pending"}
               </label>
+              <label style={{ fontSize:11, fontWeight:600, color:"#ef4444", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+                <input type="checkbox" checked={userFilterBlacklisted} onChange={e => setUserFilterBlacklisted(e.target.checked)} style={{ cursor:"pointer", accentColor:"#ef4444" }} />
+                {Tr.blacklistedOnly || "Blacklisted"}
+              </label>
             </div>
           </div>
           {isMobile ? (
@@ -2483,9 +2507,10 @@ export default function AdminPage({ onViewProfile }) {
                         </p>
                       </div>
                       <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,flexShrink:0 }}>
-                        <span className={`badge ${u.emailVerified?"badge-green":"badge-yellow"}`} style={{ fontSize:10 }}>
-                          {u.emailVerified ? Tr.verified : Tr.statusPending}
-                        </span>
+                        {u.blacklisted
+                          ? <span className="badge" style={{ fontSize:10,background:"#fee2e2",color:"#b91c1c",border:"1px solid #fca5a5" }}>🚫 {Tr.blacklistedOnly||"Blacklisted"}</span>
+                          : <span className={`badge ${u.emailVerified?"badge-green":"badge-yellow"}`} style={{ fontSize:10 }}>{u.emailVerified ? Tr.verified : Tr.statusPending}</span>
+                        }
                         {u.isAdmin && <span className="badge badge-purple" style={{ fontSize:10 }}>{Tr.adminBadge}</span>}
                         {isActuallyOnline(u) && <span className="badge badge-green" style={{ fontSize:10,background:"#f0fdf4" }}>● {Tr.onlineBadge}</span>}
                       </div>
@@ -2538,7 +2563,13 @@ export default function AdminPage({ onViewProfile }) {
                             {Tr.makeAdmin}
                           </button>
                         ))}
-                        {canManageUsers && <button onClick={e => { e.stopPropagation(); setConfirmDeleteTarget(u); }}
+                        {u.blacklisted && canManageUsers && (
+                          <button onClick={e => { e.stopPropagation(); restoreBlacklistedUser(u); }}
+                            style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #6ee7b7",background:"#d1fae5",color:"#065f46",cursor:"pointer" }}>
+                            {Tr.restoreAccount || "↩ Restore"}
+                          </button>
+                        )}
+                        {!u.blacklisted && canManageUsers && <button onClick={e => { e.stopPropagation(); setConfirmDeleteTarget(u); }}
                           style={{ padding:"5px 12px",borderRadius:8,fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
                           {Tr.deleteLbl}
                         </button>}
@@ -2585,9 +2616,10 @@ export default function AdminPage({ onViewProfile }) {
                       <td style={{ padding:"11px 14px",fontSize:12,color:"var(--text-secondary,#7a5868)" }}>{u.region||"—"}</td>
                       <td style={{ padding:"11px 14px" }}>
                         <div style={{ display:"flex",gap:4,flexWrap:"wrap" }}>
-                          <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>
-                            {u.emailVerified ? Tr.verified : Tr.statusPending}
-                          </span>
+                          {u.blacklisted
+                            ? <span className="badge" style={{ background:"#fee2e2",color:"#b91c1c",border:"1px solid #fca5a5" }}>🚫 {Tr.blacklistedOnly||"Blacklisted"}</span>
+                            : <span className={`badge ${u.emailVerified ? "badge-green" : "badge-yellow"}`}>{u.emailVerified ? Tr.verified : Tr.statusPending}</span>
+                          }
                           {u.isAdmin && <span className="badge badge-purple">{Tr.adminBadge}</span>}
                           {isActuallyOnline(u) && <span className="badge badge-green" style={{background:"#f0fdf4"}}>● {Tr.onlineBadge}</span>}
                         </div>
@@ -2623,7 +2655,13 @@ export default function AdminPage({ onViewProfile }) {
                                 {Tr.makeAdmin}
                               </button>
                             ))}
-                            {canManageUsers && <button onClick={() => setConfirmDeleteTarget(u)}
+                            {u.blacklisted && canManageUsers && (
+                              <button onClick={e => { e.stopPropagation(); restoreBlacklistedUser(u); }}
+                                style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #6ee7b7",background:"#d1fae5",color:"#065f46",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                {Tr.restoreAccount || "↩ Restore"}
+                              </button>
+                            )}
+                            {!u.blacklisted && canManageUsers && <button onClick={() => setConfirmDeleteTarget(u)}
                               style={{ padding:"4px 10px",borderRadius:"var(--r-sm,8px)",fontSize:11,fontWeight:600,border:"1px solid #d99090",background:"#f5dada",color:"#c25c5c",cursor:"pointer" }}>
                               {Tr.deleteLbl}
                             </button>}
