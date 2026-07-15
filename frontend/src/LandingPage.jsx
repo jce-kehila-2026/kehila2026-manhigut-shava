@@ -1359,16 +1359,6 @@ export default function LandingPage({ onLogin }) {
               {rippling&&<span style={{position:"absolute",inset:0,margin:"auto",width:10,height:10,borderRadius:"50%",background:"rgba(255,255,255,0.45)",animation:"lp-ripple 0.65s ease-out forwards"}}/>}
               {T.join}
             </button>
-            <button onClick={onLogin} style={{
-              background:"rgba(255,255,255,0.18)",color:C.white,
-              border:"2px solid rgba(255,255,255,0.5)",
-              padding:"13px 28px",borderRadius:999,
-              fontSize:15,fontWeight:600,cursor:"pointer",
-              backdropFilter:"blur(8px)",transition:"all 0.2s",
-            }}
-              onMouseOver={e=>{e.currentTarget.style.background="rgba(255,255,255,0.30)";}}
-              onMouseOut={e =>{e.currentTarget.style.background="rgba(255,255,255,0.18)";}}
-            >{T.explore}</button>
           </div>
 
         </div>
