@@ -13,6 +13,7 @@
     {
       "target": "bogrotnet",
       "public": "frontend/dist",
+      "predeploy": ["npm --prefix frontend run build"],
       "ignore": ["firebase.json","**/.*","**/node_modules/**"],
       "rewrites": [{ "source": "**", "destination": "/index.html" }],
       "headers": [
