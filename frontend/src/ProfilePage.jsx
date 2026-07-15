@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
-import { doc, getDoc, updateDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc, query, where, collection, getDocs, addDoc, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
 import {
   sendPasswordResetEmail,
   reauthenticateWithCredential,
@@ -798,6 +798,11 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
   const [birthdayValue, setBirthdayValue] = useState("");
   const [activeTab, setActiveTab] = useState(null);
 
+  /* ── Notes (private, only visible to current user) ── */
+  const [noteText,    setNoteText]    = useState("");
+  const [noteSaving,  setNoteSaving]  = useState(false);
+  const [noteError,   setNoteError]   = useState("");
+
   /* ── Load profile + network count ── */
   useEffect(() => {
     const targetId = viewUserId || user?.uid;
@@ -894,6 +899,15 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
       .finally(() => setHelpPostsLoading(false));
   }, [user, viewUserId]);
 
+  /* ── Load private note for this profile ── */
+  useEffect(() => {
+    if (!user || !viewUserId || viewUserId === user.uid) return;
+    getDoc(doc(db, "userNotes", user.uid, "notes", viewUserId)).then((snap) => {
+      if (snap.exists()) setNoteText(snap.data().text || "");
+      else setNoteText("");
+    }).catch(() => {});
+  }, [user, viewUserId]);
+
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const fields = [
@@ -932,6 +946,7 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
     { id: "about",     label: t.profile.about || "About" },
     { id: "posts",     label: postsTitle || "Posts" },
     { id: "helpPosts", label: lang==="he"?"פוסטי עזרה":lang==="ar"?"منشورات المساعدة":"Help Posts" },
+    { id: "notes",     label: lang==="he"?"הערות שלי":lang==="ar"?"ملاحظاتي":"My Notes" },
   ];
   const tabs = (isOwner || adminEditMode) ? ownerTabs : visitorTabs;
   const currentTab = activeTab || tabs[0].id;
@@ -2093,6 +2108,78 @@ export default function ProfilePage({ viewUserId, onMessage, onNavigateToCommuni
 
             </div>
 
+          </div>
+        )}
+
+        {/* ── Notes tab (visitor only) ── */}
+        {!isOwner && currentTab === "notes" && (
+          <div style={{ maxWidth: 580, margin: "0 auto", padding: "0.5rem 0" }}>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: "0.75rem", lineHeight: 1.6 }}>
+              {lang === "he"
+                ? "הערות אלו נראות רק לך — אף אחד אחר לא יכול לקרוא אותן."
+                : lang === "ar"
+                ? "هذه الملاحظات مرئية لك فقط — لا أحد آخر يمكنه رؤيتها."
+                : "These notes are only visible to you — no one else can read them."}
+            </p>
+            <textarea
+              value={noteText}
+              onChange={(e) => { setNoteText(e.target.value); if (savedKey === "notes") setSavedKey(null); }}
+              rows={7}
+              placeholder={
+                lang === "he" ? "כתבי כאן הערה אישית על המשתמשת..."
+                : lang === "ar" ? "اكتب هنا ملاحظة شخصية عن هذا المستخدم..."
+                : "Write a private note about this person..."
+              }
+              style={{
+                width: "100%",
+                background: "var(--input-bg, var(--card))",
+                color: "var(--text)",
+                border: "1.5px solid var(--border)",
+                borderRadius: 10,
+                padding: "12px 14px",
+                fontSize: 14,
+                resize: "vertical",
+                outline: "none",
+                fontFamily: "inherit",
+                lineHeight: 1.7,
+                boxSizing: "border-box",
+              }}
+            />
+            {noteError && (
+              <p style={{ fontSize: 12, color: "#c0392b", marginTop: 6, marginBottom: 0 }}>{noteError}</p>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+              <button
+                disabled={!!savingKey || noteSaving}
+                className={noteSaving ? "save-btn-shimmer" : ""}
+                onClick={async () => {
+                  if (!user || !viewUserId) return;
+                  setNoteSaving(true);
+                  setSavingKey("notes");
+                  setSavedKey(null);
+                  setNoteError("");
+                  try {
+                    await setDoc(
+                      doc(db, "userNotes", user.uid, "notes", viewUserId),
+                      { text: noteText, updatedAt: serverTimestamp() }
+                    );
+                    setSavedKey("notes");
+                    setTimeout(() => setSavedKey(k => k === "notes" ? null : k), 2200);
+                  } catch (e) {
+                    console.error("Note save failed:", e);
+                    setNoteError(lang === "he" ? "שגיאה בשמירה — נסי שוב" : lang === "ar" ? "خطأ في الحفظ — حاولي مجدداً" : "Save failed — please try again");
+                  } finally {
+                    setNoteSaving(false);
+                    setSavingKey(null);
+                  }
+                }}
+                style={getSaveBtnStyle("notes")}
+                onMouseOver={(e) => { if (!noteSaving) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseOut={(e) => { e.currentTarget.style.transform = ""; }}
+              >
+                {saveBtnLabel("notes")}
+              </button>
+            </div>
           </div>
         )}
 

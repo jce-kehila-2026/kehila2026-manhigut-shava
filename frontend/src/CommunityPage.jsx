@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useLang } from "./LanguageContext";
 import { useIsMobile } from "./hooks/useIsMobile";
 import {
@@ -73,8 +74,85 @@ function Avatar({ url, name, size = 40, ring, style: extraStyle }) {
   );
 }
 
-/* ── Comment item with edit support ── */
-function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
+/* ── Emoji reactions strip ── */
+const REACTION_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🎉"];
+
+function EmojiReactions({ reactions = {}, currentUid, onReact, compact = false }) {
+  const [showPicker, setShowPicker] = useState(false);
+  const pickerRef = useRef(null);
+  const { isRTL } = useLang();
+
+  useEffect(() => {
+    if (!showPicker) return;
+    const close = (e) => { if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowPicker(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [showPicker]);
+
+  const activeEmojis = REACTION_EMOJIS.filter(e => (reactions[e] || []).length > 0);
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 3 }}>
+      {activeEmojis.map(emoji => {
+        const uids = reactions[emoji] || [];
+        const mine = uids.includes(currentUid);
+        return (
+          <button key={emoji} onClick={() => onReact(emoji)} style={{
+            display: "flex", alignItems: "center", gap: 3,
+            padding: compact ? "1px 6px" : "3px 8px",
+            border: mine ? "1.5px solid var(--brand)" : "1.5px solid var(--border)",
+            borderRadius: 99,
+            background: mine ? "var(--brand-pale)" : "var(--bg-primary)",
+            cursor: "pointer", fontSize: compact ? 11 : 12,
+            fontWeight: mine ? 700 : 400,
+            color: mine ? "var(--brand-dark)" : "var(--text-secondary)",
+            transition: "all 0.15s",
+          }}>
+            <span style={{ fontSize: compact ? 12 : 14 }}>{emoji}</span>
+            <span>{uids.length}</span>
+          </button>
+        );
+      })}
+      <div style={{ position: "relative" }} ref={pickerRef}>
+        <button onClick={() => setShowPicker(v => !v)} title="Add reaction" style={{
+          width: compact ? 20 : 26, height: compact ? 20 : 26,
+          border: "1.5px solid var(--border)", borderRadius: "50%",
+          background: showPicker ? "var(--brand-pale)" : "var(--bg-primary)",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          color: showPicker ? "var(--brand)" : "var(--text-muted)", transition: "background 0.15s, color 0.15s",
+        }}>
+          <svg width={compact ? 10 : 13} height={compact ? 10 : 13} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </button>
+        {showPicker && (
+          <div style={{
+            position: "absolute", bottom: "calc(100% + 6px)",
+            ...(isRTL ? { right: 0 } : { left: 0 }),
+            background: "var(--bg-primary)", border: "1px solid var(--border)",
+            borderRadius: 12, padding: 6, display: "flex", gap: 2,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.13)", zIndex: 100, whiteSpace: "nowrap",
+          }}>
+            {REACTION_EMOJIS.map(emoji => (
+              <button key={emoji} onClick={() => { onReact(emoji); setShowPicker(false); }} style={{
+                width: 32, height: 32, border: "none", background: "none",
+                cursor: "pointer", fontSize: 18, borderRadius: 8,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "background 0.1s",
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg-hover)"}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}
+              >{emoji}</button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Comment item with edit, reply, and reactions ── */
+function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit, onReply, onReact }) {
   const { t } = useLang();
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
@@ -127,8 +205,20 @@ function CommentItem({ comment, currentUid, isAdmin, onDelete, onEdit }) {
             {comment.edited && <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 5 }}>(edited)</span>}
           </p>
         </div>
+        {/* Reactions on comment */}
+        <div style={{ marginTop: 3, paddingLeft: 4 }}>
+          <EmojiReactions reactions={comment.reactions || {}} currentUid={currentUid} onReact={(emoji) => onReact?.(comment.id, emoji)} compact />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4, paddingLeft: 4 }}>
           <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{timeAgo(comment.createdAt, t)}</span>
+          {currentUid && (
+            <button onClick={() => onReply?.({ id: comment.id, authorName: comment.authorName })} style={{
+              fontSize: 10, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600,
+            }}
+              onMouseEnter={(e) => e.target.style.color = "var(--brand)"}
+              onMouseLeave={(e) => e.target.style.color = "var(--text-muted)"}
+            >Reply</button>
+          )}
           {currentUid === comment.authorId && (
             <button onClick={() => setEditing(true)} style={{
               fontSize: 10, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0,
@@ -191,7 +281,10 @@ function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
       onMouseEnter={e => e.currentTarget.style.color = "var(--brand,#4472b8)"}
       onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted,#6b7280)"}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/>
+        <path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>
+      </svg>
       {busy ? "..." : label}
     </button>
   );
@@ -200,8 +293,6 @@ function TranslateButton({ text, onTranslated, onReverted, isTranslated }) {
 /* ── Post card ── */
 function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, onRepost, onViewProfile, onMessage, onPin }) {
   const { t, lang } = useLang();
-  const [liked,    setLiked]    = useState((post.likedBy || []).includes(currentUser?.uid));
-  const [likes,    setLikes]    = useState(post.likesCount || (post.likedBy?.length || 0));
   const [comments, setComments] = useState([]);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText]   = useState("");
@@ -209,6 +300,12 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
   const [editingId, setEditingId]       = useState(null);
   const [editText,  setEditText]        = useState("");
   const [postingComment, setPostingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [collapsedReplies, setCollapsedReplies] = useState(new Set());
+  const [postReactions, setPostReactions] = useState(() => ({
+    ...(post.reactions || {}),
+    "❤️": [...new Set([...(post.likedBy || []), ...(post.reactions?.["❤️"] || [])])],
+  }));
   const [showRepostModal, setShowRepostModal] = useState(false);
   const [repostThoughts, setRepostThoughts]   = useState("");
   const [editMedia, setEditMedia]             = useState([]);
@@ -231,37 +328,30 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
     return unsub;
   }, [showComments]);
 
-  const handleLike = async () => {
+  const handlePostReact = async (emoji) => {
     if (!currentUser) return;
-    const postRef = doc(db, "posts", post.id);
-    if (liked) {
-      setLiked(false); setLikes((n) => n - 1);
-      await updateDoc(postRef, {
-        likedBy: arrayRemove(currentUser.uid),
-        likesCount: Math.max(0, likes - 1),
-      });
-    } else {
-      setLiked(true); setLikes((n) => n + 1);
-      await updateDoc(postRef, {
-        likedBy: arrayUnion(currentUser.uid),
-        likesCount: likes + 1,
-      });
-      if (post.authorId && post.authorId !== currentUser.uid) {
+    const uid = currentUser.uid;
+    const current = postReactions[emoji] || [];
+    const hasMe = current.includes(uid);
+    const newList = hasMe ? current.filter(u => u !== uid) : [...current, uid];
+    setPostReactions(prev => ({ ...prev, [emoji]: newList }));
+    const updates = { [`reactions.${emoji}`]: hasMe ? arrayRemove(uid) : arrayUnion(uid) };
+    if (emoji === "❤️") {
+      updates.likedBy = hasMe ? arrayRemove(uid) : arrayUnion(uid);
+      updates.likesCount = newList.length;
+      if (!hasMe && post.authorId && post.authorId !== uid) {
         const fromName = currentUserProfile
           ? `${currentUserProfile.firstName || ""} ${currentUserProfile.lastName || ""}`.trim()
           : currentUser.email;
         addDoc(collection(db, "notifications"), {
-          toUserId: post.authorId,
-          fromUserId: currentUser.uid,
-          fromUserName: fromName,
+          toUserId: post.authorId, fromUserId: uid, fromUserName: fromName,
           fromUserAvatar: currentUserProfile?.avatarUrl || null,
-          type: "post_like",
-          postId: post.id,
-          createdAt: new Date().toISOString(),
-          read: false,
+          type: "post_like", postId: post.id,
+          createdAt: new Date().toISOString(), read: false,
         }).catch(() => {});
       }
     }
+    await updateDoc(doc(db, "posts", post.id), updates);
   };
 
   const handleComment = async () => {
@@ -276,6 +366,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
       authorAvatar: u.photoURL || u.avatarUrl || null,
       text: commentText.trim(),
       createdAt: new Date().toISOString(),
+      ...(replyingTo ? { parentId: replyingTo.id } : {}),
     });
     await updateDoc(doc(db, "posts", post.id), {
       commentCount: (post.commentCount || 0) + 1,
@@ -295,6 +386,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
       }).catch(() => {});
     }
     setCommentText("");
+    setReplyingTo(null);
     setPostingComment(false);
   };
 
@@ -312,6 +404,22 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
     });
     setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, text: newText, edited: true } : c));
     logActivity({ type: "comment_edit", actorId: currentUser.uid, targetId: commentId, targetType: "comment", details: { postId: post.id, newText: newText.slice(0, 150) } });
+  };
+
+  const handleCommentReact = async (commentId, emoji) => {
+    if (!currentUser) return;
+    const uid = currentUser.uid;
+    const cmt = comments.find(c => c.id === commentId);
+    const current = cmt?.reactions?.[emoji] || [];
+    const hasMe = current.includes(uid);
+    setComments(prev => prev.map(c => {
+      if (c.id !== commentId) return c;
+      const r = { ...(c.reactions || {}), [emoji]: hasMe ? (c.reactions?.[emoji] || []).filter(u => u !== uid) : [...(c.reactions?.[emoji] || []), uid] };
+      return { ...c, reactions: r };
+    }));
+    await updateDoc(doc(db, "posts", post.id, "comments", commentId), {
+      [`reactions.${emoji}`]: hasMe ? arrayRemove(uid) : arrayUnion(uid),
+    });
   };
 
   const handleSaveEdit = async () => {
@@ -568,15 +676,30 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
         </>)}
 
         {post.repostOf && (
-          <div style={{
-            background: "var(--bg-secondary)", borderRadius: "var(--r-md)",
-            padding: "0.85rem 1rem",
-            border: "1px solid var(--border)",
-            borderLeft: "3px solid var(--brand)",
-            marginTop: post.text ? 10 : 0,
-          }}>
+          <div
+            style={{
+              background: "var(--bg-secondary)", borderRadius: "var(--r-md)",
+              padding: "0.85rem 1rem",
+              border: "1px solid var(--border)",
+              borderLeft: "3px solid var(--brand)",
+              marginTop: post.text ? 10 : 0,
+              cursor: "pointer",
+              transition: "background 0.15s",
+            }}
+            onClick={() => {
+              const el = document.getElementById(`post-${post.repostOf.id}`);
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-tertiary)"}
+            onMouseLeave={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+          >
             <p style={{ fontSize: 11, fontWeight: 700, color: "var(--brand-dark)", marginBottom: 4 }}>
-              ↻ {post.repostOf.authorName}
+              <span
+                style={{ cursor: "pointer" }}
+                onClick={e => { e.stopPropagation(); if (post.repostOf.authorId) onViewProfile?.(post.repostOf.authorId); }}
+                onMouseEnter={e => e.currentTarget.style.textDecoration = "underline"}
+                onMouseLeave={e => e.currentTarget.style.textDecoration = "none"}
+              >↻ {post.repostOf.authorName}</span>
             </p>
             {post.repostOf.text && (
               <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55, wordBreak: "break-word", whiteSpace: "pre-wrap", maxHeight: "90px", overflowY: "auto" }}>
@@ -631,27 +754,13 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
         padding: "0.6rem 1rem",
         marginTop: "0.5rem",
         borderTop: "1px solid var(--border)",
-        display: "flex", alignItems: "center", gap: 2,
+        display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap",
       }}>
-        <button
-          onClick={handleLike}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "7px 14px", borderRadius: "var(--r-full)",
-            background: liked ? "var(--brand-pale)" : "transparent",
-            color: liked ? "var(--brand-dark)" : "var(--text-muted)",
-            border: "none", fontSize: 13, fontWeight: liked ? 700 : 500,
-            cursor: "pointer", transition: "all var(--t-fast)",
-          }}
-          onMouseEnter={(e) => { if (!liked) e.currentTarget.style.background = "var(--bg-hover)"; }}
-          onMouseLeave={(e) => { if (!liked) e.currentTarget.style.background = "transparent"; }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-          <span>{likes || ""}</span>
-          <span>{liked ? t.community.liked : t.community.like}</span>
-        </button>
+        {currentUser && (
+          <div style={{ marginRight: 4 }}>
+            <EmojiReactions reactions={postReactions} currentUid={currentUser.uid} onReact={handlePostReact} />
+          </div>
+        )}
 
         <button
           onClick={() => setShowComments(!showComments)}
@@ -673,7 +782,7 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
           <span>{t.community.comment}</span>
         </button>
 
-        {currentUser && post.authorId !== currentUser.uid && (
+        {currentUser && (
           <button
             onClick={() => setShowRepostModal(true)}
             style={{
@@ -716,40 +825,71 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
 
       </div>
 
-      {/* Repost modal */}
-      {showRepostModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(74,31,61,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "1rem", backdropFilter: "blur(6px)" }}
-          onClick={() => setShowRepostModal(false)}>
-          <div style={{ background: "var(--bg-primary)", borderRadius: "var(--r-xl)", padding: "1.5rem", width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", gap: "1rem" }}
-            onClick={(e) => e.stopPropagation()}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>{t.community.repost}</p>
-
-            <div style={{ background: "var(--bg-secondary)", borderRadius: "var(--r-md)", padding: "0.85rem 1rem", border: "1px solid var(--border)", borderLeft: "3px solid var(--brand)" }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "var(--brand-dark)", marginBottom: 4 }}>{post.authorName}</p>
-              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, wordBreak: "break-word", whiteSpace: "pre-wrap", maxHeight: "100px", overflowY: "auto" }}>
-                {post.text ? renderTextWithLinks(post.text.length > 300 ? post.text.slice(0, 300) + "…" : post.text) : t.community.mediaPost}
-              </p>
+      {/* Repost composer modal — rendered via portal so position:fixed escapes any parent transform */}
+      {showRepostModal && createPortal(
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(20,20,40,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "1rem", backdropFilter: "blur(8px)" }}
+          onClick={() => { setShowRepostModal(false); setRepostThoughts(""); }}
+        >
+          <div
+            style={{ background: "var(--bg-primary)", borderRadius: "var(--r-xl)", width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.22)", display: "flex", flexDirection: "column" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.25rem 0.75rem", borderBottom: "1px solid var(--border)" }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>{t.community.repost}</span>
+              <button onClick={() => { setShowRepostModal(false); setRepostThoughts(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center" }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg-tertiary)"}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
 
-            <textarea
-              value={repostThoughts}
-              onChange={(e) => setRepostThoughts(e.target.value)}
-              placeholder={t.community.addThoughtsPlaceholder}
-              rows={3}
-              style={{ width: "100%", padding: "11px 13px", fontSize: 14, border: "1.5px solid var(--border)", borderRadius: "var(--r-md)", resize: "none", fontFamily: "var(--font)", background: "var(--bg-secondary)", color: "var(--text-primary)", outline: "none" }}
-              onFocus={(e) => e.target.style.borderColor = "var(--brand)"}
-              onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-            />
+            {/* Compose area */}
+            <div style={{ padding: "1rem 1.25rem 0", display: "flex", gap: 12 }}>
+              <Avatar url={currentUserProfile?.photoURL || currentUserProfile?.avatarUrl} name={`${currentUserProfile?.firstName || ""} ${currentUserProfile?.lastName || ""}`.trim()} size={42} />
+              <textarea
+                autoFocus
+                value={repostThoughts}
+                onChange={(e) => setRepostThoughts(e.target.value)}
+                placeholder={t.community.addThoughtsPlaceholder}
+                rows={3}
+                style={{
+                  flex: 1, border: "none", outline: "none", resize: "none",
+                  fontSize: 15, background: "transparent", color: "var(--text-primary)",
+                  lineHeight: 1.65, fontFamily: "var(--font)",
+                }}
+              />
+            </div>
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => setShowRepostModal(false)} style={{ padding: "9px 18px", borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "none", fontSize: 13, cursor: "pointer", color: "var(--text-secondary)" }}>{t.common.cancel}</button>
+            {/* Quoted post preview */}
+            <div style={{ margin: "0.85rem 1.25rem 1rem 1.25rem", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", overflow: "hidden" }}>
+              <div style={{ padding: "0.75rem 1rem", display: "flex", gap: 9, alignItems: "center", borderBottom: post.media?.length ? "1px solid var(--border)" : "none" }}>
+                <Avatar url={post.authorAvatar} name={post.authorName} size={30} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{post.authorName}</span>
+              </div>
+              {post.text && (
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55, padding: "0.65rem 1rem", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                  {post.text.length > 220 ? post.text.slice(0, 220) + "…" : post.text}
+                </p>
+              )}
+              {post.media?.length > 0 && (
+                <img src={post.media[0].url} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: "0.75rem 1.25rem 1rem", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button onClick={() => { setShowRepostModal(false); setRepostThoughts(""); }} style={{ padding: "9px 18px", borderRadius: "var(--r-full)", border: "1px solid var(--border)", background: "none", fontSize: 13, cursor: "pointer", color: "var(--text-secondary)", fontWeight: 500 }}>{t.common.cancel}</button>
               <button
                 onClick={() => { onRepost(post, repostThoughts.trim()); setShowRepostModal(false); setRepostThoughts(""); }}
-                style={{ padding: "9px 20px", borderRadius: "var(--r-sm)", background: "var(--brand)", color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "9px 22px", borderRadius: "var(--r-full)", background: "var(--brand)", color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px var(--brand-glow)" }}
               >{t.community.repost}</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Comments section */}
@@ -757,52 +897,106 @@ function PostCard({ post, currentUser, currentUserProfile, isAdmin, onDelete, on
         <div style={{ padding: "0.75rem 1.35rem 1.1rem", borderTop: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
           {loadingComments && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "1rem 0" }}>{t.common.loading}</p>}
 
-          {comments.map((c) => (
-            <CommentItem
-              key={c.id} comment={c}
-              currentUid={currentUser?.uid}
-              isAdmin={isAdmin}
-              onDelete={handleDeleteComment}
-              onEdit={handleEditComment}
-            />
-          ))}
+          {comments.filter(c => !c.parentId).map(topComment => {
+            const replies = comments.filter(c => c.parentId === topComment.id);
+            const collapsed = collapsedReplies.has(topComment.id);
+            const toggleReplies = () => setCollapsedReplies(prev => {
+              const next = new Set(prev);
+              collapsed ? next.delete(topComment.id) : next.add(topComment.id);
+              return next;
+            });
+            return (
+              <div key={topComment.id}>
+                <CommentItem
+                  comment={topComment}
+                  currentUid={currentUser?.uid}
+                  isAdmin={isAdmin}
+                  onDelete={handleDeleteComment}
+                  onEdit={handleEditComment}
+                  onReply={(r) => setReplyingTo(r)}
+                  onReact={handleCommentReact}
+                />
+                {replies.length > 0 && (
+                  <div style={{ marginLeft: 38 }}>
+                    <button onClick={toggleReplies} style={{
+                      fontSize: 11, fontWeight: 600, color: "var(--brand)",
+                      background: "none", border: "none", cursor: "pointer",
+                      padding: "3px 0 2px", display: "flex", alignItems: "center", gap: 4,
+                    }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                      {collapsed ? `Show ${replies.length} repl${replies.length === 1 ? "y" : "ies"}` : "Hide replies"}
+                    </button>
+                    {!collapsed && (
+                      <div style={{ borderLeft: "2px solid var(--border)", paddingLeft: 10 }}>
+                        {replies.map(reply => (
+                          <CommentItem
+                            key={reply.id}
+                            comment={reply}
+                            currentUid={currentUser?.uid}
+                            isAdmin={isAdmin}
+                            onDelete={handleDeleteComment}
+                            onEdit={handleEditComment}
+                            onReply={() => setReplyingTo({ id: topComment.id, authorName: reply.authorName })}
+                            onReact={handleCommentReact}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {currentUser && (
-            <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
-              <div style={{ flex: 1 }}>
-                <input
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleComment(); } }}
-                  placeholder={t.community.commentPlaceholder}
+            <div style={{ marginTop: 12 }}>
+              {replyingTo && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "var(--bg-tertiary)", borderRadius: "var(--r-sm)", marginBottom: 6, border: "1px solid var(--border)" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>
+                    Replying to <strong style={{ color: "var(--text-primary)" }}>{replyingTo.authorName}</strong>
+                  </span>
+                  <button onClick={() => setReplyingTo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleComment(); } }}
+                    placeholder={replyingTo ? `Reply to ${replyingTo.authorName}…` : t.community.commentPlaceholder}
+                    style={{
+                      width: "100%", padding: "10px 14px",
+                      border: "1.5px solid var(--border)", borderRadius: "var(--r-full)",
+                      fontSize: 13, fontFamily: "var(--font)",
+                      background: "var(--bg-primary)", color: "var(--text-primary)",
+                      outline: "none", transition: "border-color var(--t-fast)",
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "var(--brand)"}
+                    onBlur={(e) => e.target.style.borderColor = "var(--border)"}
+                  />
+                </div>
+                <button
+                  onClick={handleComment}
+                  disabled={!commentText.trim() || postingComment}
                   style={{
-                    width: "100%", padding: "10px 14px",
-                    border: "1.5px solid var(--border)", borderRadius: "var(--r-full)",
-                    fontSize: 13, fontFamily: "var(--font)",
-                    background: "var(--bg-primary)", color: "var(--text-primary)",
-                    outline: "none", transition: "border-color var(--t-fast)",
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: commentText.trim() ? "var(--brand)" : "var(--bg-tertiary)",
+                    color: commentText.trim() ? "#fff" : "var(--text-muted)",
+                    border: "none", cursor: commentText.trim() ? "pointer" : "default",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "all var(--t-fast)", flexShrink: 0,
+                    boxShadow: commentText.trim() ? "0 4px 12px var(--brand-glow)" : "none",
                   }}
-                  onFocus={(e) => e.target.style.borderColor = "var(--brand)"}
-                  onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-                />
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/>
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={handleComment}
-                disabled={!commentText.trim() || postingComment}
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: commentText.trim() ? "var(--brand)" : "var(--bg-tertiary)",
-                  color: commentText.trim() ? "#fff" : "var(--text-muted)",
-                  border: "none", cursor: commentText.trim() ? "pointer" : "default",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "all var(--t-fast)", flexShrink: 0,
-                  boxShadow: commentText.trim() ? "0 4px 12px var(--brand-glow)" : "none",
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/>
-                </svg>
-              </button>
             </div>
           )}
         </div>
@@ -1092,14 +1286,22 @@ function BirthdayWishButton({ birthdayUserId, currentUser, currentUserProfile })
         wishers: arrayUnion(currentUser.uid),
       }, { merge: true });
       const fromName = `${currentUserProfile?.firstName || ""} ${currentUserProfile?.lastName || ""}`.trim() || currentUser.email || "";
+      const fromAvatar = currentUserProfile?.photoURL || currentUserProfile?.avatarUrl || null;
       await addDoc(collection(db, "notifications"), {
         toUserId: birthdayUserId,
         fromUserId: currentUser.uid,
         fromUserName: fromName,
-        fromUserAvatar: currentUserProfile?.photoURL || currentUserProfile?.avatarUrl || null,
+        fromUserAvatar: fromAvatar,
         type: "birthday_wish",
         createdAt: new Date().toISOString(),
         read: false,
+      });
+      await addDoc(collection(db, "users", birthdayUserId, "birthdayWishes"), {
+        fromUserId: currentUser.uid,
+        fromName,
+        fromAvatar,
+        message: "🎈",
+        createdAt: new Date().toISOString(),
       });
       setJustSent(true);
       setShowBalloons(true);
@@ -1401,9 +1603,20 @@ export default function CommunityPage({ onViewProfile, onMessage, initialPostId,
   }, [user]);
 
   useEffect(() => {
+    const BDAY_TTL = 24 * 60 * 60 * 1000;
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
-      setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const now = Date.now();
+      const allPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      allPosts.forEach(p => {
+        if (p.birthdayAutoPost && p.createdAt && now - new Date(p.createdAt).getTime() > BDAY_TTL) {
+          deletePostWithCleanup(p.id).catch(() => {});
+        }
+      });
+      setPosts(allPosts.filter(p => {
+        if (!p.birthdayAutoPost || !p.createdAt) return true;
+        return now - new Date(p.createdAt).getTime() <= BDAY_TTL;
+      }));
       setLoading(false);
     });
     return unsub;
@@ -1508,6 +1721,7 @@ export default function CommunityPage({ onViewProfile, onMessage, initialPostId,
         media: originalPost.media || [],
         authorName: originalPost.authorName,
         authorAvatar: originalPost.authorAvatar || null,
+        authorId: originalPost.authorId || null,
       },
     });
   };

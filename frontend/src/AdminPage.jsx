@@ -1793,9 +1793,12 @@ export default function AdminPage({ onViewProfile }) {
     const entry = blacklist.find(b => b.id === id);
     await deleteDoc(doc(db, "blacklist", id));
     setBlacklist(prev => prev.filter(b => b.id !== id));
-    /* Also clear the blacklisted flag on the user doc if they're registered */
     if (entry?.email) {
-      const existing = users.find(u => u.email?.toLowerCase() === entry.email.toLowerCase());
+      let existing = users.find(u => u.email?.toLowerCase() === entry.email.toLowerCase());
+      if (!existing) {
+        const snap = await getDocs(query(collection(db, "users"), where("email", "==", entry.email)));
+        if (!snap.empty) existing = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      }
       if (existing) {
         await updateDoc(doc(db, "users", existing.id), { blacklisted: false, blacklistReason: null });
         setUsers(prev => prev.map(u => u.id === existing.id ? { ...u, blacklisted: false, blacklistReason: null } : u));

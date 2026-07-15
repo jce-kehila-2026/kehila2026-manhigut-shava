@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 const BALLOON_COLORS = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#ff922b", "#cc5de8", "#f06595", "#74c0fc"];
 const COUNT = 18;
@@ -27,7 +28,7 @@ export function BalloonsEffect({ onDone }) {
     return () => clearTimeout(t);
   }, [onDone]);
 
-  return (
+  return createPortal(
     <div style={{
       position: "fixed", inset: 0, pointerEvents: "none",
       zIndex: 99999, overflow: "hidden",
@@ -54,18 +55,17 @@ export function BalloonsEffect({ onDone }) {
             alignItems: "center",
           }}
         >
-          {/* Balloon oval */}
           <svg width={b.size} height={b.size * 1.25} viewBox="0 0 40 50" fill="none">
             <ellipse cx="20" cy="22" rx="18" ry="20" fill={b.color} opacity="0.92" />
             <ellipse cx="13" cy="14" rx="5" ry="4" fill="rgba(255,255,255,0.28)" />
             <path d="M20 42 Q18 46 20 50 Q22 46 20 42Z" fill={b.color} opacity="0.8" />
           </svg>
-          {/* String */}
           <svg width="2" height={b.size * 0.8} viewBox={`0 0 2 ${b.size * 0.8}`}>
             <line x1="1" y1="0" x2="1" y2={b.size * 0.8} stroke={b.color} strokeWidth="1.2" opacity="0.6" />
           </svg>
         </div>
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }

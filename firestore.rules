@@ -248,6 +248,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    /* ── User Notes (private, only the author can read/write) ── */
+    match /userNotes/{authorId}/notes/{targetId} {
+      allow read, write: if isAuth() && request.auth.uid == authorId;
+    }
+
     /* ── Default: deny all ── */
     match /{document=**} {
       allow read, write: if false;

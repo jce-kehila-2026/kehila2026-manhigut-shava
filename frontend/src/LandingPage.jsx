@@ -51,8 +51,8 @@ const LP = {
       {title:"אקטיביזם אזרחי",body:"הזדמנויות בפוליטיקה, עריכת דין ושירות ציבורי."},
       {title:"רשת בוגרות",body:"קהילה שנשארת איתך אחרי הסיום — עבודות, תמיכה ועמיתות לכל החיים."},
     ],
-    leadLabel:"הקהילה שלנו",leadH2:"נשים שמובילות.",
-    leadSub:"חברות בקהילה שכבר משאירות חותם.",
+    leadLabel:"השראה",leadH2:"נשים שייכות בהנהגה.",
+    leadSub:"השתמשי במנהיגה שלנו כמודל לחיקוי — ופסלי את הדרך שלך.",
     leadersData:[
       {name:"ניבן סניור שניאור",role:"מנכ\"לית YWP, מייסדת 'פוליטיקאיות צעירות'",
         achievement:"יוזמת תוכנית 'המנהיגות הבאות של ישראל' — טיפוח דור חדש של סטודנטיות מנהיגות עם חזון, ידע וביטחון לפעול בזירה הציבורית.",photo:null},
@@ -108,8 +108,8 @@ const LP = {
       {title:"Civic Activism",body:"Opportunities in politics, advocacy, and public service."},
       {title:"Graduate Network",body:"A community that follows you beyond graduation — jobs and lifelong peers."},
     ],
-    leadLabel:"Our community",leadH2:"Women who lead.",
-    leadSub:"Members already making their mark — in politics, law, tech, and beyond.",
+    leadLabel:"Inspiration",leadH2:"Women belong in leadership.",
+    leadSub:"Use our leader as an example — and forge your own path.",
     leadersData:[
       {name:"Nivan Senior Schneior",role:"YWP CEO & Founder",
         achievement:"Initiator of the 'Next Leaders of Israel' program — nurturing a new generation of student leaders with vision, knowledge and confidence to act in the public sphere.",photo:null},
@@ -165,8 +165,8 @@ const LP = {
       {title:"نشاط مدني",body:"فرص في السياسة والمناصرة والخدمة العامة."},
       {title:"شبكة الخريجات",body:"مجتمع يرافقك بعد التخرج — وظائف ورفيقات للحياة."},
     ],
-    leadLabel:"مجتمعنا",leadH2:"نساء يقدن.",
-    leadSub:"أعضاء يتركن أثرًا بالفعل — في السياسة والقانون والتكنولوجيا.",
+    leadLabel:"إلهام",leadH2:"النساء ينتمين إلى القيادة.",
+    leadSub:"اتخذي من قائدتنا مثالاً — وابني طريقك الخاص.",
     leadersData:[
       {name:"نيفان سينيور شنيئور",role:"الرئيسة التنفيذية لـ YWP",
         achievement:"مبادِرة برنامج 'القيادات القادمة لإسرائيل' — تنشئة جيل جديد من الطالبات القياديات بالرؤية والمعرفة.",photo:null},
@@ -908,7 +908,7 @@ function MockupRequest() {
 /* ═══════════════════════════════════
    SCREENSHOT FLIP GUIDE
 ═══════════════════════════════════ */
-function ScreenshotFlipGuide({ T, onLogin, C }) {
+function ScreenshotFlipGuide({ T, onLogin, C, isRTL }) {
   const [cur, setCur]       = useState(0);
   const [phase, setPhase]   = useState("idle"); // idle | exit | enter
   const total = T.howSteps.length;
@@ -987,7 +987,7 @@ function ScreenshotFlipGuide({ T, onLogin, C }) {
 
           {/* Navigation */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:16}}>
-            <button onClick={()=>advance(-1)} style={{
+            <button onClick={()=>advance(isRTL ? 1 : -1)} style={{
               width:38,height:38,borderRadius:"50%",border:`1.5px solid ${C.bluePale}`,
               background:C.card,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
               color:C.blue,transition:"all 0.2s",
@@ -995,7 +995,10 @@ function ScreenshotFlipGuide({ T, onLogin, C }) {
               onMouseOver={e=>{e.currentTarget.style.background=C.bluePale;}}
               onMouseOut={e =>{e.currentTarget.style.background=C.card;}}
             >
-              <span style={{transform:"scaleX(-1)",display:"block"}}>{Ic.chev}</span>
+              {isRTL
+                ? Ic.chev
+                : <span style={{transform:"scaleX(-1)",display:"block"}}>{Ic.chev}</span>
+              }
             </button>
 
             {/* Dot indicators */}
@@ -1009,14 +1012,19 @@ function ScreenshotFlipGuide({ T, onLogin, C }) {
               ))}
             </div>
 
-            <button onClick={()=>advance(1)} style={{
+            <button onClick={()=>advance(isRTL ? -1 : 1)} style={{
               width:38,height:38,borderRadius:"50%",border:`1.5px solid ${C.bluePale}`,
               background:C.card,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
               color:C.blue,transition:"all 0.2s",
             }}
               onMouseOver={e=>{e.currentTarget.style.background=C.bluePale;}}
               onMouseOut={e =>{e.currentTarget.style.background=C.card;}}
-            >{Ic.chev}</button>
+            >
+              {isRTL
+                ? <span style={{transform:"scaleX(-1)",display:"block"}}>{Ic.chev}</span>
+                : Ic.chev
+              }
+            </button>
           </div>
 
           {/* Join CTA on last step */}
@@ -1513,7 +1521,7 @@ export default function LandingPage({ onLogin }) {
             <p style={{textAlign:"center",color:C.inkLight,fontSize:17,maxWidth:480,margin:"0 auto 3rem",lineHeight:1.8}}>{T.howSub}</p>
           </div>
           <div className="lp-reveal" style={{opacity:howVis?1:0,transform:howVis?"none":"translateY(40px) scale(0.95)",filter:howVis?"none":"blur(5px)",transitionDelay:"0.15s"}}>
-            <ScreenshotFlipGuide T={T} onLogin={handleJoin} C={C}/>
+            <ScreenshotFlipGuide T={T} onLogin={handleJoin} C={C} isRTL={isRTL}/>
           </div>
         </div>
       </section>
@@ -1583,14 +1591,6 @@ export default function LandingPage({ onLogin }) {
               onMouseOver={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 12px 36px rgba(0,0,0,0.24)";}}
               onMouseOut={e =>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 8px 28px rgba(0,0,0,0.18)";}}
             >{T.ctaJoin}</button>
-            <button onClick={onLogin} style={{
-              background:"rgba(255,255,255,0.12)",color:C.white,
-              border:"2px solid rgba(255,255,255,0.35)",
-              padding:"14px 32px",borderRadius:999,fontSize:15,fontWeight:600,cursor:"pointer",
-              transition:"all 0.2s"}}
-              onMouseOver={e=>{e.currentTarget.style.background="rgba(255,255,255,0.22)";}}
-              onMouseOut={e =>{e.currentTarget.style.background="rgba(255,255,255,0.12)";}}
-            >{T.ctaSign}</button>
           </div>
         </div>
       </section>

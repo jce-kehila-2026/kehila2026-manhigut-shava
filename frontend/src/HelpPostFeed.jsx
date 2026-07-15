@@ -529,7 +529,14 @@ function TranslateButton({ text, lang, Tr, onTranslated, onReverted, isTranslate
     } catch { /* silently fail */ } finally { setBusy(false); }
   };
   return (
-    <button onClick={handleClick} disabled={busy} style={{ background:"none", border:"none", cursor:"pointer", color:"#4472b8", fontSize:11, fontWeight:600, padding:"0 0 4px", fontFamily:"inherit", opacity: busy ? 0.6 : 1 }}>
+    <button onClick={handleClick} disabled={busy} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted,#6b7280)", fontSize:11, fontWeight:600, padding:"2px 6px", fontFamily:"inherit", opacity: busy ? 0.6 : 1, display:"flex", alignItems:"center", gap:4, borderRadius:6, transition:"color 0.15s" }}
+      onMouseEnter={e => e.currentTarget.style.color = "var(--brand,#4472b8)"}
+      onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted,#6b7280)"}
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/>
+        <path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>
+      </svg>
       {busy ? "…" : isTranslated ? (Tr.showOriginal || "Original") : (Tr.translate || "Translate")}
     </button>
   );
