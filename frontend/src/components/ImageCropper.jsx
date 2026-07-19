@@ -68,13 +68,13 @@ export function ImageCropper({ file, onConfirm, onCancel, lang }) {
       const my = cy - rect.top;
       const dx = mx - dragRef.current.startMouse.x;
       const dy = my - dragRef.current.startMouse.y;
-      const { startCrop: sc } = dragRef.current;
+      const { startCrop: sc, type: dragType } = dragRef.current;
       const imgW = imgRef.current.offsetWidth;
       const imgH = imgRef.current.offsetHeight;
 
       setCrop(() => {
         let { x, y, w, h } = sc;
-        const t = dragRef.current.type;
+        const t = dragType;
 
         if (t === "move") {
           x = clamp(x + dx, 0, imgW - w);
