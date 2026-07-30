@@ -1,0 +1,1288 @@
+<title>BogrotNet — תיעוד תוכנה / Software Documentation</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%231a2f5e'/><text y='.88em' font-size='64' x='50%' text-anchor='middle' fill='%23e8735a' font-family='Arial Black,sans-serif' font-weight='900'>B</text></svg>">
+<style>
+:root{
+  --navy:#1a2f5e;--navy-md:#2a4680;--coral:#e8735a;--coral-lt:#fde8df;
+  --text:#1c2340;--sub:#4a5578;--muted:#8494b8;
+  --bg:#f5f6fb;--card:#fff;--border:#dce3f0;--code-bg:#eef1f9;
+  --edit-hi:rgba(68,114,184,.06);--sw:220px;
+}
+@media(prefers-color-scheme:dark){:root{--text:#e4e9f5;--sub:#9aa3c2;--muted:#5c6a8a;--bg:#0c1020;--card:#141c30;--border:#1e2d4a;--code-bg:#182038;--coral-lt:rgba(232,115,90,.15);}}
+:root[data-theme="light"]{--text:#1c2340;--sub:#4a5578;--muted:#8494b8;--bg:#f5f6fb;--card:#fff;--border:#dce3f0;--code-bg:#eef1f9;--coral-lt:#fde8df;}
+:root[data-theme="dark"]{--text:#e4e9f5;--sub:#9aa3c2;--muted:#5c6a8a;--bg:#0c1020;--card:#141c30;--border:#1e2d4a;--code-bg:#182038;--coral-lt:rgba(232,115,90,.15);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.8;color:var(--text);background:var(--bg);}
+
+/* ── Language switching ── */
+body.lang-he{direction:rtl;}
+body.lang-en{direction:ltr;}
+body.lang-he .en-only{display:none!important;}
+body.lang-en .he-only{display:none!important;}
+
+/* ── Topbar ── */
+.topbar{position:sticky;top:0;z-index:200;background:var(--navy);border-bottom:3px solid var(--coral);padding:0 1.75rem;height:54px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-brand{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:#fff;}
+.topbar-brand span{color:var(--coral);}
+.topbar-actions{display:flex;align-items:center;gap:6px;}
+.tbtn{background:rgba(255,255,255,.12);border:none;border-radius:7px;color:rgba(255,255,255,.85);cursor:pointer;padding:5px 12px;font-size:13px;font-weight:600;font-family:inherit;transition:background .15s;}
+.tbtn:hover{background:rgba(255,255,255,.22);}
+.tbtn.active{background:var(--coral);color:#fff;}
+.lang-pill{display:flex;background:rgba(255,255,255,.1);border-radius:7px;overflow:hidden;border:1px solid rgba(255,255,255,.15);}
+.lang-pill .tbtn{border-radius:0;margin:0;padding:5px 14px;}
+.lang-pill .tbtn:first-child{border-radius:6px 0 0 6px;}
+.lang-pill .tbtn:last-child{border-radius:0 6px 6px 0;}
+
+/* ── Layout ── */
+.layout{display:flex;align-items:flex-start;max-width:1140px;margin:0 auto;}
+.toc{width:var(--sw);flex-shrink:0;position:sticky;top:54px;max-height:calc(100vh - 54px);overflow-y:auto;padding:1.75rem 1.25rem 2rem;}
+body.lang-he .toc{border-left:1px solid var(--border);border-right:none;padding:1.75rem 1.25rem 2rem 1rem;}
+body.lang-en .toc{border-right:1px solid var(--border);border-left:none;padding:1.75rem 1rem 2rem 1.25rem;}
+.toc-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);}
+.toc ul{list-style:none;}
+.toc a{display:block;padding:4px 0;font-size:13px;color:var(--sub);text-decoration:none;border-radius:5px;transition:color .15s;}
+.toc a:hover,.toc a.active{color:var(--coral);}
+.toc .sec{font-weight:700;color:var(--text);font-size:13px;margin-top:.5rem;}
+body.lang-he .toc .sub a{padding-right:14px;}
+body.lang-en .toc .sub a{padding-left:14px;font-size:12px;color:var(--muted);}
+body.lang-he .toc .sub a{font-size:12px;color:var(--muted);}
+main{flex:1;min-width:0;padding:2.5rem 2.5rem 4rem;}
+
+/* ── Sections ── */
+.doc-section{margin-bottom:3.5rem;}
+.section-header{display:flex;align-items:baseline;gap:12px;margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:2px solid var(--border);}
+body.lang-he .section-header{flex-direction:row-reverse;}
+body.lang-en .section-header{flex-direction:row;}
+.section-num{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--coral);background:var(--coral-lt);padding:2px 8px;border-radius:4px;flex-shrink:0;line-height:1.8;}
+h2.section-title{font-size:21px;font-weight:700;color:var(--text);line-height:1.25;text-wrap:balance;}
+h3{font-size:11.5px;font-weight:800;color:var(--navy-md);margin:1.75rem 0 .6rem;text-transform:uppercase;letter-spacing:.07em;}
+@media(prefers-color-scheme:dark){h3{color:#7aa4e8;}}
+:root[data-theme="dark"] h3{color:#7aa4e8;}
+h4{font-size:15px;font-weight:700;margin:1.2rem 0 .4rem;color:var(--text);}
+p{margin-bottom:.85rem;color:var(--sub);}
+p strong{color:var(--text);}
+body.lang-he ul,body.lang-he ol{padding-right:1.4rem;padding-left:0;margin-bottom:.85rem;}
+body.lang-en ul,body.lang-en ol{padding-left:1.4rem;padding-right:0;margin-bottom:.85rem;}
+li{margin-bottom:.3rem;color:var(--sub);}
+li strong{color:var(--text);}
+a{color:var(--navy-md);text-decoration:none;}
+a:hover{color:var(--coral);text-decoration:underline;}
+@media(prefers-color-scheme:dark){a{color:#7aa4e8;}}
+:root[data-theme="dark"] a{color:#7aa4e8;}
+
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:.5rem;}
+.callout{padding:.85rem 1.1rem;margin:1rem 0;}
+body.lang-he .callout{background:#ddeaff;border-right:3px solid var(--navy);border-left:none;border-radius:8px 0 0 8px;}
+body.lang-en .callout{background:#ddeaff;border-left:3px solid var(--navy);border-right:none;border-radius:0 8px 8px 0;}
+@media(prefers-color-scheme:dark){.callout{background:rgba(30,45,74,.75)!important;}}
+:root[data-theme="dark"] .callout{background:rgba(30,45,74,.75)!important;}
+.callout p{margin:0;font-size:13.5px;color:#1a2f5e;}
+@media(prefers-color-scheme:dark){.callout p{color:#c8d8f5;}}
+:root[data-theme="dark"] .callout p{color:#c8d8f5;}
+body.lang-he .callout-warn{background:#ffe8d6!important;border-color:var(--coral);}
+body.lang-en .callout-warn{background:#ffe8d6!important;border-color:var(--coral);}
+.callout-warn p{color:#7a2a10;}
+@media(prefers-color-scheme:dark){.callout-warn{background:rgba(232,115,90,.12)!important;}.callout-warn p{color:#fbbf9a;}}
+:root[data-theme="dark"] .callout-warn{background:rgba(232,115,90,.12)!important;}
+:root[data-theme="dark"] .callout-warn p{color:#fbbf9a;}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto;margin:.75rem 0 1rem;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{background:var(--navy);color:#fff;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+body.lang-he th{text-align:right;}
+body.lang-en th{text-align:left;}
+td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--sub);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td strong{color:var(--text);}
+tbody tr:hover td{background:var(--code-bg);}
+
+/* ── Steps ── */
+.steps{list-style:none;padding:0;counter-reset:step;}
+.steps li{counter-increment:step;padding:.7rem .7rem .7rem .7rem;position:relative;border-bottom:1px solid var(--border);}
+body.lang-he .steps li{padding-right:3rem;padding-left:.7rem;}
+body.lang-en .steps li{padding-left:3rem;padding-right:.7rem;}
+.steps li:last-child{border-bottom:none;}
+.steps li::before{content:counter(step);position:absolute;top:.7rem;width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+body.lang-he .steps li::before{right:0;left:auto;}
+body.lang-en .steps li::before{left:0;right:auto;}
+
+/* ── Feature cards ── */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.75rem;margin:.75rem 0;}
+.feat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem;}
+body.lang-he .feat-card{border-right:3px solid var(--navy);border-left:none;}
+body.lang-he .feat-card.coral{border-right-color:var(--coral);}
+body.lang-en .feat-card{border-left:3px solid var(--navy);border-right:none;}
+body.lang-en .feat-card.coral{border-left-color:var(--coral);}
+.feat-card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:.3rem;}
+.feat-card p{font-size:13px;margin:0;}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;white-space:nowrap;}
+.badge-blue{background:#dbeafe;color:#1d4896;}
+.badge-green{background:#dcfce7;color:#166534;}
+.badge-orange{background:#ffedd5;color:#9a3412;}
+@media(prefers-color-scheme:dark){.badge-blue{background:rgba(29,72,150,.25);color:#7aa4e8;}.badge-green{background:rgba(22,101,52,.25);color:#4ade80;}.badge-orange{background:rgba(154,52,18,.25);color:#fb923c;}}
+:root[data-theme="dark"] .badge-blue{background:rgba(29,72,150,.25);color:#7aa4e8;}
+:root[data-theme="dark"] .badge-green{background:rgba(22,101,52,.25);color:#4ade80;}
+:root[data-theme="dark"] .badge-orange{background:rgba(154,52,18,.25);color:#fb923c;}
+
+/* ── FAQ ── */
+.faq-item{border-bottom:1px solid var(--border);}
+.faq-q{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.9rem 0;cursor:pointer;font-weight:600;font-size:14.5px;color:var(--text);list-style:none;}
+.faq-q::-webkit-details-marker{display:none;}
+details[open] .faq-q{color:var(--coral);}
+body.lang-he .faq-q::before{content:"+";color:var(--coral);font-size:18px;font-weight:300;flex-shrink:0;}
+body.lang-he details[open] .faq-q::before{content:"−";}
+body.lang-en .faq-q::after{content:"+";color:var(--coral);font-size:18px;font-weight:300;flex-shrink:0;}
+body.lang-en details[open] .faq-q::after{content:"−";}
+.faq-a{padding:0 0 1rem;}
+.faq-a p{font-size:14px;}
+
+/* ── Screenshot carousel slots ── */
+.screenshot-slot{border:2px dashed var(--border);border-radius:10px;margin:1rem 0;background:var(--card);overflow:hidden;transition:border-color .2s;}
+.ss-viewport{min-height:170px;display:flex;align-items:center;justify-content:center;position:relative;background:var(--card);}
+.ss-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;padding:2.5rem 1rem;cursor:pointer;width:100%;transition:background .2s;}
+.ss-empty:hover{background:var(--coral-lt);}
+.screenshot-slot:has(.ss-empty:hover){border-color:var(--coral);}
+.ss-empty .slot-file{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.slot-label{font-size:12px;font-weight:600;color:var(--muted);text-align:center;}
+.slot-icon{font-size:26px;}
+.ss-viewport img{max-width:100%;max-height:420px;display:block;border-radius:0;}
+.ss-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.45);color:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:2;}
+.ss-nav:hover{background:rgba(0,0,0,.7);}
+.ss-prev{left:8px;}
+.ss-next{right:8px;}
+.ss-footer{display:flex;align-items:center;justify-content:space-between;padding:.45rem .85rem;border-top:1px solid var(--border);background:var(--code-bg);}
+.ss-dots{display:flex;gap:5px;align-items:center;}
+.ss-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);cursor:pointer;transition:background .15s;flex-shrink:0;}
+.ss-dot.active{background:var(--coral);}
+.ss-count{font-size:11px;color:var(--muted);min-width:36px;text-align:center;}
+.ss-add{font-size:12px;font-weight:600;color:var(--navy-md);background:none;border:1px solid var(--border);border-radius:5px;padding:3px 10px;cursor:pointer;font-family:inherit;transition:border-color .15s;}
+.ss-add:hover{border-color:var(--navy);}
+.ss-remove{font-size:12px;font-weight:600;color:var(--coral);background:none;border:none;cursor:pointer;font-family:inherit;}
+@media(prefers-color-scheme:dark){.ss-nav{background:rgba(255,255,255,.2);}.ss-nav:hover{background:rgba(255,255,255,.4);}}
+:root[data-theme="dark"] .ss-nav{background:rgba(255,255,255,.2);}
+:root[data-theme="dark"] .ss-nav:hover{background:rgba(255,255,255,.4);}
+
+/* ── Edit mode ── */
+body.edit-mode [contenteditable]{outline:2px dashed rgba(68,114,184,.35);border-radius:4px;min-height:1em;padding:2px 4px;background:var(--edit-hi);cursor:text;}
+body.edit-mode [contenteditable]:focus{outline:2px solid var(--navy-md);}
+.edit-banner{background:rgba(68,114,184,.1);border-bottom:2px solid var(--navy);padding:8px 1.75rem;font-size:13px;font-weight:600;color:var(--navy-md);text-align:center;display:none;}
+body.edit-mode .edit-banner{display:block;}
+@media(prefers-color-scheme:dark){.edit-banner{color:#7aa4e8;background:rgba(29,72,150,.15);}}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+@media(max-width:768px){.toc{display:none;}main{padding:1.5rem 1.25rem 3rem;}.topbar{padding:0 1rem;}}
+</style>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-brand">BogrotNet <span>·</span>
+    <span class="he-only" style="font-weight:400;opacity:.85;font-size:14px">תיעוד תוכנה</span>
+    <span class="en-only" style="font-weight:400;opacity:.85;font-size:14px">Software Documentation</span>
+  </div>
+  <div class="topbar-actions">
+    <div class="lang-pill">
+      <button class="tbtn lang-btn" data-lang="he" onclick="setLang('he')">עב</button>
+      <button class="tbtn lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+    </div>
+    <button class="tbtn" onclick="toggleEdit()" id="edit-btn">
+      <span class="he-only">✏️ ערוך</span><span class="en-only">✏️ Edit</span>
+    </button>
+    <button class="tbtn" onclick="downloadHTML()">⬇ <span class="he-only">הורד</span><span class="en-only">Download</span></button>
+    <button class="tbtn" id="theme-btn" onclick="toggleTheme()">☀</button>
+  </div>
+</div>
+
+<div class="edit-banner">
+  <span class="he-only">✏️ מצב עריכה פעיל — לחצי על כל טקסט לעריכה ישירה</span>
+  <span class="en-only">✏️ Edit mode active — click any text to edit it directly</span>
+</div>
+
+<div class="layout">
+
+  <!-- TOC -->
+  <nav class="toc">
+    <div class="toc-label"><span class="he-only">תוכן עניינים</span><span class="en-only">Contents</span></div>
+    <ul>
+      <li class="sec"><a href="#s1"><span class="he-only">1. הקדמה</span><span class="en-only">1. Introduction</span></a></li>
+      <li class="sec"><a href="#s2"><span class="he-only">2. דרישות מערכת</span><span class="en-only">2. System Requirements</span></a></li>
+      <li class="sec"><a href="#s3"><span class="he-only">3. התקנה</span><span class="en-only">3. Installation</span></a></li>
+      <li class="sec"><a href="#s4"><span class="he-only">4. הוראות למשתמש</span><span class="en-only">4. User Guide</span></a></li>
+      <li class="sub"><ul>
+        <li><a href="#member"><span class="he-only">חברות הרשת</span><span class="en-only">Members</span></a></li>
+        <li><a href="#admin"><span class="he-only">מנהלות המערכת</span><span class="en-only">Admins</span></a></li>
+        <li><a href="#manage-users"><span class="he-only">ניהול משתמשים</span><span class="en-only">Managing Users</span></a></li>
+        <li><a href="#manage-content"><span class="he-only">ניהול תוכן</span><span class="en-only">Managing Content</span></a></li>
+        <li><a href="#blacklist"><span class="he-only">דיווחים וחסימות</span><span class="en-only">Reports &amp; Blacklist</span></a></li>
+        <li><a href="#stats"><span class="he-only">סטטיסטיקות</span><span class="en-only">Statistics</span></a></li>
+        <li><a href="#permissions"><span class="he-only">הרשאות</span><span class="en-only">Permissions</span></a></li>
+        <li><a href="#slideshow"><span class="he-only">סליידשו</span><span class="en-only">Slideshow</span></a></li>
+      </ul></li>
+      <li class="sec"><a href="#s5"><span class="he-only">5. מובייל לעומת דסקטופ</span><span class="en-only">5. Mobile vs. Desktop</span></a></li>
+      <li class="sec"><a href="#s6"><span class="he-only">6. שאלות נפוצות</span><span class="en-only">6. FAQ</span></a></li>
+      <li class="sec"><a href="#s7"><span class="he-only">7. תמיכה</span><span class="en-only">7. Support</span></a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <!-- ══ 1 ══ -->
+    <section class="doc-section" id="s1">
+      <div class="section-header">
+        <span class="section-num"><span class="he-only">חלק 1</span><span class="en-only">Section 1</span></span>
+        <h2 class="section-title"><span class="he-only">הקדמה</span><span class="en-only">Introduction</span></h2>
+      </div>
+
+      <div class="he-only">
+        <h3>מטרה</h3>
+        <p contenteditable="false"><strong>BogrotNet</strong> היא פלטפורמת רשת חברתית פנימית עבור בוגרות <strong>התנועה למנהיגות שווה (ywp)</strong>. האתר מאפשר לבוגרות להתחבר אחת לשנייה, לשתף ידע, לבקש ולהציע סיוע, ולהישאר בקשר עם העמותה — הכל במקום אחד, מאובטח ופרטי.</p>
+        <p contenteditable="false">האתר מחליף ניהול ידני בקובצי Excel ומספק לבוגרות מרחב מאובטח לשמירת פרופיל, חיבור עם עמיתות וניהול על-ידי צוות העמותה.</p>
+        <h3>קהל יעד</h3>
+        <div class="feat-grid">
+          <div class="feat-card"><div class="feat-card-title" contenteditable="false">👩 בוגרות התוכנית (Members)</div><p contenteditable="false">נשים שסיימו את תוכנית YWP ורוצות להישאר מחוברות לרשת הבוגרות, לשתף פוסטים, לבקש עזרה ולנהל את הפרופיל האישי שלהן.</p></div>
+          <div class="feat-card coral"><div class="feat-card-title" contenteditable="false">🔐 מנהלות העמותה (Admins)</div><p contenteditable="false">צוות העמותה האחראי על ניהול המשתמשות, פרסום תוכן, עדכון הסליידשו, הרשמה ידנית של בוגרות, וצפייה בדוחות וסטטיסטיקות.</p></div>
+        </div>
+      </div>
+
+      <div class="en-only">
+        <h3>Purpose</h3>
+        <p contenteditable="false"><strong>BogrotNet</strong> is a private social network for alumnae of <strong>YWP — Young Women's Program for Equal Leadership</strong>. The platform lets alumnae stay connected, share knowledge, offer and request help, and keep in touch with the organization — all in one secure, private place.</p>
+        <p contenteditable="false">The site replaces manual Excel-based management and gives alumnae a secure space to maintain a profile, connect with peers, and be managed by the organization's staff.</p>
+        <h3>Target Audience</h3>
+        <div class="feat-grid">
+          <div class="feat-card"><div class="feat-card-title" contenteditable="false">👩 Alumnae (Members)</div><p contenteditable="false">Women who completed the YWP program and want to stay connected — sharing posts, asking for help, and managing their personal profile.</p></div>
+          <div class="feat-card coral"><div class="feat-card-title" contenteditable="false">🔐 Organization Staff (Admins)</div><p contenteditable="false">The YWP team responsible for managing users, publishing content, updating the slideshow, registering new alumnae, and viewing reports and statistics.</p></div>
+        </div>
+      </div>
+
+      <div class="screenshot-slot" data-label="Landing Page / דף הבית">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: דף הבית</span>
+        <span class="slot-label en-only">Screenshot: Home / Landing Page</span>
+      </div>
+    </section>
+
+    <!-- ══ 2 ══ -->
+    <section class="doc-section" id="s2">
+      <div class="section-header">
+        <span class="section-num"><span class="he-only">חלק 2</span><span class="en-only">Section 2</span></span>
+        <h2 class="section-title"><span class="he-only">דרישות מערכת</span><span class="en-only">System Requirements</span></h2>
+      </div>
+
+      <div class="callout">
+        <p class="he-only" contenteditable="false">האתר הוא <strong>אפליקציית ווב מבוססת ענן</strong> — אין צורך בהתקנה מקומית. כל מה שצריך הוא דפדפן עדכני וחיבור לאינטרנט.</p>
+        <p class="en-only" contenteditable="false">BogrotNet is a <strong>cloud-based web application</strong> — no local installation required. All you need is an up-to-date browser and an internet connection.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th><span class="he-only">דרישה</span><span class="en-only">Requirement</span></th>
+            <th><span class="he-only">פירוט</span><span class="en-only">Details</span></th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><strong><span class="he-only">דפדפן</span><span class="en-only">Browser</span></strong></td>
+              <td contenteditable="false">Chrome 90+, Firefox 90+, Safari 15+, Edge 90+</td>
+            </tr>
+            <tr>
+              <td><strong><span class="he-only">שפות ממשק</span><span class="en-only">Interface Languages</span></strong></td>
+              <td><span class="he-only" contenteditable="false">עברית / English / العربية (נבחר בתוך האתר)</span><span class="en-only" contenteditable="false">Hebrew / English / Arabic (selected inside the app)</span></td>
+            </tr>
+            <tr>
+              <td><strong><span class="he-only">מצב כהה/בהיר</span><span class="en-only">Dark / Light Mode</span></strong></td>
+              <td><span class="he-only" contenteditable="false">נתמך — עוקב אחר הגדרות מערכת ההפעלה, ניתן לשינוי ידני</span><span class="en-only" contenteditable="false">Supported — follows OS settings, can be toggled manually</span></td>
+            </tr>
+            <tr>
+              <td><strong>JavaScript</strong></td>
+              <td><span class="he-only" contenteditable="false">חייב להיות מופעל בדפדפן</span><span class="en-only" contenteditable="false">Must be enabled in the browser</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══ 3 ══ -->
+    <section class="doc-section" id="s3">
+      <div class="section-header">
+        <span class="section-num"><span class="he-only">חלק 3</span><span class="en-only">Section 3</span></span>
+        <h2 class="section-title"><span class="he-only">הוראות התקנה</span><span class="en-only">Installation</span></h2>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌐 <span class="he-only">כתובת האתר הרשמית</span><span class="en-only">Official Website Address</span></div>
+        <p style="margin:0"><a href="https://bogrotnet.web.app" target="_blank" rel="noopener">https://bogrotnet.web.app</a></p>
+      </div>
+
+      <p class="he-only" contenteditable="false">אין צורך בהורדה או התקנה — כניסה ישירה דרך הדפדפן בכל מכשיר.</p>
+      <p class="en-only" contenteditable="false">No download or installation required — access directly through your browser on any device.</p>
+
+      <div class="callout callout-warn">
+        <p class="he-only" contenteditable="false"><strong>חשוב:</strong> כדי לקבל הרשאות אדמין, יש לפנות אל מנהלת המערכת הראשית. הרשאות אינן ניתנות להגדרה עצמאית.</p>
+        <p class="en-only" contenteditable="false"><strong>Important:</strong> To receive admin privileges, contact the primary system administrator. Permissions cannot be self-assigned.</p>
+      </div>
+    </section>
+
+    <!-- ══ 4 ══ -->
+    <section class="doc-section" id="s4">
+      <div class="section-header">
+        <span class="section-num"><span class="he-only">חלק 4</span><span class="en-only">Section 4</span></span>
+        <h2 class="section-title"><span class="he-only">הוראות למשתמש</span><span class="en-only">User Guide</span></h2>
+      </div>
+
+      <!-- MEMBERS -->
+      <h3 id="member"><span class="he-only">חברות הרשת — צעד אחר צעד</span><span class="en-only">Network Members — Step by Step</span></h3>
+
+      <!-- Registration -->
+      <h4><span class="he-only">הרשמה וכניסה לאתר</span><span class="en-only">Registration &amp; Login</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">פתחי את האתר בכתובת <strong>bogrotnet.web.app</strong> ← לחצי על <strong>"הצטרפי לתנועה"</strong></li>
+          <li contenteditable="false">בחרי לשונית <strong>Sign Up</strong> ← שלב 1: פרטים אישיים (שם, תאריך לידה, עיר, אזור, מגזר, דת)</li>
+          <li contenteditable="false">שלב 2: פרטים מקצועיים (תחום עיסוק, מוסד אקדמי, שנת סיום, תחומי עזרה)</li>
+          <li contenteditable="false">שלב 3: אימייל, סיסמה (לפחות 6 תווים), וסימון הסכמה לתנאים ← לחצי <strong>Register</strong></li>
+          <li contenteditable="false">תקבלי קוד OTP בן 6 ספרות לאימייל ← הכניסי אותו בחלון שיפתח ← לחצי <strong>Verify</strong></li>
+          <li contenteditable="false">לאחר אימות מוצלח תועברי אוטומטית לדשבורד האישי שלך</li>
+        </ol>
+        <div class="callout"><p contenteditable="false"><strong>כניסה עם Google:</strong> לחצי "Sign up with Google" בכל שלב — תועברי לאתר מיידית ללא צורך בסיסמה או קוד אימות. הפרופיל יימלא חלקית מנתוני חשבון ה-Google.</p></div>
+        <div class="callout callout-warn"><p contenteditable="false"><strong>שכחת סיסמה?</strong> בדף הכניסה לחצי <em>Forgot password?</em> ← הכניסי מייל ← לחצי Reset. לינק לאיפוס ישלח למייל ותקף כשעה.</p></div>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Open <strong>bogrotnet.web.app</strong> → click <strong>"Join the Movement"</strong></li>
+          <li contenteditable="false">Select the <strong>Sign Up</strong> tab → Step 1: Personal details (name, date of birth, city, region, sector, religion)</li>
+          <li contenteditable="false">Step 2: Professional details (field, academic institution, graduation year, help topics)</li>
+          <li contenteditable="false">Step 3: Email, password (min. 6 chars), agree to terms → click <strong>Register</strong></li>
+          <li contenteditable="false">You will receive a 6-digit OTP code by email → enter it in the popup → click <strong>Verify</strong></li>
+          <li contenteditable="false">After successful verification you are automatically redirected to your personal dashboard</li>
+        </ol>
+        <div class="callout"><p contenteditable="false"><strong>Sign in with Google:</strong> Click "Sign up with Google" at any point — you are taken to the site immediately with no password or OTP needed. Your profile is partially pre-filled from your Google account data.</p></div>
+        <div class="callout callout-warn"><p contenteditable="false"><strong>Forgot your password?</strong> On the login page click <em>Forgot password?</em> → enter your email → click Reset. A reset link is sent to your email and is valid for ~1 hour.</p></div>
+      </div>
+      <div class="screenshot-slot" data-label="Registration / Login">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: דף הרשמה / כניסה</span>
+        <span class="slot-label en-only">Screenshot: Registration / Login Page</span>
+      </div>
+
+      <!-- Profile editing -->
+      <h4><span class="he-only">עריכת הפרופיל האישי</span><span class="en-only">Editing Your Profile</span></h4>
+      <div class="he-only">
+        <ul>
+          <li contenteditable="false">לחצי על שמך / צלמיתך בסרגל הניווט ← בחרי <strong>Profile</strong></li>
+          <li contenteditable="false"><strong>לשונית Profile:</strong> שם, טלפון, עיר, אזור, מגזר, דת, מוסד אקדמי, שנת סיום, ביוגרפיה, תחומי עזרה (ניתן לסמן מספר)</li>
+          <li contenteditable="false"><strong>לשונית Account:</strong> קישורים לרשתות חברתיות — LinkedIn, Instagram, Facebook, Discord; שינוי כתובת מייל; איפוס סיסמה</li>
+          <li contenteditable="false">לאחר עריכה — לחצי <strong>Save Changes</strong> — הכפתור יהפוך ירוק ✓ לאישור שמירה מוצלחת</li>
+        </ul>
+        <p contenteditable="false"><strong>תמונת פרופיל:</strong> לחצי על עיגול הצלמית (מופיע אייקון עריכה בריחוף) ← בחרי קובץ תמונה ← גרירה/שינוי גודל בחלון החיתוך ← לחצי <strong>Crop &amp; Upload</strong>. התמונה תתעדכן מיד בכל מקום באתר.</p>
+        <p contenteditable="false"><strong>תמונת רקע (Cover):</strong> לחצי על אזור הרקע הכחול בראש הפרופיל ← בחרי קובץ ← חתכי ← <strong>Crop &amp; Upload</strong>.</p>
+      </div>
+      <div class="en-only">
+        <ul>
+          <li contenteditable="false">Click your name / avatar in the nav bar → select <strong>Profile</strong></li>
+          <li contenteditable="false"><strong>Profile tab:</strong> name, phone, city, region, sector, religion, academic institution, graduation year, bio, help topics (multiple allowed)</li>
+          <li contenteditable="false"><strong>Account tab:</strong> social media links — LinkedIn, Instagram, Facebook, Discord; change email address; reset password</li>
+          <li contenteditable="false">After editing — click <strong>Save Changes</strong> — the button turns green ✓ to confirm a successful save</li>
+        </ul>
+        <p contenteditable="false"><strong>Profile picture:</strong> Click the avatar circle (an edit icon appears on hover) → choose an image file → drag / resize in the crop window → click <strong>Crop &amp; Upload</strong>. The picture updates everywhere on the site immediately.</p>
+        <p contenteditable="false"><strong>Cover image:</strong> Click the blue banner area at the top of your profile → choose a file → crop → <strong>Crop &amp; Upload</strong>.</p>
+      </div>
+      <div class="screenshot-slot" data-label="Profile Edit">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: עריכת הפרופיל</span>
+        <span class="slot-label en-only">Screenshot: Profile Editing</span>
+      </div>
+
+      <!-- Viewing another profile -->
+      <h4><span class="he-only">צפייה בפרופיל של בוגרת אחרת</span><span class="en-only">Viewing Another Member's Profile</span></h4>
+      <div class="he-only">
+        <p contenteditable="false">לחיצה על שם / צלמית של כל משתמשת פותחת את הפרופיל שלה. ניתן לראות:</p>
+        <ul>
+          <li contenteditable="false"><strong>לשונית Posts</strong> — כל הפוסטים שפרסמה</li>
+          <li contenteditable="false"><strong>לשונית About</strong> — פרטים מקצועיים, ביו, קישורים חברתיים</li>
+          <li contenteditable="false"><strong>לשונית Wishes</strong> — ברכות יום הולדת שקיבלה מחברות הרשת</li>
+          <li contenteditable="false"><strong>לשונית My Notes</strong> — הערות פרטיות שלך עליה בלבד (ראי סעיף הערות)</li>
+          <li contenteditable="false"><strong>כפתור Message</strong> — פתיחת שיחת צ'אט ישירה</li>
+          <li contenteditable="false"><strong>כפתור Block</strong> (3 נקודות) — חסימת המשתמשת; פוסטים ושיחות יוסתרו הדדית</li>
+        </ul>
+      </div>
+      <div class="en-only">
+        <p contenteditable="false">Clicking on any user's name or avatar opens their profile. You can see:</p>
+        <ul>
+          <li contenteditable="false"><strong>Posts tab</strong> — all posts she has published</li>
+          <li contenteditable="false"><strong>About tab</strong> — professional details, bio, social media links</li>
+          <li contenteditable="false"><strong>Wishes tab</strong> — birthday wishes she has received from the network</li>
+          <li contenteditable="false"><strong>My Notes tab</strong> — your private notes about her only (see Notes section)</li>
+          <li contenteditable="false"><strong>Message button</strong> — opens a direct chat conversation</li>
+          <li contenteditable="false"><strong>Block button</strong> (3 dots) — blocks the user; posts and conversations are hidden on both sides</li>
+        </ul>
+      </div>
+      <div class="screenshot-slot" data-label="Other User Profile">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: פרופיל של בוגרת אחרת</span>
+        <span class="slot-label en-only">Screenshot: Another Member's Profile</span>
+      </div>
+
+      <!-- Community -->
+      <h4><span class="he-only">הפיד הקהילתי — פרסום ואינטראקציה</span><span class="en-only">Community Feed — Posting &amp; Interaction</span></h4>
+      <div class="he-only">
+        <p contenteditable="false"><strong>פרסום פוסט חדש:</strong></p>
+        <ol class="steps">
+          <li contenteditable="false">לחצי על תיבת הטקסט בראש הפיד ← כתבי את הפוסט שלך</li>
+          <li contenteditable="false">ניתן לצרף תמונות/וידאו ← לחצי על אייקון התמונה ← בחרי קובץ</li>
+          <li contenteditable="false">לחצי <strong>Post</strong> — הפוסט יופיע מיד בפיד לכולם</li>
+        </ol>
+        <p contenteditable="false"><strong>אינטראקציות בפיד:</strong></p>
+        <ul>
+          <li contenteditable="false"><strong>תגובות אמוג'י</strong> — לחצי על ❤️ ← בחרי מבין: ❤️ 👍 😂 😮 😢 🎉. לחיצה חוזרת מסירה את התגובה</li>
+          <li contenteditable="false"><strong>תגובות טקסט</strong> — לחצי Comment ← כתבי ← Enter לשליחה (Shift+Enter = שורה חדשה)</li>
+          <li contenteditable="false"><strong>Reply לתגובה</strong> — לחצי Reply מתחת לתגובה ← כתבי ← Enter; תגובות ניתן לקפל/להרחיב</li>
+          <li contenteditable="false"><strong>תרגום</strong> — לחצי על אייקון A文 ליד פוסט או תגובה ← המערכת מתרגמת לשפתך (מוצגת גרסת תרגום, המקור נשמר)</li>
+          <li contenteditable="false"><strong>Repost</strong> — לחצי Repost על פוסט ← כתבי מחשבות (אופציונלי) ← לחצי Repost שוב; לחיצה על הפוסט המצוטט בתוך ה-Repost גוללת לפוסט המקורי</li>
+          <li contenteditable="false"><strong>עריכה/מחיקת פוסט שלך:</strong> 3 נקודות (...) בפוסט ← Edit / Delete</li>
+          <li contenteditable="false"><strong>פוסטים מוצמדים (Pinned):</strong> פוסטים שמנהלת הצמידה יופיעו תמיד בראש הפיד עם תגית Pinned</li>
+          <li contenteditable="false"><strong>פוסטי יום הולדת:</strong> נוצרים אוטומטית ביום הולדת של חברה ונמחקים לאחר 24 שעות; לחצי 🎈 כדי לאחל לה — האיחול יופיע גם בלשונית Wishes בפרופיל שלה</li>
+        </ul>
+      </div>
+      <div class="en-only">
+        <p contenteditable="false"><strong>Publishing a new post:</strong></p>
+        <ol class="steps">
+          <li contenteditable="false">Click the text box at the top of the feed → write your post</li>
+          <li contenteditable="false">Optionally attach images/video → click the image icon → choose a file</li>
+          <li contenteditable="false">Click <strong>Post</strong> — the post appears immediately in the feed for everyone</li>
+        </ol>
+        <p contenteditable="false"><strong>Feed interactions:</strong></p>
+        <ul>
+          <li contenteditable="false"><strong>Emoji reactions</strong> — click ❤️ → choose from: ❤️ 👍 😂 😮 😢 🎉. Clicking again removes your reaction</li>
+          <li contenteditable="false"><strong>Text comments</strong> — click Comment → type → Enter to send (Shift+Enter = new line)</li>
+          <li contenteditable="false"><strong>Reply to a comment</strong> — click Reply under a specific comment → type → Enter; threads can be collapsed/expanded</li>
+          <li contenteditable="false"><strong>Translate</strong> — click the A文 icon next to any post or comment → the system translates it to your language (translation shown, original preserved)</li>
+          <li contenteditable="false"><strong>Repost</strong> — click Repost on a post → optionally add thoughts → click Repost again; clicking the quoted post inside a repost scrolls to the original</li>
+          <li contenteditable="false"><strong>Edit/Delete your post:</strong> 3 dots (...) on the post → Edit / Delete</li>
+          <li contenteditable="false"><strong>Pinned posts:</strong> Posts pinned by an admin always appear at the top of the feed with a Pinned badge</li>
+          <li contenteditable="false"><strong>Birthday posts:</strong> Created automatically on a member's birthday and deleted after 24 hours; click 🎈 to wish them — the wish also appears in the Wishes tab on their profile</li>
+        </ul>
+      </div>
+      <div class="screenshot-slot" data-label="Community Feed">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: הפיד הקהילתי</span>
+        <span class="slot-label en-only">Screenshot: Community Feed</span>
+      </div>
+
+      <!-- Help Posts -->
+      <h4><span class="he-only">פוסטי עזרה — מה זה ואיך עובד?</span><span class="en-only">Help Posts — What Is It &amp; How It Works</span></h4>
+      <div class="he-only">
+        <p contenteditable="false">לשונית <strong>Help Posts</strong> היא מרחב ייעודי שבו הבוגרות יכולות לבקש עזרה מקצועית מהרשת — ולהציע את עצמן לעזור לאחרות. זה המקום לחיבורים מקצועיים: מי שצריכה עורכת דין, מי שמחפשת מנטורית בתחום הטכנולוגיה, מי שרוצה שיחת ייעוץ עסקי.</p>
+        <ul>
+          <li contenteditable="false">הלשונית נפרדת לחלוטין מהפיד הקהילתי — תוכן בלעדי לבקשות ומתן עזרה</li>
+          <li contenteditable="false">פוסטים מסומנים בתגית <strong>Asking for Help</strong> (מחפשת עזרה) או <strong>Offering Help</strong> (מציעה עזרה)</li>
+          <li contenteditable="false">ניתן לסנן לפי קטגוריה: עסקים, משפט, טכנולוגיה, בריאות, חינוך, ועוד</li>
+          <li contenteditable="false">כל פוסט תומך בתגובות ותרגום — בדיוק כמו בפיד הקהילתי</li>
+        </ul>
+      </div>
+      <div class="en-only">
+        <p contenteditable="false">The <strong>Help Posts</strong> tab is a dedicated space where alumnae can request professional help from the network — and offer their own expertise to others. It's the place for real professional connections: who needs a lawyer, who's looking for a tech mentor, who wants a business consultation.</p>
+        <ul>
+          <li contenteditable="false">Completely separate from the community feed — content is exclusively for help requests and offers</li>
+          <li contenteditable="false">Posts are tagged as <strong>Asking for Help</strong> or <strong>Offering Help</strong></li>
+          <li contenteditable="false">Filter by category: business, law, tech, health, education, and more</li>
+          <li contenteditable="false">Every post supports comments and translation — exactly like the community feed</li>
+        </ul>
+      </div>
+      <div class="screenshot-slot" data-label="Help Posts" data-lhe="צילום מסך: עמוד פוסטי עזרה" data-len="Screenshot: Help Posts Page">
+        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: עמוד פוסטי עזרה</span>
+        <span class="slot-label en-only">Screenshot: Help Posts Page</span>
+      </div>
+
+      <h4><span class="he-only">מחפשות עזרה — כיצד לפרסם בקשה</span><span class="en-only">Asking for Help — How to Post a Request</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">לחצי על לשונית <strong>Help Posts</strong> בסרגל הניווט</li>
+          <li contenteditable="false">לחצי על הכפתור <strong>Ask for Help</strong> (בצבע כחול, בחלק העליון של הדף)</li>
+          <li contenteditable="false">כתבי את בקשת העזרה שלך בבירור: מה את צריכה, מהו ההקשר, כמה זמן/מאמץ מדובר</li>
+          <li contenteditable="false">בחרי <strong>קטגוריה</strong> מהרשימה — בחירה נכונה מגדילה את הסיכוי שמי שיכולה לעזור תראה אותך</li>
+          <li contenteditable="false">לחצי <strong>Post</strong> — הפוסט שלך יופיע מיד בלשונית Help Posts</li>
+        </ol>
+        <div class="callout"><p contenteditable="false"><strong>טיפ:</strong> ציוני אם את מחפשת תגובה בתגובות, שיחה פרטית בצ'אט, או שיחת טלפון — ככה אנשים ידעו איך לסייע לך הכי טוב.</p></div>
+        <p contenteditable="false"><strong>מה קורה אחרי?</strong> בוגרות שיכולות לעזור יגיבו בתגובות לפוסט שלך, או ישלחו לך הודעה ישירה בצ'אט. תקבלי התראה על כל תגובה.</p>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Click the <strong>Help Posts</strong> tab in the navigation bar</li>
+          <li contenteditable="false">Click the <strong>Ask for Help</strong> button (blue, at the top of the page)</li>
+          <li contenteditable="false">Write your request clearly: what you need, the context, and how much time/effort is involved</li>
+          <li contenteditable="false">Select a <strong>category</strong> from the list — the right category increases the chance that someone who can help will see it</li>
+          <li contenteditable="false">Click <strong>Post</strong> — your post appears immediately in the Help Posts tab</li>
+        </ol>
+        <div class="callout"><p contenteditable="false"><strong>Tip:</strong> Mention whether you prefer a reply in the comments, a private DM, or a phone call — so people know the best way to help you.</p></div>
+        <p contenteditable="false"><strong>What happens next?</strong> Alumnae who can help will reply in the comments or send you a direct message via chat. You will receive a notification for every response.</p>
+      </div>
+      <div class="screenshot-slot" data-label="Ask for Help" data-lhe="צילום מסך: פרסום בקשת עזרה" data-len="Screenshot: Posting a Help Request">
+        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: פרסום בקשת עזרה</span>
+        <span class="slot-label en-only">Screenshot: Posting a Help Request</span>
+      </div>
+
+      <h4><span class="he-only">מציעות עזרה — כיצד להגיע לבקשות ולהגיב</span><span class="en-only">Offering Help — How to Find Requests &amp; Respond</span></h4>
+      <div class="he-only">
+        <p contenteditable="false"><strong>פרסום הצעת עזרה כללית:</strong></p>
+        <ol class="steps">
+          <li contenteditable="false">לחצי <strong>Offer Help</strong> (כפתור ירוק)</li>
+          <li contenteditable="false">כתבי מה את מציעה: תחום המומחיות שלך, סוג הסיוע (ייעוץ, חיבורים, קורות חיים, סיעור מוחות וכו')</li>
+          <li contenteditable="false">בחרי קטגוריה ← לחצי <strong>Post</strong></li>
+        </ol>
+        <p contenteditable="false"><strong>מציאת בקשות עזרה רלוונטיות:</strong></p>
+        <ul>
+          <li contenteditable="false">גלולי דרך הפוסטים בלשונית Help Posts — פוסטים עם תגית <strong>Asking for Help</strong> הן בקשות ממישהי שזקוקה לסיוע</li>
+          <li contenteditable="false">השתמשי בסינון קטגוריות (בחלק העליון) כדי לראות רק בקשות בתחום שלך</li>
+          <li contenteditable="false">מצאת בקשה שאת יכולה לעזור בה? לחצי <strong>Comment</strong> ← כתבי תגובה מסייעת, או לחצי על שם הפוסטת כדי לשלוח לה הודעה בצ'אט</li>
+          <li contenteditable="false">ניתן גם לתגבר פוסט של מישהי על-ידי Repost — כך הבקשה שלה תגיע לעוד בוגרות</li>
+        </ul>
+        <div class="callout"><p contenteditable="false"><strong>חשוב:</strong> הזכירי בתגובה מה ניסיונך הרלוונטי ואיך הכי נוח לך לעזור — ככה תיצרי את החיבור הנכון ביעילות.</p></div>
+      </div>
+      <div class="en-only">
+        <p contenteditable="false"><strong>Publishing a general help offer:</strong></p>
+        <ol class="steps">
+          <li contenteditable="false">Click <strong>Offer Help</strong> (green button)</li>
+          <li contenteditable="false">Describe what you're offering: your area of expertise, type of assistance (consulting, connections, CV review, brainstorming, etc.)</li>
+          <li contenteditable="false">Choose a category → click <strong>Post</strong></li>
+        </ol>
+        <p contenteditable="false"><strong>Finding relevant help requests:</strong></p>
+        <ul>
+          <li contenteditable="false">Scroll through posts in the Help Posts tab — posts tagged <strong>Asking for Help</strong> are requests from someone who needs assistance</li>
+          <li contenteditable="false">Use the category filter (at the top) to see only requests in your area</li>
+          <li contenteditable="false">Found a request you can help with? Click <strong>Comment</strong> → write a helpful reply, or click the poster's name to send her a message via chat</li>
+          <li contenteditable="false">You can also Repost someone's request — this spreads her request to more alumnae who might be able to help</li>
+        </ul>
+        <div class="callout"><p contenteditable="false"><strong>Important:</strong> Mention your relevant experience in your reply and how you prefer to help — that way you create the right connection efficiently.</p></div>
+      </div>
+      <div class="screenshot-slot" data-label="Offer Help" data-lhe="צילום מסך: מתן עזרה ומענה לבקשות" data-len="Screenshot: Offering Help &amp; Responding to Requests">
+        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: מתן עזרה ומענה לבקשות</span>
+        <span class="slot-label en-only">Screenshot: Offering Help &amp; Responding to Requests</span>
+      </div>
+
+      <!-- Chat -->
+      <h4><span class="he-only">צ'אט — הודעות ישירות</span><span class="en-only">Chat — Direct Messages</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">לחצי על אייקון הצ'אט בסרגל הניווט ← תראי את כל השיחות הפתוחות</li>
+          <li contenteditable="false">לפתיחת שיחה חדשה: לחצי <strong>+</strong> ← חפשי את שם הבוגרת ← לחצי עליה</li>
+          <li contenteditable="false">כתבי הודעה ← לחצי Enter לשליחה</li>
+        </ol>
+        <ul>
+          <li contenteditable="false"><strong>שליחת לב מהיר:</strong> כשתיבת הטקסט ריקה, לחצי על כפתור הלב ❤️ — נשלח מיידית</li>
+          <li contenteditable="false"><strong>שליחת תמונה:</strong> לחצי על אייקון המצלמה ← בחרי קובץ ← שלחי</li>
+          <li contenteditable="false"><strong>תגובה להודעה ספציפית:</strong> החליקי ימינה על ההודעה (מובייל) / לחצי Reply בדסקטופ ← ההודעה תצוטט בתגובה שלך</li>
+          <li contenteditable="false"><strong>הסתרת שיחה:</strong> 3 נקודות (...) בשיחה ← Hide — השיחה נעלמת מהרשימה אך חוזרת כשמגיעה הודעה חדשה</li>
+          <li contenteditable="false"><strong>דיווח על שיחה:</strong> 3 נקודות ← Report ← תארי את הבעיה ← Submit — הדיווח יגיע לאדמינות</li>
+        </ul>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Click the chat icon in the nav bar → you will see all open conversations</li>
+          <li contenteditable="false">To start a new conversation: click <strong>+</strong> → search for the member's name → click on her</li>
+          <li contenteditable="false">Type a message → press Enter to send</li>
+        </ol>
+        <ul>
+          <li contenteditable="false"><strong>Quick heart:</strong> when the text box is empty, click the ❤️ button — sent instantly</li>
+          <li contenteditable="false"><strong>Send a photo:</strong> click the camera icon → choose a file → send</li>
+          <li contenteditable="false"><strong>Reply to a specific message:</strong> swipe right on the message (mobile) / click Reply on desktop → the message is quoted in your reply</li>
+          <li contenteditable="false"><strong>Hide a conversation:</strong> 3 dots (...) on a conversation → Hide — it disappears from the list but returns when a new message arrives</li>
+          <li contenteditable="false"><strong>Report a conversation:</strong> 3 dots → Report → describe the issue → Submit — the report goes to the admins</li>
+        </ul>
+      </div>
+      <div class="screenshot-slot" data-label="Chat">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: דף הצ'אט</span>
+        <span class="slot-label en-only">Screenshot: Chat Page</span>
+      </div>
+
+      <!-- Notifications -->
+      <h4><span class="he-only">התראות</span><span class="en-only">Notifications</span></h4>
+      <div class="he-only">
+        <ul>
+          <li contenteditable="false">לחצי על אייקון הפעמון 🔔 בסרגל הניווט — מספר אדום מציין כמה התראות חדשות</li>
+          <li contenteditable="false">סוגי התראות: לייק/אמוג'י על פוסט שלך, תגובה על פוסט שלך, Reply לתגובה שלך, ציון שלך (@username), איחול יום הולדת</li>
+          <li contenteditable="false">לחיצה על התראה — מובילה ישירות לפוסט/תגובה הרלוונטי</li>
+          <li contenteditable="false">לחיצה על <strong>Mark all as read</strong> — מסמנת את כל ההתראות כנקראו</li>
+        </ul>
+      </div>
+      <div class="en-only">
+        <ul>
+          <li contenteditable="false">Click the bell icon 🔔 in the nav bar — a red number shows how many new notifications you have</li>
+          <li contenteditable="false">Notification types: emoji reaction on your post, comment on your post, reply to your comment, mention (@username), birthday wish</li>
+          <li contenteditable="false">Clicking a notification takes you directly to the relevant post/comment</li>
+          <li contenteditable="false">Click <strong>Mark all as read</strong> to clear all notifications at once</li>
+        </ul>
+      </div>
+      <div class="screenshot-slot" data-label="Notifications">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: התראות</span>
+        <span class="slot-label en-only">Screenshot: Notifications</span>
+      </div>
+
+      <!-- Notes -->
+      <h4><span class="he-only">הערות פרטיות (My Notes)</span><span class="en-only">Private Notes (My Notes)</span></h4>
+      <div class="he-only">
+        <ul>
+          <li contenteditable="false">כנסי לפרופיל של כל בוגרת ← לחצי על לשונית <strong>My Notes</strong></li>
+          <li contenteditable="false">כתבי את ההערה שלך ← לחצי <strong>Save</strong> — הכפתור יהפוך ירוק ✓ לאישור</li>
+          <li contenteditable="false">ההערות נשמרות אך ורק אצלך — אף אחד אחר לא יכול לראות אותן, כולל מנהלות ובעלת הפרופיל</li>
+          <li contenteditable="false">ניתן לחזור ולערוך את ההערה בכל עת — הגרסה הנוכחית תיטען אוטומטית בכל כניסה לפרופיל</li>
+        </ul>
+      </div>
+      <div class="en-only">
+        <ul>
+          <li contenteditable="false">Go to any member's profile → click the <strong>My Notes</strong> tab</li>
+          <li contenteditable="false">Write your note → click <strong>Save</strong> — the button turns green ✓ to confirm</li>
+          <li contenteditable="false">Notes are stored only for you — nobody else can see them, including admins and the profile owner</li>
+          <li contenteditable="false">You can return and edit the note at any time — the current version loads automatically every time you visit that profile</li>
+        </ul>
+      </div>
+      <div class="screenshot-slot" data-label="My Notes">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: הערות פרטיות</span>
+        <span class="slot-label en-only">Screenshot: Private Notes (My Notes)</span>
+      </div>
+
+      <hr>
+
+      <!-- ADMINS -->
+      <h3 id="admin"><span class="he-only">מנהלות המערכת — Admin Guide</span><span class="en-only">Administrators — Admin Guide</span></h3>
+      <div class="callout callout-warn">
+        <p class="he-only" contenteditable="false"><strong>הערה:</strong> פאנל הניהול נגיש רק למשתמשות שהוגדרו כ-Admin.</p>
+        <p class="en-only" contenteditable="false"><strong>Note:</strong> The admin panel is only accessible to users designated as Admin.</p>
+      </div>
+      <div class="screenshot-slot" data-label="Admin Overview">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: פאנל ניהול — Overview</span>
+        <span class="slot-label en-only">Screenshot: Admin Panel — Overview</span>
+      </div>
+
+      <!-- Manage Users -->
+      <h3 id="manage-users"><span class="he-only">ניהול משתמשים</span><span class="en-only">Managing Users</span></h3>
+
+      <h4><span class="he-only">חיפוש, סינון וצפייה במשתמשת</span><span class="en-only">Search, Filter &amp; View a User</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">לחצי <strong>Admin</strong> בסרגל הניווט ← בחרי לשונית <strong>Users</strong></li>
+          <li contenteditable="false">בתיבת החיפוש: חפשי לפי שם, כתובת מייל, עיר, מקצוע, מוסד, שנת סיום או מגזר</li>
+          <li contenteditable="false">לחצי על ראשי עמודות למיון (שם, תאריך הצטרפות, עיר) ← לחצי שוב לשינוי כיוון המיון</li>
+          <li contenteditable="false">ניתן לסנן: <strong>Admins Only</strong> / <strong>Verified Only</strong> / <strong>Blacklisted</strong> / <strong>Online Now</strong></li>
+          <li contenteditable="false">לחצי על שורת המשתמשת ← יפתח פאנל עם כל פרטיה</li>
+        </ol>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Click <strong>Admin</strong> in the nav bar → select the <strong>Users</strong> tab</li>
+          <li contenteditable="false">In the search box: search by name, email, city, profession, institution, graduation year, or sector</li>
+          <li contenteditable="false">Click column headers to sort (name, join date, city) → click again to reverse sort order</li>
+          <li contenteditable="false">Filter options: <strong>Admins Only</strong> / <strong>Verified Only</strong> / <strong>Blacklisted</strong> / <strong>Online Now</strong></li>
+          <li contenteditable="false">Click a user row → a detail panel opens with all her information</li>
+        </ol>
+      </div>
+      <div class="screenshot-slot" data-label="Admin Users Search">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: חיפוש משתמשות</span>
+        <span class="slot-label en-only">Screenshot: User Search &amp; Filter</span>
+      </div>
+
+      <h4><span class="he-only">עריכת פרטי משתמשת</span><span class="en-only">Editing a User's Details</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">מצאי את המשתמשת ← לחצי <strong>Edit</strong> בשורה שלה</li>
+          <li contenteditable="false">ייפתח טופס עם כל שדות הפרופיל — ערכי כל שדה שצריך</li>
+          <li contenteditable="false">לחצי <strong>Save Changes</strong> ← תראי הודעת אישור</li>
+        </ol>
+        <div class="callout"><p contenteditable="false">המשתמשת לא מקבלת התראה על עריכת הפרטים שלה. אם יש שינוי רגיש (מייל, שם), כדאי ליידע אותה.</p></div>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Find the user → click <strong>Edit</strong> on her row</li>
+          <li contenteditable="false">A form opens with all profile fields — edit whatever is needed</li>
+          <li contenteditable="false">Click <strong>Save Changes</strong> → you will see a confirmation message</li>
+        </ol>
+        <div class="callout"><p contenteditable="false">The user does not receive a notification about the edit. For sensitive changes (email, name) it's good practice to let her know.</p></div>
+      </div>
+      <div class="screenshot-slot" data-label="Edit User">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: עריכת פרטי משתמשת</span>
+        <span class="slot-label en-only">Screenshot: Edit User Details</span>
+      </div>
+
+      <h4><span class="he-only">מחיקת משתמשת</span><span class="en-only">Deleting a User</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">מצאי את המשתמשת בלשונית Users ← לחצי <strong>Delete</strong></li>
+          <li contenteditable="false">יופיע חלון אישור עם שם המשתמשת ← לחצי <strong>Confirm Delete</strong></li>
+          <li contenteditable="false">המערכת תמחק: חשבון, פרופיל, כל הפוסטים, תגובות, שיחות ומדיה שלה</li>
+        </ol>
+        <div class="callout callout-warn"><p contenteditable="false"><strong>פעולה בלתי הפיכה לחלוטין!</strong> לא ניתן לשחזר משתמשת שנמחקה. אם רק רוצים להשעות — העדיפי <strong>Blacklist</strong> על מחיקה.</p></div>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Find the user in the Users tab → click <strong>Delete</strong></li>
+          <li contenteditable="false">A confirmation dialog appears with the user's name → click <strong>Confirm Delete</strong></li>
+          <li contenteditable="false">The system deletes: account, profile, all posts, comments, conversations, and media</li>
+        </ol>
+        <div class="callout callout-warn"><p contenteditable="false"><strong>Completely irreversible!</strong> A deleted user cannot be recovered. If you only want to suspend access, prefer <strong>Blacklist</strong> over deletion.</p></div>
+      </div>
+      <div class="screenshot-slot" data-label="Delete User">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: אישור מחיקת משתמשת</span>
+        <span class="slot-label en-only">Screenshot: Delete User Confirmation</span>
+      </div>
+
+      <h4><span class="he-only">ייבוא בוגרות מקובץ Excel</span><span class="en-only">Import Alumnae from Excel</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin ← Overview ← לחצי <strong>Upload Excel</strong></li>
+          <li contenteditable="false">הכיני קובץ <code>.xlsx</code> — חובה: עמודות <code>email</code> ו-<code>firstName</code>; אופציונלי: <code>lastName</code>, <code>phone</code>, <code>city</code> ועוד</li>
+          <li contenteditable="false">בחרי את הקובץ ← לחצי <strong>Upload</strong></li>
+          <li contenteditable="false">המערכת מדווחת לכל שורה: ✅ נוצר / ⚠️ דולג (קיים כבר) / ❌ שגיאה (מייל לא תקין)</li>
+        </ol>
+        <div class="callout"><p contenteditable="false">הייבוא יוצר רשומות פרופיל בלבד. הבוגרות עדיין יצטרכו לסיים הרשמה עצמאית עם אותו מייל ולאמת OTP.</p></div>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin → Overview → click <strong>Upload Excel</strong></li>
+          <li contenteditable="false">Prepare a <code>.xlsx</code> file — required: <code>email</code> and <code>firstName</code> columns; optional: <code>lastName</code>, <code>phone</code>, <code>city</code>, etc.</li>
+          <li contenteditable="false">Select the file → click <strong>Upload</strong></li>
+          <li contenteditable="false">The system reports per row: ✅ created / ⚠️ skipped (already exists) / ❌ error (invalid email)</li>
+        </ol>
+        <div class="callout"><p contenteditable="false">Import creates profile records only. Alumnae still need to complete self-registration with the same email and verify their OTP code.</p></div>
+      </div>
+      <div class="screenshot-slot" data-label="Excel Import">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: ייבוא מ-Excel</span>
+        <span class="slot-label en-only">Screenshot: Excel Import</span>
+      </div>
+
+      <h4><span class="he-only">ייצוא נתוני משתמשות ל-Excel</span><span class="en-only">Export User Data to Excel</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin ← Overview ← <strong>Download Excel</strong></li>
+          <li contenteditable="false">יפתח חלון בחירת שדות — סמני/בטלי סימון אילו עמודות לכלול (שם, מייל, עיר, טלפון, תחום וכו')</li>
+          <li contenteditable="false">לחצי <strong>Download</strong> — הקובץ נשמר בשם <code>users_export.xlsx</code></li>
+        </ol>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin → Overview → <strong>Download Excel</strong></li>
+          <li contenteditable="false">A field-selector dialog opens — check/uncheck which columns to include (name, email, city, phone, field, etc.)</li>
+          <li contenteditable="false">Click <strong>Download</strong> → the file saves as <code>users_export.xlsx</code></li>
+        </ol>
+      </div>
+      <div class="screenshot-slot" data-label="Excel Export">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: ייצוא נתונים ל-Excel</span>
+        <span class="slot-label en-only">Screenshot: Excel Export</span>
+      </div>
+
+      <hr>
+
+      <!-- Manage Content -->
+      <h3 id="manage-content"><span class="he-only">ניהול תוכן</span><span class="en-only">Managing Content</span></h3>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin ← לשונית <strong>Posts</strong></li>
+          <li contenteditable="false">חפשי, מיינו, סננו (Pinned / Has Media)</li>
+          <li contenteditable="false"><strong>Show full post</strong> להרחבה ← <strong>Show comments</strong> לתגובות</li>
+          <li contenteditable="false"><strong>Pin / Unpin</strong> — קובעת פוסט בראש הפיד לכולם</li>
+          <li contenteditable="false"><strong>Delete</strong> — מוחקת פוסט + תגובות + מדיה</li>
+        </ol>
+        <div class="callout"><p contenteditable="false">ניתן גם למחוק/לערוך/לסמן פוסטים ישירות מהפיד על-ידי לחיצה על 3 הנקודות (...) בפוסט.</p></div>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin → <strong>Posts</strong> tab</li>
+          <li contenteditable="false">Search, sort, filter (Pinned / Has Media)</li>
+          <li contenteditable="false"><strong>Show full post</strong> to expand → <strong>Show comments</strong> for replies</li>
+          <li contenteditable="false"><strong>Pin / Unpin</strong> — pins a post to the top of the feed for everyone</li>
+          <li contenteditable="false"><strong>Delete</strong> — removes the post, all comments, and media</li>
+        </ol>
+        <div class="callout"><p contenteditable="false">You can also delete/edit/pin posts directly from the feed by clicking the three dots (...) on any post.</p></div>
+      </div>
+      <div class="screenshot-slot" data-label="Admin Posts Tab">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: Admin — ניהול פוסטים</span>
+        <span class="slot-label en-only">Screenshot: Admin — Posts Management</span>
+      </div>
+
+      <hr>
+
+      <!-- Blacklist -->
+      <h3 id="blacklist"><span class="he-only">דיווחים ורשימת חסימות</span><span class="en-only">Reports &amp; Blacklist</span></h3>
+
+      <h4><span class="he-only">טיפול בדיווחים</span><span class="en-only">Handling Reports</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin ← <strong>Support</strong> ← לשונית <strong>Reports</strong></li>
+          <li contenteditable="false">כל דיווח מציג: שם המדווחת, שם מי שדיווחו עליה, תיאור, תאריך, סטטוס</li>
+          <li contenteditable="false">סנני לפי סטטוס: <strong>Pending</strong> (ממתין לטיפול) / <strong>Resolved</strong> (טופל) / <strong>Dismissed</strong> (בוטל)</li>
+          <li contenteditable="false">לכל דיווח: <strong>Mark Resolved</strong> ← סמני כטופל | <strong>Dismiss</strong> ← בטלי | <strong>Reopen</strong> ← פתחי מחדש</li>
+        </ol>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin → <strong>Support</strong> → <strong>Reports</strong> tab</li>
+          <li contenteditable="false">Each report shows: reporter name, reported user, description, date, and status</li>
+          <li contenteditable="false">Filter by status: <strong>Pending</strong> (awaiting action) / <strong>Resolved</strong> (handled) / <strong>Dismissed</strong> (cancelled)</li>
+          <li contenteditable="false">Per report: <strong>Mark Resolved</strong> → mark as handled | <strong>Dismiss</strong> → cancel it | <strong>Reopen</strong> → reopen</li>
+        </ol>
+      </div>
+      <div class="screenshot-slot" data-label="Reports">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: דיווחים — Reports</span>
+        <span class="slot-label en-only">Screenshot: Reports Tab</span>
+      </div>
+
+      <h4><span class="he-only">הוספת מייל לרשימת חסומות</span><span class="en-only">Add an Email to the Blacklist</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin ← Support ← לשונית <strong>Blacklist</strong> ← לחצי <strong>Add to Blacklist</strong></li>
+          <li contenteditable="false">הכניסי את כתובת המייל לחסימה ← הוסיפי סיבת חסימה (אופציונלי, מוצגת למשתמשת)</li>
+          <li contenteditable="false">לחצי <strong>Block</strong></li>
+          <li contenteditable="false">אם המייל שייך למשתמשת רשומה — היא תיחסם מיידית; בכניסה הבאה תראה מסך חסימה עם הסיבה שהכנסת</li>
+          <li contenteditable="false">אם המייל אינו רשום — הוא יתווסף לרשימה ויחסום הרשמה עתידית עם אותו מייל</li>
+        </ol>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin → Support → <strong>Blacklist</strong> tab → click <strong>Add to Blacklist</strong></li>
+          <li contenteditable="false">Enter the email address to block → optionally add a reason (shown to the user)</li>
+          <li contenteditable="false">Click <strong>Block</strong></li>
+          <li contenteditable="false">If the email belongs to a registered user — she is blocked immediately; on next login she sees a block screen with your reason</li>
+          <li contenteditable="false">If the email is not yet registered — it is added to the list and blocks future registration with that email</li>
+        </ol>
+      </div>
+      <div class="screenshot-slot" data-label="Add to Blacklist">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: הוספה לרשימת חסומות</span>
+        <span class="slot-label en-only">Screenshot: Add to Blacklist</span>
+      </div>
+
+      <h4><span class="he-only">הסרת חסימה</span><span class="en-only">Remove a Block</span></h4>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin ← Support ← Blacklist ← לשונית <strong>Currently Blocked</strong></li>
+          <li contenteditable="false">מצאי את המייל ברשימה ← לחצי <strong>Remove</strong></li>
+          <li contenteditable="false">אם המשתמשת הייתה חסומה — היא תוכל להיכנס מחדש מיידית</li>
+        </ol>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin → Support → Blacklist → <strong>Currently Blocked</strong> tab</li>
+          <li contenteditable="false">Find the email in the list → click <strong>Remove</strong></li>
+          <li contenteditable="false">If the user was blocked — she can log in again immediately</li>
+        </ol>
+      </div>
+      <div class="screenshot-slot" data-label="Remove Block">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: הסרת חסימה</span>
+        <span class="slot-label en-only">Screenshot: Remove Block / Currently Blocked List</span>
+      </div>
+
+      <hr>
+
+      <!-- Stats -->
+      <h3 id="stats"><span class="he-only">נתונים וסטטיסטיקות</span><span class="en-only">Statistics &amp; Data</span></h3>
+      <div class="he-only">
+        <ul>
+          <li contenteditable="false">Admin ← <strong>Overview</strong> ← קלפי סטטיסטיקה (לחיצה = רשימה מפורטת): סה"כ חברות, מחוברות כעת, מאומתות, אדמינות, פוסטים, שיחות</li>
+          <li contenteditable="false"><strong>גרף עוגה</strong> — חלוקת משתמשות לפי אזור / מקצוע / מוצא / דת; טווח: 30d / 90d / 6m / 1y / All</li>
+          <li contenteditable="false"><strong>גרף צמיחה</strong> — חברות חדשות ליום; טווח מותאם אישית</li>
+        </ul>
+      </div>
+      <div class="en-only">
+        <ul>
+          <li contenteditable="false">Admin → <strong>Overview</strong> → stat cards (click each for a detailed list): total members, online now, verified, admins, posts, conversations</li>
+          <li contenteditable="false"><strong>Pie chart</strong> — user breakdown by region / profession / origin / religion; range: 30d / 90d / 6m / 1y / All</li>
+          <li contenteditable="false"><strong>Growth chart</strong> — new members per day; custom date range</li>
+        </ul>
+      </div>
+      <div class="screenshot-slot" data-label="Statistics">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: סטטיסטיקות וגרפים</span>
+        <span class="slot-label en-only">Screenshot: Statistics &amp; Charts</span>
+      </div>
+
+      <hr>
+
+      <!-- Permissions -->
+      <h3 id="permissions"><span class="he-only">ניהול הרשאות</span><span class="en-only">Managing Permissions</span></h3>
+      <div class="he-only">
+        <h4>הוספת אדמינית חדשה</h4>
+        <ol class="steps">
+          <li contenteditable="false">Admin ← Users ← מצאי את המשתמשת ← לחצי <strong>Make Admin</strong></li>
+          <li contenteditable="false">בחלון ההרשאות — סמני אילו הרשאות לתת ← <strong>Save &amp; Make Admin</strong></li>
+        </ol>
+      </div>
+      <div class="en-only">
+        <h4>Add a New Admin</h4>
+        <ol class="steps">
+          <li contenteditable="false">Admin → Users → find the user → click <strong>Make Admin</strong></li>
+          <li contenteditable="false">In the permissions dialog — select which permissions to grant → <strong>Save &amp; Make Admin</strong></li>
+        </ol>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th><span class="he-only">הרשאה</span><span class="en-only">Permission</span></th>
+            <th><span class="he-only">מה היא מאפשרת</span><span class="en-only">What It Allows</span></th>
+          </tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-blue">Manage Users</span></td><td><span class="he-only" contenteditable="false">עריכה, מחיקה, ייצוא של משתמשות</span><span class="en-only" contenteditable="false">Edit, delete, and export users</span></td></tr>
+            <tr><td><span class="badge badge-blue">Manage Content</span></td><td><span class="he-only" contenteditable="false">מחיקה/עריכה/פינינג של פוסטים ותגובות</span><span class="en-only" contenteditable="false">Delete/edit/pin posts and comments</span></td></tr>
+            <tr><td><span class="badge badge-green">View Activity Logs</span></td><td><span class="he-only" contenteditable="false">צפייה ב-log מלא של כל הפעולות</span><span class="en-only" contenteditable="false">View the full log of all actions</span></td></tr>
+            <tr><td><span class="badge badge-orange">Manage Admins</span></td><td><span class="he-only" contenteditable="false">הוספה/הסרה של אדמינות ועריכת הרשאות</span><span class="en-only" contenteditable="false">Add/remove admins and edit their permissions</span></td></tr>
+            <tr><td><span class="badge badge-green">View Statistics + Export</span></td><td><span class="he-only" contenteditable="false">גרפים, סטטיסטיקות, ייצוא/ייבוא Excel</span><span class="en-only" contenteditable="false">Charts, statistics, Excel import/export</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="he-only">
+        <h4>ביטול הרשאות אדמין</h4>
+        <ol class="steps"><li contenteditable="false">Admin ← Users ← מצאי את האדמינית ← לחצי <strong>Revoke Admin</strong> ← אשרי</li></ol>
+      </div>
+      <div class="en-only">
+        <h4>Revoke Admin Permissions</h4>
+        <ol class="steps"><li contenteditable="false">Admin → Users → find the admin → click <strong>Revoke Admin</strong> → confirm</li></ol>
+      </div>
+      <div class="screenshot-slot" data-label="Admin Permissions">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: Admin — ניהול הרשאות</span>
+        <span class="slot-label en-only">Screenshot: Admin — Permissions Management</span>
+      </div>
+
+      <hr>
+
+      <!-- Slideshow -->
+      <h3 id="slideshow"><span class="he-only">ניהול הסליידשו</span><span class="en-only">Managing the Slideshow</span></h3>
+      <p class="he-only" contenteditable="false">הסליידשו מופיע בסרגל הצד של הפיד הקהילתי ומשמש להצגת תמונות וסרטונים של העמותה.</p>
+      <p class="en-only" contenteditable="false">The slideshow appears in the community feed sidebar and displays the organization's images and videos.</p>
+      <div class="he-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin ← Overview ← גלולי לאזור <strong>Slideshow</strong> ← לחצי <strong>+</strong></li>
+          <li contenteditable="false">בחרי תמונות (ניתן לבחור מספר בבת-אחת) ← לכל תמונה תיפתח חלונית חיתוך</li>
+          <li contenteditable="false">חתכי ← <strong>Crop &amp; Upload</strong></li>
+          <li contenteditable="false">גרירת תמונות לשינוי סדר | טקסט מתחת לתמונה להוספת כיתוב | לחצי × למחיקה</li>
+        </ol>
+      </div>
+      <div class="en-only">
+        <ol class="steps">
+          <li contenteditable="false">Admin → Overview → scroll to <strong>Slideshow</strong> → click <strong>+</strong></li>
+          <li contenteditable="false">Select images (multiple at once) → a crop window opens for each</li>
+          <li contenteditable="false">Crop → <strong>Crop &amp; Upload</strong></li>
+          <li contenteditable="false">Drag to reorder | click text field below image to add caption | click × to delete</li>
+        </ol>
+      </div>
+      <div class="screenshot-slot" data-label="Slideshow">        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: ניהול הסליידשו</span>
+        <span class="slot-label en-only">Screenshot: Slideshow Management</span>
+      </div>
+    </section>
+
+    <!-- ══ 5 ══ -->
+    <section class="doc-section" id="s5">
+      <div class="section-header">
+        <span class="section-num"><span class="he-only">חלק 5</span><span class="en-only">Section 5</span></span>
+        <h2 class="section-title"><span class="he-only">מובייל לעומת דסקטופ</span><span class="en-only">Mobile vs. Desktop</span></h2>
+      </div>
+
+      <div class="he-only">
+        <p contenteditable="false">האתר תומך גם במובייל וגם בדסקטופ. חלק מהפעולות עובדות אחרת בכל פלטפורמה:</p>
+      </div>
+      <div class="en-only">
+        <p contenteditable="false">The site works on both mobile and desktop. Some actions behave differently on each platform:</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th><span class="he-only">פעולה</span><span class="en-only">Action</span></th>
+            <th>🖥 Desktop</th>
+            <th>📱 Mobile</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><strong><span class="he-only">תגובה להודעה בצ'אט</span><span class="en-only">Reply to a chat message</span></strong></td>
+              <td><span class="he-only" contenteditable="false">לחצי Reply שמופיע בריחוף על ההודעה</span><span class="en-only" contenteditable="false">Click the Reply button that appears on message hover</span></td>
+              <td><span class="he-only" contenteditable="false">החליקי את ההודעה שמאלה</span><span class="en-only" contenteditable="false">Swipe the message to the left</span></td>
+            </tr>
+            <tr>
+              <td><strong><span class="he-only">תפריט אפשרויות בפוסט</span><span class="en-only">Post options menu</span></strong></td>
+              <td><span class="he-only" contenteditable="false">ריחוף על הפוסט ← הופיע ... בפינה</span><span class="en-only" contenteditable="false">Hover over the post → ⋯ appears in the corner</span></td>
+              <td><span class="he-only" contenteditable="false">לחיצה ממושכת על הפוסט, או לחיצה על ...</span><span class="en-only" contenteditable="false">Long-press the post, or tap ⋯</span></td>
+            </tr>
+            <tr>
+              <td><strong><span class="he-only">ניווט ראשי</span><span class="en-only">Main navigation</span></strong></td>
+              <td><span class="he-only" contenteditable="false">סרגל ניווט עליון תמיד גלוי</span><span class="en-only" contenteditable="false">Top nav bar always visible</span></td>
+              <td><span class="he-only" contenteditable="false">תפריט המבורגר ☰ ← נפתח מהצד</span><span class="en-only" contenteditable="false">Hamburger menu ☰ → slides open from the side</span></td>
+            </tr>
+            <tr>
+              <td><strong><span class="he-only">חיתוך תמונה (Crop)</span><span class="en-only">Image cropping</span></strong></td>
+              <td><span class="he-only" contenteditable="false">גרירת ידיות עם העכבר</span><span class="en-only" contenteditable="false">Drag handles with the mouse</span></td>
+              <td><span class="he-only" contenteditable="false">גרירה עם האצבע; מספר אצבעות להזזה</span><span class="en-only" contenteditable="false">Drag with finger; multi-touch to move</span></td>
+            </tr>
+            <tr>
+              <td><strong><span class="he-only">שליחת תגובה בצ'אט</span><span class="en-only">Send chat message</span></strong></td>
+              <td><span class="he-only" contenteditable="false">Enter לשליחה, Shift+Enter לשורה חדשה</span><span class="en-only" contenteditable="false">Enter to send, Shift+Enter for new line</span></td>
+              <td><span class="he-only" contenteditable="false">כפתור שליחה (חץ) ← Enter = שורה חדשה</span><span class="en-only" contenteditable="false">Send button (arrow) → Enter = new line on mobile</span></td>
+            </tr>
+            <tr>
+              <td><strong><span class="he-only">סליידשו (Admin)</span><span class="en-only">Slideshow reorder (Admin)</span></strong></td>
+              <td><span class="he-only" contenteditable="false">גרירת תמונות לסדר חדש עם העכבר</span><span class="en-only" contenteditable="false">Drag images to reorder with mouse</span></td>
+              <td><span class="he-only" contenteditable="false">לחיצה ממושכת ← גרירה</span><span class="en-only" contenteditable="false">Long-press → drag</span></td>
+            </tr>
+            <tr>
+              <td><strong><span class="he-only">עמוד Admin</span><span class="en-only">Admin panel</span></strong></td>
+              <td><span class="he-only" contenteditable="false">טבלאות ותרשימים מלאים; כל העמודות גלויות</span><span class="en-only" contenteditable="false">Full tables and charts; all columns visible</span></td>
+              <td><span class="he-only" contenteditable="false">גלילה אופקית בטבלאות; תרשימים מותאמים</span><span class="en-only" contenteditable="false">Horizontal scroll on tables; charts adapted</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="screenshot-slot" data-label="Mobile vs Desktop" data-lhe="צילום מסך: מובייל לעומת דסקטופ" data-len="Screenshot: Mobile vs Desktop layout">
+        <span class="slot-icon">🖼</span>
+        <span class="slot-label he-only">צילום מסך: מובייל לעומת דסקטופ</span>
+        <span class="slot-label en-only">Screenshot: Mobile vs Desktop layout</span>
+      </div>
+    </section>
+
+    <!-- ══ 6 ══ -->
+    <section class="doc-section" id="s6">
+      <div class="section-header">
+        <span class="section-num"><span class="he-only">חלק 6</span><span class="en-only">Section 6</span></span>
+        <h2 class="section-title"><span class="he-only">שאלות נפוצות</span><span class="en-only">Frequently Asked Questions</span></h2>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-q">
+            <span class="he-only" contenteditable="false">משתמשת לא מצליחה להיכנס — מה עושים?</span>
+            <span class="en-only" contenteditable="false">A user can't log in — what do we do?</span>
+          </summary>
+          <div class="faq-a">
+            <p class="he-only" contenteditable="false"><strong>בדקי תחילה אם המייל ברשימת חסומות:</strong> Admin ← Support ← Blacklist ← Currently Blocked. אם כן — הסירי את החסימה. אם לא — ייתכן שהמייל לא אומת; הציעי למשתמשת לבדוק את תיבת המייל לקוד OTP.</p>
+            <p class="en-only" contenteditable="false"><strong>First check if the email is blacklisted:</strong> Admin → Support → Blacklist → Currently Blocked. If yes — remove the block. If not — the email may not be verified; ask the user to check their inbox for the OTP code.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-q">
+            <span class="he-only" contenteditable="false">איך מאפסים סיסמה?</span>
+            <span class="en-only" contenteditable="false">How do I reset a password?</span>
+          </summary>
+          <div class="faq-a">
+            <p class="he-only" contenteditable="false">דף כניסה ← <em>Forgot password?</em> ← הכניסי מייל ← לחצי Reset. לינק לאיפוס יישלח למייל (תקף ~שעה).</p>
+            <p class="en-only" contenteditable="false">Login page → <em>Forgot password?</em> → enter email → click Reset. A reset link is sent by email (valid ~1 hour).</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-q">
+            <span class="he-only" contenteditable="false">פוסט של משתמשת לא מופיע לאחרת</span>
+            <span class="en-only" contenteditable="false">A user's posts aren't showing up for someone else</span>
+          </summary>
+          <div class="faq-a">
+            <p class="he-only" contenteditable="false">ייתכן שהמשתמשת חסמה את הפוסטת. Chat ← שיחה עם הפוסטת ← 3 נקודות ← Unblock.</p>
+            <p class="en-only" contenteditable="false">The viewer may have blocked the poster. Chat → conversation with the poster → 3 dots → Unblock.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-q">
+            <span class="he-only" contenteditable="false">פוסט יום הולדת לא הופיע אוטומטית</span>
+            <span class="en-only" contenteditable="false">A birthday post didn't appear automatically</span>
+          </summary>
+          <div class="faq-a">
+            <p class="he-only" contenteditable="false">הפוסט נוצר כאשר משתמשת מחוברת נכנסת לאתר ביום ההולדת. אם אף משתמשת לא נכנסה — הפוסט לא ייוצר. הפוסטים נמחקים אוטומטית לאחר 24 שעות.</p>
+            <p class="en-only" contenteditable="false">The post is created when a logged-in user visits the site on that person's birthday. If no one visited — the post won't be created. Posts are automatically deleted after 24 hours.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-q">
+            <span class="he-only" contenteditable="false">כיצד מוסיפים בוגרת שלא נרשמה בעצמה?</span>
+            <span class="en-only" contenteditable="false">How do I add an alumna who hasn't signed up herself?</span>
+          </summary>
+          <div class="faq-a">
+            <p class="he-only" contenteditable="false">Admin ← Overview ← Upload Excel. הכינו קובץ עם עמודות email ו-firstName. הבוגרת תצטרך לסיים הרשמה בעצמה עם אותו מייל.</p>
+            <p class="en-only" contenteditable="false">Admin → Overview → Upload Excel. Prepare a file with email and firstName columns. She will still need to complete registration herself using the same email.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ══ 7 ══ -->
+    <section class="doc-section" id="s7">
+      <div class="section-header">
+        <span class="section-num"><span class="he-only">חלק 7</span><span class="en-only">Section 7</span></span>
+        <h2 class="section-title"><span class="he-only">תמיכה</span><span class="en-only">Support</span></h2>
+      </div>
+
+      <h3><span class="he-only">פרטי קשר</span><span class="en-only">Contact Information</span></h3>
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="feat-card-title"><span class="he-only">👩‍💻 מובילת הפרויקט</span><span class="en-only">👩‍💻 Project Lead</span></div>
+          <p contenteditable="false"><strong>Joelle Zanbil</strong><br>📧 <a href="mailto:joellezanbil2911@gmail.com">joellezanbil2911@gmail.com</a></p>
+        </div>
+        <div class="feat-card coral">
+          <div class="feat-card-title"><span class="he-only">🏛️ קשר עמותה</span><span class="en-only">🏛️ Organization Contact</span></div>
+          <p contenteditable="false"><strong><span class="he-only">ניצן סניור שניאור</span><span class="en-only">Nitzan Senior Schneuer</span></strong><br>📧 <a href="mailto:anitzan86@gmail.com">anitzan86@gmail.com</a><br>📞 <a href="tel:0586277762">058-627-7762</a></p>
+        </div>
+      </div>
+
+      <h3><span class="he-only">צוות הפיתוח</span><span class="en-only">Development Team</span></h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th><span class="he-only">שם</span><span class="en-only">Name</span></th>
+            <th>GitHub</th>
+            <th><span class="he-only">ת.ז. סטודנט</span><span class="en-only">Student ID</span></th>
+          </tr></thead>
+          <tbody>
+            <tr><td><strong>Joelle Zanbil</strong> (Team Lead)</td><td>joelleza</td><td>215037862</td></tr>
+            <tr><td>Shahd Karawi</td><td>Shahdka02</td><td>213324270</td></tr>
+            <tr><td>Salman Nairoukh</td><td>SalmanNa</td><td>326084506</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="he-only">קוד מקור ותשתית</span><span class="en-only">Source Code &amp; Infrastructure</span></h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th><span class="he-only">רכיב</span><span class="en-only">Component</span></th>
+            <th><span class="he-only">פרטים</span><span class="en-only">Details</span></th>
+          </tr></thead>
+          <tbody>
+            <tr><td><strong><span class="he-only">אתר פעיל</span><span class="en-only">Live Site</span></strong></td><td><a href="https://bogrotnet.web.app" target="_blank">bogrotnet.web.app</a></td></tr>
+            <tr><td><strong><span class="he-only">קוד מקור</span><span class="en-only">Source Code</span></strong></td><td><a href="https://github.com/jce-kehila-2026/kehila2026-manhigut-shava" target="_blank">github.com/jce-kehila-2026/kehila2026-manhigut-shava</a></td></tr>
+            <tr><td><strong><span class="he-only">מסד נתונים</span><span class="en-only">Database</span></strong></td><td>Firebase Firestore — kehila-manhigut-shava</td></tr>
+            <tr><td><strong><span class="he-only">טכנולוגיות</span><span class="en-only">Stack</span></strong></td><td>React 19 + Vite, Firebase Auth / Firestore / Storage / Hosting</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ── Theme ── */
+function toggleTheme(){
+  const r=document.documentElement,cur=r.getAttribute('data-theme');
+  const dark=cur==='dark'||(!cur&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  r.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('theme-btn').textContent=dark?'🌙':'☀';
+}
+
+/* ── Language ── */
+function setLang(l){
+  document.body.classList.remove('lang-he','lang-en');
+  document.body.classList.add('lang-'+l);
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));
+  try{localStorage.setItem('wiki-lang',l);}catch(e){}
+}
+
+/* ── Edit mode ── */
+let editing=false;
+function toggleEdit(){
+  editing=!editing;
+  document.body.classList.toggle('edit-mode',editing);
+  const btn=document.getElementById('edit-btn');
+  const isHe=document.body.classList.contains('lang-he');
+  btn.innerHTML=editing
+    ?'<span class="he-only">✅ סיים עריכה</span><span class="en-only">✅ Done</span>'
+    :'<span class="he-only">✏️ ערוך</span><span class="en-only">✏️ Edit</span>';
+  btn.classList.toggle('active',editing);
+  document.querySelectorAll('[contenteditable]').forEach(el=>el.contentEditable=editing?'true':'false');
+}
+
+/* ── Slideshow carousel ── */
+const SS=new Map();
+
+function ssInit(){
+  document.querySelectorAll('.screenshot-slot').forEach(slot=>{
+    const lhe=slot.getAttribute('data-lhe')||slot.querySelector('.slot-label.he-only')?.textContent||slot.getAttribute('data-label')||'';
+    const len=slot.getAttribute('data-len')||slot.querySelector('.slot-label.en-only')?.textContent||slot.getAttribute('data-label')||'';
+    let imgs=[];
+    try{imgs=JSON.parse(slot.getAttribute('data-images')||'[]');}catch(e){}
+    const cur=Math.max(0,Math.min(parseInt(slot.getAttribute('data-current')||'0'),imgs.length-1));
+    slot.setAttribute('data-lhe',lhe);slot.setAttribute('data-len',len);
+    SS.set(slot,{images:imgs,current:cur,lhe,len});
+    ssRender(slot);
+  });
+}
+
+function ssRender(slot){
+  const s=SS.get(slot);
+  const isHe=document.body.classList.contains('lang-he');
+  if(s.images.length===0){
+    slot.innerHTML=`<div class="ss-viewport"><div class="ss-empty" onclick="ssAdd(this.closest('.screenshot-slot'))">
+      <span class="slot-icon">🖼</span>
+      <span class="slot-label he-only">${s.lhe}</span>
+      <span class="slot-label en-only">${s.len}</span>
+      <span style="font-size:11px;color:var(--muted);margin-top:2px"><span class="he-only">לחצי להוספת תמונות (ניתן לבחור מספר)</span><span class="en-only">Click to add screenshots (multi-select supported)</span></span>
+      <input type="file" accept="image/*" multiple class="slot-file" onchange="ssLoad(this.closest('.screenshot-slot'),this.files)">
+    </div></div>`;
+  } else {
+    const cur=s.current,total=s.images.length;
+    const dots=Array.from({length:total},(_,i)=>`<span class="ss-dot${i===cur?' active':''}" onclick="ssGo(this.closest('.screenshot-slot'),${i})"></span>`).join('');
+    slot.innerHTML=`<div class="ss-viewport">
+      <img src="${s.images[cur]}" alt="">
+      ${total>1?`<button class="ss-nav ss-prev" onclick="event.stopPropagation();ssPrev(this.closest('.screenshot-slot'))">&#8249;</button>
+      <button class="ss-nav ss-next" onclick="event.stopPropagation();ssNext(this.closest('.screenshot-slot'))">&#8250;</button>`:''}
+    </div>
+    <div class="ss-footer">
+      <button class="ss-add" onclick="ssAdd(this.closest('.screenshot-slot'))"><span class="he-only">+ הוסף</span><span class="en-only">+ Add</span></button>
+      <div class="ss-dots">${dots}</div>
+      <button class="ss-remove" onclick="ssRemove(this.closest('.screenshot-slot'))"><span class="he-only">הסר</span><span class="en-only">Remove</span></button>
+    </div>
+    <input type="file" accept="image/*" multiple class="slot-file" style="display:none" onchange="ssLoad(this.closest('.screenshot-slot'),this.files)">`;
+  }
+}
+
+function ssAdd(slot){slot.querySelector('.slot-file').click();}
+function ssLoad(slot,files){
+  const s=SS.get(slot);
+  Promise.all(Array.from(files).map(f=>new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);})))
+    .then(results=>{s.images.push(...results);s.current=s.images.length-1;ssRender(slot);});
+}
+function ssPrev(slot){const s=SS.get(slot);s.current=(s.current-1+s.images.length)%s.images.length;ssRender(slot);}
+function ssNext(slot){const s=SS.get(slot);s.current=(s.current+1)%s.images.length;ssRender(slot);}
+function ssGo(slot,i){SS.get(slot).current=i;ssRender(slot);}
+function ssRemove(slot){
+  const s=SS.get(slot);
+  s.images.splice(s.current,1);
+  s.current=Math.max(0,Math.min(s.current,s.images.length-1));
+  ssRender(slot);
+}
+
+/* ── Download ── */
+function downloadHTML(){
+  document.querySelectorAll('.screenshot-slot').forEach(slot=>{
+    const s=SS.get(slot);
+    if(s){slot.setAttribute('data-images',JSON.stringify(s.images));slot.setAttribute('data-current',s.current);}
+  });
+  const html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='bogrotnet-wiki.html';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+/* ── TOC highlight ── */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      document.querySelectorAll('.toc a').forEach(l=>l.classList.remove('active'));
+      const a=document.querySelector(`.toc a[href="#${e.target.id}"]`);
+      if(a)a.classList.add('active');
+    }
+  });
+},{threshold:.3,rootMargin:'-54px 0px 0px 0px'});
+document.querySelectorAll('[id]').forEach(s=>obs.observe(s));
+
+/* ── Init ── */
+setLang(localStorage.getItem('wiki-lang')||'he');
+ssInit();
+</script>

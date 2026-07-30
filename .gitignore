@@ -28,6 +28,8 @@ backend/privateKey.json
 frontend/.env
 frontend/.env.*
 !frontend/.env.example
+functions/.env
+functions/.env.*
 
 # Firebase
 .firebase/

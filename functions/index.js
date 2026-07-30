@@ -6,7 +6,9 @@ admin.initializeApp();
 const db = admin.firestore();
 
 /* ── Send 6-digit OTP to email ── */
-exports.sendOtpEmail = functions.https.onCall(async (data, context) => {
+exports.sendOtpEmail = functions
+  .runWith({ secrets: ["SENDGRID_KEY"] })
+  .https.onCall(async (data, context) => {
   const { email, uid } = data;
   if (!email || !uid) {
     throw new functions.https.HttpsError("invalid-argument", "Missing email or uid.");
@@ -124,7 +126,9 @@ exports.verifyOtp = functions.https.onCall(async (data, context) => {
 });
 
 /* ── Send OTP to a new email address to verify ownership before changing ── */
-exports.sendEmailChangeOtp = functions.https.onCall(async (data, context) => {
+exports.sendEmailChangeOtp = functions
+  .runWith({ secrets: ["SENDGRID_KEY"] })
+  .https.onCall(async (data, context) => {
   try {
     if (!context.auth) {
       throw new functions.https.HttpsError("unauthenticated", "Must be signed in.");
